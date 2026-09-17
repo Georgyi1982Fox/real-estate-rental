@@ -1,0 +1,11 @@
+# Database dependencies
+asyncpg>=0.29.0
+sqlalchemy[asyncio]>=2.0.25
+alembic>=1.13.0
+pgvector>=0.2.0
+
+# Type checking
+mypy>=1.8.0
+
+# Code quality
+ruff>=0.4.0
