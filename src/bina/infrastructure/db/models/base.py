@@ -9,6 +9,8 @@ from sqlalchemy.sql import func
 class TimestampMixin:
     """Миксин для автоматических временных меток."""
     
+    __allow_unmapped__ = True
+    
     created_at: Column[datetime] = Column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -25,6 +27,8 @@ class TimestampMixin:
 class SoftDeleteMixin:
     """Миксин для мягкого удаления."""
     
+    __allow_unmapped__ = True
+    
     is_deleted: Column[bool] = Column(
         Boolean,
         default=False,
@@ -40,6 +44,7 @@ class Base(DeclarativeBase, TimestampMixin):
     """Базовый класс для всех моделей."""
     
     __abstract__ = True
+    __allow_unmapped__ = True
     
     def to_dict(self) -> dict[str, Any]:
         """Преобразует объект в словарь."""
