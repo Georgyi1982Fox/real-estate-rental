@@ -1,5 +1,3 @@
-import asyncio
-import json
 from typing import Any
 
 import httpx
@@ -66,11 +64,11 @@ class OpenAIProvider(LLMProvider):
             response.raise_for_status()
             
             data = response.json()
-            result = data["choices"][0]["message"]["content"]
+            result: str = data["choices"][0]["message"]["content"]
             logger.debug("Completed prompt successfully", result_length=len(result))
             return result
             
-        except Exception as e:
+        except (httpx.HTTPStatusError, httpx.RequestError, KeyError, ValueError) as e:
             logger.error("Error in OpenAI completion", error=str(e))
             raise NotImplementedError("OpenAI provider is a stub")
     

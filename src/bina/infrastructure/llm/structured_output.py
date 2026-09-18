@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any, TypeVar
+from typing import TypeVar
 
 import structlog
 from pydantic import BaseModel, ValidationError

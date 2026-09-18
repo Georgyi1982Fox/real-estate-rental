@@ -1,5 +1,4 @@
 import os
-from typing import Optional
 
 from src.bina.application.ports.llm_provider import LLMProvider
 from src.bina.infrastructure.llm.providers.anthropic_provider import AnthropicProvider
@@ -34,8 +33,8 @@ class LLMFactory:
                 kwargs["model"] = model
             
             try:
-                return provider_class(**kwargs)
-            except Exception as e:
+                return provider_class(**kwargs)  # type: ignore
+            except (TypeError, ValueError, KeyError) as e:
                 print(f"Failed to create {provider_name} provider: {e}")
         
         # Fallback цепочка: qwen -> openai -> anthropic
@@ -53,8 +52,8 @@ class LLMFactory:
             
             try:
                 print(f"Falling back to {fallback_provider} provider")
-                return provider_class(**kwargs)
-            except Exception as e:
+                return provider_class(**kwargs)  # type: ignore
+            except (TypeError, ValueError, KeyError) as e:
                 print(f"Failed to create fallback {fallback_provider} provider: {e}")
                 continue
         

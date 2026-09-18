@@ -1,7 +1,6 @@
-import asyncio
 import hashlib
 import json
-from typing import Any, Optional
+from typing import Any
 
 import redis.asyncio as redis
 import structlog
@@ -16,7 +15,7 @@ class SemanticCache:
         self.redis_client = redis.from_url(redis_url, decode_responses=True)
         self.ttl_seconds = ttl_hours * 3600
     
-    async def get(self, prompt: str) -> Optional[Any]:
+    async def get(self, prompt: str) -> Any | None:
         """Получает результат из кэша по промпту."""
         key = self._generate_key(prompt)
         try:
@@ -25,7 +24,7 @@ class SemanticCache:
                 result = json.loads(cached_result)
                 logger.debug("Cache hit", key=key[:20] + "...")
                 return result
-        except Exception as e:
+        except (redis.RedisError, json.JSONDecodeError) as e:
             logger.warning("Cache get error", error=str(e))
         return None
     
@@ -36,7 +35,7 @@ class SemanticCache:
             serialized_result = json.dumps(result, ensure_ascii=False)
             await self.redis_client.setex(key, self.ttl_seconds, serialized_result)
             logger.debug("Cache set", key=key[:20] + "...", ttl_hours=self.ttl_seconds // 3600)
-        except Exception as e:
+        except (redis.RedisError, json.JSONEncodeError) as e:
             logger.warning("Cache set error", error=str(e))
     
     def _generate_key(self, prompt: str) -> str:

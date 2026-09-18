@@ -1,5 +1,3 @@
-import asyncio
-import json
 from typing import Any
 
 import httpx
@@ -68,11 +66,11 @@ class AnthropicProvider(LLMProvider):
             response.raise_for_status()
             
             data = response.json()
-            result = data["content"][0]["text"]
+            result: str = data["content"][0]["text"]
             logger.debug("Completed prompt successfully", result_length=len(result))
             return result
             
-        except Exception as e:
+        except (httpx.HTTPStatusError, httpx.RequestError, KeyError, ValueError) as e:
             logger.error("Error in Anthropic completion", error=str(e))
             raise NotImplementedError("Anthropic provider is a stub")
     
