@@ -35,7 +35,7 @@ class SemanticCache:
             serialized_result = json.dumps(result, ensure_ascii=False)
             await self.redis_client.setex(key, self.ttl_seconds, serialized_result)
             logger.debug("Cache set", key=key[:20] + "...", ttl_hours=self.ttl_seconds // 3600)
-        except (redis.RedisError, json.JSONEncodeError) as e:
+        except (redis.RedisError, TypeError, ValueError) as e:
             logger.warning("Cache set error", error=str(e))
     
     def _generate_key(self, prompt: str) -> str:
