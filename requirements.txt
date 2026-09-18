@@ -1,5 +1,11 @@
 # Core dependencies
 pytest>=7.4.0
+click>=8.1.0
+
+# Web scraping dependencies
+httpx>=0.27.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
 
 # Database dependencies
 asyncpg>=0.29.0
@@ -8,9 +14,11 @@ alembic>=1.13.0
 pgvector>=0.2.0
 
 # LLM dependencies
-httpx>=0.27.0
 tenacity>=8.2.0
 structlog>=24.0.0
+
+# Scheduling
+apscheduler>=3.10.0
 
 # Validation
 pydantic>=2.6.0
