@@ -2,7 +2,8 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import String, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID, VECTOR
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from pgvector.sqlalchemy import Vector
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
@@ -28,7 +29,7 @@ class Embedding(Base):
         nullable=False,
     )
     vector: Mapped[list[float]] = mapped_column(
-        VECTOR(1536),
+        Vector(1536),
         nullable=False,
     )
     model_name: Mapped[str] = mapped_column(

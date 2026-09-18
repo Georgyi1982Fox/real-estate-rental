@@ -13,9 +13,10 @@ if TYPE_CHECKING:
 
 class District(Base, SoftDeleteMixin):
     """Модель района."""
-    
+
     __tablename__ = "bina_districts"
-    
+    __allow_unmapped__ = True
+
     id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
         primary_key=True,
