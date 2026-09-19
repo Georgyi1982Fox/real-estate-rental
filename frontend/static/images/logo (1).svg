@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Bina.ai</title>
+  <desc id="desc">Minimal Bina.ai logo combining a home silhouette with an artificial intelligence circuit motif in dark green, white and lake green.</desc>
+
+  <!-- ძირითადი ფონი -->
+  <rect width="64" height="64" rx="16" fill="#0F4C3A"/>
+
+  <!-- მინიმალისტური სახლის/AI სიმბოლო -->
+  <path
+    d="M17 30.5 32 18l15 12.5"
+    fill="none"
+    stroke="#FFFFFF"
+    stroke-width="5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <path
+    d="M21 29v18h22V29"
+    fill="none"
+    stroke="#FFFFFF"
+    stroke-width="5"
+    stroke-linejoin="round"
+  />
+
+  <!-- AI neural node / circuit -->
+  <path
+    d="M32 27v9m0 0-7 7m7-7 7 7"
+    fill="none"
+    stroke="#43C6A5"
+    stroke-width="3.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <circle cx="32" cy="27" r="4" fill="#43C6A5"/>
+  <circle cx="25" cy="43" r="3.25" fill="#43C6A5"/>
+  <circle cx="39" cy="43" r="3.25" fill="#43C6A5"/>
+</svg>

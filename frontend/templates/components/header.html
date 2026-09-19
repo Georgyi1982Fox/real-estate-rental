@@ -1,0 +1,12 @@
+<nav class="mx-auto flex min-h-16 w-full max-w-screen-xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8" aria-label="Main navigation">
+  <a href="/" class="flex min-w-0 items-center gap-2 rounded-[var(--radius-md)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]" aria-label="Bina.ai home">
+    <span class="grid size-10 shrink-0 place-items-center rounded-[var(--radius-md)] bg-[var(--primary)] text-sm font-bold text-white shadow-[var(--shadow-sm)]">B</span>
+    <span class="truncate text-lg font-bold tracking-tight">Bina.ai</span>
+  </a>
+  <div class="flex items-center gap-1" x-data="{ language: '{{ lang|default('ka') }}' }">
+    <button type="button" class="app-icon-button" aria-label="Change language" @click="language = language === 'ka' ? 'ru' : language === 'ru' ? 'en' : 'ka'">
+      <span x-text="language.toUpperCase()">KA</span>
+    </button>
+    <a href="/favorites" class="app-icon-button" aria-label="Favorites">♡</a>
+  </div>
+</nav>
