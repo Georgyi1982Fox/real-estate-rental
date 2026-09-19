@@ -23,6 +23,15 @@ class IListingsRepository(Protocol):
         ...
     
     @abstractmethod
+    async def find_by_source(
+        self,
+        source_id: str,
+        source_name: str,
+    ) -> Listing | None:
+        """Найти объявление по source_id и source_name."""
+        ...
+    
+    @abstractmethod
     async def save_translation(
         self,
         listing_id: UUID,
@@ -30,4 +39,12 @@ class IListingsRepository(Protocol):
         description_ru: str,
     ) -> None:
         """Сохранить перевод объявления."""
+        ...
+    
+    @abstractmethod
+    async def create_or_update_from_raw(
+        self,
+        raw_listing: "RawListing",  # type: ignore[name-defined]
+    ) -> Listing:
+        """Создать или обновить объявление из RawListing."""
         ...
