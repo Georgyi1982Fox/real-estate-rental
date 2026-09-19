@@ -1,0 +1,11 @@
+<template x-if="open">
+  <section class="fixed inset-0 z-40 grid place-items-end bg-black/40 p-0 sm:place-items-center sm:p-4" role="dialog" aria-modal="true" x-transition.opacity @keydown.escape.window="open = false">
+    <article class="w-full max-w-lg rounded-t-[var(--radius-lg)] bg-[var(--surface)] p-5 shadow-[var(--shadow-lg)] sm:rounded-[var(--radius-lg)]">
+      <header class="mb-4 flex items-center justify-between gap-4">
+        <h2 class="text-lg font-semibold">{% block modal_title %}Modal{% endblock %}</h2>
+        <button type="button" class="app-icon-button" aria-label="Close" @click="open = false">×</button>
+      </header>
+      {% block modal_content %}{% endblock %}
+    </article>
+  </section>
+</template>
