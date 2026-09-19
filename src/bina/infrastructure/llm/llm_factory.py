@@ -2,6 +2,7 @@ import os
 
 from src.bina.application.ports.llm_provider import LLMProvider
 from src.bina.infrastructure.llm.providers.anthropic_provider import AnthropicProvider
+from src.bina.infrastructure.llm.providers.base_embeddings_provider import BaseEmbeddingsProvider
 from src.bina.infrastructure.llm.providers.openai_provider import OpenAIProvider
 from src.bina.infrastructure.llm.providers.qwen_provider import QwenProvider
 
@@ -58,3 +59,12 @@ class LLMFactory:
                 continue
         
         raise RuntimeError("Failed to create any LLM provider")
+
+    @staticmethod
+    def create_embeddings_provider() -> BaseEmbeddingsProvider:
+        """Создает провайдера embeddings на основе конфигурации."""
+        # Для простоты используем OpenAI embeddings как заглушку
+        from src.bina.infrastructure.llm.providers.openai_embeddings_provider import OpenAIEmbeddingsProvider
+        
+        api_key = os.getenv("OPENAI_API_KEY", "")
+        return OpenAIEmbeddingsProvider(api_key=api_key)
