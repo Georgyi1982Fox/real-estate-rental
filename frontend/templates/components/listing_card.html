@@ -1,0 +1,73 @@
+{# Карточка объявления: переиспользуемый Jinja2-компонент. #}
+<article
+  class="listing-card group w-full max-w-full overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)] focus-within:shadow-[var(--shadow-md)]"
+  x-data="{ isFavorite: false }"
+  data-listing-id="{{ listing.id }}"
+>
+  <figure class="listing-card__figure m-0">
+    <div class="listing-card__media relative aspect-[4/3] w-full overflow-hidden bg-[var(--surface-hover)]">
+      {% if listing.photos and listing.photos|length > 0 %}
+        <img
+          class="listing-card__image h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+          src="{{ listing.photos[0] | e }}"
+          alt="{{ listing.title_ru | e }}"
+          loading="lazy"
+          width="400"
+          height="300"
+        />
+      {% else %}
+        <div
+          class="listing-card__placeholder flex h-full w-full items-center justify-center text-sm text-[var(--text-secondary)]"
+          role="img"
+          aria-label="Фото квартиры отсутствует"
+        >
+          Фото отсутствует
+        </div>
+      {% endif %}
+
+      <button
+        type="button"
+        class="listing-card__favorite absolute right-3 top-3 inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/60 bg-white/90 text-[var(--text-secondary)] shadow-sm backdrop-blur-sm transition-colors duration-200 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2"
+        :class="isFavorite ? 'text-[var(--danger)]' : 'text-[var(--text-secondary)]'"
+        :aria-pressed="isFavorite"
+        aria-label="Добавить квартиру в избранное"
+        hx-post="/mock/listings/{{ listing.id }}/favorite"
+        hx-trigger="never"
+        @click="isFavorite = !isFavorite; window.alert(isFavorite ? 'Добавлено в избранное' : 'Удалено из избранного')"
+      >
+        <span
+          class="text-xl leading-none transition-transform duration-200"
+          :class="isFavorite ? 'scale-110' : 'scale-100'"
+          aria-hidden="true"
+        >♥</span>
+      </button>
+    </div>
+
+    <figcaption class="listing-card__content space-y-3 p-4">
+      <div class="listing-card__header min-w-0">
+        <h2 class="listing-card__title break-words text-base font-semibold leading-6 text-[var(--text-primary)]">
+          {{ listing.title_ru | e }}
+        </h2>
+        <p class="listing-card__price mt-1 text-lg font-bold leading-6 text-[var(--text-primary)]">
+          {{ "{:,.0f}".format(listing.price | float).replace(",", " ") }} ₾
+        </p>
+      </div>
+
+      <p class="listing-card__district flex items-center gap-2 break-words text-sm text-[var(--text-secondary)]">
+        <span aria-hidden="true">📍</span>
+        <span>{{ listing.district | e }}</span>
+      </p>
+
+      <dl class="listing-card__meta grid grid-cols-2 gap-3 border-t border-[var(--border)] pt-3 text-sm text-[var(--text-secondary)]">
+        <div class="listing-card__meta-item min-w-0">
+          <dt class="sr-only">Комнаты</dt>
+          <dd class="break-words"><span class="font-medium text-[var(--text-primary)]">{{ listing.rooms }}</span> комн.</dd>
+        </div>
+        <div class="listing-card__meta-item min-w-0 text-right">
+          <dt class="sr-only">Площадь</dt>
+          <dd class="break-words"><span class="font-medium text-[var(--text-primary)]">{{ listing.area }}</span> м²</dd>
+        </div>
+      </dl>
+    </figcaption>
+  </figure>
+</article>
