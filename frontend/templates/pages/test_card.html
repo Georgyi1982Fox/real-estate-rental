@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Тест карточки — Bina.ai{% endblock %}
+
+{% block content %}
+<main class="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+  <section aria-labelledby="test-card-title">
+    <header class="mb-6">
+      <p class="text-sm font-medium text-[var(--primary)]">FRONTEND-002</p>
+      <h1 id="test-card-title" class="mt-1 text-2xl font-bold text-[var(--text-primary)]">
+        Тест карточки квартиры
+      </h1>
+      <p class="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
+        Mock-страница для проверки адаптивности, hover-эффекта и Alpine.js favorite toggle.
+      </p>
+    </header>
+
+    <section aria-label="Тестовое объявление" class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {% set listing = {
+        "id": 1,
+        "title_ru": "Квартира в Сабуртало",
+        "price": 1200,
+        "rooms": 2,
+        "area": 65,
+        "district": "Сабуртало",
+        "photos": ["https://via.placeholder.com/400x300/2563EB/FFFFFF?text=Photo+1"]
+      } %}
+
+      {% include "components/listing_card.html" %}
+    </section>
+  </section>
+</main>
+{% endblock %}
