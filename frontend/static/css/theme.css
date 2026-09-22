@@ -1,6 +1,6 @@
 :root {
-  --primary: #2563EB;
-  --primary-hover: #1D4ED8;
+  --primary: #5F7358;
+  --primary-hover: #4C5C46;
   --secondary: #10B981;
   --accent: #F59E0B;
   --danger: #EF4444;
@@ -28,7 +28,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-telegram-theme="light"]) {
     --background: #0f172a;
     --surface: #1e293b;
     --surface-hover: #334155;
@@ -36,4 +36,14 @@
     --text-secondary: #cbd5e1;
     --border: #334155;
   }
+}
+
+/* Telegram-ის საკუთარი colorScheme სიგნალი (telegram.js) გადაფარავს prefers-color-scheme-ს */
+:root[data-telegram-theme="dark"] {
+  --background: #0f172a;
+  --surface: #1e293b;
+  --surface-hover: #334155;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --border: #334155;
 }

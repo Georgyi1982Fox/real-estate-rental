@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="var(--background)">
+    <meta name="theme-color" id="theme-color-meta" content="#F8FAFC">
     <meta name="description" content="Bina.ai — Telegram Mini App for apartment rentals in Georgia">
     <title>{% block title %}Bina.ai{% endblock %}</title>
 
@@ -29,7 +29,7 @@
 
     <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
     <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
-    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://unpkg.com/alpinejs@3.17.4/dist/cdn.min.js" defer></script>
     <script src="{{ url_for('static', path='js/telegram.js') }}" defer></script>
     <script src="{{ url_for('static', path='js/app.js') }}" defer></script>
     <script src="{{ url_for('static', path='js/utils.js') }}" defer></script>

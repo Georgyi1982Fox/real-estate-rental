@@ -1,11 +1,143 @@
 {% extends 'base.html' %}
 {% block title %}Bina.ai — ბინის ძიება{% endblock %}
 {% block content %}
+{% set lang = lang|default('ka') %}
 <section class="space-y-6" aria-labelledby="home-title">
   <header class="space-y-2 py-4 sm:py-8">
     <p class="text-sm font-medium text-[var(--primary)]">Bina.ai</p>
     <h1 id="home-title" class="max-w-2xl text-3xl font-bold tracking-tight sm:text-4xl">იპოვე ბინა საქართველოში</h1>
     <p class="max-w-2xl text-sm leading-6 text-[var(--text-secondary)] sm:text-base">მოძებნე სასურველი ბინა სხვადასხვა გარე წყაროდან შეგროვებულ განცხადებებს შორის.</p>
   </header>
+
+  <div class="flex flex-col gap-3 sm:flex-row" role="search" aria-label="ბინის ძიება">
+    <label class="sr-only" for="search-input">მოძებნეთ რაიონი, ქუჩა, კომპლექსი</label>
+    <div class="relative flex-1">
+      <span class="pointer-events-none absolute inset-y-0 left-3 grid place-items-center text-[var(--text-secondary)]" aria-hidden="true">🔍</span>
+      <input
+        id="search-input"
+        type="search"
+        name="q"
+        placeholder="მოძებნეთ რაიონი, ქუჩა, კომპლექსი"
+        class="w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] py-3 pl-10 pr-4 text-sm text-[var(--text-primary)] shadow-[var(--shadow-sm)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]"
+      >
+    </div>
+    <button
+      type="button"
+      class="inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--primary)] px-5 py-3 text-sm font-semibold text-white shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--primary-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]"
+    >
+      ძებნა
+    </button>
+  </div>
+
+  <fieldset class="flex flex-wrap gap-4 border-0 p-0" aria-label="ფილტრები">
+    <legend class="sr-only">ფილტრები</legend>
+
+    <div class="flex min-w-0 flex-col gap-1">
+      <label for="filter-district" class="text-xs font-medium text-[var(--text-secondary)]">რაიონი</label>
+      <select
+        id="filter-district"
+        name="district"
+        class="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]"
+      >
+        <option value="">ყველა რაიონი</option>
+        {% for district in districts %}
+        <option value="{{ district.id }}">{{ district.name.get(lang) or district.name.get('ka') }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="flex min-w-0 flex-col gap-1">
+      <span class="text-xs font-medium text-[var(--text-secondary)]" id="price-range-label">ფასი, ₾/თვე</span>
+      <div class="flex items-center gap-2" role="group" aria-labelledby="price-range-label">
+        <label class="sr-only" for="filter-price-min">მინიმალური ფასი</label>
+        <input
+          id="filter-price-min"
+          name="min_price"
+          type="number"
+          inputmode="numeric"
+          min="{{ price_min }}"
+          max="{{ price_max }}"
+          step="50"
+          value="{{ price_min }}"
+          class="w-20 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-2 py-2 text-sm text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]"
+        >
+        <span class="text-[var(--text-secondary)]" aria-hidden="true">—</span>
+        <label class="sr-only" for="filter-price-max">მაქსიმალური ფასი</label>
+        <input
+          id="filter-price-max"
+          name="max_price"
+          type="number"
+          inputmode="numeric"
+          min="{{ price_min }}"
+          max="{{ price_max }}"
+          step="50"
+          value="{{ price_max }}"
+          class="w-20 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-2 py-2 text-sm text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]"
+        >
+      </div>
+    </div>
+
+    <div class="flex min-w-0 flex-col gap-1">
+      <label for="filter-rooms" class="text-xs font-medium text-[var(--text-secondary)]">ოთახები</label>
+      <select
+        id="filter-rooms"
+        name="rooms"
+        class="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]"
+      >
+        <option value="">ნებისმიერი</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4+</option>
+      </select>
+    </div>
+  </fieldset>
+
+  <div id="listings-region" class="space-y-6">
+    <div class="flex items-baseline justify-between gap-3">
+      <h2 class="text-xl font-bold tracking-tight">რჩეული განცხადებები</h2>
+      <span class="text-sm text-[var(--text-secondary)]">{{ total_listings|default(0) }} განცხადება</span>
+    </div>
+
+    {% if listings and listings|length > 0 %}
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {% for listing in listings %}
+        {% include 'components/listing_card.html' %}
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="flex flex-col items-center gap-2 rounded-[var(--radius-lg)] border border-dashed border-[var(--border)] py-16 text-center">
+      <span class="text-3xl" aria-hidden="true">🏠</span>
+      <p class="text-sm font-medium text-[var(--text-primary)]">განცხადებები ვერ მოიძებნა</p>
+      <p class="max-w-xs text-sm text-[var(--text-secondary)]">სცადეთ ფილტრების შეცვლა ან მოგვიანებით დაბრუნება.</p>
+    </div>
+    {% endif %}
+
+    {% if total_pages|default(1) > 1 %}
+    <nav aria-label="გვერდების ნავიგაცია" class="flex items-center justify-center gap-2 pt-2">
+      {% for p in range(1, total_pages + 1) %}
+      <button
+        type="button"
+        hx-get="/?page={{ p }}"
+        hx-select="#listings-region"
+        hx-target="#listings-region"
+        hx-swap="outerHTML"
+        hx-push-url="true"
+        hx-indicator="#listings-loading"
+        aria-current="{{ 'page' if p == current_page else 'false' }}"
+        class="inline-flex min-h-10 min-w-10 items-center justify-center rounded-[var(--radius-md)] border text-sm font-medium transition-colors {{ 'border-[var(--primary)] bg-[var(--primary)] text-white' if p == current_page else 'border-[var(--border)] bg-[var(--surface)] text-[var(--text-primary)] hover:bg-[var(--surface-hover)]' }}"
+      >
+        {{ p }}
+      </button>
+      {% endfor %}
+    </nav>
+    {% endif %}
+  </div>
+
+  <div id="listings-loading" class="htmx-indicator grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" aria-hidden="true">
+    {% for _ in range(4) %}
+      {% include 'components/skeleton.html' %}
+    {% endfor %}
+  </div>
 </section>
 {% endblock %}
