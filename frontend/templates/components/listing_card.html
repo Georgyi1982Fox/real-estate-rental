@@ -1,4 +1,16 @@
-{# Карточка объявления: переиспользуемый Jinja2-компонент. #}
+{# Карточка объявления: переиспользуемый Jinja2-компонент.
+   Ожидает: listing (id, title: {ka,ru,en} | str, price, currency, rooms, area, district, images: []),
+   lang ('ka' | 'ru' | 'en', по умолчанию 'ka'). #}
+{% set lang = lang|default('ka') %}
+{% set STRINGS = {
+  'ka': {'no_photo': 'ფოტო არ არის', 'favorite': 'ბინის დამატება ფავორიტებში', 'added': 'დამატებულია ფავორიტებში', 'removed': 'წაშლილია ფავორიტებიდან', 'rooms': 'ოთახი', 'rooms_unit': 'ოთახი', 'area': 'ფართობი', 'sqm': 'მ²'},
+  'ru': {'no_photo': 'Фото отсутствует', 'favorite': 'Добавить квартиру в избранное', 'added': 'Добавлено в избранное', 'removed': 'Удалено из избранного', 'rooms': 'Комнаты', 'rooms_unit': 'комн.', 'area': 'Площадь', 'sqm': 'м²'},
+  'en': {'no_photo': 'No photo', 'favorite': 'Add apartment to favorites', 'added': 'Added to favorites', 'removed': 'Removed from favorites', 'rooms': 'Rooms', 'rooms_unit': 'rm', 'area': 'Area', 'sqm': 'm²'},
+} %}
+{% set t = STRINGS[lang] if lang in STRINGS else STRINGS['ka'] %}
+{% set title_map = listing.title if listing.title is mapping else {} %}
+{% set title = title_map.get(lang) or title_map.get('ka') or title_map.get('ru') or title_map.get('en') or (listing.title if listing.title is string else '') %}
+
 <article
   class="listing-card group w-full max-w-full overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)] focus-within:shadow-[var(--shadow-md)]"
   x-data="{ isFavorite: false }"
@@ -6,11 +18,11 @@
 >
   <figure class="listing-card__figure m-0">
     <div class="listing-card__media relative aspect-[4/3] w-full overflow-hidden bg-[var(--surface-hover)]">
-      {% if listing.photos and listing.photos|length > 0 %}
+      {% if listing.images and listing.images|length > 0 %}
         <img
           class="listing-card__image h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-          src="{{ listing.photos[0] | e }}"
-          alt="{{ listing.title_ru | e }}"
+          src="{{ listing.images[0] | e }}"
+          alt="{{ title | e }}"
           loading="lazy"
           width="400"
           height="300"
@@ -19,9 +31,9 @@
         <div
           class="listing-card__placeholder flex h-full w-full items-center justify-center text-sm text-[var(--text-secondary)]"
           role="img"
-          aria-label="Фото квартиры отсутствует"
+          aria-label="{{ t.no_photo }}"
         >
-          Фото отсутствует
+          {{ t.no_photo }}
         </div>
       {% endif %}
 
@@ -30,10 +42,8 @@
         class="listing-card__favorite absolute right-3 top-3 inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/60 bg-white/90 text-[var(--text-secondary)] shadow-sm backdrop-blur-sm transition-colors duration-200 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2"
         :class="isFavorite ? 'text-[var(--danger)]' : 'text-[var(--text-secondary)]'"
         :aria-pressed="isFavorite"
-        aria-label="Добавить квартиру в избранное"
-        hx-post="/mock/listings/{{ listing.id }}/favorite"
-        hx-trigger="never"
-        @click="isFavorite = !isFavorite; window.alert(isFavorite ? 'Добавлено в избранное' : 'Удалено из избранного')"
+        aria-label="{{ t.favorite }}"
+        @click="isFavorite = !isFavorite; window.dispatchEvent(new CustomEvent('bina:toast', { detail: { message: isFavorite ? '{{ t.added }}' : '{{ t.removed }}', type: 'success' } })); window.binaTelegram && window.binaTelegram.haptic('light')"
       >
         <span
           class="text-xl leading-none transition-transform duration-200"
@@ -46,10 +56,10 @@
     <figcaption class="listing-card__content space-y-3 p-4">
       <div class="listing-card__header min-w-0">
         <h2 class="listing-card__title break-words text-base font-semibold leading-6 text-[var(--text-primary)]">
-          {{ listing.title_ru | e }}
+          {{ title | e }}
         </h2>
         <p class="listing-card__price mt-1 text-lg font-bold leading-6 text-[var(--text-primary)]">
-          {{ "{:,.0f}".format(listing.price | float).replace(",", " ") }} ₾
+          {{ listing.price | price(listing.currency) }}
         </p>
       </div>
 
@@ -60,12 +70,12 @@
 
       <dl class="listing-card__meta grid grid-cols-2 gap-3 border-t border-[var(--border)] pt-3 text-sm text-[var(--text-secondary)]">
         <div class="listing-card__meta-item min-w-0">
-          <dt class="sr-only">Комнаты</dt>
-          <dd class="break-words"><span class="font-medium text-[var(--text-primary)]">{{ listing.rooms }}</span> комн.</dd>
+          <dt class="sr-only">{{ t.rooms }}</dt>
+          <dd class="break-words"><span class="font-medium text-[var(--text-primary)]">{{ listing.rooms }}</span> {{ t.rooms_unit }}</dd>
         </div>
         <div class="listing-card__meta-item min-w-0 text-right">
-          <dt class="sr-only">Площадь</dt>
-          <dd class="break-words"><span class="font-medium text-[var(--text-primary)]">{{ listing.area }}</span> м²</dd>
+          <dt class="sr-only">{{ t.area }}</dt>
+          <dd class="break-words"><span class="font-medium text-[var(--text-primary)]">{{ listing.area }}</span> {{ t.sqm }}</dd>
         </div>
       </dl>
     </figcaption>

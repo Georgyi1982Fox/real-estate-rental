@@ -1,7 +1,102 @@
 {
-  "listings": [],
-  "districts": [],
+  "listings": [
+    {
+      "id": 1,
+      "title": {
+        "ka": "მყუდრო ბინა საბურთალოზე",
+        "ru": "Уютная квартира в Сабуртало",
+        "en": "Cozy apartment in Saburtalo"
+      },
+      "description": {
+        "ka": "ბინა ახლოს მეტროსთან.",
+        "ru": "Квартира рядом с метро.",
+        "en": "Apartment near the metro."
+      },
+      "price": 1200,
+      "currency": "GEL",
+      "rooms": 2,
+      "bedrooms": 1,
+      "area": 65,
+      "district": "Saburtalo",
+      "city": "Tbilisi",
+      "images": [],
+      "rating": 4.8
+    },
+    {
+      "id": 2,
+      "title": {
+        "ka": "ბინა ვაკეში",
+        "ru": "Квартира в Ваке",
+        "en": "Apartment in Vake"
+      },
+      "description": {
+        "ka": "ახალი გარემონტებული ბინა.",
+        "ru": "Недавно отремонтированная квартира.",
+        "en": "Recently renovated apartment."
+      },
+      "price": 1800,
+      "currency": "GEL",
+      "rooms": 3,
+      "bedrooms": 2,
+      "area": 82,
+      "district": "Vake",
+      "city": "Tbilisi",
+      "images": [],
+      "rating": 4.9
+    },
+    {
+      "id": 3,
+      "title": {
+        "ka": "ბინა ვერაზე",
+        "ru": "Квартира в Вере",
+        "en": "Apartment in Vera"
+      },
+      "description": {
+        "ka": "ბინა თბილისის ცენტრში.",
+        "ru": "Квартира в центре Тбилиси.",
+        "en": "Apartment in central Tbilisi."
+      },
+      "price": 1500,
+      "currency": "GEL",
+      "rooms": 2,
+      "bedrooms": 1,
+      "area": 58,
+      "district": "Vera",
+      "city": "Tbilisi",
+      "images": [],
+      "rating": 4.7
+    }
+  ],
+  "districts": [
+    {
+      "id": "saburtalo",
+      "name": {
+        "ka": "საბურთალო",
+        "ru": "Сабуртало",
+        "en": "Saburtalo"
+      }
+    },
+    {
+      "id": "vake",
+      "name": {
+        "ka": "ვაკე",
+        "ru": "Ваке",
+        "en": "Vake"
+      }
+    },
+    {
+      "id": "vera",
+      "name": {
+        "ka": "ვერა",
+        "ru": "Вера",
+        "en": "Vera"
+      }
+    }
+  ],
   "user": {
+    "id": 1001,
+    "name": "Demo User",
+    "username": "demo_user",
     "language": "ka"
   }
 }
