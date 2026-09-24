@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from sqlalchemy import select, update
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.bina.application.repositories.users import IUsersRepository
@@ -29,11 +30,24 @@ class UsersRepository(IUsersRepository):
         return result.scalar_one_or_none()
 
     async def create(self, telegram_id: int, language: str) -> User:
-        """Создать нового пользователя."""
-        user = User(telegram_id=telegram_id, language=language)
-        self._session.add(user)
-        await self._session.flush()  # Получаем ID и серверные значения по умолчанию
-        return user
+        """Создать нового пользователя.
+
+        Устойчиво к гонке (два параллельных апдейта от нового пользователя):
+        при конфликте по ``telegram_id`` возвращается существующая запись.
+        Мягко удалённый пользователь при этом восстанавливается.
+        """
+        query = (
+            insert(User)
+            .values(telegram_id=telegram_id, language=language)
+            .on_conflict_do_update(
+                index_elements=[User.telegram_id],
+                set_={"is_deleted": False, "deleted_at": None},
+            )
+            .returning(User)
+            .execution_options(populate_existing=True)
+        )
+        result = await self._session.scalars(query)
+        return result.one()
 
     async def update_language(self, user_id: UUID, language: str) -> None:
         """Обновить язык интерфейса пользователя."""
