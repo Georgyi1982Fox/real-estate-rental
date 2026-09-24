@@ -1,5 +1,6 @@
 import enum
 from decimal import Decimal
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, Numeric, String
@@ -7,6 +8,10 @@ from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
+
+if TYPE_CHECKING:
+    # TASK-007: добавлены недостающие импорты для аннотаций relationship (mypy name-defined).
+    from .users import User
 
 
 class PaymentProvider(str, enum.Enum):

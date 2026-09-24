@@ -11,7 +11,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base, SoftDeleteMixin
 
 if TYPE_CHECKING:
-    from .listings import Listing
+    # TASK-007: добавлены недостающие импорты для аннотаций relationship (mypy name-defined).
+    from .favorites import Favorite
+    from .payments import Payment
 
 
 class UserRole(str, enum.Enum):

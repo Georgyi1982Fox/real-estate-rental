@@ -11,7 +11,9 @@ from .base import Base, SoftDeleteMixin
 
 if TYPE_CHECKING:
     from .districts import District
-    from .users import Favorite
+    # TASK-007: Favorite импортировался из .users, где его нет; Embedding не импортировался.
+    from .embeddings import Embedding
+    from .favorites import Favorite
 
 
 class ListingStatus(str, enum.Enum):
