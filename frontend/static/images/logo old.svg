@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
-  <title id="title">Bina.ai</title>
-  <desc id="desc">Bina.ai logo</desc>
-  <rect width="64" height="64" rx="16" fill="#2563EB"/>
-  <path d="M20 47V17h15.5C42.2 17 47 20.6 47 26c0 3.1-1.7 5.6-4.7 7 3.9 1.3 6 4.2 6 7.8C48.3 46.3 43.4 47 35.5 47H20Zm8-18h7c2.8 0 4.2-.9 4.2-2.8 0-1.8-1.4-2.7-4.2-2.7h-7V29Zm0 11h7.8c3 0 4.4-.9 4.4-2.9s-1.4-3-4.4-3H28v5.9Z" fill="white"/>
-</svg>

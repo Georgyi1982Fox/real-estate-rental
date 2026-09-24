@@ -8,22 +8,64 @@
         "en": "Cozy apartment in Saburtalo"
       },
       "description": {
-        "ka": "ბინა ახლოს მეტროსთან.",
-        "ru": "Квартира рядом с метро.",
-        "en": "Apartment near the metro."
+        "ka": "ნათელი და მყუდრო ერთოთახიანი ბინა საბურთალოზე, მეტრო „დელისიდან“ 5 წუთის სავალზე. ბინა სრულად არის აღჭურვილი ავეჯით და ტექნიკით: სარეცხი მანქანა, კონდიციონერი, მაცივარი და ჩაშენებული სამზარეულო. ფანჯრები ეზოსკენ გადის, ამიტომ ღამით წყნარია.\n\nშენობა ახალია, ლიფტით და დაცვით. ახლოს არის სუპერმარკეტები, აფთიაქები, კაფეები და პარკი. იდეალურია ერთი ადამიანისთვის ან წყვილისთვის.\n\nმინიმალური ვადა — 6 თვე. კომუნალური გადასახადები ფასში არ შედის.",
+        "ru": "Светлая и уютная однокомнатная квартира в Сабуртало, в 5 минутах пешком от метро «Делиси». Квартира полностью меблирована и оборудована техникой: стиральная машина, кондиционер, холодильник и встроенная кухня. Окна выходят во двор, поэтому ночью тихо.\n\nДом новый, с лифтом и охраной. Рядом супермаркеты, аптеки, кафе и парк. Идеально для одного человека или пары.\n\nМинимальный срок — 6 месяцев. Коммунальные платежи в цену не входят.",
+        "en": "A bright and cozy one-room apartment in Saburtalo, a 5-minute walk from Delisi metro station. Fully furnished and equipped: washing machine, air conditioning, fridge and a built-in kitchen. The windows face the courtyard, so it is quiet at night.\n\nThe building is new, with an elevator and security. Supermarkets, pharmacies, cafés and a park are nearby. Ideal for one person or a couple.\n\nMinimum term is 6 months. Utilities are not included in the price."
       },
-      "price": 1200,
+      "price": 650,
       "currency": "GEL",
-      "rooms": 2,
+      "rooms": 1,
       "bedrooms": 1,
-      "area": 65,
-      "district": "Saburtalo",
+      "area": 38,
+      "floor": 5,
+      "total_floors": 12,
+      "deposit": 650,
+      "district": "saburtalo",
       "city": "Tbilisi",
-      "images": [],
-      "rating": 4.8
+      "address": {
+        "ka": "ვაჟა-ფშაველას გამზირი 21, თბილისი",
+        "ru": "пр. Важа-Пшавела 21, Тбилиси",
+        "en": "21 Vazha-Pshavela Ave, Tbilisi"
+      },
+      "features": ["furnished", "balcony", "air_conditioning", "washing_machine", "internet", "elevator"],
+      "owner": {
+        "name": { "ka": "ნინო", "ru": "Нино", "en": "Nino" },
+        "phone": "+995 555 12 34 56",
+        "telegram": "bina_demo_owner"
+      },
+      "images": [
+        "/static/images/placeholders/living-room.svg",
+        "/static/images/placeholders/bedroom.svg",
+        "/static/images/placeholders/kitchen.svg",
+        "/static/images/placeholders/balcony.svg"
+      ],
+      "similar_ids": [2, 4, 9],
+      "rating": 4.5
     },
     {
       "id": 2,
+      "title": {
+        "ka": "ბინა საბურთალოზე, ევროპის სკვერთან",
+        "ru": "Квартира в Сабуртало, у Парка Европы",
+        "en": "Apartment in Saburtalo, near Europe Square"
+      },
+      "description": {
+        "ka": "ახალაშენებული კორპუსი, საკუთარი ეზო.",
+        "ru": "Новостройка, закрытый двор.",
+        "en": "New building with a private yard."
+      },
+      "price": 1150,
+      "currency": "GEL",
+      "rooms": 3,
+      "bedrooms": 2,
+      "area": 88,
+      "district": "saburtalo",
+      "city": "Tbilisi",
+      "images": ["/static/images/placeholders/bedroom.svg"],
+      "rating": 4.8
+    },
+    {
+      "id": 3,
       "title": {
         "ka": "ბინა ვაკეში",
         "ru": "Квартира в Ваке",
@@ -39,13 +81,35 @@
       "rooms": 3,
       "bedrooms": 2,
       "area": 82,
-      "district": "Vake",
+      "district": "vake",
       "city": "Tbilisi",
       "images": [],
       "rating": 4.9
     },
     {
-      "id": 3,
+      "id": 4,
+      "title": {
+        "ka": "ერთოთახიანი ბინა ვაკეში",
+        "ru": "Однокомнатная квартира в Ваке",
+        "en": "One-room apartment in Vake"
+      },
+      "description": {
+        "ka": "ბინა ვაჟა-ფშაველას გამზირთან ახლოს.",
+        "ru": "Рядом с проспектом Важа-Пшавела.",
+        "en": "Near Vazha-Pshavela avenue."
+      },
+      "price": 950,
+      "currency": "GEL",
+      "rooms": 1,
+      "bedrooms": 1,
+      "area": 45,
+      "district": "vake",
+      "city": "Tbilisi",
+      "images": ["/static/images/placeholders/kitchen.svg"],
+      "rating": 4.6
+    },
+    {
+      "id": 5,
       "title": {
         "ka": "ბინა ვერაზე",
         "ru": "Квартира в Вере",
@@ -61,7 +125,161 @@
       "rooms": 2,
       "bedrooms": 1,
       "area": 58,
-      "district": "Vera",
+      "district": "vera",
+      "city": "Tbilisi",
+      "images": [],
+      "rating": 4.7
+    },
+    {
+      "id": 6,
+      "title": {
+        "ka": "სტუდიო ვერაზე",
+        "ru": "Студия в Вере",
+        "en": "Studio in Vera"
+      },
+      "description": {
+        "ka": "პატარა საოჯახო ბინა, ავეჯით.",
+        "ru": "Небольшая квартира с мебелью.",
+        "en": "Small furnished studio."
+      },
+      "price": 480,
+      "currency": "GEL",
+      "rooms": 1,
+      "bedrooms": 1,
+      "area": 32,
+      "district": "vera",
+      "city": "Tbilisi",
+      "images": [],
+      "rating": 4.3
+    },
+    {
+      "id": 7,
+      "title": {
+        "ka": "ბინა ძველ თბილისში",
+        "ru": "Квартира в Старом Тбилиси",
+        "en": "Apartment in Old Tbilisi"
+      },
+      "description": {
+        "ka": "ისტორიულ უბანში, აივნით.",
+        "ru": "В историческом районе, с балконом.",
+        "en": "In the historic district, with a balcony."
+      },
+      "price": 1050,
+      "currency": "GEL",
+      "rooms": 2,
+      "bedrooms": 1,
+      "area": 62,
+      "district": "old_tbilisi",
+      "city": "Tbilisi",
+      "images": [],
+      "rating": 4.9
+    },
+    {
+      "id": 8,
+      "title": {
+        "ka": "ბინა ძველ თბილისში, მტკვრის სანაპიროსთან",
+        "ru": "Квартира в Старом Тбилиси, у набережной",
+        "en": "Apartment in Old Tbilisi, riverside"
+      },
+      "description": {
+        "ka": "ხედი მტკვარზე, დიდი ტერასა.",
+        "ru": "Вид на реку, большая терраса.",
+        "en": "River view, large terrace."
+      },
+      "price": 1950,
+      "currency": "GEL",
+      "rooms": 4,
+      "bedrooms": 3,
+      "area": 115,
+      "district": "old_tbilisi",
+      "city": "Tbilisi",
+      "images": [],
+      "rating": 5.0
+    },
+    {
+      "id": 9,
+      "title": {
+        "ka": "ბინა დიდუბეში",
+        "ru": "Квартира в Дидубе",
+        "en": "Apartment in Didube"
+      },
+      "description": {
+        "ka": "მეტროსთან ახლოს, გარემონტებული.",
+        "ru": "Рядом с метро, ремонт сделан.",
+        "en": "Near the metro, renovated."
+      },
+      "price": 720,
+      "currency": "GEL",
+      "rooms": 2,
+      "bedrooms": 1,
+      "area": 54,
+      "district": "didube",
+      "city": "Tbilisi",
+      "images": ["/static/images/placeholders/living-room.svg"],
+      "rating": 4.4
+    },
+    {
+      "id": 10,
+      "title": {
+        "ka": "ორსართულიანი ბინა დიდუბეში",
+        "ru": "Двухуровневая квартира в Дидубе",
+        "en": "Duplex apartment in Didube"
+      },
+      "description": {
+        "ka": "ორსართულიანი, საკუთარი პარკინგით.",
+        "ru": "Двухуровневая, с парковкой.",
+        "en": "Duplex layout with private parking."
+      },
+      "price": 1280,
+      "currency": "GEL",
+      "rooms": 3,
+      "bedrooms": 2,
+      "area": 95,
+      "district": "didube",
+      "city": "Tbilisi",
+      "images": [],
+      "rating": 4.6
+    },
+    {
+      "id": 11,
+      "title": {
+        "ka": "ბინა ისანში",
+        "ru": "Квартира в Исани",
+        "en": "Apartment in Isani"
+      },
+      "description": {
+        "ka": "ჩუმ ეზოში, ახლოს პარკთან.",
+        "ru": "В тихом дворе, рядом с парком.",
+        "en": "Quiet courtyard, near the park."
+      },
+      "price": 890,
+      "currency": "GEL",
+      "rooms": 2,
+      "bedrooms": 1,
+      "area": 60,
+      "district": "isani",
+      "city": "Tbilisi",
+      "images": [],
+      "rating": 4.5
+    },
+    {
+      "id": 12,
+      "title": {
+        "ka": "ვრცელი ბინა ისანში",
+        "ru": "Просторная квартира в Исани",
+        "en": "Spacious apartment in Isani"
+      },
+      "description": {
+        "ka": "ოჯახური ბინა, ორი აივანი.",
+        "ru": "Семейная квартира с двумя балконами.",
+        "en": "Family apartment with two balconies."
+      },
+      "price": 1700,
+      "currency": "GEL",
+      "rooms": 4,
+      "bedrooms": 3,
+      "area": 108,
+      "district": "isani",
       "city": "Tbilisi",
       "images": [],
       "rating": 4.7
@@ -70,27 +288,27 @@
   "districts": [
     {
       "id": "saburtalo",
-      "name": {
-        "ka": "საბურთალო",
-        "ru": "Сабуртало",
-        "en": "Saburtalo"
-      }
+      "name": { "ka": "საბურთალო", "ru": "Сабуртало", "en": "Saburtalo" }
     },
     {
       "id": "vake",
-      "name": {
-        "ka": "ვაკე",
-        "ru": "Ваке",
-        "en": "Vake"
-      }
+      "name": { "ka": "ვაკე", "ru": "Ваке", "en": "Vake" }
     },
     {
       "id": "vera",
-      "name": {
-        "ka": "ვერა",
-        "ru": "Вера",
-        "en": "Vera"
-      }
+      "name": { "ka": "ვერა", "ru": "Вера", "en": "Vera" }
+    },
+    {
+      "id": "old_tbilisi",
+      "name": { "ka": "ძველი თბილისი", "ru": "Старый Тбилиси", "en": "Old Tbilisi" }
+    },
+    {
+      "id": "didube",
+      "name": { "ka": "დიდუბე", "ru": "Дидубе", "en": "Didube" }
+    },
+    {
+      "id": "isani",
+      "name": { "ka": "ისანი", "ru": "Исани", "en": "Isani" }
     }
   ],
   "user": {
