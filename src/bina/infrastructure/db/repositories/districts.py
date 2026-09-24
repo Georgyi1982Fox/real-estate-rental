@@ -26,6 +26,16 @@ class DistrictsRepository(IDistrictsRepository):
         result = await self._session.execute(query)
         return result.scalar_one_or_none()
 
+    async def list_all(self) -> list[District]:
+        """Получить все (не удалённые) районы, отсортированные по названию."""
+        query = (
+            select(District)
+            .where(District.is_deleted.is_(False))
+            .order_by(District.name_ru)
+        )
+        result = await self._session.execute(query)
+        return list(result.scalars().all())
+
     async def create_district(self, name: str) -> District:
         """Создать новый район."""
         # Создаем район с одинаковым названием на всех языках
