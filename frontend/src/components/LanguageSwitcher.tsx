@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { LANGUAGES } from '../i18n/strings';
+import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 
 export default function LanguageSwitcher() {
@@ -33,7 +34,10 @@ export default function LanguageSwitcher() {
         aria-haspopup="true"
         aria-controls="language-menu"
         aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => {
+          haptic('light');
+          setOpen((value) => !value);
+        }}
       >
         {lang.toUpperCase()}
       </button>
@@ -51,6 +55,7 @@ export default function LanguageSwitcher() {
                 aria-current={active ? 'true' : undefined}
                 className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-sm transition-colors hover:bg-[var(--surface-hover)] ${active ? 'font-semibold text-[var(--primary)]' : 'text-[var(--text-primary)]'}`}
                 onClick={() => {
+                  if (!active) haptic('selection');
                   setLang(code);
                   setOpen(false);
                 }}

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { fill } from '../lib/format';
+import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 
 interface GalleryProps {
@@ -40,10 +41,11 @@ export default function Gallery({ images, alt }: GalleryProps) {
       const track = trackRef.current;
       if (!track) return;
       const target = Math.max(0, Math.min(total - 1, index));
+      if (target !== current) haptic('selection');
       track.scrollTo({ left: target * track.clientWidth, behavior: 'smooth' });
       setCurrent(target);
     },
-    [total],
+    [total, current],
   );
 
   const handleKeyDown = (event: KeyboardEvent<HTMLUListElement>) => {

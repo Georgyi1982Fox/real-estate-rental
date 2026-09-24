@@ -3,6 +3,7 @@ import type { Listing } from '../api/types';
 import type { DistrictNames } from '../hooks/useDistricts';
 import { useFavorite } from '../hooks/useFavorite';
 import { formatPrice, tr } from '../lib/format';
+import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 
 interface ListingCardProps {
@@ -73,6 +74,7 @@ export default function ListingCard({ listing, districtNames, headingLevel = 'h2
             <Heading className="listing-card__title break-words text-base font-semibold leading-6 text-[var(--text-primary)]">
               <Link
                 to={`/listing/${listing.id}`}
+                onClick={() => haptic('light')}
                 className="listing-card__link after:absolute after:inset-0 after:rounded-[var(--radius-lg)] after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-[var(--primary)]"
               >
                 {title}
