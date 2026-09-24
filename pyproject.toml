@@ -45,6 +45,11 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "TID", "PTH", "RUF", "BLE", "UP"]
+# Кириллические буквы, похожие на латинские: в русских docstrings это не ошибка (RUF001-003)
+allowed-confusables = [
+    "а", "в", "е", "з", "к", "м", "н", "о", "р", "с", "т", "у", "х", "ь",
+    "А", "В", "Е", "З", "К", "М", "Н", "О", "Р", "С", "Т", "У", "Х",
+]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
@@ -65,6 +70,7 @@ warn_unused_ignores = true
 [tool.pytest.ini_options]
 minversion = "7.0"
 testpaths = ["tests"]
+pythonpath = ["."]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
@@ -73,6 +79,8 @@ addopts = [
     "--strict-config",
     "--tb=short",
     "--asyncio-mode=auto",
+    # unit/ и integration/ содержат одноимённые test_*.py без __init__.py
+    "--import-mode=importlib",
 ]
 asyncio_mode = "auto"
 filterwarnings = [
