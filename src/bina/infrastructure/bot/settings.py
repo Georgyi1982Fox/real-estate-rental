@@ -74,12 +74,24 @@ class BotSettings:
             value = source.get(name, "").strip()
             return value or None
 
+        def get_int(name: str, default: int) -> int:
+            value = get(name)
+            if value is None:
+                return default
+            try:
+                return int(value)
+            except ValueError as exc:
+                raise BotConfigError(f"{name} must be an integer, got {value!r}") from exc
+
+        raw_mode = (get("BOT_MODE") or BotMode.POLLING).lower()
         try:
-            mode = BotMode((get("BOT_MODE") or BotMode.POLLING).lower())
-            port = int(get("BOT_WEBAPP_PORT") or 8080)
-            page_size = int(get("BOT_PAGE_SIZE") or 5)
+            mode = BotMode(raw_mode)
         except ValueError as exc:
-            raise BotConfigError(str(exc)) from exc
+            raise BotConfigError(
+                f"BOT_MODE must be 'polling' or 'webhook', got {raw_mode!r}"
+            ) from exc
+        port = get_int("BOT_WEBAPP_PORT", 8080)
+        page_size = get_int("BOT_PAGE_SIZE", 5)
 
         return cls(
             token=get("BOT_TOKEN") or "",

@@ -30,6 +30,7 @@ dev = [
 
 [project.scripts]
 bina-scrape = "src.bina.infrastructure.scrapers.cli:main"
+bina-bot = "src.bina.infrastructure.bot.cli:main"
 
 [build-system]
 requires = ["hatchling"]
