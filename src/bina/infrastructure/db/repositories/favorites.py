@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import delete, func, select
@@ -41,6 +42,21 @@ class FavoritesRepository(IFavoritesRepository):
         )
         result = await self._session.execute(query)
         return result.scalar_one_or_none() is not None
+
+    async def filter_favorite_ids(
+        self,
+        user_id: UUID,
+        listing_ids: Sequence[UUID],
+    ) -> set[UUID]:
+        """Вернуть подмножество ``listing_ids``, которые есть в избранном."""
+        if not listing_ids:
+            return set()
+        query = select(Favorite.listing_id).where(
+            Favorite.user_id == user_id,
+            Favorite.listing_id.in_(listing_ids),
+        )
+        result = await self._session.execute(query)
+        return set(result.scalars().all())
 
     async def list_by_user(
         self,

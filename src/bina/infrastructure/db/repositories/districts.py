@@ -26,6 +26,12 @@ class DistrictsRepository(IDistrictsRepository):
         result = await self._session.execute(query)
         return result.scalar_one_or_none()
 
+    async def get_by_id(self, district_id: UUID) -> District | None:
+        """Получить район по ID."""
+        query = select(District).where(District.id == district_id)
+        result = await self._session.execute(query)
+        return result.scalar_one_or_none()
+
     async def list_all(self) -> list[District]:
         """Получить все (не удалённые) районы, отсортированные по названию."""
         query = (

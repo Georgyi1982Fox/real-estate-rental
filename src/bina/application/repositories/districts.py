@@ -14,6 +14,11 @@ class IDistrictsRepository(Protocol):
         ...
     
     @abstractmethod
+    async def get_by_id(self, district_id: UUID) -> District | None:
+        """Получить район по ID."""
+        ...
+
+    @abstractmethod
     async def list_all(self) -> list[District]:
         """Получить все (не удалённые) районы, отсортированные по названию."""
         ...

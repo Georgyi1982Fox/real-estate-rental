@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from collections.abc import Sequence
 from typing import Protocol
 from uuid import UUID
 
@@ -21,6 +22,15 @@ class IFavoritesRepository(Protocol):
     @abstractmethod
     async def exists(self, user_id: UUID, listing_id: UUID) -> bool:
         """Проверить, находится ли объявление в избранном."""
+        ...
+
+    @abstractmethod
+    async def filter_favorite_ids(
+        self,
+        user_id: UUID,
+        listing_ids: Sequence[UUID],
+    ) -> set[UUID]:
+        """Вернуть подмножество ``listing_ids``, которые есть в избранном."""
         ...
 
     @abstractmethod
