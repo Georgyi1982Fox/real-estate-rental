@@ -24,8 +24,10 @@ class RegistrationMiddleware(BaseMiddleware):
     - ``user_language``: язык пользователя строкой. Нужен обработчику ошибок:
       после rollback атрибуты ``user`` недоступны (объект expired и detached).
 
-    Апдейты без отправителя-человека (посты каналов, другие боты) проходят
-    дальше без ``user``. Должен регистрироваться после :class:`DbSessionMiddleware`.
+    Апдейты без отправителя-человека (посты каналов, анонимные админы групп,
+    другие боты) отбрасываются: все обработчики бота рассчитаны на
+    зарегистрированного пользователя. Должен регистрироваться после
+    :class:`DbSessionMiddleware`.
     """
 
     async def __call__(
@@ -37,7 +39,7 @@ class RegistrationMiddleware(BaseMiddleware):
         """Регистрирует пользователя и передаёт его обработчику."""
         telegram_user: TelegramUser | None = data.get(EVENT_FROM_USER_KEY)
         if telegram_user is None or telegram_user.is_bot:
-            return await handler(event, data)
+            return None
 
         session: AsyncSession = data["session"]
         result = await RegisterUserUseCase(UsersRepository(session)).execute(

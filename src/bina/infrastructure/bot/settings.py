@@ -62,8 +62,16 @@ class BotSettings:
         return self.webhook_base_url.rstrip("/") + self.webhook_path
 
     @classmethod
-    def from_env(cls, env: Mapping[str, str] | None = None) -> "BotSettings":
+    def from_env(
+        cls,
+        env: Mapping[str, str] | None = None,
+        *,
+        mode: BotMode | None = None,
+    ) -> "BotSettings":
         """Создаёт настройки из переменных окружения.
+
+        ``mode`` (если задан) имеет приоритет над ``BOT_MODE``: так команда CLI
+        ``bina-bot polling`` не зависит от ``BOT_MODE=webhook`` в окружении.
 
         Raises:
             BotConfigError: если настройки отсутствуют или некорректны.
@@ -83,13 +91,14 @@ class BotSettings:
             except ValueError as exc:
                 raise BotConfigError(f"{name} must be an integer, got {value!r}") from exc
 
-        raw_mode = (get("BOT_MODE") or BotMode.POLLING).lower()
-        try:
-            mode = BotMode(raw_mode)
-        except ValueError as exc:
-            raise BotConfigError(
-                f"BOT_MODE must be 'polling' or 'webhook', got {raw_mode!r}"
-            ) from exc
+        if mode is None:
+            raw_mode = (get("BOT_MODE") or BotMode.POLLING).lower()
+            try:
+                mode = BotMode(raw_mode)
+            except ValueError as exc:
+                raise BotConfigError(
+                    f"BOT_MODE must be 'polling' or 'webhook', got {raw_mode!r}"
+                ) from exc
         port = get_int("BOT_WEBAPP_PORT", 8080)
         page_size = get_int("BOT_PAGE_SIZE", 5)
 

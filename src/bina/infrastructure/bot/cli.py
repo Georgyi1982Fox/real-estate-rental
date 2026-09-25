@@ -13,9 +13,9 @@ from src.bina.infrastructure.bot.settings import BotConfigError, BotMode, BotSet
 def _load_settings(mode: BotMode, **overrides: object) -> BotSettings:
     """Читает настройки из окружения и применяет опции командной строки."""
     try:
-        base = BotSettings.from_env()
+        base = BotSettings.from_env(mode=mode)
         changes = {key: value for key, value in overrides.items() if value is not None}
-        return dataclasses.replace(base, mode=mode, **changes)  # type: ignore[arg-type]
+        return dataclasses.replace(base, **changes)  # type: ignore[arg-type]
     except BotConfigError as exc:
         raise click.ClickException(str(exc)) from exc
 
