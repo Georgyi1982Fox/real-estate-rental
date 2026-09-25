@@ -8,7 +8,7 @@ from sqlalchemy import BigInteger, ForeignKey, Numeric, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import Base, SoftDeleteMixin
+from .base import Base, SoftDeleteMixin, value_enum
 
 if TYPE_CHECKING:
     # TASK-007: добавлены недостающие импорты для аннотаций relationship (mypy name-defined).
@@ -54,7 +54,9 @@ class User(Base, SoftDeleteMixin):
         default="ru",
         nullable=False,
     )
+    # TASK-007: value_enum: хранить значения enum, как в миграции
     role: Mapped[UserRole] = mapped_column(
+        value_enum(UserRole, "userrole"),
         default=UserRole.USER,
         nullable=False,
     )
@@ -64,6 +66,7 @@ class User(Base, SoftDeleteMixin):
         nullable=False,
     )
     subscription_tier: Mapped[SubscriptionTier] = mapped_column(
+        value_enum(SubscriptionTier, "subscriptiontier"),
         default=SubscriptionTier.FREE,
         nullable=False,
     )

@@ -7,7 +7,7 @@ from sqlalchemy import Boolean, ForeignKey, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import Base, SoftDeleteMixin
+from .base import Base, SoftDeleteMixin, value_enum
 
 if TYPE_CHECKING:
     from .districts import District
@@ -89,7 +89,9 @@ class Listing(Base, SoftDeleteMixin):
         default=0,
         nullable=False,
     )
+    # TASK-007: value_enum: хранить значения enum, как в миграции
     status: Mapped[ListingStatus] = mapped_column(
+        value_enum(ListingStatus, "listingstatus"),
         default=ListingStatus.ACTIVE,
         nullable=False,
     )
