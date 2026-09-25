@@ -6,7 +6,7 @@ import httpx
 import structlog
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from src.bina.application.ports.scraper import BaseScraper, RawListing
+from bina.application.ports.scraper import BaseScraper, RawListing
 
 logger = structlog.get_logger(__name__)
 

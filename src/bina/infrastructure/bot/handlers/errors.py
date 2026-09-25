@@ -2,8 +2,8 @@ import structlog
 from aiogram import Router
 from aiogram.types import ErrorEvent
 
-from src.bina.application.use_cases.register_user import DEFAULT_LANGUAGE
-from src.bina.infrastructure.bot.texts import t
+from bina.application.use_cases.register_user import DEFAULT_LANGUAGE
+from bina.infrastructure.bot.texts import t
 
 logger = structlog.get_logger(__name__)
 

@@ -3,22 +3,22 @@ from aiogram.filters import Command
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.bina.application.errors import ListingNotFoundError
-from src.bina.application.use_cases.favorites import GetFavoritesUseCase, ToggleFavoriteUseCase
-from src.bina.infrastructure.bot.formatters import format_listings
-from src.bina.infrastructure.bot.handlers.common import edit_or_answer
-from src.bina.infrastructure.bot.keyboards.callbacks import (
+from bina.application.errors import ListingNotFoundError
+from bina.application.use_cases.favorites import GetFavoritesUseCase, ToggleFavoriteUseCase
+from bina.infrastructure.bot.formatters import format_listings
+from bina.infrastructure.bot.handlers.common import edit_or_answer
+from bina.infrastructure.bot.keyboards.callbacks import (
     FavoritesPageCallback,
     FavoriteToggleCallback,
     NoopCallback,
 )
-from src.bina.infrastructure.bot.keyboards.favorites import favorites_keyboard
-from src.bina.infrastructure.bot.keyboards.listings import flip_favorite_button
-from src.bina.infrastructure.bot.settings import BotSettings
-from src.bina.infrastructure.bot.texts import all_variants, t
-from src.bina.infrastructure.db.models import User
-from src.bina.infrastructure.db.repositories.favorites import FavoritesRepository
-from src.bina.infrastructure.db.repositories.listings import ListingsRepository
+from bina.infrastructure.bot.keyboards.favorites import favorites_keyboard
+from bina.infrastructure.bot.keyboards.listings import flip_favorite_button
+from bina.infrastructure.bot.settings import BotSettings
+from bina.infrastructure.bot.texts import all_variants, t
+from bina.infrastructure.db.models import User
+from bina.infrastructure.db.repositories.favorites import FavoritesRepository
+from bina.infrastructure.db.repositories.listings import ListingsRepository
 
 
 async def cmd_favorites(

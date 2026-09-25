@@ -5,8 +5,8 @@ import pytest
 from aiogram.methods import SendMessage, SetMyCommands, SetWebhook
 from aiohttp.test_utils import TestClient, TestServer
 
-from src.bina.infrastructure.bot.runner import HEALTH_PATH, build_webhook_app
-from src.bina.infrastructure.bot.settings import BotMode, BotSettings
+from bina.infrastructure.bot.runner import HEALTH_PATH, build_webhook_app
+from bina.infrastructure.bot.settings import BotMode, BotSettings
 from tests.support.telegram import TOKEN
 
 from .conftest import BotHarness

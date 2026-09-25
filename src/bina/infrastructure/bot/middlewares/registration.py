@@ -8,8 +8,8 @@ from aiogram.types import TelegramObject
 from aiogram.types import User as TelegramUser
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.bina.application.use_cases.register_user import RegisterUserUseCase
-from src.bina.infrastructure.db.repositories.users import UsersRepository
+from bina.application.use_cases.register_user import RegisterUserUseCase
+from bina.infrastructure.db.repositories.users import UsersRepository
 
 logger = structlog.get_logger(__name__)
 

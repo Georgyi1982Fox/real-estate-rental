@@ -5,9 +5,9 @@ from aiogram import Bot, Dispatcher
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiohttp import web
 
-from src.bina.infrastructure.bot.factory import create_bot, create_dispatcher, setup_bot_ui
-from src.bina.infrastructure.bot.settings import BotSettings
-from src.bina.infrastructure.db.session.manager import DatabaseManager
+from bina.infrastructure.bot.factory import create_bot, create_dispatcher, setup_bot_ui
+from bina.infrastructure.bot.settings import BotSettings
+from bina.infrastructure.db.session.manager import DatabaseManager
 
 logger = structlog.get_logger(__name__)
 

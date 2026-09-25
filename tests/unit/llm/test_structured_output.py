@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock
 import pytest
 from pydantic import BaseModel
 
-from src.bina.infrastructure.llm.structured_output import complete_structured_with_validation
+from bina.infrastructure.llm.structured_output import complete_structured_with_validation
 
 
 class _TestModel(BaseModel):

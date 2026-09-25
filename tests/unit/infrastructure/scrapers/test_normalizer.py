@@ -1,7 +1,7 @@
 import pytest
 
-from src.bina.application.ports.scraper import RawListing
-from src.bina.infrastructure.scrapers.normalizer import ListingNormalizer
+from bina.application.ports.scraper import RawListing
+from bina.infrastructure.scrapers.normalizer import ListingNormalizer
 
 
 def test_normalize_price_gel():

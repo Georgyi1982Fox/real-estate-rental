@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.bina.infrastructure.db.models import Embedding
+from bina.infrastructure.db.models import Embedding
 
 
 class EmbeddingsRepository:

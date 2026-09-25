@@ -5,8 +5,8 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.bina.application.repositories.favorites import IFavoritesRepository
-from src.bina.infrastructure.db.models import Favorite, Listing
+from bina.application.repositories.favorites import IFavoritesRepository
+from bina.infrastructure.db.models import Favorite, Listing
 
 
 class FavoritesRepository(IFavoritesRepository):

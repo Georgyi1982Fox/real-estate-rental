@@ -3,7 +3,7 @@ from uuid import uuid4
 
 import pytest
 
-from src.bina.infrastructure.bot.formatters import (
+from bina.infrastructure.bot.formatters import (
     district_name,
     format_listing,
     format_listings,
@@ -12,7 +12,7 @@ from src.bina.infrastructure.bot.formatters import (
     listing_title,
     truncate,
 )
-from src.bina.infrastructure.db.models import District, Listing
+from bina.infrastructure.db.models import District, Listing
 
 
 def make_listing(**overrides: object) -> Listing:

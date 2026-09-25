@@ -4,11 +4,11 @@ from unittest.mock import AsyncMock
 import pytest
 from uuid import UUID
 
-from src.bina.application.dtos.listing_dto import TranslatedListingDTO
-from src.bina.application.use_cases.translate_listing import TranslateListingUseCase
-from src.bina.infrastructure.db.models import Listing
-from src.bina.infrastructure.llm.llm_factory import LLMFactory
-from src.bina.infrastructure.llm.semantic_cache import SemanticCache
+from bina.application.dtos.listing_dto import TranslatedListingDTO
+from bina.application.use_cases.translate_listing import TranslateListingUseCase
+from bina.infrastructure.db.models import Listing
+from bina.infrastructure.llm.llm_factory import LLMFactory
+from bina.infrastructure.llm.semantic_cache import SemanticCache
 
 
 # Пропускаем тест, если нет API ключа

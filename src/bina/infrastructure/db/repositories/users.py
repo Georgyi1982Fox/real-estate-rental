@@ -4,8 +4,8 @@ from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.bina.application.repositories.users import IUsersRepository
-from src.bina.infrastructure.db.models import User
+from bina.application.repositories.users import IUsersRepository
+from bina.infrastructure.db.models import User
 
 
 class UsersRepository(IUsersRepository):

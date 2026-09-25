@@ -3,9 +3,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from src.bina.application.dtos.listing_search import ListingSearchFilters
-from src.bina.application.use_cases.search_listings import SearchListingsUseCase
-from src.bina.infrastructure.db.models import Listing
+from bina.application.dtos.listing_search import ListingSearchFilters
+from bina.application.use_cases.search_listings import SearchListingsUseCase
+from bina.infrastructure.db.models import Listing
 
 
 @pytest.fixture

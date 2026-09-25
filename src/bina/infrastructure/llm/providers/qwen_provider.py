@@ -5,7 +5,7 @@ import httpx
 import structlog
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from src.bina.application.ports.llm_provider import LLMProvider
+from bina.application.ports.llm_provider import LLMProvider
 
 logger = structlog.get_logger(__name__)
 

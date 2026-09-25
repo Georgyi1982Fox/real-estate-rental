@@ -4,8 +4,8 @@ from urllib.parse import urljoin
 import structlog
 from bs4 import BeautifulSoup
 
-from src.bina.application.ports.scraper import RawListing
-from src.bina.infrastructure.scrapers.base_scraper import BaseWebsiteScraper
+from bina.application.ports.scraper import RawListing
+from bina.infrastructure.scrapers.base_scraper import BaseWebsiteScraper
 
 logger = structlog.get_logger(__name__)
 

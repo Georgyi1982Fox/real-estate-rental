@@ -3,9 +3,9 @@
 from aiogram.types import InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from src.bina.application.use_cases.register_user import SUPPORTED_LANGUAGES
-from src.bina.infrastructure.bot.keyboards.callbacks import LanguageCallback
-from src.bina.infrastructure.bot.texts import LANGUAGE_NAMES
+from bina.application.use_cases.register_user import SUPPORTED_LANGUAGES
+from bina.infrastructure.bot.keyboards.callbacks import LanguageCallback
+from bina.infrastructure.bot.texts import LANGUAGE_NAMES
 
 
 def language_keyboard(current: str) -> InlineKeyboardMarkup:

@@ -2,7 +2,7 @@ from abc import abstractmethod
 from typing import Protocol
 from uuid import UUID
 
-from src.bina.infrastructure.db.models import User
+from bina.infrastructure.db.models import User
 
 
 class IUsersRepository(Protocol):

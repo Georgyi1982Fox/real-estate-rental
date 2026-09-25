@@ -31,15 +31,15 @@ from aiogram.types import (
 from aiogram.types import User as TelegramUser
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from src.bina.application.dtos.listing_search import ListingSearchFilters
-from src.bina.infrastructure.bot import factory as bot_factory
-from src.bina.infrastructure.bot.handlers import favorites as favorites_handlers
-from src.bina.infrastructure.bot.handlers import profile as profile_handlers
-from src.bina.infrastructure.bot.handlers import search as search_handlers
-from src.bina.infrastructure.bot.middlewares import registration
-from src.bina.infrastructure.bot.settings import BotSettings
-from src.bina.infrastructure.db.models import District, Listing, ListingStatus, User
-from src.bina.infrastructure.db.models.users import SubscriptionTier, UserRole
+from bina.application.dtos.listing_search import ListingSearchFilters
+from bina.infrastructure.bot import factory as bot_factory
+from bina.infrastructure.bot.handlers import favorites as favorites_handlers
+from bina.infrastructure.bot.handlers import profile as profile_handlers
+from bina.infrastructure.bot.handlers import search as search_handlers
+from bina.infrastructure.bot.middlewares import registration
+from bina.infrastructure.bot.settings import BotSettings
+from bina.infrastructure.db.models import District, Listing, ListingStatus, User
+from bina.infrastructure.db.models.users import SubscriptionTier, UserRole
 from tests.support.telegram import CHAT_ID, TOKEN, FakeTelegramSession
 
 # --------------------------------------------------------------------------- store

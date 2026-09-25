@@ -30,8 +30,8 @@ dev = [
 ]
 
 [project.scripts]
-bina-scrape = "src.bina.infrastructure.scrapers.cli:main"
-bina-bot = "src.bina.infrastructure.bot.cli:main"
+bina-scrape = "bina.infrastructure.scrapers.cli:main"
+bina-bot = "bina.infrastructure.bot.cli:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -46,6 +46,8 @@ packages = ["src/bina"]
 [tool.ruff]
 target-version = "py312"
 line-length = 100
+# bina лежит в src/: ruff считает его first-party при сортировке импортов
+src = ["src", "."]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "TID", "PTH", "RUF", "BLE", "UP"]
@@ -74,7 +76,8 @@ warn_unused_ignores = true
 [tool.pytest.ini_options]
 minversion = "7.0"
 testpaths = ["tests"]
-pythonpath = ["."]
+# src: пакет bina без установки; .: общие помощники tests.support
+pythonpath = ["src", "."]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]

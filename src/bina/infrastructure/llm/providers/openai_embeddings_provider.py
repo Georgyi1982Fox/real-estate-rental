@@ -4,7 +4,7 @@ import httpx
 import structlog
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from src.bina.infrastructure.llm.providers.base_embeddings_provider import BaseEmbeddingsProvider
+from bina.infrastructure.llm.providers.base_embeddings_provider import BaseEmbeddingsProvider
 
 logger = structlog.get_logger(__name__)
 

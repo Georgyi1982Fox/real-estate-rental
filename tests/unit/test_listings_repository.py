@@ -3,9 +3,9 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.bina.application.repositories.listings import IListingsRepository
-from src.bina.infrastructure.db.models import Listing
-from src.bina.infrastructure.db.repositories.listings import ListingsRepository
+from bina.application.repositories.listings import IListingsRepository
+from bina.infrastructure.db.models import Listing
+from bina.infrastructure.db.repositories.listings import ListingsRepository
 
 
 @pytest.fixture

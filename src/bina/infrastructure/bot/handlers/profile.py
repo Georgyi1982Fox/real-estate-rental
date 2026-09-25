@@ -3,16 +3,16 @@ from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.bina.application.use_cases.register_user import SUPPORTED_LANGUAGES
-from src.bina.infrastructure.bot.formatters import format_number
-from src.bina.infrastructure.bot.handlers.common import edit_or_answer
-from src.bina.infrastructure.bot.keyboards.callbacks import LanguageCallback
-from src.bina.infrastructure.bot.keyboards.menu import main_menu
-from src.bina.infrastructure.bot.keyboards.profile import language_keyboard
-from src.bina.infrastructure.bot.texts import LANGUAGE_NAMES, all_variants, t
-from src.bina.infrastructure.db.models import User
-from src.bina.infrastructure.db.repositories.favorites import FavoritesRepository
-from src.bina.infrastructure.db.repositories.users import UsersRepository
+from bina.application.use_cases.register_user import SUPPORTED_LANGUAGES
+from bina.infrastructure.bot.formatters import format_number
+from bina.infrastructure.bot.handlers.common import edit_or_answer
+from bina.infrastructure.bot.keyboards.callbacks import LanguageCallback
+from bina.infrastructure.bot.keyboards.menu import main_menu
+from bina.infrastructure.bot.keyboards.profile import language_keyboard
+from bina.infrastructure.bot.texts import LANGUAGE_NAMES, all_variants, t
+from bina.infrastructure.db.models import User
+from bina.infrastructure.db.repositories.favorites import FavoritesRepository
+from bina.infrastructure.db.repositories.users import UsersRepository
 
 DATE_FORMAT = "%d.%m.%Y"
 

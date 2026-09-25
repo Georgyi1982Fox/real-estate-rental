@@ -2,9 +2,9 @@ from aiogram import Router
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 
-from src.bina.infrastructure.bot.keyboards.menu import main_menu
-from src.bina.infrastructure.bot.texts import t
-from src.bina.infrastructure.db.models import User
+from bina.infrastructure.bot.keyboards.menu import main_menu
+from bina.infrastructure.bot.texts import t
+from bina.infrastructure.db.models import User
 
 
 async def cmd_start(message: Message, user: User, is_new_user: bool) -> None:

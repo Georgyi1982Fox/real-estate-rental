@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Protocol
 from uuid import UUID
 
-from src.bina.infrastructure.db.models import District
+from bina.infrastructure.db.models import District
 
 
 class IDistrictsRepository(Protocol):

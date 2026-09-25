@@ -12,15 +12,15 @@ from aiogram.types import User as TelegramUser
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from src.bina.application.use_cases.search_listings import SearchListingsUseCase
-from src.bina.infrastructure.bot.factory import create_dispatcher
-from src.bina.infrastructure.bot.keyboards.callbacks import (
+from bina.application.use_cases.search_listings import SearchListingsUseCase
+from bina.infrastructure.bot.factory import create_dispatcher
+from bina.infrastructure.bot.keyboards.callbacks import (
     LanguageCallback,
     SearchCallback,
     SearchStep,
 )
-from src.bina.infrastructure.bot.settings import BotSettings
-from src.bina.infrastructure.db.models import District, Listing
+from bina.infrastructure.bot.settings import BotSettings
+from bina.infrastructure.db.models import District, Listing
 from tests.support.telegram import CHAT_ID, TOKEN, FakeTelegramSession
 
 TG_USER = TelegramUser(id=CHAT_ID, is_bot=False, first_name="Nino", language_code="ru")

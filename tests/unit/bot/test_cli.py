@@ -3,8 +3,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from click.testing import CliRunner
 
-from src.bina.infrastructure.bot import cli as bot_cli
-from src.bina.infrastructure.bot.settings import BotMode, BotSettings
+from bina.infrastructure.bot import cli as bot_cli
+from bina.infrastructure.bot.settings import BotMode, BotSettings
 
 
 @pytest.fixture(autouse=True)

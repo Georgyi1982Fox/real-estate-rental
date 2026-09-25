@@ -3,7 +3,7 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
-from src.bina.application.dtos.listing_search import ListingSearchFilters
+from bina.application.dtos.listing_search import ListingSearchFilters
 
 
 def test_defaults_are_unbounded() -> None:

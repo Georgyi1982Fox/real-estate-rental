@@ -6,10 +6,10 @@ from decimal import Decimal
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.bina.application.dtos.listing_search import ListingSearchFilters
-from src.bina.infrastructure.db.models import District, Listing, ListingStatus
-from src.bina.infrastructure.db.models.users import SubscriptionTier, UserRole
-from src.bina.infrastructure.db.repositories import (
+from bina.application.dtos.listing_search import ListingSearchFilters
+from bina.infrastructure.db.models import District, Listing, ListingStatus
+from bina.infrastructure.db.models.users import SubscriptionTier, UserRole
+from bina.infrastructure.db.repositories import (
     DistrictsRepository,
     FavoritesRepository,
     ListingsRepository,

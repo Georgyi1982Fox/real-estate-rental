@@ -4,10 +4,10 @@ from uuid import UUID
 from sqlalchemy import ColumnElement, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.bina.application.dtos.listing_search import ListingSearchFilters
-from src.bina.application.ports.scraper import RawListing
-from src.bina.application.repositories.listings import IListingsRepository
-from src.bina.infrastructure.db.models import District, Listing, ListingStatus
+from bina.application.dtos.listing_search import ListingSearchFilters
+from bina.application.ports.scraper import RawListing
+from bina.application.repositories.listings import IListingsRepository
+from bina.infrastructure.db.models import District, Listing, ListingStatus
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -174,7 +174,7 @@ class ListingsRepository(IListingsRepository):
         """Получает или создает район."""
         # В реальной реализации нужно добавить репозиторий районов
         # Пока вернем первый найденный район или создадим заглушку
-        from src.bina.infrastructure.db.repositories.districts import DistrictsRepository
+        from bina.infrastructure.db.repositories.districts import DistrictsRepository
         
         districts_repo = DistrictsRepository(self._session)
         district = await districts_repo.get_by_name(district_name)

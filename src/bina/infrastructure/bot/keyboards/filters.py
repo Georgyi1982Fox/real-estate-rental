@@ -3,10 +3,10 @@
 from dataclasses import dataclass
 from decimal import Decimal
 
-from src.bina.application.dtos.listing_search import ListingSearchFilters
-from src.bina.infrastructure.bot.formatters import format_number
-from src.bina.infrastructure.bot.keyboards.callbacks import SearchCallback
-from src.bina.infrastructure.bot.texts import t
+from bina.application.dtos.listing_search import ListingSearchFilters
+from bina.infrastructure.bot.formatters import format_number
+from bina.infrastructure.bot.keyboards.callbacks import SearchCallback
+from bina.infrastructure.bot.texts import t
 
 
 @dataclass(frozen=True, slots=True)

@@ -2,8 +2,8 @@ from dataclasses import dataclass
 
 import structlog
 
-from src.bina.application.repositories.users import IUsersRepository
-from src.bina.infrastructure.db.models import User
+from bina.application.repositories.users import IUsersRepository
+from bina.infrastructure.db.models import User
 
 logger = structlog.get_logger(__name__)
 

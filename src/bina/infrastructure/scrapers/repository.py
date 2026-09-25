@@ -1,9 +1,9 @@
 
 import structlog
 
-from src.bina.application.ports.scraper import RawListing
-from src.bina.infrastructure.db.repositories.listings import ListingsRepository
-from src.bina.infrastructure.llm.llm_factory import LLMFactory
+from bina.application.ports.scraper import RawListing
+from bina.infrastructure.db.repositories.listings import ListingsRepository
+from bina.infrastructure.llm.llm_factory import LLMFactory
 
 logger = structlog.get_logger(__name__)
 
@@ -59,7 +59,7 @@ class ScrapedListingsRepository:
             embedding = await embeddings_provider.generate_embedding(text)
 
             # Сохраняем embedding в БД
-            from src.bina.infrastructure.db.repositories.embeddings import EmbeddingsRepository
+            from bina.infrastructure.db.repositories.embeddings import EmbeddingsRepository
 
             embeddings_repo = EmbeddingsRepository(self.listing_repository._session)
             await embeddings_repo.save_embedding(listing.id, embedding)

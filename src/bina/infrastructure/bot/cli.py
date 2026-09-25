@@ -6,8 +6,8 @@ import logging
 
 import click
 
-from src.bina.infrastructure.bot.runner import run_polling, run_webhook
-from src.bina.infrastructure.bot.settings import BotConfigError, BotMode, BotSettings
+from bina.infrastructure.bot.runner import run_polling, run_webhook
+from bina.infrastructure.bot.settings import BotConfigError, BotMode, BotSettings
 
 
 def _load_settings(mode: BotMode, **overrides: object) -> BotSettings:

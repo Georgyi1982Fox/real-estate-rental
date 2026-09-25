@@ -6,12 +6,12 @@ from uuid import UUID
 from aiogram.filters.callback_data import CallbackData
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-from src.bina.application.dtos.pagination import Page
-from src.bina.infrastructure.bot.keyboards.callbacks import (
+from bina.application.dtos.pagination import Page
+from bina.infrastructure.bot.keyboards.callbacks import (
     FavoriteToggleCallback,
     NoopCallback,
 )
-from src.bina.infrastructure.db.models import Listing
+from bina.infrastructure.db.models import Listing
 
 FAV_ON = "★"
 FAV_OFF = "☆"

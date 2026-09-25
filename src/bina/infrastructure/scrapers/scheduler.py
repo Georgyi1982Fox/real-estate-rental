@@ -3,12 +3,12 @@ import structlog
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
-from src.bina.application.ports.scraper import RawListing
-from src.bina.infrastructure.scrapers.deduplicator import ListingDeduplicator
-from src.bina.infrastructure.scrapers.myhome_scraper import MyHomeScraper
-from src.bina.infrastructure.scrapers.normalizer import ListingNormalizer
-from src.bina.infrastructure.scrapers.repository import ScrapedListingsRepository
-from src.bina.infrastructure.scrapers.ss_scraper import SSScraper
+from bina.application.ports.scraper import RawListing
+from bina.infrastructure.scrapers.deduplicator import ListingDeduplicator
+from bina.infrastructure.scrapers.myhome_scraper import MyHomeScraper
+from bina.infrastructure.scrapers.normalizer import ListingNormalizer
+from bina.infrastructure.scrapers.repository import ScrapedListingsRepository
+from bina.infrastructure.scrapers.ss_scraper import SSScraper
 
 logger = structlog.get_logger(__name__)
 
