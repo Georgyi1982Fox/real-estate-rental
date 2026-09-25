@@ -1,3 +1,4 @@
+import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 
 /** Строка поиска по району, улице, комплексу */
@@ -27,6 +28,7 @@ export default function SearchBar() {
       </div>
       <button
         type="button"
+        onClick={() => haptic('light')}
         className="inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--primary)] px-5 py-3 text-sm font-semibold text-white shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--primary-hover)]"
       >
         {ht.search_button}

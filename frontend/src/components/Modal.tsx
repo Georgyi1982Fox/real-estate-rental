@@ -46,7 +46,7 @@ export default function Modal({ open, title, onClose, children }: ModalProps) {
       <article
         ref={panelRef}
         tabIndex={-1}
-        className="modal__panel w-full max-w-lg rounded-t-[var(--radius-lg)] bg-[var(--surface)]/95 p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-[var(--shadow-lg)] outline-none backdrop-blur-md sm:rounded-[var(--radius-lg)] sm:pb-5"
+        className="modal__panel w-full max-w-lg rounded-t-[var(--radius-lg)] bg-[var(--surface)]/95 p-5 pb-[calc(1.25rem+var(--safe-bottom))] shadow-[var(--shadow-lg)] outline-none backdrop-blur-md sm:rounded-[var(--radius-lg)] sm:pb-5"
       >
         <header className="modal__header mb-4 flex items-center justify-between gap-4">
           <h2 id={titleId} className="text-lg font-semibold">

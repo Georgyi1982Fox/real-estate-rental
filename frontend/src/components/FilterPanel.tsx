@@ -1,5 +1,6 @@
 import type { District } from '../api/types';
 import { tr } from '../lib/format';
+import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 
 const PRICE_MIN = 100;
@@ -25,7 +26,12 @@ export default function FilterPanel({ districts }: FilterPanelProps) {
   const ht = t.home;
 
   return (
-    <fieldset className="filter-panel flex flex-wrap gap-4 border-0 p-0" aria-label={ht.filters}>
+    // Лёгкий отклик на смену любого фильтра (событие change всплывает до fieldset)
+    <fieldset
+      className="filter-panel flex flex-wrap gap-4 border-0 p-0"
+      aria-label={ht.filters}
+      onChange={() => haptic('selection')}
+    >
       <legend className="sr-only">{ht.filters}</legend>
 
       <div className="filter-panel__field flex min-w-0 flex-col gap-1">

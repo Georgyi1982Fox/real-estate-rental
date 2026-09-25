@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getWebApp } from '../lib/telegram';
+import { getWebApp, haptic } from '../lib/telegram';
 
 /** Нативная кнопка «Назад» Telegram, пока страница смонтирована; без истории — переход на fallback */
 export function useTelegramBackButton(fallbackPath = '/'): void {
@@ -11,6 +11,7 @@ export function useTelegramBackButton(fallbackPath = '/'): void {
     if (!backButton) return;
 
     const handleClick = () => {
+      haptic('light');
       // React Router хранит индекс записи истории в history.state.idx
       const index = (window.history.state as { idx?: number } | null)?.idx ?? 0;
       if (index > 0) {

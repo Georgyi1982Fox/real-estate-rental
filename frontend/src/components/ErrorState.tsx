@@ -1,3 +1,4 @@
+import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 
 interface ErrorStateProps {
@@ -20,7 +21,10 @@ export default function ErrorState({ onRetry }: ErrorStateProps) {
       <button
         type="button"
         className="mt-1 inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--primary)] px-5 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--primary-hover)] active:scale-[.98]"
-        onClick={onRetry}
+        onClick={() => {
+          haptic('light');
+          onRetry();
+        }}
       >
         ↻ {t.common.retry}
       </button>

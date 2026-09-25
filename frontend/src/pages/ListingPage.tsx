@@ -10,9 +10,11 @@ import ListingSpecs from '../components/ListingSpecs';
 import PhoneReveal from '../components/PhoneReveal';
 import SimilarListings from '../components/SimilarListings';
 import { useApi } from '../hooks/useApi';
+import { useContact } from '../hooks/useContact';
 import { useDistricts } from '../hooks/useDistricts';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
+import { useTelegramMainButton } from '../hooks/useTelegramMainButton';
 import { formatPrice, tr } from '../lib/format';
 import { useI18n } from '../providers/I18nProvider';
 import NotFoundPage from './NotFoundPage';
@@ -31,6 +33,15 @@ export default function ListingPage() {
   );
 
   useTelegramBackButton('/');
+
+  // «Написать»: в Telegram — нативная MainButton внизу экрана, в браузере — обычная кнопка
+  const { contact, loading: contactLoading } = useContact(listing?.id ?? null);
+  const nativeContact = useTelegramMainButton({
+    text: lt.write,
+    onClick: contact,
+    visible: Boolean(listing),
+    loading: contactLoading,
+  });
 
   const title = listing ? tr(listing.title, lang) : '';
   useDocumentTitle(title ? `${title} — Bina.ai` : 'Bina.ai');
@@ -108,10 +119,10 @@ export default function ListingPage() {
                 )}
 
                 <section
-                  className="listing-contact grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-1"
+                  className={`listing-contact grid grid-cols-1 gap-3 lg:grid-cols-1 ${nativeContact ? 'sm:grid-cols-2' : 'sm:grid-cols-3'}`}
                   aria-label={lt.contact}
                 >
-                  <ContactButton listingId={listing.id} />
+                  {!nativeContact && <ContactButton onClick={contact} loading={contactLoading} />}
                   <PhoneReveal listingId={listing.id} />
                   <FavoriteButton />
                 </section>

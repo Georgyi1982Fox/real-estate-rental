@@ -1,5 +1,7 @@
 // Единая точка общения с бэкендом: все запросы идут через apiGet/apiPost
 
+import { getInitData } from '../lib/telegram';
+
 export class ApiError extends Error {
   readonly status: number;
 
@@ -15,12 +17,17 @@ export class ApiError extends Error {
 }
 
 async function request<T>(method: 'GET' | 'POST', path: string, signal?: AbortSignal): Promise<T> {
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  // Внутри Telegram бэкенд проверяет подпись initData и по ней узнаёт пользователя
+  const initData = getInitData();
+  if (initData) headers['X-Telegram-Init-Data'] = initData;
+
   let response: Response;
   try {
     response = await fetch(path, {
       method,
       signal,
-      headers: { Accept: 'application/json' },
+      headers,
       credentials: 'same-origin',
     });
   } catch (error) {

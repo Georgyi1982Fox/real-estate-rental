@@ -1,4 +1,5 @@
 import { fill } from '../lib/format';
+import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 
 interface PaginationProps {
@@ -22,7 +23,11 @@ export default function Pagination({ current, total, onChange }: PaginationProps
             aria-label={fill(t.home.page_n, page)}
             aria-current={active ? 'page' : undefined}
             className={`inline-flex min-h-10 min-w-10 items-center justify-center rounded-[var(--radius-md)] border text-sm font-medium transition-colors ${active ? 'border-[var(--primary)] bg-[var(--primary)] text-white' : 'border-[var(--border)] bg-[var(--surface)] text-[var(--text-primary)] hover:bg-[var(--surface-hover)]'}`}
-            onClick={() => onChange(page)}
+            onClick={() => {
+              if (active) return;
+              haptic('selection');
+              onChange(page);
+            }}
           >
             {page}
           </button>
