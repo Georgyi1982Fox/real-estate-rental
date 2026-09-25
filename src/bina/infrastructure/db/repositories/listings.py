@@ -1,9 +1,10 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import ColumnElement, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.bina.application.dtos.listing_search import ListingSearchFilters
 from src.bina.application.ports.scraper import RawListing
 from src.bina.application.repositories.listings import IListingsRepository
 from src.bina.infrastructure.db.models import District, Listing, ListingStatus
@@ -72,6 +73,52 @@ class ListingsRepository(IListingsRepository):
         )
         await self._session.execute(query)
     
+    async def search(
+        self,
+        filters: ListingSearchFilters,
+        limit: int,
+        offset: int = 0,
+    ) -> list[Listing]:
+        """Найти активные объявления по фильтрам (новые сверху)."""
+        query = (
+            select(Listing)
+            .where(*self._search_conditions(filters))
+            .order_by(Listing.created_at.desc(), Listing.id)
+            .limit(limit)
+            .offset(offset)
+        )
+        result = await self._session.execute(query)
+        return list(result.scalars().all())
+
+    async def count(self, filters: ListingSearchFilters) -> int:
+        """Количество активных объявлений, подходящих под фильтры."""
+        query = (
+            select(func.count())
+            .select_from(Listing)
+            .where(*self._search_conditions(filters))
+        )
+        result = await self._session.execute(query)
+        return int(result.scalar_one())
+
+    @staticmethod
+    def _search_conditions(filters: ListingSearchFilters) -> list[ColumnElement[bool]]:
+        """Собирает условия WHERE для поиска по фильтрам."""
+        conditions: list[ColumnElement[bool]] = [
+            Listing.status == ListingStatus.ACTIVE,
+            Listing.is_deleted.is_(False),
+        ]
+        if filters.district_id is not None:
+            conditions.append(Listing.district_id == filters.district_id)
+        if filters.price_min is not None:
+            conditions.append(Listing.price >= filters.price_min)
+        if filters.price_max is not None:
+            conditions.append(Listing.price <= filters.price_max)
+        if filters.rooms_min is not None:
+            conditions.append(Listing.rooms >= filters.rooms_min)
+        if filters.rooms_max is not None:
+            conditions.append(Listing.rooms <= filters.rooms_max)
+        return conditions
+
     async def create_or_update_from_raw(
         self,
         raw_listing: RawListing,

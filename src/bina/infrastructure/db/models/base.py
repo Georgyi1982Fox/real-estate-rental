@@ -1,9 +1,26 @@
+import enum
 from datetime import datetime
 from typing import Any
 
 from sqlalchemy import Boolean, DateTime
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
+
+
+def value_enum(enum_cls: type[enum.Enum], name: str) -> SAEnum:
+    """Тип колонки, хранящий *значения* enum (``"user"``), а не имена (``"USER"``).
+
+    TASK-007: по умолчанию SQLAlchemy пишет в БД имена членов enum, а миграция
+    ``initial_db_structure`` создаёт PostgreSQL ENUM со значениями в нижнем
+    регистре, из-за чего любой INSERT/фильтр по статусу падал с
+    ``invalid input value for enum``.
+    """
+    return SAEnum(
+        enum_cls,
+        name=name,
+        values_callable=lambda members: [member.value for member in members],
+    )
 
 
 class TimestampMixin:

@@ -1,5 +1,6 @@
 # Core dependencies
 pytest>=7.4.0
+pytest-asyncio>=0.23.0
 click>=8.1.0
 
 # Web scraping dependencies
@@ -19,6 +20,9 @@ structlog>=24.0.0
 
 # Scheduling
 apscheduler>=3.10.0
+
+# Telegram bot
+aiogram>=3.4
 
 # Validation
 pydantic>=2.6.0

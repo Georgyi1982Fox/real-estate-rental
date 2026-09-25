@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy import JSON, Numeric, String
@@ -45,7 +45,8 @@ class District(Base, SoftDeleteMixin):
     safety_score: Mapped[int] = mapped_column(
         nullable=False,
     )
-    infrastructure_json: Mapped[dict | None] = mapped_column(
+    # TASK-007: dict -> dict[str, Any] (mypy strict type-arg).
+    infrastructure_json: Mapped[dict[str, Any] | None] = mapped_column(
         JSON,
         nullable=True,
     )

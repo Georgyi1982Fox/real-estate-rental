@@ -1,11 +1,10 @@
-import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.bina.application.repositories.listings import IListingsRepository
-from src.bina.infrastructure.db.models import Listing, ListingStatus
+from src.bina.infrastructure.db.models import Listing
 from src.bina.infrastructure.db.repositories.listings import ListingsRepository
 
 
@@ -23,24 +22,31 @@ def repository(session: AsyncMock) -> ListingsRepository:
 
 def test_repository_implements_interface(repository: ListingsRepository) -> None:
     """Проверка, что репозиторий реализует интерфейс."""
-    assert isinstance(repository, IListingsRepository)
+    # isinstance() не работает с Protocol без @runtime_checkable
+    assert IListingsRepository in type(repository).__mro__
 
 
 @pytest.mark.asyncio
-async def test_get_active_listings_by_district(repository: ListingsRepository, session: AsyncMock) -> None:
+async def test_get_active_listings_by_district(
+    repository: ListingsRepository,
+    session: AsyncMock,
+) -> None:
     """Тест получения активных объявлений по району."""
     from uuid import UUID
-    
+
     # Arrange
     district_id = UUID("12345678-1234-5678-1234-567812345678")
     limit = 10
-    
+
     mock_listing = MagicMock(spec=Listing)
-    session.execute.return_value.scalars.return_value.all.return_value = [mock_listing]
-    
+    # execute() асинхронный, но его результат (Result) синхронный
+    result_mock = MagicMock()
+    result_mock.scalars.return_value.all.return_value = [mock_listing]
+    session.execute.return_value = result_mock
+
     # Act
     result = await repository.get_active_listings_by_district(district_id, limit)
-    
+
     # Assert
     assert len(result) == 1
     assert result[0] == mock_listing

@@ -28,6 +28,15 @@ class DatabaseManager:
             autoflush=False,
         )
     
+    @property
+    def session_factory(self) -> async_sessionmaker[AsyncSession]:
+        """Фабрика сессий (для middleware бота и фоновых задач)."""
+        return self._session_factory
+
+    async def dispose(self) -> None:
+        """Закрыть пул соединений."""
+        await self._engine.dispose()
+
     async def create_all(self) -> None:
         """Создать все таблицы."""
         async with self._engine.begin() as conn:
