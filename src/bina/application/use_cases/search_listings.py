@@ -1,7 +1,7 @@
-from src.bina.application.dtos.listing_search import ListingSearchFilters
-from src.bina.application.dtos.pagination import Page, validate_page_params
-from src.bina.application.repositories.listings import IListingsRepository
-from src.bina.infrastructure.db.models import Listing
+from bina.application.dtos.listing_search import ListingSearchFilters
+from bina.application.dtos.pagination import Page, validate_page_params
+from bina.application.repositories.listings import IListingsRepository
+from bina.infrastructure.db.models import Listing
 
 MAX_PAGE_SIZE = 50
 

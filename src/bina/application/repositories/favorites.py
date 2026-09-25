@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from typing import Protocol
 from uuid import UUID
 
-from src.bina.infrastructure.db.models import Listing
+from bina.infrastructure.db.models import Listing
 
 
 class IFavoritesRepository(Protocol):

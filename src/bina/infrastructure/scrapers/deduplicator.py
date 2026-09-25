@@ -1,9 +1,9 @@
 
 import structlog
 
-from src.bina.application.ports.scraper import RawListing
-from src.bina.infrastructure.db.models import Listing as ListingModel
-from src.bina.infrastructure.db.repositories.listings import ListingsRepository
+from bina.application.ports.scraper import RawListing
+from bina.infrastructure.db.models import Listing as ListingModel
+from bina.infrastructure.db.repositories.listings import ListingsRepository
 
 logger = structlog.get_logger(__name__)
 

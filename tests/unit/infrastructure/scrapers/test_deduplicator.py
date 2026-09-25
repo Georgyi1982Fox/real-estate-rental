@@ -4,9 +4,9 @@ from unittest.mock import AsyncMock
 import pytest
 from uuid import UUID
 
-from src.bina.application.ports.scraper import RawListing
-from src.bina.infrastructure.db.models import Listing, ListingStatus
-from src.bina.infrastructure.scrapers.deduplicator import ListingDeduplicator
+from bina.application.ports.scraper import RawListing
+from bina.infrastructure.db.models import Listing, ListingStatus
+from bina.infrastructure.scrapers.deduplicator import ListingDeduplicator
 
 
 @pytest.fixture

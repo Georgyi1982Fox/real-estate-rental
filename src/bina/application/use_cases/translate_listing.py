@@ -2,12 +2,12 @@ from uuid import UUID
 
 import structlog
 
-from src.bina.application.dtos.listing_dto import TranslatedListingDTO
-from src.bina.application.ports.llm_provider import LLMProvider
-from src.bina.infrastructure.db.repositories.listings import ListingsRepository
-from src.bina.infrastructure.llm.prompts.translation_models import TranslationResponse
-from src.bina.infrastructure.llm.semantic_cache import SemanticCache
-from src.bina.infrastructure.llm.structured_output import (
+from bina.application.dtos.listing_dto import TranslatedListingDTO
+from bina.application.ports.llm_provider import LLMProvider
+from bina.infrastructure.db.repositories.listings import ListingsRepository
+from bina.infrastructure.llm.prompts.translation_models import TranslationResponse
+from bina.infrastructure.llm.semantic_cache import SemanticCache
+from bina.infrastructure.llm.structured_output import (
     complete_structured_with_validation,
 )
 

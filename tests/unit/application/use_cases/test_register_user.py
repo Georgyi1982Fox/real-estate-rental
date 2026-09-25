@@ -2,12 +2,12 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from src.bina.application.use_cases.register_user import (
+from bina.application.use_cases.register_user import (
     DEFAULT_LANGUAGE,
     RegisterUserUseCase,
     normalize_language,
 )
-from src.bina.infrastructure.db.models import User
+from bina.infrastructure.db.models import User
 
 
 @pytest.fixture

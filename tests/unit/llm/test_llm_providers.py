@@ -2,8 +2,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from src.bina.application.ports.llm_provider import LLMProvider
-from src.bina.infrastructure.llm.providers.qwen_provider import QwenProvider
+from bina.application.ports.llm_provider import LLMProvider
+from bina.infrastructure.llm.providers.qwen_provider import QwenProvider
 
 
 @pytest.fixture

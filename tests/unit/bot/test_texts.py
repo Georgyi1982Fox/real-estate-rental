@@ -2,7 +2,7 @@ import re
 
 import pytest
 
-from src.bina.infrastructure.bot.texts import TEXTS, all_variants, t, ui_language
+from bina.infrastructure.bot.texts import TEXTS, all_variants, t, ui_language
 
 
 def test_all_languages_have_same_keys() -> None:

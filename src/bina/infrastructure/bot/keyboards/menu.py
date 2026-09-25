@@ -7,7 +7,7 @@ from aiogram.types import (
     WebAppInfo,
 )
 
-from src.bina.infrastructure.bot.texts import t
+from bina.infrastructure.bot.texts import t
 
 
 def main_menu(language: str) -> ReplyKeyboardMarkup:

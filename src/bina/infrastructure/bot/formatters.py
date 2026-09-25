@@ -3,8 +3,8 @@
 from decimal import Decimal
 from html import escape
 
-from src.bina.infrastructure.bot.texts import t
-from src.bina.infrastructure.db.models import District, Listing
+from bina.infrastructure.bot.texts import t
+from bina.infrastructure.db.models import District, Listing
 
 CURRENCY_SYMBOLS: dict[str, str] = {"GEL": "₾", "USD": "$", "EUR": "€"}
 MAX_TITLE_LENGTH = 80

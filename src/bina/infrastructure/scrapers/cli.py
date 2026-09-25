@@ -5,14 +5,14 @@ import click
 import structlog
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
-from src.bina.infrastructure.db.repositories.listings import ListingsRepository
-from src.bina.infrastructure.llm.llm_factory import LLMFactory
-from src.bina.infrastructure.scrapers.deduplicator import ListingDeduplicator
-from src.bina.infrastructure.scrapers.myhome_scraper import MyHomeScraper
-from src.bina.infrastructure.scrapers.normalizer import ListingNormalizer
-from src.bina.infrastructure.scrapers.repository import ScrapedListingsRepository
-from src.bina.infrastructure.scrapers.scheduler import ScraperScheduler
-from src.bina.infrastructure.scrapers.ss_scraper import SSScraper
+from bina.infrastructure.db.repositories.listings import ListingsRepository
+from bina.infrastructure.llm.llm_factory import LLMFactory
+from bina.infrastructure.scrapers.deduplicator import ListingDeduplicator
+from bina.infrastructure.scrapers.myhome_scraper import MyHomeScraper
+from bina.infrastructure.scrapers.normalizer import ListingNormalizer
+from bina.infrastructure.scrapers.repository import ScrapedListingsRepository
+from bina.infrastructure.scrapers.scheduler import ScraperScheduler
+from bina.infrastructure.scrapers.ss_scraper import SSScraper
 
 # Настройка логгирования
 structlog.configure(

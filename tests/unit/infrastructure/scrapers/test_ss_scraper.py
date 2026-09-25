@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, patch
 
-from src.bina.infrastructure.scrapers.ss_scraper import SSScraper
+from bina.infrastructure.scrapers.ss_scraper import SSScraper
 
 
 @pytest.fixture

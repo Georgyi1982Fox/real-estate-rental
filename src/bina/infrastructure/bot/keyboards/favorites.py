@@ -2,11 +2,11 @@
 
 from aiogram.types import InlineKeyboardMarkup
 
-from src.bina.application.dtos.pagination import Page
-from src.bina.infrastructure.bot.keyboards.callbacks import FavoritesPageCallback
-from src.bina.infrastructure.bot.keyboards.listings import favorite_buttons, pagination_row
-from src.bina.infrastructure.bot.keyboards.menu import open_app_button
-from src.bina.infrastructure.db.models import Listing
+from bina.application.dtos.pagination import Page
+from bina.infrastructure.bot.keyboards.callbacks import FavoritesPageCallback
+from bina.infrastructure.bot.keyboards.listings import favorite_buttons, pagination_row
+from bina.infrastructure.bot.keyboards.menu import open_app_button
+from bina.infrastructure.db.models import Listing
 
 
 def favorites_keyboard(

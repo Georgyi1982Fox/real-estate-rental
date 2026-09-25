@@ -4,30 +4,30 @@ from uuid import UUID, uuid4
 import pytest
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-from src.bina.application.dtos.pagination import Page
-from src.bina.infrastructure.bot.keyboards.callbacks import (
+from bina.application.dtos.pagination import Page
+from bina.infrastructure.bot.keyboards.callbacks import (
     FavoritesPageCallback,
     FavoriteToggleCallback,
     SearchCallback,
     SearchStep,
 )
-from src.bina.infrastructure.bot.keyboards.favorites import favorites_keyboard
-from src.bina.infrastructure.bot.keyboards.filters import (
+from bina.infrastructure.bot.keyboards.favorites import favorites_keyboard
+from bina.infrastructure.bot.keyboards.filters import (
     PRICE_RANGES,
     ROOM_OPTIONS,
     filters_from_callback,
     price_label,
     rooms_label,
 )
-from src.bina.infrastructure.bot.keyboards.listings import flip_favorite_button
-from src.bina.infrastructure.bot.keyboards.profile import language_keyboard
-from src.bina.infrastructure.bot.keyboards.search import (
+from bina.infrastructure.bot.keyboards.listings import flip_favorite_button
+from bina.infrastructure.bot.keyboards.profile import language_keyboard
+from bina.infrastructure.bot.keyboards.search import (
     DISTRICTS_PER_PAGE,
     district_keyboard,
     price_keyboard,
     results_keyboard,
 )
-from src.bina.infrastructure.db.models import District, Listing
+from bina.infrastructure.db.models import District, Listing
 
 MAX_CALLBACK_BYTES = 64
 

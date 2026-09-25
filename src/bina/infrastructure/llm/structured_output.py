@@ -4,7 +4,7 @@ from typing import TypeVar
 import structlog
 from pydantic import BaseModel, ValidationError
 
-from src.bina.application.ports.llm_provider import LLMProvider
+from bina.application.ports.llm_provider import LLMProvider
 
 logger = structlog.get_logger(__name__)
 

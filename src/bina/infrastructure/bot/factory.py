@@ -6,10 +6,10 @@ from aiogram.enums import ParseMode
 from aiogram.types import BotCommand, MenuButtonWebApp, WebAppInfo
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from src.bina.infrastructure.bot.handlers import build_router
-from src.bina.infrastructure.bot.middlewares import DbSessionMiddleware, RegistrationMiddleware
-from src.bina.infrastructure.bot.settings import BotSettings
-from src.bina.infrastructure.bot.texts import t
+from bina.infrastructure.bot.handlers import build_router
+from bina.infrastructure.bot.middlewares import DbSessionMiddleware, RegistrationMiddleware
+from bina.infrastructure.bot.settings import BotSettings
+from bina.infrastructure.bot.texts import t
 
 COMMANDS: dict[str, dict[str, str]] = {
     "ru": {

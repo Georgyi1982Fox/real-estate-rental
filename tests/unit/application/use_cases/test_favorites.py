@@ -3,12 +3,12 @@ from uuid import uuid4
 
 import pytest
 
-from src.bina.application.errors import ListingNotFoundError
-from src.bina.application.use_cases.favorites import (
+from bina.application.errors import ListingNotFoundError
+from bina.application.use_cases.favorites import (
     GetFavoritesUseCase,
     ToggleFavoriteUseCase,
 )
-from src.bina.infrastructure.db.models import Listing
+from bina.infrastructure.db.models import Listing
 
 
 @pytest.fixture

@@ -6,27 +6,27 @@ from aiogram.filters.callback_data import CallbackQueryFilter
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.bina.application.use_cases.search_listings import SearchListingsUseCase
-from src.bina.infrastructure.bot.formatters import district_name, format_listings
-from src.bina.infrastructure.bot.handlers.common import edit_or_answer
-from src.bina.infrastructure.bot.keyboards.callbacks import SearchCallback, SearchStep
-from src.bina.infrastructure.bot.keyboards.filters import (
+from bina.application.use_cases.search_listings import SearchListingsUseCase
+from bina.infrastructure.bot.formatters import district_name, format_listings
+from bina.infrastructure.bot.handlers.common import edit_or_answer
+from bina.infrastructure.bot.keyboards.callbacks import SearchCallback, SearchStep
+from bina.infrastructure.bot.keyboards.filters import (
     filters_from_callback,
     price_label,
     rooms_label,
 )
-from src.bina.infrastructure.bot.keyboards.search import (
+from bina.infrastructure.bot.keyboards.search import (
     district_keyboard,
     price_keyboard,
     results_keyboard,
     rooms_keyboard,
 )
-from src.bina.infrastructure.bot.settings import BotSettings
-from src.bina.infrastructure.bot.texts import all_variants, t
-from src.bina.infrastructure.db.models import User
-from src.bina.infrastructure.db.repositories.districts import DistrictsRepository
-from src.bina.infrastructure.db.repositories.favorites import FavoritesRepository
-from src.bina.infrastructure.db.repositories.listings import ListingsRepository
+from bina.infrastructure.bot.settings import BotSettings
+from bina.infrastructure.bot.texts import all_variants, t
+from bina.infrastructure.db.models import User
+from bina.infrastructure.db.repositories.districts import DistrictsRepository
+from bina.infrastructure.db.repositories.favorites import FavoritesRepository
+from bina.infrastructure.db.repositories.listings import ListingsRepository
 
 
 async def cmd_search(

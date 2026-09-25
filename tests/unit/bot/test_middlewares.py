@@ -9,7 +9,7 @@ from aiogram.types import TelegramObject
 from aiogram.types import User as TelegramUser
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from src.bina.infrastructure.bot.middlewares import (
+from bina.infrastructure.bot.middlewares import (
     DbSessionMiddleware,
     RegistrationMiddleware,
     registration,

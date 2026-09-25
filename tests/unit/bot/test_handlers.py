@@ -17,8 +17,8 @@ from aiogram.types import (
     ReplyKeyboardMarkup,
 )
 
-from src.bina.application.use_cases.search_listings import SearchListingsUseCase
-from src.bina.infrastructure.bot.keyboards.callbacks import (
+from bina.application.use_cases.search_listings import SearchListingsUseCase
+from bina.infrastructure.bot.keyboards.callbacks import (
     FavoritesPageCallback,
     FavoriteToggleCallback,
     LanguageCallback,

@@ -3,7 +3,7 @@
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message
 
-from src.bina.infrastructure.bot.texts import t
+from bina.infrastructure.bot.texts import t
 
 
 async def edit_or_answer(

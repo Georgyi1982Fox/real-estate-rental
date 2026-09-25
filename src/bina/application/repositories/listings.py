@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 from typing import Protocol
 from uuid import UUID
 
-from src.bina.application.dtos.listing_search import ListingSearchFilters
-from src.bina.infrastructure.db.models import Listing
+from bina.application.dtos.listing_search import ListingSearchFilters
+from bina.infrastructure.db.models import Listing
 
 
 class IListingsRepository(Protocol):

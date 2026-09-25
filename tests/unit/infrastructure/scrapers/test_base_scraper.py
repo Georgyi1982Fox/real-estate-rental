@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from src.bina.infrastructure.scrapers.base_scraper import BaseWebsiteScraper
+from bina.infrastructure.scrapers.base_scraper import BaseWebsiteScraper
 
 
 class _TestScraper(BaseWebsiteScraper):

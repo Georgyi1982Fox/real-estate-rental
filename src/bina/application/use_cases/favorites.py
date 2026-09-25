@@ -2,11 +2,11 @@ from uuid import UUID
 
 import structlog
 
-from src.bina.application.dtos.pagination import Page, validate_page_params
-from src.bina.application.errors import ListingNotFoundError
-from src.bina.application.repositories.favorites import IFavoritesRepository
-from src.bina.application.repositories.listings import IListingsRepository
-from src.bina.infrastructure.db.models import Listing
+from bina.application.dtos.pagination import Page, validate_page_params
+from bina.application.errors import ListingNotFoundError
+from bina.application.repositories.favorites import IFavoritesRepository
+from bina.application.repositories.listings import IListingsRepository
+from bina.infrastructure.db.models import Listing
 
 logger = structlog.get_logger(__name__)
 

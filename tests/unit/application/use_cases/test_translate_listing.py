@@ -4,9 +4,9 @@ from decimal import Decimal
 import pytest
 from uuid import UUID
 
-from src.bina.application.dtos.listing_dto import TranslatedListingDTO
-from src.bina.application.use_cases.translate_listing import TranslateListingUseCase
-from src.bina.infrastructure.db.models import Listing
+from bina.application.dtos.listing_dto import TranslatedListingDTO
+from bina.application.use_cases.translate_listing import TranslateListingUseCase
+from bina.infrastructure.db.models import Listing
 
 
 @pytest.mark.asyncio

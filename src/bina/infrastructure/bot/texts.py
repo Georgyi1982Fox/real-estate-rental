@@ -4,7 +4,7 @@
 интерфейс пока английский, но объявления показываются на грузинском.
 """
 
-from src.bina.application.use_cases.register_user import DEFAULT_LANGUAGE
+from bina.application.use_cases.register_user import DEFAULT_LANGUAGE
 
 _RU: dict[str, str] = {
     "welcome_new": (

@@ -6,19 +6,19 @@ from uuid import UUID
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from src.bina.application.dtos.pagination import Page
-from src.bina.infrastructure.bot.formatters import district_name
-from src.bina.infrastructure.bot.keyboards.callbacks import SearchCallback, SearchStep
-from src.bina.infrastructure.bot.keyboards.filters import (
+from bina.application.dtos.pagination import Page
+from bina.infrastructure.bot.formatters import district_name
+from bina.infrastructure.bot.keyboards.callbacks import SearchCallback, SearchStep
+from bina.infrastructure.bot.keyboards.filters import (
     PRICE_RANGES,
     ROOM_OPTIONS,
     price_label,
     rooms_button_label,
 )
-from src.bina.infrastructure.bot.keyboards.listings import favorite_buttons, pagination_row
-from src.bina.infrastructure.bot.keyboards.menu import open_app_button
-from src.bina.infrastructure.bot.texts import t
-from src.bina.infrastructure.db.models import District, Listing
+from bina.infrastructure.bot.keyboards.listings import favorite_buttons, pagination_row
+from bina.infrastructure.bot.keyboards.menu import open_app_button
+from bina.infrastructure.bot.texts import t
+from bina.infrastructure.db.models import District, Listing
 
 DISTRICTS_PER_PAGE = 12
 

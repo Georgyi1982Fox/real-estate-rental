@@ -1,6 +1,6 @@
 import pytest
 
-from src.bina.infrastructure.bot.settings import BotConfigError, BotMode, BotSettings
+from bina.infrastructure.bot.settings import BotConfigError, BotMode, BotSettings
 
 
 def test_defaults() -> None:

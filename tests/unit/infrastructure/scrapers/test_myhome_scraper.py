@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, patch
 
-from src.bina.infrastructure.scrapers.myhome_scraper import MyHomeScraper
+from bina.infrastructure.scrapers.myhome_scraper import MyHomeScraper
 
 
 @pytest.fixture

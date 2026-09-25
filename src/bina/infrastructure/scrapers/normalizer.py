@@ -2,7 +2,7 @@ import re
 
 import structlog
 
-from src.bina.application.ports.scraper import RawListing
+from bina.application.ports.scraper import RawListing
 
 logger = structlog.get_logger(__name__)
 

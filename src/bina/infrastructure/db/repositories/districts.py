@@ -4,8 +4,8 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.bina.application.repositories.districts import IDistrictsRepository
-from src.bina.infrastructure.db.models import District
+from bina.application.repositories.districts import IDistrictsRepository
+from bina.infrastructure.db.models import District
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
