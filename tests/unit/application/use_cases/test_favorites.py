@@ -5,7 +5,9 @@ import pytest
 
 from bina.application.errors import ListingNotFoundError
 from bina.application.use_cases.favorites import (
+    AddFavoriteUseCase,
     GetFavoritesUseCase,
+    RemoveFavoriteUseCase,
     ToggleFavoriteUseCase,
 )
 from bina.infrastructure.db.models import Listing
@@ -104,3 +106,42 @@ async def test_get_favorites_empty(favorites_repository: AsyncMock) -> None:
 
     assert page.items == []
     favorites_repository.list_by_user.assert_not_awaited()
+
+
+async def test_add_favorite(
+    favorites_repository: AsyncMock,
+    listings_repository: AsyncMock,
+) -> None:
+    """Существующее объявление добавляется в избранное."""
+    user_id, listing_id = uuid4(), uuid4()
+    listings_repository.get_by_id.return_value = MagicMock(spec=Listing, is_deleted=False)
+
+    await AddFavoriteUseCase(favorites_repository, listings_repository).execute(user_id, listing_id)
+
+    favorites_repository.add.assert_awaited_once_with(user_id, listing_id)
+
+
+@pytest.mark.parametrize("listing", [None, MagicMock(spec=Listing, is_deleted=True)])
+async def test_add_favorite_rejects_missing_listing(
+    favorites_repository: AsyncMock,
+    listings_repository: AsyncMock,
+    listing: Listing | None,
+) -> None:
+    """Несуществующее или удалённое объявление добавить нельзя."""
+    listings_repository.get_by_id.return_value = listing
+
+    with pytest.raises(ListingNotFoundError):
+        await AddFavoriteUseCase(favorites_repository, listings_repository).execute(
+            uuid4(), uuid4()
+        )
+    favorites_repository.add.assert_not_awaited()
+
+
+@pytest.mark.parametrize("existed", [True, False])
+async def test_remove_favorite(favorites_repository: AsyncMock, existed: bool) -> None:
+    """Удаление идемпотентно и сообщает, была ли запись."""
+    favorites_repository.remove.return_value = existed
+
+    result = await RemoveFavoriteUseCase(favorites_repository).execute(uuid4(), uuid4())
+
+    assert result is existed
