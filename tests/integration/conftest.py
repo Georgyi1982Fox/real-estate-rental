@@ -1,4 +1,4 @@
-"""Интеграционные тесты бота на настоящем PostgreSQL (с pgvector).
+"""Интеграционные тесты на настоящем PostgreSQL (с pgvector).
 
 Запуск: ``BINA_TEST_DATABASE_URL=postgresql+asyncpg://user@host:5432/bina_test pytest``.
 Без переменной тесты пропускаются. **База очищается**: схема ``public``
@@ -24,7 +24,7 @@ from sqlalchemy.ext.asyncio import (
 
 DATABASE_URL = os.getenv("BINA_TEST_DATABASE_URL")
 MIGRATION = (
-    Path(__file__).parents[3]
+    Path(__file__).parents[2]
     / "src/bina/infrastructure/db/alembic/versions/initial_db_structure.py"
 )
 

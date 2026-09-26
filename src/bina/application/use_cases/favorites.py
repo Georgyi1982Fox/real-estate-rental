@@ -47,6 +47,48 @@ class ToggleFavoriteUseCase:
         return True
 
 
+class AddFavoriteUseCase:
+    """Use-case: добавить объявление в избранное (идемпотентно)."""
+
+    def __init__(
+        self,
+        favorites_repository: IFavoritesRepository,
+        listings_repository: IListingsRepository,
+    ) -> None:
+        self.favorites_repository = favorites_repository
+        self.listings_repository = listings_repository
+
+    async def execute(self, user_id: UUID, listing_id: UUID) -> None:
+        """Добавляет объявление; повторное добавление ничего не меняет.
+
+        Raises:
+            ListingNotFoundError: если объявление не существует или удалено.
+        """
+        listing = await self.listings_repository.get_by_id(listing_id)
+        if listing is None or listing.is_deleted:
+            raise ListingNotFoundError(listing_id)
+        await self.favorites_repository.add(user_id, listing_id)
+        logger.info("Favorite added", user_id=user_id, listing_id=listing_id)
+
+
+class RemoveFavoriteUseCase:
+    """Use-case: убрать объявление из избранного (идемпотентно)."""
+
+    def __init__(self, favorites_repository: IFavoritesRepository) -> None:
+        self.favorites_repository = favorites_repository
+
+    async def execute(self, user_id: UUID, listing_id: UUID) -> bool:
+        """Удаляет объявление из избранного.
+
+        Returns:
+            True, если запись была и удалена; False, если её не было.
+        """
+        removed = await self.favorites_repository.remove(user_id, listing_id)
+        if removed:
+            logger.info("Favorite removed", user_id=user_id, listing_id=listing_id)
+        return removed
+
+
 class GetFavoritesUseCase:
     """Use-case: постраничный список избранных объявлений пользователя."""
 
