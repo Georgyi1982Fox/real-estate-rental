@@ -7,17 +7,23 @@ import TestCardPage from './pages/TestCardPage';
 import { I18nProvider } from './providers/I18nProvider';
 import { ToastProvider } from './providers/ToastProvider';
 
-const router = createBrowserRouter([
+const router = createBrowserRouter(
+  [
+    {
+      element: <Layout />,
+      children: [
+        { path: '/', element: <HomePage /> },
+        { path: '/listing/:id', element: <ListingPage /> },
+        { path: '/test_card', element: <TestCardPage /> },
+        { path: '*', element: <NotFoundPage /> },
+      ],
+    },
+  ],
   {
-    element: <Layout />,
-    children: [
-      { path: '/', element: <HomePage /> },
-      { path: '/listing/:id', element: <ListingPage /> },
-      { path: '/test_card', element: <TestCardPage /> },
-      { path: '*', element: <NotFoundPage /> },
-    ],
+    // '/real-estate-rental' на GitHub Pages, '/' в dev (см. base в vite.config.ts)
+    basename: import.meta.env.BASE_URL.replace(/\/+$/, '') || '/',
   },
-]);
+);
 
 export default function App() {
   return (
