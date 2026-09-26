@@ -24,6 +24,10 @@ apscheduler>=3.10.0
 # Telegram bot
 aiogram>=3.4
 
+# REST API
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+
 # Validation
 pydantic>=2.6.0
 

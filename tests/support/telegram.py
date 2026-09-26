@@ -1,9 +1,13 @@
-"""Фейковый Telegram Bot API для тестов бота."""
+"""Фейковый Telegram Bot API и подпись initData для тестов."""
 
+import hashlib
+import hmac
+import json
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
 from itertools import count
 from typing import Any
+from urllib.parse import urlencode
 
 from aiogram import Bot
 from aiogram.client.session.base import BaseSession
@@ -60,3 +64,21 @@ class FakeTelegramSession(BaseSession):
     def of(self, method_type: type[TelegramMethod[Any]]) -> list[Any]:
         """Вызовы API заданного типа."""
         return [call for call in self.calls if isinstance(call, method_type)]
+
+
+def sign_init_data(
+    token: str,
+    user: dict[str, Any] | None,
+    auth_date: datetime | None = None,
+) -> str:
+    """Строка ``Telegram.WebApp.initData``, подписанная как это делает Telegram."""
+    fields = {
+        "auth_date": str(int((auth_date or datetime.now(UTC)).timestamp())),
+        "query_id": "AAHtest",
+    }
+    if user is not None:
+        fields["user"] = json.dumps(user, separators=(",", ":"))
+    check_string = "\n".join(f"{key}={value}" for key, value in sorted(fields.items()))
+    secret = hmac.new(b"WebAppData", token.encode(), hashlib.sha256).digest()
+    fields["hash"] = hmac.new(secret, check_string.encode(), hashlib.sha256).hexdigest()
+    return urlencode(fields)
