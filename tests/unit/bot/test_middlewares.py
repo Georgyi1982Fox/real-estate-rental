@@ -14,8 +14,7 @@ from bina.infrastructure.bot.middlewares import (
     RegistrationMiddleware,
     registration,
 )
-
-from .conftest import FakeUsersRepository, Store
+from tests.support.fakes import FakeUsersRepository, Store
 
 EVENT = cast(TelegramObject, MagicMock())
 
