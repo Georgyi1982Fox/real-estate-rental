@@ -90,6 +90,16 @@ bina-api
 ```
 В dev-режиме Vite (`npm run dev`) проксирует `/api` на `127.0.0.1:8000`, CORS там не нужен.
 
+### 5a. Демо-данные для локальной проверки
+Пока парсер не сохраняет объявления (отдельная задача), базу можно наполнить демо-данными
+фронтенда (`frontend/mock_data.json`: 6 районов, 12 квартир):
+```bash
+bina-seed            # из корня репозитория; нужен DATABASE_URL
+bina-seed --reset    # удалить демо-квартиры (районы остаются)
+```
+Квартиры помечаются `source_name = "demo"`, повторный запуск обновляет их, а не дублирует
+(`src/bina/infrastructure/db/seed.py`).
+
 ### 6. Конфигурация
 | Переменная | По умолчанию | Описание |
 |---|---|---|
@@ -105,6 +115,7 @@ bina-api
   режим `API_ALLOW_INSECURE_USER_ID`, CORS, настройки.
 - `tests/integration/api/`: API на PostgreSQL + pgvector (`BINA_TEST_DATABASE_URL`, база очищается).
 - Use cases: `tests/unit/application/use_cases/test_favorites.py`.
+- Демо-данные: `tests/integration/db/test_seed_postgres.py`, `tests/unit/db/test_seed_cli.py`.
 
 ## Что нужно сделать во фронтенде (вне этой задачи)
 1. **Базовый URL API.** `client.ts` делает `fetch('/api/...')` относительно страницы. На GitHub Pages

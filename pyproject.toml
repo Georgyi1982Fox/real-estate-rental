@@ -35,6 +35,7 @@ dev = [
 bina-scrape = "bina.infrastructure.scrapers.cli:main"
 bina-bot = "bina.infrastructure.bot.cli:main"
 bina-api = "bina.infrastructure.api.server:cli"
+bina-seed = "bina.infrastructure.db.seed:cli"
 
 [build-system]
 requires = ["hatchling"]
