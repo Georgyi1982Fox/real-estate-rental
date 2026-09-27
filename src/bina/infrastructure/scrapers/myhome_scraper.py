@@ -369,8 +369,10 @@ def _statement_details(item: dict[str, Any]) -> dict[str, Any]:
         details["description"] = description.strip()
     if photos := _statement_photos(item):
         details["photos"] = photos
+    # Сайт отдаёт номер замаскированным (``591589***``), полный только по кнопке: такие пропускаем
     for key in ("phone", "phone_number", "user_phone_number"):
-        if isinstance(item.get(key), str | int) and (phone := _clean_phone(str(item[key]))):
+        raw = item.get(key)
+        if isinstance(raw, str | int) and "*" not in str(raw) and (phone := _clean_phone(str(raw))):
             details["phone"] = phone
             break
     if owner := str(item.get("user_title") or item.get("owner_name") or "").strip():

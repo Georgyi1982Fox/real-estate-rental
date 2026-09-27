@@ -54,8 +54,9 @@
 - Поля JSON: `id`, `dynamic_title`, `comment`, `price["1"].price_total` (лари; `"2"` доллары,
   `"3"` евро), `room`, `area`, `urban_name`, `images[].large` (`is_main` первым), `user_title`.
   Ссылка на объявление: `/ru/nedvizhimost/{dynamic_slug}-{id}/`.
-- Телефона в списке нет. Формат JSON страницы объявления ещё не сверен: при следующем
-  запуске с `--dump-dir` сохранится `myhome_detail.html`.
+- Страница объявления: тот же JSON (`statement`) плюс `owner_name` и полное `comment`.
+  Телефон сайт отдаёт замаскированным (`user_phone_number: "591589***"`), полный номер
+  только по кнопке. Замаскированные номера не сохраняются, поэтому `phone` пока пустой.
 - Фикстура `test_data/myhome_next_list.html`: урезанная копия настоящей страницы (2 объявления).
 
 ## Definition of Done

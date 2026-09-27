@@ -134,6 +134,43 @@ def test_parse_next_data_detail_page(scraper: MyHomeScraper) -> None:
     }
 
 
+def test_next_data_detail_skips_masked_phone(scraper: MyHomeScraper) -> None:
+    """Настоящая страница объявления: телефон скрыт звёздочками, имя в ``owner_name``."""
+    statement = {
+        "id": 25375408,
+        "dynamic_title": "Сдается 3 комнатная квартира в сабуртало",
+        "price": {"1": {"price_total": 1956}, "2": {"price_total": 750}},
+        "currency_id": 2,
+        "comment": "Сдается в аренду 3-комнатная квартира в Цагареле.",
+        "user_phone_number": "591589***",
+        "additional_phone_number": "",
+        "owner_name": "REALTYSOLUTIONS",
+    }
+    html = next_page(
+        {
+            "props": {
+                "pageProps": {
+                    "dehydratedState": {
+                        "queries": [
+                            {
+                                "queryKey": ["statements", "details"],
+                                "state": {"data": {"data": {"statement": statement}}},
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    )
+
+    details = scraper._parse_detail(html)
+
+    assert "phone" not in details
+    assert details["owner_name"] == "REALTYSOLUTIONS"
+    assert (details["price"], details["currency"]) == (1956.0, "GEL")
+    assert details["description"] == "Сдается в аренду 3-комнатная квартира в Цагареле."
+
+
 def test_next_data_without_statements_falls_back_to_html(scraper: MyHomeScraper) -> None:
     html = LIST_HTML.replace(
         "</body>",
