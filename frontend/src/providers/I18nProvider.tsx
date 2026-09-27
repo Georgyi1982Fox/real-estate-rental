@@ -27,6 +27,8 @@ interface I18nContextValue {
   lang: Lang;
   t: Strings;
   setLang: (lang: Lang) => void;
+  /** Сбросить выбор языка (выход из аккаунта): удаляет bina_lang, язык — по умолчанию */
+  resetLang: () => void;
 }
 
 const I18nContext = createContext<I18nContextValue | null>(null);
@@ -43,11 +45,23 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const resetLang = useCallback(() => {
+    setLangState(DEFAULT_LANG);
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // см. выше
+    }
+  }, []);
+
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
 
-  const value = useMemo(() => ({ lang, t: STRINGS[lang], setLang }), [lang, setLang]);
+  const value = useMemo(
+    () => ({ lang, t: STRINGS[lang], setLang, resetLang }),
+    [lang, setLang, resetLang],
+  );
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 

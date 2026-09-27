@@ -127,4 +127,165 @@
       animation-duration: 1.5s;
     }
   }
+
+  /* Аватар / иконка входа в шапке: раз в 20 с делает один оборот вокруг вертикальной оси,
+     как подброшенный медальон. Первый оборот — через 2 с после загрузки */
+  .medallion {
+    animation: medallion-spin 20s ease-in-out 2s infinite;
+  }
+  @keyframes medallion-spin {
+    0% {
+      transform: perspective(160px) rotateY(0deg);
+    }
+    6%,
+    100% {
+      transform: perspective(160px) rotateY(360deg);
+    }
+  }
+  /* Логотип: раз в 24 с, оборот такой же длины (1.2 с). Старт через 4 с: при циклах 20 и 24 с
+     обороты логотипа и аватара всегда разнесены минимум на 2 с и никогда не совпадают */
+  .medallion--logo {
+    animation: medallion-spin-logo 24s ease-in-out 4s infinite;
+  }
+  @keyframes medallion-spin-logo {
+    0% {
+      transform: perspective(160px) rotateY(0deg);
+    }
+    5%,
+    100% {
+      transform: perspective(160px) rotateY(360deg);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .medallion {
+      animation: none;
+    }
+  }
+
+  /* ---------- Вход (AuthPage) ---------- */
+  .telegram-button {
+    display: flex;
+    min-height: 3rem;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    border-radius: var(--radius-md);
+    background: var(--brand-telegram);
+    padding: 0.75rem 1rem;
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 600;
+    box-shadow: var(--shadow-sm);
+  }
+  .telegram-button:hover {
+    background: var(--brand-telegram-hover);
+  }
+  .telegram-button:active {
+    transform: scale(0.99);
+  }
+  /* «или» с линиями по бокам */
+  .auth-divider {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+  .auth-divider::before,
+  .auth-divider::after {
+    content: '';
+    height: 1px;
+    flex: 1;
+    background: var(--border);
+  }
+  .open-in-telegram {
+    animation: auth-rise 400ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  .auth-page__guest {
+    animation: auth-fade 400ms ease 150ms both;
+  }
+  /* «Входим…»: логотип «выпрыгивает», от него расходятся кольца, снизу бегут точки */
+  .auth-signing {
+    animation: auth-fade 250ms ease both;
+  }
+  .auth-signing__image {
+    animation: auth-pop 500ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+  .auth-signing__ring {
+    position: absolute;
+    inset: 0.5rem;
+    border: 2px solid var(--primary);
+    border-radius: 9999px;
+    opacity: 0;
+    animation: auth-ripple 1.6s ease-out infinite;
+  }
+  .auth-signing__ring--late {
+    animation-delay: 800ms;
+  }
+  .auth-signing__dots > span {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 9999px;
+    background: var(--primary);
+    animation: auth-dot 900ms ease-in-out infinite;
+  }
+  .auth-signing__dots > span:nth-child(2) {
+    animation-delay: 150ms;
+  }
+  .auth-signing__dots > span:nth-child(3) {
+    animation-delay: 300ms;
+  }
+  @keyframes auth-fade {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes auth-rise {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+  }
+  @keyframes auth-pop {
+    from {
+      opacity: 0;
+      transform: scale(0.6);
+    }
+  }
+  @keyframes auth-ripple {
+    0% {
+      opacity: 0.6;
+      transform: scale(0.8);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(1.6);
+    }
+  }
+  @keyframes auth-dot {
+    0%,
+    80%,
+    100% {
+      opacity: 0.35;
+      transform: translateY(0);
+    }
+    40% {
+      opacity: 1;
+      transform: translateY(-6px);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .open-in-telegram,
+    .auth-page__guest,
+    .auth-signing,
+    .auth-signing__image,
+    .auth-signing__dots > span {
+      animation: none;
+    }
+    .auth-signing__ring {
+      display: none;
+    }
+  }
 }

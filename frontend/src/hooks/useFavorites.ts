@@ -69,6 +69,17 @@ function getSnapshot(): string[] {
   return ids;
 }
 
+/** Очистить избранное (выход из аккаунта) — сразу обновляет все компоненты */
+export function clearFavorites(): void {
+  ids = EMPTY;
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // см. load()
+  }
+  emit();
+}
+
 /** Избранные квартиры: общий список ID (строки) с toast и haptic при изменении */
 export function useFavorites() {
   const current = useSyncExternalStore(subscribe, getSnapshot);
