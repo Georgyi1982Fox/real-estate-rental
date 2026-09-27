@@ -1,5 +1,6 @@
 """Парсер MyHome.ge на HTML-фикстурах (без сети)."""
 
+import json
 from pathlib import Path
 
 import httpx
@@ -10,6 +11,7 @@ from bina.infrastructure.scrapers.myhome_scraper import MyHomeScraper
 DATA = Path(__file__).parent / "test_data"
 LIST_HTML = (DATA / "myhome_test.html").read_text(encoding="utf-8")
 DETAIL_HTML = (DATA / "myhome_detail_test.html").read_text(encoding="utf-8")
+NEXT_LIST_HTML = (DATA / "myhome_next_list.html").read_text(encoding="utf-8")
 EMPTY_HTML = "<html><body>Ничего не найдено</body></html>"
 BASE = "https://www.myhome.ge"
 
@@ -70,6 +72,76 @@ def test_parse_detail_page(scraper: MyHomeScraper) -> None:
     ]
     assert details["phone"] == "+995555123456"
     assert details["owner_name"] == "Нино"
+
+
+def test_parse_next_data_list_page(scraper: MyHomeScraper) -> None:
+    """Настоящая страница сайта (Next.js): объявления берутся из __NEXT_DATA__."""
+    listings = scraper._parse_listings(NEXT_LIST_HTML)
+
+    assert [item.source_id for item in listings] == ["26173256", "26117556"]
+    first = listings[0]
+    assert first.source_name == "myhome"
+    assert first.title == "Сдается 3 комнатная квартира в глдани"
+    assert first.description == "Vekua 119, недавно отремонтированный"
+    # Цена берётся в лари, хотя владелец указал её в долларах
+    assert (first.price, first.currency) == (1304.0, "GEL")
+    assert (first.rooms, first.area) == (3, 80.0)
+    assert first.district == "Глдани"
+    assert first.url == f"{BASE}/ru/nedvizhimost/sdaetsia-3-komnatnaia-kvartira-v-gldani-26173256/"
+    assert first.owner_name == "Davit"
+    assert first.phone is None
+    # Главное фото первым, ссылки на большой размер
+    assert len(first.photos) == 2
+    assert first.photos[0].endswith("/6LlSRkt6ab7fc321e427.webp")
+    assert all("_thumb" not in photo and "_blur" not in photo for photo in first.photos)
+
+
+def next_page(payload: object) -> str:
+    return (
+        '<html><body><script id="__NEXT_DATA__" type="application/json">'
+        + json.dumps(payload, ensure_ascii=False)
+        + "</script></body></html>"
+    )
+
+
+def test_parse_next_data_detail_page(scraper: MyHomeScraper) -> None:
+    statement = {
+        "id": 1,
+        "dynamic_title": "Сдается 2 комнатная квартира в ваке",
+        "price": {"2": {"price_total": 700}},
+        "statement_currency_id": 2,
+        "room": "2",
+        "area": 60,
+        "urban_name": "Ваке",
+        "description": "Полное описание квартиры",
+        "images": [{"large": "https://img/1.webp", "is_main": True}],
+        "phone_number": "+995 555 12-34-56",
+        "user_title": "Нино",
+    }
+    html = next_page({"props": {"pageProps": {"statement": statement}}})
+
+    assert scraper._parse_detail(html) == {
+        "title": "Сдается 2 комнатная квартира в ваке",
+        "price": 700.0,
+        "currency": "USD",
+        "district": "Ваке",
+        "rooms": 2,
+        "area": 60.0,
+        "description": "Полное описание квартиры",
+        "photos": ["https://img/1.webp"],
+        "phone": "+995555123456",
+        "owner_name": "Нино",
+    }
+
+
+def test_next_data_without_statements_falls_back_to_html(scraper: MyHomeScraper) -> None:
+    html = LIST_HTML.replace(
+        "</body>",
+        '<script id="__NEXT_DATA__" type="application/json">{"props": {}}</script></body>',
+    )
+    assert [item.source_id for item in scraper._parse_listings(html)] == ["12345", "67890"]
+    broken = '<script id="__NEXT_DATA__">{not json</script>' + DETAIL_HTML
+    assert scraper._parse_detail(broken)["owner_name"] == "Нино"
 
 
 def test_detail_page_without_optional_fields(scraper: MyHomeScraper) -> None:
