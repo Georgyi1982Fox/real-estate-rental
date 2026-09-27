@@ -1,11 +1,13 @@
 """Схемы ответов API (контракт — ``frontend/src/api/types.ts``)."""
 
+from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 from bina.application.dtos.pagination import Page
-from bina.infrastructure.db.models import District, Listing
+from bina.infrastructure.db.models import District, Listing, User
 
 # Текст на нескольких языках: {"ka": ..., "ru": ..., "en": ...}; пустые языки опускаются
 Localized = dict[str, str]
@@ -29,6 +31,11 @@ class ListingOut(BaseModel):
     district: UUID = Field(description="ID района, название — в GET /api/districts")
     is_verified: bool
     images: list[str] = Field(default_factory=list)
+    has_phone: bool = Field(
+        default=False, description="Есть ли телефон (GET /api/listings/{id}/phone)"
+    )
+    source_url: str | None = Field(default=None, description="Объявление на сайте-источнике")
+    owner_name: str | None = None
 
     @classmethod
     def from_model(cls, listing: Listing) -> "ListingOut":
@@ -44,6 +51,9 @@ class ListingOut(BaseModel):
             district=listing.district_id,
             is_verified=listing.is_verified,
             images=list(listing.images or []),
+            has_phone=bool(listing.phone),
+            source_url=listing.url or None,
+            owner_name=listing.owner_name or None,
         )
 
 
@@ -104,3 +114,52 @@ class FavoriteOut(BaseModel):
 
     listing_id: UUID
     is_favorite: bool = True
+
+
+class PhoneOut(BaseModel):
+    """Телефон арендодателя."""
+
+    phone: str
+
+
+class ContactOut(BaseModel):
+    """Куда вести пользователя по кнопке «Написать»."""
+
+    url: str
+
+
+Language = Literal["ru", "en", "ka"]
+
+
+class MeOut(BaseModel):
+    """Профиль текущего пользователя.
+
+    Имя и аватар бэкенд не хранит: фронтенд берёт их из ``Telegram.WebApp.initDataUnsafe.user``.
+    """
+
+    telegram_id: int
+    language: str
+    subscription_tier: str
+    subscription_expires_at: datetime | None
+    balance: float
+    favorites_count: int
+    created_at: datetime
+
+    @classmethod
+    def from_model(cls, user: User, favorites_count: int) -> "MeOut":
+        """Преобразует ORM-модель."""
+        return cls(
+            telegram_id=user.telegram_id,
+            language=user.language,
+            subscription_tier=user.subscription_tier.value,
+            subscription_expires_at=user.subscription_expires_at,
+            balance=float(user.balance),
+            favorites_count=favorites_count,
+            created_at=user.created_at,
+        )
+
+
+class MeIn(BaseModel):
+    """Тело PATCH /api/me."""
+
+    language: Language

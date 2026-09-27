@@ -1,4 +1,4 @@
-"""Объявления: список с фильтрами, карточка, похожие."""
+"""Объявления: список с фильтрами, карточка, похожие, телефон и контакт."""
 
 from decimal import Decimal
 from typing import Annotated
@@ -13,10 +13,17 @@ from bina.infrastructure.api.routes.common import (
     MAX_PER_PAGE,
     bad_request,
     get_listing_or_404,
+    not_found,
     parse_decimal,
     parse_uuid,
 )
-from bina.infrastructure.api.schemas import ListingOut, ListingsOut, ListingsPageOut
+from bina.infrastructure.api.schemas import (
+    ContactOut,
+    ListingOut,
+    ListingsOut,
+    ListingsPageOut,
+    PhoneOut,
+)
 from bina.infrastructure.db.models import Listing
 from bina.infrastructure.db.repositories.listings import ListingsRepository
 
@@ -91,3 +98,25 @@ async def similar_listings(listing_id: str, session: SessionDep) -> ListingsOut:
         if len(items) >= SIMILAR_LIMIT:
             break
     return ListingsOut(items=[ListingOut.from_model(item) for item in items[:SIMILAR_LIMIT]])
+
+
+@router.get("/{listing_id}/phone", response_model=PhoneOut)
+async def listing_phone(listing_id: str, session: SessionDep) -> PhoneOut:
+    """Телефон арендодателя; 404, если его нет.
+
+    Сайты-источники часто скрывают номер (MyHome отдаёт ``591589***``), такие не сохраняются:
+    тогда фронтенд показывает кнопку «Написать» (ссылка на объявление на сайте).
+    """
+    listing = await get_listing_or_404(session, listing_id)
+    if not listing.phone:
+        raise not_found("Phone not available")
+    return PhoneOut(phone=listing.phone)
+
+
+@router.post("/{listing_id}/contact", response_model=ContactOut)
+async def listing_contact(listing_id: str, session: SessionDep) -> ContactOut:
+    """Ссылка для связи с арендодателем: страница объявления на сайте-источнике."""
+    listing = await get_listing_or_404(session, listing_id)
+    if not listing.url:
+        raise not_found("Contact not available")
+    return ContactOut(url=listing.url)
