@@ -1,5 +1,6 @@
-// Единая точка общения с бэкендом: все запросы идут через apiGet/apiPost
+// Единая точка общения с бэкендом: все запросы идут через apiGet/apiPost/apiPatch
 
+import { isSignedOut } from '../lib/session';
 import { getInitData } from '../lib/telegram';
 
 export class ApiError extends Error {
@@ -14,13 +15,25 @@ export class ApiError extends Error {
   get isNotFound(): boolean {
     return this.status === 404;
   }
+
+  /** 401: бэкенд не узнал пользователя (нет или неверный X-Telegram-Init-Data) */
+  get isUnauthorized(): boolean {
+    return this.status === 401;
+  }
 }
 
-async function request<T>(method: 'GET' | 'POST', path: string, signal?: AbortSignal): Promise<T> {
+async function request<T>(
+  method: 'GET' | 'POST' | 'PATCH',
+  path: string,
+  body?: unknown,
+  signal?: AbortSignal,
+): Promise<T> {
   const headers: Record<string, string> = { Accept: 'application/json' };
-  // Внутри Telegram бэкенд проверяет подпись initData и по ней узнаёт пользователя
-  const initData = getInitData();
+  // Внутри Telegram бэкенд проверяет подпись initData и по ней узнаёт пользователя.
+  // После «Выйти» запросы идут анонимно, пока пользователь снова не войдёт
+  const initData = isSignedOut() ? '' : getInitData();
   if (initData) headers['X-Telegram-Init-Data'] = initData;
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
 
   let response: Response;
   try {
@@ -28,6 +41,7 @@ async function request<T>(method: 'GET' | 'POST', path: string, signal?: AbortSi
       method,
       signal,
       headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
       credentials: 'same-origin',
     });
   } catch (error) {
@@ -39,13 +53,21 @@ async function request<T>(method: 'GET' | 'POST', path: string, signal?: AbortSi
   if (!response.ok) {
     throw new ApiError(response.status, response.statusText || 'Request failed');
   }
+  // 204 No Content (например, /api/auth/logout)
+  if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
 }
 
 export function apiGet<T>(path: string, signal?: AbortSignal): Promise<T> {
-  return request<T>('GET', path, signal);
+  return request<T>('GET', path, undefined, signal);
 }
 
-export function apiPost<T>(path: string, signal?: AbortSignal): Promise<T> {
-  return request<T>('POST', path, signal);
+/** body сериализуется в JSON */
+export function apiPost<T>(path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
+  return request<T>('POST', path, body, signal);
+}
+
+/** Частичное обновление ресурса, body сериализуется в JSON */
+export function apiPatch<T>(path: string, body: unknown, signal?: AbortSignal): Promise<T> {
+  return request<T>('PATCH', path, body, signal);
 }

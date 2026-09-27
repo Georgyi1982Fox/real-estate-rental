@@ -16,6 +16,15 @@
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
+
+  /* Цвета брендов для кнопок входа — одинаковые в обеих темах.
+     Telegram-синий затемнён (#229ED9 → #1877AB), чтобы белый текст был ≥ 4.5:1 */
+  --brand-telegram: #1877ab;
+  --brand-telegram-hover: #135f89;
+  --brand-google-blue: #4285f4;
+  --brand-google-red: #ea4335;
+  --brand-google-yellow: #fbbc05;
+  --brand-google-green: #34a853;
 }
 
 :root {

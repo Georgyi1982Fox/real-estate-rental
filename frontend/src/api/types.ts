@@ -56,3 +56,44 @@ export interface PhoneResponse {
 export interface ContactResponse {
   url: string;
 }
+
+/** Пользователь приложения: из Telegram (initDataUnsafe.user) или из /api/auth/me в браузере */
+export interface AuthUser {
+  id: number | string;
+  first_name: string;
+  last_name?: string;
+  username?: string;
+  photo_url?: string;
+  language_code?: string;
+  email?: string;
+}
+
+export interface AuthResponse {
+  user: AuthUser;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterRequest extends LoginRequest {
+  first_name: string;
+}
+
+export type SubscriptionTier = 'free' | 'nomad' | 'family' | 'realtor';
+
+/** Профиль из GET/PATCH /api/me (нужен X-Telegram-Init-Data, иначе 401). Имя и фото — из Telegram */
+export interface Me {
+  telegram_id: number;
+  language: Lang;
+  subscription_tier: SubscriptionTier;
+  subscription_expires_at: string | null;
+  balance: number;
+  favorites_count: number;
+  created_at: string;
+}
+
+export interface UpdateMeRequest {
+  language: Lang;
+}

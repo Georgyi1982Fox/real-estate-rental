@@ -25,8 +25,11 @@ npm run dev
 | Квартира (#1 — полная, 4 фото) | `/listing/1` |
 | 404 | `/listing/999` |
 | Тест карточки | `/test_card` |
+| Вход | `/auth` (ошибка Google: `/auth?error=google`) |
 
 Язык: `?lang=ka|ru|en` или переключатель в шапке, выбор сохраняется в `localStorage` (`bina_lang`).
+
+Настройки — в `.env` (пример: `.env.example`): `VITE_BOT_USERNAME` — username бота для кнопки «Открыть в Telegram».
 
 ## Сборка
 
@@ -50,6 +53,25 @@ npm run build      # tsc + vite build → dist/
 | GET | `/api/listings/{id}/phone` | `{phone}`, 404 если номера нет |
 | POST | `/api/listings/{id}/contact` | `{url}` — куда вести пользователя («Написать»): `https://t.me/...`, внешняя или внутренняя ссылка |
 | GET | `/api/districts` | `{items: [{id, name: {ka, ru, en}}]}` |
+
+### Авторизация
+
+**В Telegram** отдельного логина нет: каждый запрос несёт заголовок `X-Telegram-Init-Data`, бэкенд проверяет
+подпись и сам регистрирует пользователя при первом обращении. JWT не используется. После «Выйти» фронтенд
+перестаёт отправлять заголовок, пока пользователь снова не нажмёт «Войти через Telegram».
+
+**В браузере** (UI готов, mock — `_dev/mock_api.py`): сессия — HttpOnly cookie, которую ставит бэкенд
+(`SameSite=Lax`); фронтенд токены не хранит и не отправляет.
+
+| Метод | Путь | Тело | Ответ |
+|---|---|---|---|
+| POST | `/api/auth/register` | `{first_name, email, password}` (пароль ≥ 8) | 201 `{user}` + cookie; 409 — email занят; 422 — валидация |
+| POST | `/api/auth/login` | `{email, password}` | 200 `{user}` + cookie; 401 — неверные данные |
+| GET | `/api/auth/me` | — | 200 `{user}`; 401 — нет сессии |
+| POST | `/api/auth/logout` | — | 204, cookie удалена |
+| GET | `/api/auth/google/login?return_to=/auth` | — | 302 на Google → callback бэкенда → cookie → 302 на `return_to`; при ошибке 302 на `return_to?error=google`. `return_to` — только путь этого сайта (защита от open redirect) |
+
+`user`: `{id, first_name, last_name?, username?, photo_url?, email?}`.
 
 Тексты с бэкенда (`title`, `description`, `address`, `owner.name`, `district.name`) — объект `{ka, ru, en}` или строка.
 Типы — `src/api/types.ts`.
