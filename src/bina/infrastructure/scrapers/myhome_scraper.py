@@ -1,5 +1,7 @@
 import dataclasses
+import json
 import re
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin
@@ -15,6 +17,11 @@ from bina.infrastructure.scrapers.settings import MyHomeSelectors, MyHomeSetting
 logger = structlog.get_logger(__name__)
 
 SOURCE_NAME = "myhome"
+# Ключи цен в JSON сайта: price["1"] в лари, "2" в долларах, "3" в евро
+CURRENCY_BY_ID = {"1": "GEL", "2": "USD", "3": "EUR"}
+NEXT_DATA_RE = re.compile(
+    r'<script[^>]+id="__NEXT_DATA__"[^>]*>(.*?)</script>', re.DOTALL | re.IGNORECASE
+)
 # После стольких ошибок страниц списка подряд парсинг останавливается
 MAX_CONSECUTIVE_FAILURES = 3
 
@@ -24,6 +31,10 @@ class MyHomeScraper(BaseWebsiteScraper):
 
     Два этапа: страницы списка (id, ссылка, краткие данные), затем страница
     каждого объявления (полное описание, все фото, телефон, имя арендодателя).
+
+    Сайт написан на Next.js: данные объявлений лежат в странице JSON-ом
+    (``<script id="__NEXT_DATA__">``). Он читается в первую очередь; разбор HTML
+    по селекторам остаётся запасным вариантом.
     """
 
     def __init__(
@@ -108,7 +119,37 @@ class MyHomeScraper(BaseWebsiteScraper):
     # ------------------------------------------------------------------ list page
 
     def _parse_listings(self, html: str) -> list[RawListing]:
-        """Карточки со страницы списка."""
+        """Карточки со страницы списка: из JSON Next.js, иначе из HTML."""
+        next_data = _next_data(html)
+        if next_data is not None:
+            statements = [item for items in _statement_lists(next_data) for item in items]
+            if statements:
+                return [self._from_statement(item) for item in statements]
+        return self._parse_listings_html(html)
+
+    def _from_statement(self, item: dict[str, Any]) -> RawListing:
+        """Объявление из JSON-объекта ``statement`` сайта."""
+        price, currency = _statement_price(item)
+        listing_id = str(item["id"])
+        slug = str(item.get("dynamic_slug") or "")
+        path = f"/ru/nedvizhimost/{slug}-{listing_id}/" if slug else f"/ru/pr/{listing_id}/"
+        return RawListing(
+            source_id=listing_id,
+            source_name=SOURCE_NAME,
+            title=str(item.get("dynamic_title") or "").strip(),
+            description=str(item.get("comment") or "").strip(),
+            price=price,
+            currency=currency,
+            rooms=_parse_rooms(str(item.get("room") or "")),
+            area=float(item.get("area") or 0),
+            district=str(item.get("urban_name") or item.get("district_name") or "Unknown"),
+            url=self.base_url + path,
+            photos=_statement_photos(item),
+            owner_name=str(item.get("user_title") or "").strip() or None,
+        )
+
+    def _parse_listings_html(self, html: str) -> list[RawListing]:
+        """Карточки со страницы списка по CSS-селекторам."""
         soup = BeautifulSoup(html, "lxml")
         s = self.selectors
         listings: list[RawListing] = []
@@ -145,6 +186,15 @@ class MyHomeScraper(BaseWebsiteScraper):
 
     def _parse_detail(self, html: str) -> dict[str, Any]:
         """Поля со страницы объявления; отсутствующие на странице не возвращаются."""
+        next_data = _next_data(html)
+        if next_data is not None:
+            statement = _find_statement(next_data)
+            if statement is not None:
+                return _statement_details(statement)
+        return self._parse_detail_html(html)
+
+    def _parse_detail_html(self, html: str) -> dict[str, Any]:
+        """Поля страницы объявления по CSS-селекторам."""
         soup = BeautifulSoup(html, "lxml")
         s = self.selectors
         details: dict[str, Any] = {}
@@ -216,3 +266,113 @@ def _clean_phone(text: str) -> str:
     """Телефон без лишних символов: ``+995 555 12-34-56`` → ``+995555123456``."""
     digits = re.sub(r"[^\d+]", "", text)
     return digits if len(re.sub(r"\D", "", digits)) >= 6 else ""
+
+
+# ------------------------------------------------------------------ JSON Next.js
+
+
+def _next_data(html: str) -> dict[str, Any] | None:
+    """JSON из ``<script id="__NEXT_DATA__">`` (``None``, если его нет или он битый)."""
+    match = NEXT_DATA_RE.search(html)
+    if match is None:
+        return None
+    try:
+        data = json.loads(match.group(1))
+    except json.JSONDecodeError:
+        logger.warning("MyHome __NEXT_DATA__ is not valid JSON")
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _is_statement(value: Any) -> bool:
+    """Похоже ли значение на объявление сайта."""
+    return (
+        isinstance(value, dict)
+        and "id" in value
+        and "price" in value
+        and ("dynamic_title" in value or "room" in value)
+    )
+
+
+def _walk(value: Any) -> Iterator[Any]:
+    """Все вложенные значения JSON (обход в глубину)."""
+    yield value
+    if isinstance(value, dict):
+        for child in value.values():
+            yield from _walk(child)
+    elif isinstance(value, list):
+        for child in value:
+            yield from _walk(child)
+
+
+def _statement_lists(data: dict[str, Any]) -> Iterator[list[dict[str, Any]]]:
+    """Списки объявлений в JSON страницы поиска."""
+    for value in _walk(data):
+        if isinstance(value, list) and value and all(_is_statement(item) for item in value):
+            yield value
+
+
+def _find_statement(data: dict[str, Any]) -> dict[str, Any] | None:
+    """Первое объявление в JSON страницы объявления."""
+    for value in _walk(data):
+        if _is_statement(value):
+            return dict(value)
+    return None
+
+
+def _statement_price(item: dict[str, Any]) -> tuple[float, str]:
+    """Цена в лари, если она есть, иначе в валюте объявления."""
+    prices = item.get("price")
+    if not isinstance(prices, dict):
+        return 0.0, "GEL"
+    currency_id = str(item.get("statement_currency_id") or item.get("currency_id") or "1")
+    for key in ("1", currency_id):
+        entry = prices.get(key)
+        if isinstance(entry, dict) and entry.get("price_total"):
+            return float(entry["price_total"]), CURRENCY_BY_ID.get(key, "GEL")
+    return 0.0, "GEL"
+
+
+def _statement_photos(item: dict[str, Any]) -> list[str]:
+    """Ссылки на фото в большом размере, главное первым."""
+    images = item.get("images")
+    if not isinstance(images, list):
+        return []
+    ordered = sorted(
+        (image for image in images if isinstance(image, dict)),
+        key=lambda image: not image.get("is_main"),
+    )
+    photos: list[str] = []
+    for image in ordered:
+        url = str(image.get("large") or image.get("thumb") or "")
+        if url and url not in photos:
+            photos.append(url)
+    return photos
+
+
+def _statement_details(item: dict[str, Any]) -> dict[str, Any]:
+    """Поля объявления со страницы объявления (только найденные)."""
+    details: dict[str, Any] = {}
+    if title := str(item.get("dynamic_title") or "").strip():
+        details["title"] = title
+    price, currency = _statement_price(item)
+    if price > 0:
+        details["price"], details["currency"] = price, currency
+    if district := str(item.get("urban_name") or item.get("district_name") or ""):
+        details["district"] = district
+    if rooms := _parse_rooms(str(item.get("room") or "")):
+        details["rooms"] = rooms
+    if area := float(item.get("area") or 0):
+        details["area"] = area
+    description = item.get("description") or item.get("comment")
+    if isinstance(description, str) and description.strip():
+        details["description"] = description.strip()
+    if photos := _statement_photos(item):
+        details["photos"] = photos
+    for key in ("phone", "phone_number", "user_phone_number"):
+        if isinstance(item.get(key), str | int) and (phone := _clean_phone(str(item[key]))):
+            details["phone"] = phone
+            break
+    if owner := str(item.get("user_title") or item.get("owner_name") or "").strip():
+        details["owner_name"] = owner
+    return details

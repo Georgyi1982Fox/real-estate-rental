@@ -45,10 +45,18 @@
 - Пагинация, пропуск ошибок, dump (HTTP замокан)
 - Сохранение в PostgreSQL (интеграционный тест)
 
-## Ограничение
-Фикстуры и селекторы по умолчанию синтетические: из контейнера разработки нет доступа
-к myhome.ge. Реальные селекторы обновляются по HTML, сохранённому командой
-`bina-scrape --source myhome --limit 2 --dump-dir scraped_html` на машине с доступом к сайту.
+## Реальный сайт (сентябрь 2026)
+- URL поиска: `/ru/nedvizhimost/arenda/kvartira/tbilisi/?deal_types=2&real_estate_types=1&currency_id=1&cities=1&page={page}`
+  (старый `/ru/search?AjaxSearchFieldForm...` отвечает 404).
+- Сайт на Next.js: 24 объявления на странице лежат JSON-ом в `<script id="__NEXT_DATA__">`.
+  Парсер читает его в первую очередь (`_parse_listings`, `_parse_detail`), разбор HTML по
+  селекторам остался запасным вариантом.
+- Поля JSON: `id`, `dynamic_title`, `comment`, `price["1"].price_total` (лари; `"2"` доллары,
+  `"3"` евро), `room`, `area`, `urban_name`, `images[].large` (`is_main` первым), `user_title`.
+  Ссылка на объявление: `/ru/nedvizhimost/{dynamic_slug}-{id}/`.
+- Телефона в списке нет. Формат JSON страницы объявления ещё не сверен: при следующем
+  запуске с `--dump-dir` сохранится `myhome_detail.html`.
+- Фикстура `test_data/myhome_next_list.html`: урезанная копия настоящей страницы (2 объявления).
 
 ## Definition of Done
 1. `bina-scrape --source myhome --limit 100` сохраняет объявления в БД
