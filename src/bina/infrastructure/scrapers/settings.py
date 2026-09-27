@@ -58,11 +58,12 @@ class MyHomeSettings:
     """URL и селекторы MyHome.ge (переопределяются переменными окружения)."""
 
     BASE_URL = os.getenv("MYHOME_BASE_URL", "https://www.myhome.ge")
-    # Аренда (list_type=2), квартиры, Тбилиси; {page}: номер страницы
+    # Аренда (deal_types=2), квартиры (real_estate_types=1), Тбилиси (cities=1), GEL;
+    # {page}: номер страницы. Адрес взят с сайта в сентябре 2026.
     SEARCH_PATH = os.getenv(
         "MYHOME_SEARCH_PATH",
-        "/ru/search?AjaxSearchFieldForm%5Bpr_type%5D=1&AjaxSearchFieldForm%5Blist_type%5D=2"
-        "&AjaxSearchFieldForm%5Bcity_id%5D=1&AjaxSearchFieldForm%5Bcurrency%5D=1&page={page}",
+        "/ru/nedvizhimost/arenda/kvartira/tbilisi/"
+        "?deal_types=2&real_estate_types=1&currency_id=1&cities=1&page={page}",
     )
     MAX_PAGES = int(os.getenv("MYHOME_MAX_PAGES", "20"))
     SELECTORS = MyHomeSelectors()
