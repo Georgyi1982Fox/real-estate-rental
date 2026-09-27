@@ -6,6 +6,7 @@ import GoogleButton from '../components/GoogleButton';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import OpenInTelegram from '../components/OpenInTelegram';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { WEB_AUTH_ENABLED } from '../lib/config';
 import { haptic } from '../lib/telegram';
 import { useAuth } from '../providers/AuthProvider';
 import { useI18n } from '../providers/I18nProvider';
@@ -63,6 +64,16 @@ export default function AuthPage() {
 
     // Telegram после «Выйти»: вход — только по явному нажатию
     if (isInTelegram) {
+      return (
+        <>
+          <OpenInTelegram />
+          {guestLink}
+        </>
+      );
+    }
+
+    // Обычный браузер без бэкенда входа: только ссылка на бота
+    if (!WEB_AUTH_ENABLED) {
       return (
         <>
           <OpenInTelegram />

@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { apiGet, apiPost } from '../api/client';
 import type { AuthResponse, AuthUser, LoginRequest, RegisterRequest } from '../api/types';
 import { clearFavorites } from '../hooks/useFavorites';
+import { WEB_AUTH_ENABLED } from '../lib/config';
 import {
   clearMockToken,
   isSignedOut as readSignedOut,
@@ -44,11 +45,11 @@ export function AuthProvider({ children, onLogout }: AuthProviderProps) {
   const { resetLang } = useI18n();
   const [signedOut, setSignedOut] = useState(readSignedOut);
   const [browserUser, setBrowserUser] = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(!IN_TELEGRAM);
+  const [loading, setLoading] = useState(!IN_TELEGRAM && WEB_AUTH_ENABLED);
 
   // Браузер: есть ли уже сессия (например, после возврата с Google). 401/нет API — гость
   useEffect(() => {
-    if (IN_TELEGRAM) return;
+    if (IN_TELEGRAM || !WEB_AUTH_ENABLED) return;
     const controller = new AbortController();
     apiGet<AuthResponse>('/api/auth/me', controller.signal)
       .then(({ user }) => setBrowserUser(user))
@@ -80,7 +81,7 @@ export function AuthProvider({ children, onLogout }: AuthProviderProps) {
 
   const logout = useCallback(() => {
     // Сессию на бэкенде закрываем «в фоне»: локальный выход не должен зависеть от сети
-    if (!IN_TELEGRAM) void apiPost('/api/auth/logout').catch(() => undefined);
+    if (!IN_TELEGRAM && WEB_AUTH_ENABLED) void apiPost('/api/auth/logout').catch(() => undefined);
     clearMockToken();
     clearFavorites();
     resetLang();

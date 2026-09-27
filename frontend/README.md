@@ -30,6 +30,7 @@ npm run dev
 Язык: `?lang=ka|ru|en` или переключатель в шапке, выбор сохраняется в `localStorage` (`bina_lang`).
 
 Настройки — в `.env` (пример: `.env.example`): `VITE_BOT_USERNAME` — username бота для кнопки «Открыть в Telegram».
+`VITE_ENABLE_WEB_AUTH=true` — показать вход через Google и email в браузере. По умолчанию выключен: бэкенд `/api/auth/*` ещё не сделан (задачи JWT/OAuth).
 
 ## Сборка
 

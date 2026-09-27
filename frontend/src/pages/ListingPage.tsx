@@ -54,7 +54,7 @@ export default function ListingPage() {
 
   const districtEntry = listing ? names[listing.district] : undefined;
   const district = listing ? (districtEntry ? tr(districtEntry, lang) : listing.district) : '';
-  const ownerName = tr(listing?.owner?.name, lang);
+  const ownerName = tr(listing?.owner?.name, lang) || listing?.owner_name || '';
   const address = tr(listing?.address, lang);
 
   return (
@@ -132,7 +132,8 @@ export default function ListingPage() {
                   aria-label={lt.contact}
                 >
                   {!nativeContact && <ContactButton onClick={contact} loading={contactLoading} />}
-                  <PhoneReveal listingId={listing.id} />
+                  {/* Кнопка телефона — только если он есть: иначе «Написать» ведёт на сайт-источник */}
+                  {listing.has_phone && <PhoneReveal listingId={listing.id} />}
                   <FavoriteButton listingId={listing.id} />
                 </section>
               </div>
