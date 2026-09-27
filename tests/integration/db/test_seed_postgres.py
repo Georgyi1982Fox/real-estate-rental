@@ -37,6 +37,7 @@ async def test_load_frontend_mock_data(session: AsyncSession) -> None:
     ).scalar_one()
     assert listing.title_ru == "Уютная квартира в Сабуртало"
     assert listing.title_ka == "მყუდრო ბინა საბურთალოზე"
+    assert listing.images[0] == "/static/images/placeholders/living-room.svg"
 
 
 async def test_reuses_existing_district_and_resets(session: AsyncSession) -> None:

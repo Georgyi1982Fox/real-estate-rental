@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import Boolean, ForeignKey, Numeric, String, Text
+from sqlalchemy import JSON, Boolean, ForeignKey, Numeric, String, Text, text
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -78,6 +78,13 @@ class Listing(Base, SoftDeleteMixin):
     )
     area: Mapped[float] = mapped_column(
         Numeric,
+        nullable=False,
+    )
+    # Ссылки на фото (URL или пути фронтенда); миграция listing_images
+    images: Mapped[list[str]] = mapped_column(
+        JSON,
+        default=list,
+        server_default=text("'[]'"),
         nullable=False,
     )
     is_verified: Mapped[bool] = mapped_column(

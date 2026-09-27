@@ -2,7 +2,7 @@
 
 Запуск: ``BINA_TEST_DATABASE_URL=postgresql+asyncpg://user@host:5432/bina_test pytest``.
 Без переменной тесты пропускаются. **База очищается**: схема ``public``
-пересоздаётся и заполняется миграцией ``initial_db_structure``.
+пересоздаётся и заполняется миграциями из ``alembic/versions``.
 """
 
 import importlib.util
@@ -13,7 +13,6 @@ from pathlib import Path
 import pytest
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
-from pgvector.sqlalchemy import Vector
 from sqlalchemy import Connection, text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -23,22 +22,18 @@ from sqlalchemy.ext.asyncio import (
 )
 
 DATABASE_URL = os.getenv("BINA_TEST_DATABASE_URL")
-MIGRATION = (
-    Path(__file__).parents[2]
-    / "src/bina/infrastructure/db/alembic/versions/initial_db_structure.py"
-)
+VERSIONS = Path(__file__).parents[2] / "src/bina/infrastructure/db/alembic/versions"
+# Порядок применения миграций (down_revision → revision)
+MIGRATIONS = ("initial_db_structure", "listing_images")
 
-def _apply_migration(connection: Connection) -> None:
-    spec = importlib.util.spec_from_file_location("initial_db_structure", MIGRATION)
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    # Обход бага миграции: в файле используется Vector без импорта.
-    # Убрать, когда в миграцию добавят `from pgvector.sqlalchemy import Vector`.
-    if not hasattr(module, "Vector"):
-        setattr(module, "Vector", Vector)
-    with Operations.context(MigrationContext.configure(connection)):
-        module.upgrade()
+def _apply_migrations(connection: Connection) -> None:
+    for name in MIGRATIONS:
+        spec = importlib.util.spec_from_file_location(name, VERSIONS / f"{name}.py")
+        assert spec is not None and spec.loader is not None
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        with Operations.context(MigrationContext.configure(connection)):
+            module.upgrade()
 
 
 @pytest.fixture
@@ -51,7 +46,7 @@ async def engine() -> AsyncIterator[AsyncEngine]:
         await connection.execute(text("DROP SCHEMA public CASCADE"))
         await connection.execute(text("CREATE SCHEMA public"))
         await connection.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-        await connection.run_sync(_apply_migration)
+        await connection.run_sync(_apply_migrations)
     yield engine
     await engine.dispose()
 

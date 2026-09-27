@@ -11,7 +11,9 @@ def seeded(store: Store) -> Store:
     vake = store.add_district("Ваке", name_en="Vake", name_ka="ვაკე")
     saburtalo = store.add_district("Сабуртало")
     for price, rooms in [(900, 1), (1000, 2), (1200, 2), (1400, 3), (1600, 4), (2500, 5)]:
-        store.add_listing(vake, price=price, rooms=rooms, title_ru=f"Ваке {price}")
+        store.add_listing(
+            vake, price=price, rooms=rooms, title_ru=f"Ваке {price}", images=[f"/img/{price}.jpg"]
+        )
     store.add_listing(saburtalo, price=1100, title_ru="Сабуртало 1100")
     store.add_listing(vake, price=1100, title_ru="Удалённое", is_deleted=True)
     return store
@@ -48,7 +50,7 @@ async def test_listing_shape(client: AsyncClient, seeded: Store) -> None:
         "area": 50.0,
         "district": str(listing.district_id),
         "is_verified": False,
-        "images": [],
+        "images": ["/img/900.jpg"],
     }
 
 
@@ -122,6 +124,21 @@ async def test_similar(client: AsyncClient, seeded: Store) -> None:
     prices = [item["price"] for item in response.json()["items"]]
     # тот же район, ±30% (840..1560), без самого объявления, удалённых и других районов
     assert prices == [1400, 1000, 900]
+
+
+async def test_similar_falls_back_to_district_then_price(client: AsyncClient, store: Store) -> None:
+    vake = store.add_district("Ваке")
+    other = store.add_district("Сабуртало")
+    store.add_listing(other, price=5000, title_ru="Чужой дорогой")  # не подходит ни по чему
+    store.add_listing(other, price=1100, title_ru="Чужой по цене")
+    store.add_listing(vake, price=3000, title_ru="Ваке дорогой")
+    target = store.add_listing(vake, price=1000, title_ru="Цель")
+
+    response = await client.get(f"/api/listings/{target.id}/similar")
+
+    # тот же район ±30% — нет; тот же район — «Ваке дорогой»; ±30% других районов — «Чужой по цене»
+    titles = [item["title"]["ru"] for item in response.json()["items"]]
+    assert titles == ["Ваке дорогой", "Чужой по цене"]
 
 
 async def test_similar_of_unknown_listing(client: AsyncClient, seeded: Store) -> None:

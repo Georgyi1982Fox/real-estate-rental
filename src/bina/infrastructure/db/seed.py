@@ -107,6 +107,7 @@ async def load_demo_data(session: AsyncSession, data: dict[str, Any]) -> SeedRes
             "district_id": district.id,
             "rooms": int(item["rooms"]),
             "area": Decimal(str(item["area"])),
+            "images": [str(image) for image in item.get("images") or []],
             "status": ListingStatus.ACTIVE,
             "is_deleted": False,
         }
