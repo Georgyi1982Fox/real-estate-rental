@@ -45,6 +45,10 @@ api/
 | GET | `/api/favorites?user_id=&page=&per_page=` | `{items, total, page, pages}` |
 | POST | `/api/favorites` (тело `{"listing_id": "<uuid>"}`) | 201 `{listing_id, is_favorite: true}`; 404, если объявления нет |
 | DELETE | `/api/favorites/{listing_id}?user_id=` | 204 (и если записи не было) |
+| GET | `/api/listings/{id}/phone` | `{phone}`; 404, если телефона нет (MyHome скрывает номер) |
+| POST | `/api/listings/{id}/contact` | `{url}`: страница объявления на сайте-источнике; 404, если ссылки нет |
+| GET | `/api/me` | профиль: `{telegram_id, language, subscription_tier, subscription_expires_at, balance, favorites_count, created_at}` |
+| PATCH | `/api/me` (тело `{"language": "ru"\|"en"\|"ka"}`) | обновлённый профиль; 422 для другого языка |
 
 - `page` нумеруется с 1, `per_page` от 1 до 50 (по умолчанию 20). Объявления: только активные и не удалённые, новые сверху.
 - `rooms=4` означает «4 и больше» (как в `FilterPanel` фронтенда). Пустые параметры (`district=`) игнорируются.
@@ -53,7 +57,8 @@ api/
   {
     "id": "0b6d…-uuid", "title": {"ka": "…", "ru": "…"}, "description": {"ka": "…", "ru": "…"},
     "price": 1200.0, "currency": "GEL", "rooms": 2, "area": 55.0,
-    "district": "<uuid района>", "is_verified": false, "images": []
+    "district": "<uuid района>", "is_verified": false, "images": [],
+    "has_phone": false, "source_url": "https://www.myhome.ge/ru/nedvizhimost/...", "owner_name": "Davit"
   }
   ```
 - Документация OpenAPI: `/docs` (Swagger UI).
@@ -125,15 +130,21 @@ bina-seed --reset    # удалить демо-квартиры (районы о
    с UUID; тип `Listing.id` в `types.ts` должен быть `string`.
 3. **Избранное.** `useFavorite` пока локальный; нужно подключить GET/POST/DELETE `/api/favorites`,
    а в `client.ts` добавить методы `DELETE` и отправку JSON-тела в `POST`.
-4. `/api/listings/{id}/phone` и `/api/listings/{id}/contact` не реализованы: в БД нет телефонов
-   и контактов владельцев. `images` пока всегда пустой список (парсер не сохраняет фото).
+4. **Телефон.** `PhoneReveal` показывать только при `has_phone: true`: MyHome скрывает номера,
+   поэтому у его объявлений телефона нет. «Написать» (`POST /contact`) открывает объявление
+   на сайте-источнике, где номер виден по кнопке.
+5. **Профиль (FRONTEND-008).** Данные из `GET /api/me`, смена языка через `PATCH /api/me`.
+   Имя и аватар берутся из `Telegram.WebApp.initDataUnsafe.user`, бэкенд их не хранит.
+   Статистики просмотров пока нет (задача «История просмотров»).
+6. **Авторизация (FRONTEND-007).** JWT не нужен: каждый запрос несёт заголовок
+   `X-Telegram-Init-Data`, бэкенд проверяет подпись. «Выйти» на сервер ничего не отправляет.
 
 ## Definition of Done
 1. ✅ Эндпоинты listings, listings/{id}, favorites (GET/POST/DELETE) + districts, similar, health
 2. ✅ Используются существующие репозитории и use cases
 3. ✅ CORS для GitHub Pages
 4. ✅ CLI `bina-api`
-5. ✅ Пользователь избранного определяется по подписи Telegram
+5. ✅ Пользователь избранного и профиля определяется по подписи Telegram
 6. ✅ Тесты (unit + интеграционные на PostgreSQL), ruff и mypy для нового кода
 7. ⏳ Фронтенд переключён на API (см. раздел выше)
 
