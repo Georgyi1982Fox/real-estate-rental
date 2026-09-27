@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -123,53 +124,47 @@ class ListingsRepository(IListingsRepository):
         self,
         raw_listing: RawListing,
     ) -> Listing:
-        """Создать или обновить объявление из RawListing."""
-        # Найдем существующее объявление
-        existing_listing = await self.find_by_source(
-            raw_listing.source_id,
-            raw_listing.source_name,
-        )
-        
-        if existing_listing is not None:
-            # Обновляем существующее объявление
-            existing_listing.price = raw_listing.price
-            existing_listing.currency = raw_listing.currency
-            existing_listing.rooms = raw_listing.rooms
-            existing_listing.area = raw_listing.area
-            existing_listing.title = raw_listing.title
-            existing_listing.description = raw_listing.description
-            existing_listing.url = raw_listing.url
-            existing_listing.photos = raw_listing.photos
-            existing_listing.status = ListingStatus.ACTIVE
-            
-            # Обновляем район
-            district = await self._get_or_create_district(raw_listing.district)
-            existing_listing.district_id = district.id
-            
-            return existing_listing
-        else:
-            # Создаем новое объявление
-            district = await self._get_or_create_district(raw_listing.district)
-            
-            new_listing = Listing(
+        """Создать или обновить объявление из RawListing.
+
+        Текст попадает в ``title_ru``/``description_ru`` или ``*_ka`` по
+        ``raw_listing.language``; перевод на другой язык при обновлении сохраняется.
+        """
+        district = await self._get_or_create_district(raw_listing.district)
+        suffix = "ka" if raw_listing.language == "ka" else "ru"
+        values: dict[str, object] = {
+            f"title_{suffix}": raw_listing.title,
+            f"description_{suffix}": raw_listing.description,
+            "price": Decimal(str(raw_listing.price)),
+            "currency": raw_listing.currency,
+            "rooms": raw_listing.rooms,
+            "area": Decimal(str(raw_listing.area)),
+            "district_id": district.id,
+            "images": list(raw_listing.photos),
+            "url": raw_listing.url or None,
+            "phone": raw_listing.phone,
+            "owner_name": raw_listing.owner_name,
+            "status": ListingStatus.ACTIVE,
+            "is_deleted": False,
+        }
+
+        listing = await self.find_by_source(raw_listing.source_id, raw_listing.source_name)
+        if listing is None:
+            listing = Listing(
                 source_id=raw_listing.source_id,
                 source_name=raw_listing.source_name,
-                title=raw_listing.title,
-                description=raw_listing.description,
-                price=raw_listing.price,
-                currency=raw_listing.currency,
-                rooms=raw_listing.rooms,
-                area=raw_listing.area,
-                district_id=district.id,
-                url=raw_listing.url,
-                photos=raw_listing.photos,
-                status=ListingStatus.ACTIVE,
+                # Второй язык заполнит перевод (TranslateListingUseCase)
+                title_ru="",
+                title_ka="",
+                description_ru="",
+                description_ka="",
             )
-            
-            self._session.add(new_listing)
-            await self._session.flush()  # Получаем ID для последующей работы с embeddings
-            return new_listing
-    
+            self._session.add(listing)
+        for key, value in values.items():
+            setattr(listing, key, value)
+
+        await self._session.flush()  # ID нужен для embeddings
+        return listing
+
     async def _get_or_create_district(self, district_name: str) -> District:
         """Получает или создает район."""
         # В реальной реализации нужно добавить репозиторий районов

@@ -1,52 +1,90 @@
-from unittest.mock import AsyncMock, patch
+"""Базовый парсер: HTTP, повторы, пауза между запросами (без сети)."""
 
+import asyncio
+from unittest.mock import AsyncMock
+
+import httpx
 import pytest
+from tenacity import wait_none
 
+from bina.application.ports.scraper import RawListing
 from bina.infrastructure.scrapers.base_scraper import BaseWebsiteScraper
 
 
 class _TestScraper(BaseWebsiteScraper):
-    """Тестовый парсер для базового класса."""
-    
-    async def scrape_listings(self, limit: int):
-        """Заглушка метода scrape_listings."""
+    """Минимальная реализация для проверки базового класса."""
+
+    async def scrape_listings(self, limit: int) -> list[RawListing]:
         return []
 
 
-@pytest.mark.asyncio
-async def test_base_scraper_fetch_page():
-    """Тест метода _fetch_page базового парсера."""
-    # Создаем мок HTTP клиента
-    with patch("httpx.AsyncClient") as mock_client_class:
-        mock_client = AsyncMock()
-        mock_client_class.return_value = mock_client
-        mock_response = AsyncMock()
-        mock_response.raise_for_status.return_value = None
-        mock_response.text = "<html>test</html>"
-        mock_client.get.return_value = mock_response
-        
-        # Создаем парсер
-        scraper = _TestScraper("https://example.com", delay_seconds=0)
-        
-        # Вызываем метод
-        result = await scraper._fetch_page("https://example.com/test")
-        
-        # Проверяем результат
-        assert result == "<html>test</html>"
-        mock_client.get.assert_called_once_with(
-            "https://example.com/test", 
-            headers={"User-Agent": mock_client.get.call_args[1]["headers"]["User-Agent"]}
-        )
+def make_scraper(handler: httpx.MockTransport, delay: int = 0) -> _TestScraper:
+    scraper = _TestScraper("https://example.com/", delay_seconds=delay, user_agents=["UA-test"])
+    scraper._client = httpx.AsyncClient(transport=handler)
+    return scraper
 
 
-@pytest.mark.asyncio
-async def test_base_scraper_close():
-    """Тест метода close базового парсера."""
-    with patch("httpx.AsyncClient") as mock_client_class:
-        mock_client = AsyncMock()
-        mock_client_class.return_value = mock_client
-        
-        scraper = _TestScraper("https://example.com")
-        await scraper.close()
-        
-        mock_client.aclose.assert_called_once()
+@pytest.fixture(autouse=True)
+def no_retry_wait(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Без экспоненциального ожидания между повторами (иначе тест идёт секунды)."""
+    monkeypatch.setattr(BaseWebsiteScraper._fetch_page.retry, "wait", wait_none())  # type: ignore[attr-defined]
+
+
+async def test_fetch_page_returns_text_with_user_agent() -> None:
+    seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(200, text="<html>test</html>")
+
+    scraper = make_scraper(httpx.MockTransport(handler))
+
+    assert await scraper._fetch_page("https://example.com/test") == "<html>test</html>"
+    assert seen[0].headers["User-Agent"] == "UA-test"
+    assert scraper.base_url == "https://example.com"
+    await scraper.close()
+
+
+async def test_fetch_page_retries_then_succeeds() -> None:
+    responses = iter([httpx.Response(503), httpx.Response(500), httpx.Response(200, text="ok")])
+    scraper = make_scraper(httpx.MockTransport(lambda request: next(responses)))
+
+    assert await scraper._fetch_page("https://example.com/") == "ok"
+    await scraper.close()
+
+
+async def test_fetch_page_gives_up_after_three_attempts() -> None:
+    calls: list[int] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(1)
+        return httpx.Response(500)
+
+    scraper = make_scraper(httpx.MockTransport(handler))
+
+    with pytest.raises(httpx.HTTPStatusError):
+        await scraper._fetch_page("https://example.com/")
+    assert len(calls) == 3
+    await scraper.close()
+
+
+async def test_rate_limit_sleeps_after_each_request(monkeypatch: pytest.MonkeyPatch) -> None:
+    sleep = AsyncMock()
+    monkeypatch.setattr(asyncio, "sleep", sleep)
+    scraper = make_scraper(httpx.MockTransport(lambda request: httpx.Response(200)), delay=2)
+
+    await scraper._fetch_page("https://example.com/")
+
+    sleep.assert_awaited_once_with(2)
+    await scraper.close()
+
+
+async def test_close_releases_client() -> None:
+    scraper = make_scraper(httpx.MockTransport(lambda request: httpx.Response(200)))
+    client = scraper._client
+    assert client is not None
+
+    await scraper.close()
+
+    assert client.is_closed
+    assert scraper._client is None

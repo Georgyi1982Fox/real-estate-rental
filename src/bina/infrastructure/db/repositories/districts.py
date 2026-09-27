@@ -20,11 +20,15 @@ class DistrictsRepository(IDistrictsRepository):
     async def get_by_name(self, name: str) -> District | None:
         """Получить район по названию."""
         # Пытаемся найти по грузинскому или русскому названию
-        query = select(District).where(
-            (District.name_ka == name) | (District.name_ru == name)
+        query = (
+            select(District)
+            .where(
+                (District.name_ka == name) | (District.name_ru == name) | (District.name_en == name)
+            )
+            .order_by(District.created_at)
         )
         result = await self._session.execute(query)
-        return result.scalar_one_or_none()
+        return result.scalars().first()
 
     async def get_by_id(self, district_id: UUID) -> District | None:
         """Получить район по ID."""
@@ -44,10 +48,13 @@ class DistrictsRepository(IDistrictsRepository):
 
     async def create_district(self, name: str) -> District:
         """Создать новый район."""
-        # Создаем район с одинаковым названием на всех языках
+        # Одинаковое название на всех языках; статистика района пока неизвестна
         new_district = District(
             name_ka=name,
             name_ru=name,
+            name_en=name,
+            avg_price_per_m2=0,
+            safety_score=0,
         )
         self._session.add(new_district)
         await self._session.flush()

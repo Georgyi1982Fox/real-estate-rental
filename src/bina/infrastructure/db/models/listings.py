@@ -87,6 +87,10 @@ class Listing(Base, SoftDeleteMixin):
         server_default=text("'[]'"),
         nullable=False,
     )
+    # Источник и контакты (миграция listing_contacts)
+    url: Mapped[str | None] = mapped_column(String, nullable=True)
+    phone: Mapped[str | None] = mapped_column(String, nullable=True)
+    owner_name: Mapped[str | None] = mapped_column(String, nullable=True)
     is_verified: Mapped[bool] = mapped_column(
         Boolean,
         default=False,
