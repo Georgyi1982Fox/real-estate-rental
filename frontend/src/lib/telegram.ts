@@ -118,7 +118,9 @@ export function initTelegram(): void {
     // Вне Telegram (обычный браузер) следуем системной теме
     const media = window.matchMedia('(prefers-color-scheme: dark)');
     syncThemeColorMeta(media.matches ? 'dark' : 'light');
-    media.addEventListener('change', (event) => syncThemeColorMeta(event.matches ? 'dark' : 'light'));
+    media.addEventListener('change', (event) =>
+      syncThemeColorMeta(event.matches ? 'dark' : 'light'),
+    );
     return;
   }
 

@@ -52,7 +52,12 @@ export default function Modal({ open, title, onClose, children }: ModalProps) {
           <h2 id={titleId} className="text-lg font-semibold">
             {title}
           </h2>
-          <button type="button" className="app-icon-button" aria-label={t.common.close} onClick={onClose}>
+          <button
+            type="button"
+            className="app-icon-button"
+            aria-label={t.common.close}
+            onClick={onClose}
+          >
             ×
           </button>
         </header>

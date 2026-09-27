@@ -41,7 +41,10 @@ export default function TestCardPage() {
         </p>
       </header>
 
-      <section aria-label="Тестовые объявления" className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <section
+        aria-label="Тестовые объявления"
+        className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
+      >
         {TEST_LISTINGS.map((listing) => (
           <ListingCard key={listing.id} listing={listing} />
         ))}

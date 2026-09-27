@@ -1,18 +1,18 @@
 :root {
-  --primary: #5F7358;
-  --primary-hover: #4C5C46;
-  --secondary: #10B981;
-  --accent: #F59E0B;
-  --danger: #EF4444;
-  --background: #F8FAFC;
-  --surface: #FFFFFF;
-  --surface-hover: #F1F5F9;
-  --text-primary: #0F172A;
-  --text-secondary: #64748B;
-  --border: #E2E8F0;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
+  --primary: #5f7358;
+  --primary-hover: #4c5c46;
+  --secondary: #10b981;
+  --accent: #f59e0b;
+  --danger: #ef4444;
+  --background: #f8fafc;
+  --surface: #ffffff;
+  --surface-hover: #f1f5f9;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --border: #e2e8f0;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
@@ -24,10 +24,22 @@
    * --tg-safe-area-inset-* (вырез/системные панели) и --tg-content-safe-area-inset-*
    * (кнопки Telegram поверх контента). Берём максимум, чтобы не отступить дважды.
    */
-  --safe-top: max(env(safe-area-inset-top), calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px)));
-  --safe-bottom: max(env(safe-area-inset-bottom), calc(var(--tg-safe-area-inset-bottom, 0px) + var(--tg-content-safe-area-inset-bottom, 0px)));
-  --safe-left: max(env(safe-area-inset-left), calc(var(--tg-safe-area-inset-left, 0px) + var(--tg-content-safe-area-inset-left, 0px)));
-  --safe-right: max(env(safe-area-inset-right), calc(var(--tg-safe-area-inset-right, 0px) + var(--tg-content-safe-area-inset-right, 0px)));
+  --safe-top: max(
+    env(safe-area-inset-top),
+    calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px))
+  );
+  --safe-bottom: max(
+    env(safe-area-inset-bottom),
+    calc(var(--tg-safe-area-inset-bottom, 0px) + var(--tg-content-safe-area-inset-bottom, 0px))
+  );
+  --safe-left: max(
+    env(safe-area-inset-left),
+    calc(var(--tg-safe-area-inset-left, 0px) + var(--tg-content-safe-area-inset-left, 0px))
+  );
+  --safe-right: max(
+    env(safe-area-inset-right),
+    calc(var(--tg-safe-area-inset-right, 0px) + var(--tg-content-safe-area-inset-right, 0px))
+  );
 }
 
 :root {
@@ -40,7 +52,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-telegram-theme="light"]) {
+  :root:not([data-telegram-theme='light']) {
     --background: #0f172a;
     --surface: #1e293b;
     --surface-hover: #334155;
@@ -51,7 +63,7 @@
 }
 
 /* Telegram-ის საკუთარი colorScheme სიგნალი (src/lib/telegram.ts) გადაფარავს prefers-color-scheme-ს */
-:root[data-telegram-theme="dark"] {
+:root[data-telegram-theme='dark'] {
   --background: #0f172a;
   --surface: #1e293b;
   --surface-hover: #334155;

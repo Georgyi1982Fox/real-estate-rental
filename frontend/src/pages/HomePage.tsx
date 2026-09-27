@@ -44,18 +44,28 @@ export default function HomePage() {
         <h1 id="home-title" className="max-w-2xl text-3xl font-bold tracking-tight sm:text-4xl">
           {ht.heading}
         </h1>
-        <p className="max-w-2xl text-sm leading-6 text-[var(--text-secondary)] sm:text-base">{ht.subtitle}</p>
+        <p className="max-w-2xl text-sm leading-6 text-[var(--text-secondary)] sm:text-base">
+          {ht.subtitle}
+        </p>
       </header>
 
       <SearchBar />
       <FilterPanel districts={districts} />
 
-      <section className="home__listings space-y-6" aria-labelledby="home-listings-title" aria-busy={loading}>
+      <section
+        className="home__listings space-y-6"
+        aria-labelledby="home-listings-title"
+        aria-busy={loading}
+      >
         <header className="flex items-baseline justify-between gap-3">
           <h2 id="home-listings-title" className="text-xl font-bold tracking-tight">
             {ht.featured}
           </h2>
-          {data && <span className="text-sm text-[var(--text-secondary)]">{fill(ht.count, data.total)}</span>}
+          {data && (
+            <span className="text-sm text-[var(--text-secondary)]">
+              {fill(ht.count, data.total)}
+            </span>
+          )}
         </header>
 
         {loading && (
@@ -68,13 +78,20 @@ export default function HomePage() {
 
         {error && <ErrorState onRetry={reload} />}
 
-        {data && data.items.length === 0 && <EmptyState title={ht.empty_title} text={ht.empty_text} />}
+        {data && data.items.length === 0 && (
+          <EmptyState title={ht.empty_title} text={ht.empty_text} />
+        )}
 
         {data && data.items.length > 0 && (
           <>
             <div className={GRID_CLASS}>
               {data.items.map((listing) => (
-                <ListingCard key={listing.id} listing={listing} districtNames={names} headingLevel="h3" />
+                <ListingCard
+                  key={listing.id}
+                  listing={listing}
+                  districtNames={names}
+                  headingLevel="h3"
+                />
               ))}
             </div>
             <Pagination current={data.page} total={data.pages} onChange={changePage} />

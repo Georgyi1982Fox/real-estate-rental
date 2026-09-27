@@ -33,7 +33,9 @@ export default function ListingSpecs({ listing }: ListingSpecsProps) {
       </h2>
       <dl className="listing-specs__grid grid grid-cols-2 gap-3 sm:grid-cols-3">
         <SpecItem label={lt.rooms}>{listing.rooms}</SpecItem>
-        {typeof listing.bedrooms === 'number' && <SpecItem label={lt.bedrooms}>{listing.bedrooms}</SpecItem>}
+        {typeof listing.bedrooms === 'number' && (
+          <SpecItem label={lt.bedrooms}>{listing.bedrooms}</SpecItem>
+        )}
         <SpecItem label={lt.area}>
           {listing.area} {t.card.sqm}
         </SpecItem>
@@ -50,7 +52,9 @@ export default function ListingSpecs({ listing }: ListingSpecsProps) {
 
       {features.length > 0 && (
         <>
-          <h3 className="pt-2 text-sm font-semibold text-[var(--text-secondary)]">{lt.amenities}</h3>
+          <h3 className="pt-2 text-sm font-semibold text-[var(--text-secondary)]">
+            {lt.amenities}
+          </h3>
           <ul className="listing-specs__features flex list-none flex-wrap gap-2 p-0">
             {features.map((code) => (
               <li

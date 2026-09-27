@@ -72,7 +72,11 @@ export default function Gallery({ images, alt }: GalleryProps) {
   }
 
   return (
-    <section className="gallery relative" aria-roledescription="carousel" aria-label={t.gallery.label}>
+    <section
+      className="gallery relative"
+      aria-roledescription="carousel"
+      aria-label={t.gallery.label}
+    >
       <ul
         ref={trackRef}
         className="gallery__track no-scrollbar flex aspect-[4/3] w-full list-none snap-x snap-mandatory overflow-x-auto overscroll-x-contain rounded-[var(--radius-lg)] bg-[var(--surface-hover)] p-0 sm:aspect-[16/10]"
@@ -137,7 +141,10 @@ export default function Gallery({ images, alt }: GalleryProps) {
             <span aria-hidden="true">›</span>
           </button>
 
-          <nav className="gallery__dots absolute inset-x-0 bottom-2 flex justify-center gap-0.5" aria-label={t.gallery.label}>
+          <nav
+            className="gallery__dots absolute inset-x-0 bottom-2 flex justify-center gap-0.5"
+            aria-label={t.gallery.label}
+          >
             {images.map((src, index) => (
               <button
                 key={src + index}

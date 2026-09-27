@@ -1,5 +1,6 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import Layout from './components/Layout';
+import FavoritesPage from './pages/FavoritesPage';
 import HomePage from './pages/HomePage';
 import ListingPage from './pages/ListingPage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -14,6 +15,7 @@ const router = createBrowserRouter(
       children: [
         { path: '/', element: <HomePage /> },
         { path: '/listing/:id', element: <ListingPage /> },
+        { path: '/favorites', element: <FavoritesPage /> },
         { path: '/test_card', element: <TestCardPage /> },
         { path: '*', element: <NotFoundPage /> },
       ],

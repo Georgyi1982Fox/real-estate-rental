@@ -9,8 +9,11 @@ export interface Owner {
   name?: Localized;
 }
 
+/** ID квартиры: UUID-строка с бэкенда, число — только в mock_data.json */
+export type ListingId = string | number;
+
 export interface Listing {
-  id: number;
+  id: ListingId;
   title: Localized;
   description?: Localized;
   price: number;

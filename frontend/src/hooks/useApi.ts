@@ -31,7 +31,10 @@ export function useApi<T>(path: string | null): ApiResult<T> {
       (data) => setState({ path, data }),
       (error: unknown) => {
         if (controller.signal.aborted) return;
-        setState({ path, error: error instanceof ApiError ? error : new ApiError(0, String(error)) });
+        setState({
+          path,
+          error: error instanceof ApiError ? error : new ApiError(0, String(error)),
+        });
       },
     );
     return () => controller.abort();

@@ -21,13 +21,17 @@ import NotFoundPage from './NotFoundPage';
 
 export default function ListingPage() {
   const { id = '' } = useParams();
-  const listingId = /^\d+$/.test(id) ? Number(id) : null;
+  // ID — строка как есть (UUID с бэкенда или число из моков), в число не приводим
+  const listingId = id ? encodeURIComponent(id) : null;
   const { lang, t } = useI18n();
   const lt = t.listing;
   const { names } = useDistricts();
-  const { data: listing, error, loading, reload } = useApi<Listing>(
-    listingId !== null ? `/api/listings/${listingId}` : null,
-  );
+  const {
+    data: listing,
+    error,
+    loading,
+    reload,
+  } = useApi<Listing>(listingId !== null ? `/api/listings/${listingId}` : null);
   const similar = useApi<ListResponse<Listing>>(
     listingId !== null ? `/api/listings/${listingId}/similar` : null,
   );
@@ -101,7 +105,9 @@ export default function ListingPage() {
                           ★
                         </span>
                         <span className="sr-only">{lt.rating}:</span>
-                        <span className="font-medium text-[var(--text-primary)]">{listing.rating.toFixed(1)}</span>
+                        <span className="font-medium text-[var(--text-primary)]">
+                          {listing.rating.toFixed(1)}
+                        </span>
                       </span>
                     )}
                   </p>
@@ -109,12 +115,15 @@ export default function ListingPage() {
 
                 <p className="listing-summary__price text-3xl font-bold tracking-tight">
                   {formatPrice(listing.price, listing.currency)}{' '}
-                  <span className="text-base font-medium text-[var(--text-secondary)]">{lt.per_month}</span>
+                  <span className="text-base font-medium text-[var(--text-secondary)]">
+                    {lt.per_month}
+                  </span>
                 </p>
 
                 {ownerName && (
                   <p className="listing-summary__owner text-sm text-[var(--text-secondary)]">
-                    {lt.owner}: <span className="font-medium text-[var(--text-primary)]">{ownerName}</span>
+                    {lt.owner}:{' '}
+                    <span className="font-medium text-[var(--text-primary)]">{ownerName}</span>
                   </p>
                 )}
 
@@ -124,7 +133,7 @@ export default function ListingPage() {
                 >
                   {!nativeContact && <ContactButton onClick={contact} loading={contactLoading} />}
                   <PhoneReveal listingId={listing.id} />
-                  <FavoriteButton />
+                  <FavoriteButton listingId={listing.id} />
                 </section>
               </div>
             </section>
@@ -140,7 +149,9 @@ export default function ListingPage() {
                 <h2 id="listing-location-title" className="text-lg font-semibold">
                   {lt.location}
                 </h2>
-                <address className="text-sm not-italic text-[var(--text-secondary)]">{address || district}</address>
+                <address className="text-sm not-italic text-[var(--text-secondary)]">
+                  {address || district}
+                </address>
                 {/* Заглушка карты: будет заменена на реальную карту */}
                 <figure className="listing-location__map grid aspect-[16/9] w-full place-items-center rounded-[var(--radius-md)] bg-[var(--surface-hover)]">
                   <figcaption className="flex flex-col items-center gap-2 text-sm text-[var(--text-secondary)]">

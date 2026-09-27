@@ -24,6 +24,7 @@ const ka = {
     home: 'Bina.ai — მთავარი გვერდი',
     language: 'ენის შეცვლა',
     favorites: 'ფავორიტები',
+    favorites_count: 'ფავორიტები: {n}',
   },
   footer: {
     nav: 'ქვედა ნავიგაცია',
@@ -60,6 +61,15 @@ const ka = {
     rooms_unit: 'ოთახი',
     area: 'ფართობი',
     sqm: 'მ²',
+  },
+  favorites: {
+    page_title: 'ფავორიტები',
+    heading: 'ფავორიტები',
+    count: '{n} ბინა',
+    empty_title: 'ფავორიტები ცარიელია',
+    empty_text: 'დააჭირეთ ♥ ბინის ბარათზე, რომ შეინახოთ აქ.',
+    remove: 'ფავორიტებიდან წაშლა',
+    find: 'ბინის მოძებნა',
   },
   gallery: {
     label: 'ბინის ფოტოები',
@@ -126,6 +136,7 @@ const ru: Strings = {
     home: 'Bina.ai — главная',
     language: 'Сменить язык',
     favorites: 'Избранное',
+    favorites_count: 'Избранное: {n}',
   },
   footer: {
     nav: 'Нижняя навигация',
@@ -162,6 +173,15 @@ const ru: Strings = {
     rooms_unit: 'комн.',
     area: 'Площадь',
     sqm: 'м²',
+  },
+  favorites: {
+    page_title: 'Избранное',
+    heading: 'Избранное',
+    count: 'Квартир: {n}',
+    empty_title: 'В избранном пока пусто',
+    empty_text: 'Нажмите ♥ на карточке квартиры, чтобы сохранить её здесь.',
+    remove: 'Удалить из избранного',
+    find: 'Найти квартиру',
   },
   gallery: {
     label: 'Фотографии квартиры',
@@ -226,6 +246,7 @@ const en: Strings = {
     home: 'Bina.ai home',
     language: 'Change language',
     favorites: 'Favorites',
+    favorites_count: 'Favorites: {n}',
   },
   footer: {
     nav: 'Footer navigation',
@@ -234,7 +255,8 @@ const en: Strings = {
   home: {
     page_title: 'Apartment search',
     heading: 'Find an apartment in Georgia',
-    subtitle: 'Search for the right apartment among listings collected from various external sources.',
+    subtitle:
+      'Search for the right apartment among listings collected from various external sources.',
     search_label: 'Apartment search',
     search_placeholder: 'District, street, complex',
     search_button: 'Search',
@@ -262,6 +284,15 @@ const en: Strings = {
     rooms_unit: 'rm',
     area: 'Area',
     sqm: 'm²',
+  },
+  favorites: {
+    page_title: 'Favorites',
+    heading: 'Favorites',
+    count: 'Apartments: {n}',
+    empty_title: 'No favorites yet',
+    empty_text: 'Tap ♥ on an apartment card to save it here.',
+    remove: 'Remove from favorites',
+    find: 'Find an apartment',
   },
   gallery: {
     label: 'Apartment photos',
