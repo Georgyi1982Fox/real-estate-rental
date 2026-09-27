@@ -31,6 +31,12 @@ export interface Listing {
   owner?: Owner;
   images?: string[];
   rating?: number;
+  /** Есть ли телефон (GET /api/listings/{id}/phone); MyHome номера скрывает */
+  has_phone?: boolean;
+  /** Объявление на сайте-источнике */
+  source_url?: string | null;
+  /** Имя арендодателя с сайта-источника */
+  owner_name?: string | null;
 }
 
 export interface District {
