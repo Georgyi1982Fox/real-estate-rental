@@ -1,3 +1,4 @@
+import dataclasses
 import re
 
 import structlog
@@ -129,19 +130,12 @@ class ListingNormalizer:
         normalized_description = self.clean_text(listing.description)
         normalized_district = self.normalize_district(listing.district)
 
-        # Обновляем объявление
-        normalized_listing = RawListing(
-            source_id=listing.source_id,
-            source_name=listing.source_name,
+        # Остальные поля (фото, телефон, имя, язык) сохраняются как есть
+        return dataclasses.replace(
+            listing,
             title=normalized_title,
             description=normalized_description,
             price=normalized_price,
             currency=normalized_currency,
-            rooms=listing.rooms,
-            area=listing.area,
             district=normalized_district,
-            url=listing.url,
-            photos=listing.photos,
         )
-
-        return normalized_listing

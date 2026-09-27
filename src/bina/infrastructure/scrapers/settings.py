@@ -1,4 +1,5 @@
 import os
+from dataclasses import dataclass
 
 
 class ScraperSettings:
@@ -20,3 +21,48 @@ class ScraperSettings:
     # Базовые URL для источников
     MYHOME_BASE_URL = os.getenv("MYHOME_BASE_URL", "https://www.myhome.ge")
     SS_BASE_URL = os.getenv("SS_BASE_URL", "https://ss.ge")
+
+
+@dataclass(frozen=True)
+class MyHomeSelectors:
+    """CSS-селекторы MyHome.ge.
+
+    Значения по умолчанию соответствуют фикстурам в
+    tests/unit/infrastructure/scrapers/test_data/. Для реального сайта их нужно
+    сверить с HTML, сохранённым через ``bina-scrape --source myhome --dump-dir``.
+    """
+
+    # Страница списка
+    card: str = "[data-listing-id]"
+    card_id_attr: str = "data-listing-id"
+    card_link: str = ".card-title a"
+    card_price: str = ".price-tag"
+    card_district: str = ".location, .card-location"
+    card_rooms: str = ".info-item.-rooms, .card-rooms"
+    card_area: str = ".info-item.-area, .card-area"
+    card_description: str = ".description, .card-description"
+    card_image: str = "img"
+    # Страница объявления
+    detail_title: str = "h1"
+    detail_price: str = ".price-tag"
+    detail_district: str = ".location"
+    detail_rooms: str = ".info-item.-rooms"
+    detail_area: str = ".info-item.-area"
+    detail_description: str = ".description"
+    detail_photos: str = ".gallery img"
+    detail_phone: str = "[data-phone], .phone"
+    detail_owner: str = ".owner-name"
+
+
+class MyHomeSettings:
+    """URL и селекторы MyHome.ge (переопределяются переменными окружения)."""
+
+    BASE_URL = os.getenv("MYHOME_BASE_URL", "https://www.myhome.ge")
+    # Аренда (list_type=2), квартиры, Тбилиси; {page}: номер страницы
+    SEARCH_PATH = os.getenv(
+        "MYHOME_SEARCH_PATH",
+        "/ru/search?AjaxSearchFieldForm%5Bpr_type%5D=1&AjaxSearchFieldForm%5Blist_type%5D=2"
+        "&AjaxSearchFieldForm%5Bcity_id%5D=1&AjaxSearchFieldForm%5Bcurrency%5D=1&page={page}",
+    )
+    MAX_PAGES = int(os.getenv("MYHOME_MAX_PAGES", "20"))
+    SELECTORS = MyHomeSelectors()

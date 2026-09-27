@@ -81,10 +81,10 @@ async def test_deduplicate_duplicate_same_price(deduplicator, mock_listing_repos
         price=1000.0,
         currency="GEL",
         rooms=2,
-        area_sqm=Decimal("50.0"),
+        area=Decimal("50.0"),
         district_id=UUID("12345678-1234-5678-1234-567812345679"),
         url="https://example.com",
-        photos=[],
+        images=[],
         status=ListingStatus.ACTIVE,
     )
     mock_listing_repository.find_by_source.return_value = existing_listing
@@ -128,10 +128,10 @@ async def test_deduplicate_price_changed(deduplicator, mock_listing_repository):
         price=1000.0,
         currency="GEL",
         rooms=2,
-        area_sqm=Decimal("50.0"),
+        area=Decimal("50.0"),
         district_id=UUID("12345678-1234-5678-1234-567812345679"),
         url="https://example.com",
-        photos=[],
+        images=[],
         status=ListingStatus.ACTIVE,
     )
     mock_listing_repository.find_by_source.return_value = existing_listing
