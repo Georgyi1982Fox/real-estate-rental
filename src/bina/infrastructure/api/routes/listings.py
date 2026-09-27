@@ -17,6 +17,7 @@ from bina.infrastructure.api.routes.common import (
     parse_uuid,
 )
 from bina.infrastructure.api.schemas import ListingOut, ListingsOut, ListingsPageOut
+from bina.infrastructure.db.models import Listing
 from bina.infrastructure.db.repositories.listings import ListingsRepository
 
 router = APIRouter(prefix="/api/listings", tags=["listings"])
@@ -63,13 +64,30 @@ async def get_listing(listing_id: str, session: SessionDep) -> ListingOut:
 
 @router.get("/{listing_id}/similar", response_model=ListingsOut)
 async def similar_listings(listing_id: str, session: SessionDep) -> ListingsOut:
-    """До трёх активных объявлений того же района с ценой ±30%."""
+    """До трёх похожих активных объявлений.
+
+    Кандидаты по убыванию похожести: тот же район с ценой ±30%, затем тот же
+    район с любой ценой, затем другие районы с ценой ±30%.
+    """
     listing = await get_listing_or_404(session, listing_id)
-    filters = ListingSearchFilters(
-        district_id=listing.district_id,
-        price_min=listing.price * (1 - SIMILAR_PRICE_SPREAD),
-        price_max=listing.price * (1 + SIMILAR_PRICE_SPREAD),
+    price_min = listing.price * (1 - SIMILAR_PRICE_SPREAD)
+    price_max = listing.price * (1 + SIMILAR_PRICE_SPREAD)
+    tiers = (
+        ListingSearchFilters(
+            district_id=listing.district_id, price_min=price_min, price_max=price_max
+        ),
+        ListingSearchFilters(district_id=listing.district_id),
+        ListingSearchFilters(price_min=price_min, price_max=price_max),
     )
-    candidates = await ListingsRepository(session).search(filters, limit=SIMILAR_LIMIT + 1)
-    items = [item for item in candidates if item.id != listing.id][:SIMILAR_LIMIT]
-    return ListingsOut(items=[ListingOut.from_model(item) for item in items])
+
+    repository = ListingsRepository(session)
+    seen = {listing.id}
+    items: list[Listing] = []
+    for filters in tiers:
+        for candidate in await repository.search(filters, limit=SIMILAR_LIMIT + len(seen)):
+            if candidate.id not in seen:
+                seen.add(candidate.id)
+                items.append(candidate)
+        if len(items) >= SIMILAR_LIMIT:
+            break
+    return ListingsOut(items=[ListingOut.from_model(item) for item in items[:SIMILAR_LIMIT]])

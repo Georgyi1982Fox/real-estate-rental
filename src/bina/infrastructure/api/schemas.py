@@ -43,6 +43,7 @@ class ListingOut(BaseModel):
             area=float(listing.area),
             district=listing.district_id,
             is_verified=listing.is_verified,
+            images=list(listing.images or []),
         )
 
 

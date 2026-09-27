@@ -56,6 +56,7 @@ class Store:
             district_id=district.id,
             rooms=rooms,
             area=Decimal(kwargs.pop("area", 50)),
+            images=kwargs.pop("images", []),
             is_verified=kwargs.pop("is_verified", False),
             fraud_score=0,
             status=kwargs.pop("status", ListingStatus.ACTIVE),
