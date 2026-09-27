@@ -1,10 +1,16 @@
-import { useFavorite } from '../hooks/useFavorite';
+import type { ListingId } from '../api/types';
+import { useFavorites } from '../hooks/useFavorites';
 import { useI18n } from '../providers/I18nProvider';
 
 /** Кнопка «В избранное» со страницы квартиры (у карточки своя, компактная) */
-export default function FavoriteButton() {
+interface FavoriteButtonProps {
+  listingId: ListingId;
+}
+
+export default function FavoriteButton({ listingId }: FavoriteButtonProps) {
   const { t } = useI18n();
-  const { isFavorite, toggle } = useFavorite();
+  const favorites = useFavorites();
+  const isFavorite = favorites.isFavorite(listingId);
 
   return (
     <button
@@ -12,7 +18,7 @@ export default function FavoriteButton() {
       className="listing-contact__favorite inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-hover)] active:scale-[.98]"
       aria-label={t.card.favorite}
       aria-pressed={isFavorite}
-      onClick={toggle}
+      onClick={() => favorites.toggle(listingId)}
     >
       <span
         className={`text-lg leading-none transition-transform duration-200 ${isFavorite ? 'scale-110 text-[var(--danger)]' : 'text-[var(--text-secondary)]'}`}

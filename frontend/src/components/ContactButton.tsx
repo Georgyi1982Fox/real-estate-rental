@@ -17,7 +17,11 @@ export default function ContactButton({ onClick, loading }: ContactButtonProps) 
       aria-busy={loading}
       onClick={onClick}
     >
-      {loading ? <span className="spinner" aria-hidden="true" /> : <span aria-hidden="true">💬</span>}
+      {loading ? (
+        <span className="spinner" aria-hidden="true" />
+      ) : (
+        <span aria-hidden="true">💬</span>
+      )}
       {t.listing.write}
     </button>
   );

@@ -13,7 +13,10 @@ export default function Pagination({ current, total, onChange }: PaginationProps
   if (total <= 1) return null;
 
   return (
-    <nav aria-label={t.home.pagination} className="pagination flex items-center justify-center gap-2 pt-2">
+    <nav
+      aria-label={t.home.pagination}
+      className="pagination flex items-center justify-center gap-2 pt-2"
+    >
       {Array.from({ length: total }, (_, index) => index + 1).map((page) => {
         const active = page === current;
         return (

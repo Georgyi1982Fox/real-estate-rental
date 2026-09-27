@@ -35,7 +35,10 @@ export default function FilterPanel({ districts }: FilterPanelProps) {
       <legend className="sr-only">{ht.filters}</legend>
 
       <div className="filter-panel__field flex min-w-0 flex-col gap-1">
-        <label htmlFor="filter-district" className="text-xs font-medium text-[var(--text-secondary)]">
+        <label
+          htmlFor="filter-district"
+          className="text-xs font-medium text-[var(--text-secondary)]"
+        >
           {ht.district}
         </label>
         <select id="filter-district" name="district" className={`${CONTROL_CLASS} px-3 py-2`}>

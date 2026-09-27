@@ -1,9 +1,12 @@
 import { Link } from 'react-router-dom';
+import { useFavorites } from '../hooks/useFavorites';
+import { fill } from '../lib/format';
 import { useI18n } from '../providers/I18nProvider';
 import LanguageSwitcher from './LanguageSwitcher';
 
 export default function Header() {
   const { t } = useI18n();
+  const { count } = useFavorites();
 
   return (
     // relative z-30: backdrop-blur создаёт свой stacking context — без z-index меню языка уходит под контент
@@ -24,8 +27,20 @@ export default function Header() {
         </Link>
         <div className="flex items-center gap-1">
           <LanguageSwitcher />
-          <Link to="/favorites" className="app-icon-button" aria-label={t.header.favorites}>
-            ♡
+          <Link
+            to="/favorites"
+            className="app-icon-button app-header__favorites relative"
+            aria-label={count > 0 ? fill(t.header.favorites_count, count) : t.header.favorites}
+          >
+            <span aria-hidden="true">♡</span>
+            {count > 0 && (
+              <span
+                className="app-header__badge absolute -right-0.5 -top-0.5 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[var(--danger)] px-1 text-[11px] font-bold leading-none text-white"
+                aria-hidden="true"
+              >
+                {count > 99 ? '99+' : count}
+              </span>
+            )}
           </Link>
         </div>
       </nav>

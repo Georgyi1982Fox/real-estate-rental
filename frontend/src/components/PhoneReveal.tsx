@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { apiGet } from '../api/client';
-import type { PhoneResponse } from '../api/types';
+import type { ListingId, PhoneResponse } from '../api/types';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 
 type PhoneState = 'idle' | 'loading' | 'done' | 'error';
 
 interface PhoneRevealProps {
-  listingId: number;
+  listingId: ListingId;
 }
 
 /** «Показать телефон»: номер не лежит в разметке, запрашивается у бэкенда по клику */

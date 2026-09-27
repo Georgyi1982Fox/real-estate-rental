@@ -1,13 +1,13 @@
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiPost } from '../api/client';
-import type { ContactResponse } from '../api/types';
+import type { ContactResponse, ListingId } from '../api/types';
 import { haptic, openLink } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 import { useToast } from '../providers/ToastProvider';
 
 /** «Написать»: бэкенд возвращает {url}, куда вести пользователя (t.me, внешняя или внутренняя ссылка) */
-export function useContact(listingId: number | null) {
+export function useContact(listingId: ListingId | null) {
   const { t } = useI18n();
   const showToast = useToast();
   const navigate = useNavigate();

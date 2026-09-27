@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import type { Listing } from '../api/types';
 import type { DistrictNames } from '../hooks/useDistricts';
-import { useFavorite } from '../hooks/useFavorite';
+import { useFavorites } from '../hooks/useFavorites';
 import { formatPrice, tr } from '../lib/format';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
@@ -18,9 +18,14 @@ interface ListingCardProps {
  * Карточка объявления. Вся карточка кликабельна через «растянутую» ссылку заголовка;
  * кнопка избранного лежит над ней (z-10).
  */
-export default function ListingCard({ listing, districtNames, headingLevel = 'h2' }: ListingCardProps) {
+export default function ListingCard({
+  listing,
+  districtNames,
+  headingLevel = 'h2',
+}: ListingCardProps) {
   const { lang, t } = useI18n();
-  const { isFavorite, toggle } = useFavorite();
+  const favorites = useFavorites();
+  const isFavorite = favorites.isFavorite(listing.id);
   const Heading = headingLevel;
   const title = tr(listing.title, lang);
   const districtEntry = districtNames?.[listing.district];
@@ -58,7 +63,7 @@ export default function ListingCard({ listing, districtNames, headingLevel = 'h2
             className={`listing-card__favorite absolute right-3 top-3 z-10 inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/60 bg-white/90 shadow-sm backdrop-blur-sm transition-colors duration-200 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 ${isFavorite ? 'text-[var(--danger)]' : 'text-[var(--text-secondary)]'}`}
             aria-pressed={isFavorite}
             aria-label={t.card.favorite}
-            onClick={toggle}
+            onClick={() => favorites.toggle(listing.id)}
           >
             <span
               className={`text-xl leading-none transition-transform duration-200 ${isFavorite ? 'scale-110' : 'scale-100'}`}
