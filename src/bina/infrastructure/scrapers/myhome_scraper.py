@@ -1,5 +1,4 @@
 import dataclasses
-import json
 import re
 from collections.abc import Iterator
 from pathlib import Path
@@ -12,6 +11,7 @@ from bs4 import BeautifulSoup, Tag
 
 from bina.application.ports.scraper import RawListing
 from bina.infrastructure.scrapers.base_scraper import BaseWebsiteScraper
+from bina.infrastructure.scrapers.nextjs import next_data, walk
 from bina.infrastructure.scrapers.settings import MyHomeSelectors, MyHomeSettings
 
 logger = structlog.get_logger(__name__)
@@ -19,9 +19,6 @@ logger = structlog.get_logger(__name__)
 SOURCE_NAME = "myhome"
 # Ключи цен в JSON сайта: price["1"] в лари, "2" в долларах, "3" в евро
 CURRENCY_BY_ID = {"1": "GEL", "2": "USD", "3": "EUR"}
-NEXT_DATA_RE = re.compile(
-    r'<script[^>]+id="__NEXT_DATA__"[^>]*>(.*?)</script>', re.DOTALL | re.IGNORECASE
-)
 # После стольких ошибок страниц списка подряд парсинг останавливается
 MAX_CONSECUTIVE_FAILURES = 3
 
@@ -120,9 +117,9 @@ class MyHomeScraper(BaseWebsiteScraper):
 
     def _parse_listings(self, html: str) -> list[RawListing]:
         """Карточки со страницы списка: из JSON Next.js, иначе из HTML."""
-        next_data = _next_data(html)
-        if next_data is not None:
-            statements = [item for items in _statement_lists(next_data) for item in items]
+        data = next_data(html)
+        if data is not None:
+            statements = [item for items in _statement_lists(data) for item in items]
             if statements:
                 return [self._from_statement(item) for item in statements]
         return self._parse_listings_html(html)
@@ -186,9 +183,9 @@ class MyHomeScraper(BaseWebsiteScraper):
 
     def _parse_detail(self, html: str) -> dict[str, Any]:
         """Поля со страницы объявления; отсутствующие на странице не возвращаются."""
-        next_data = _next_data(html)
-        if next_data is not None:
-            statement = _find_statement(next_data)
+        data = next_data(html)
+        if data is not None:
+            statement = _find_statement(data)
             if statement is not None:
                 return _statement_details(statement)
         return self._parse_detail_html(html)
@@ -271,19 +268,6 @@ def _clean_phone(text: str) -> str:
 # ------------------------------------------------------------------ JSON Next.js
 
 
-def _next_data(html: str) -> dict[str, Any] | None:
-    """JSON из ``<script id="__NEXT_DATA__">`` (``None``, если его нет или он битый)."""
-    match = NEXT_DATA_RE.search(html)
-    if match is None:
-        return None
-    try:
-        data = json.loads(match.group(1))
-    except json.JSONDecodeError:
-        logger.warning("MyHome __NEXT_DATA__ is not valid JSON")
-        return None
-    return data if isinstance(data, dict) else None
-
-
 def _is_statement(value: Any) -> bool:
     """Похоже ли значение на объявление сайта."""
     return (
@@ -294,27 +278,16 @@ def _is_statement(value: Any) -> bool:
     )
 
 
-def _walk(value: Any) -> Iterator[Any]:
-    """Все вложенные значения JSON (обход в глубину)."""
-    yield value
-    if isinstance(value, dict):
-        for child in value.values():
-            yield from _walk(child)
-    elif isinstance(value, list):
-        for child in value:
-            yield from _walk(child)
-
-
 def _statement_lists(data: dict[str, Any]) -> Iterator[list[dict[str, Any]]]:
     """Списки объявлений в JSON страницы поиска."""
-    for value in _walk(data):
+    for value in walk(data):
         if isinstance(value, list) and value and all(_is_statement(item) for item in value):
             yield value
 
 
 def _find_statement(data: dict[str, Any]) -> dict[str, Any] | None:
     """Первое объявление в JSON страницы объявления."""
-    for value in _walk(data):
+    for value in walk(data):
         if _is_statement(value):
             return dict(value)
     return None
