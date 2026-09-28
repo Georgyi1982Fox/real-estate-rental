@@ -6,7 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Query
 from pydantic import ValidationError
 
-from bina.application.dtos.listing_search import ListingSearchFilters
+from bina.application.dtos.listing_search import ListingSearchFilters, search_filters
 from bina.application.use_cases.search_listings import SearchListingsUseCase
 from bina.infrastructure.api.dependencies import SessionDep
 from bina.infrastructure.api.routes.common import (
@@ -29,8 +29,6 @@ from bina.infrastructure.db.repositories.listings import ListingsRepository
 
 router = APIRouter(prefix="/api/listings", tags=["listings"])
 
-# «4» в фильтре фронтенда означает «4 и больше»
-ROOMS_OR_MORE = 4
 SIMILAR_LIMIT = 3
 SIMILAR_PRICE_SPREAD = Decimal("0.3")
 
@@ -47,12 +45,11 @@ async def list_listings(
 ) -> ListingsPageOut:
     """Активные объявления, новые сверху, с пагинацией и фильтрами."""
     try:
-        filters = ListingSearchFilters(
+        filters = search_filters(
             district_id=parse_uuid(district, "district"),
             price_min=parse_decimal(min_price, "min_price"),
             price_max=parse_decimal(max_price, "max_price"),
-            rooms_min=rooms,
-            rooms_max=None if rooms is None or rooms >= ROOMS_OR_MORE else rooms,
+            rooms=rooms,
         )
     except ValidationError as exc:
         raise bad_request("min_price must be <= max_price") from exc

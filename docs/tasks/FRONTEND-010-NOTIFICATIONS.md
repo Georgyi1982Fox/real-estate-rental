@@ -16,8 +16,8 @@ git pull
 git checkout -b feature/frontend-010-notifications
 ```
 
-**Бэкенда `/api/notifications` ещё нет** (делается параллельно, TASK-028). Хук пишется так:
-сначала запрос к API, при 404 или ошибке сети — mock-данные.
+**Бэкенд `/api/notifications` готов** (TASK-028, `docs/tasks/TASK-012-NOTIFICATIONS.md`). Хук всё
+равно пишется с запасом: при ошибке сети — mock-данные.
 
 ## Типы уведомлений
 Уведомлений «новое сообщение» не будет: чата нет.
@@ -28,7 +28,7 @@ git checkout -b feature/frontend-010-notifications
 | `price_drop` | снизилась цена квартиры из избранного | 📉 | «Цена снижена: {old_price} → {price}» |
 | `system` | служебное (подписка и т. п.) | ℹ️ | `text` с сервера |
 
-## API (бэкенд TASK-028)
+## API (бэкенд TASK-028, готов)
 ```
 GET  /api/notifications?filter=all|unread&page=1&per_page=20
      → { items: AppNotification[], total, page, pages, unread_count }

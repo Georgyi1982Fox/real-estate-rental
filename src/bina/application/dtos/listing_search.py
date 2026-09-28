@@ -37,3 +37,27 @@ class ListingSearchFilters(BaseModel):
         ):
             raise ValueError("rooms_min must be <= rooms_max")
         return self
+
+
+# «4» в фильтре комнат (Mini App, сохранённые поиски) означает «4 и больше»
+ROOMS_OR_MORE = 4
+
+
+def search_filters(
+    district_id: UUID | None = None,
+    price_min: Decimal | None = None,
+    price_max: Decimal | None = None,
+    rooms: int | None = None,
+) -> ListingSearchFilters:
+    """Фильтры из параметров Mini App: ``rooms`` — точное число, 4 — «4 и больше».
+
+    Raises:
+        pydantic.ValidationError: если ``price_min > price_max``.
+    """
+    return ListingSearchFilters(
+        district_id=district_id,
+        price_min=price_min,
+        price_max=price_max,
+        rooms_min=rooms,
+        rooms_max=None if rooms is None or rooms >= ROOMS_OR_MORE else rooms,
+    )

@@ -23,9 +23,8 @@ git checkout -b feature/frontend-009-saved-searches
 2. Пользователь сохраняет поиск и получает уведомления о новых квартирах по нему
    (уведомления — FRONTEND-010).
 
-**Бэкенда `/api/searches` ещё нет** (делается параллельно, TASK-028). Хук пишется так:
-сначала запрос к API, при 404 или ошибке сети — mock-данные (как `useMe` с `FALLBACK_ME`).
-Когда бэкенд появится, всё заработает без переделок.
+**Бэкенд `/api/searches` готов** (TASK-028, `docs/tasks/TASK-012-NOTIFICATIONS.md`). Хук всё равно
+пишется с запасом: при ошибке сети — mock-данные (как `useMe` с `FALLBACK_ME`).
 
 ---
 
@@ -48,12 +47,14 @@ git checkout -b feature/frontend-009-saved-searches
 
 ## Часть B. Сохранённые поиски
 
-### API (бэкенд TASK-028)
+### API (бэкенд TASK-028, готов)
 ```
-GET    /api/searches            → { items: SavedSearch[] }
-POST   /api/searches            тело { name?, filters, notify } → 201 SavedSearch
-PATCH  /api/searches/{id}       тело { name?, notify? } → SavedSearch
-DELETE /api/searches/{id}       → 204
+GET    /api/searches              → { items: SavedSearch[] }
+POST   /api/searches              тело { name?, filters, notify } → 201 SavedSearch
+                                  409 — уже 20 поисков; 422 — min_price > max_price или нет такого района
+PATCH  /api/searches/{id}         тело { name?, notify? } → SavedSearch; 404 — нет или чужой
+POST   /api/searches/{id}/viewed  → 204: пользователь открыл поиск, new_count обнуляется
+DELETE /api/searches/{id}         → 204
 ```
 Нужен заголовок `X-Telegram-Init-Data` (клиент ставит его сам). Без него ответ 401:
 показать блок «Откройте в Telegram» (`OpenInTelegram`).
@@ -91,7 +92,8 @@ export interface SavedSearch {
    - название и фильтры словами: «Ваке · 2 комн. · 800–2000 ₾» (название района из `useDistricts`);
    - бейдж `new_count`, если больше 0: «+5 новых»;
    - переключатель «Уведомления» (компонент `Switch` уже есть);
-   - нажатие на карточку ведёт на `/?district=..&min_price=..` (фильтры применяются);
+   - нажатие на карточку вызывает `POST /api/searches/{id}/viewed` и ведёт на
+     `/?district=..&min_price=..` (фильтры применяются);
    - «Переименовать» (через `Modal`) и «Удалить» (с подтверждением);
    - скелетоны при загрузке, `ErrorState` при ошибке;
    - **empty state**: «Сохраните поиск, и мы пришлём новые квартиры первыми», кнопка «К поиску».

@@ -5,6 +5,7 @@ from .districts import District
 from .embeddings import Embedding
 from .favorites import Favorite
 from .listings import Listing, ListingStatus
+from .notifications import Notification, NotificationType, SavedSearch
 from .payments import Payment
 from .users import User
 
@@ -17,6 +18,9 @@ __all__ = [
     "Favorite",
     "Listing",
     "ListingStatus",
+    "Notification",
+    "NotificationType",
+    "SavedSearch",
     "Payment",
     "User",
 ]

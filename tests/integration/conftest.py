@@ -29,6 +29,7 @@ MIGRATIONS = (
     "listing_images",
     "listing_contacts",
     "listing_translations_en",
+    "saved_searches_notifications",
 )
 
 def _apply_migrations(connection: Connection) -> None:

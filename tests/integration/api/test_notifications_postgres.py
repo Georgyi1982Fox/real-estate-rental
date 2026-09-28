@@ -1,0 +1,241 @@
+"""Сохранённые поиски и уведомления на настоящем PostgreSQL (TASK-028).
+
+Сценарий: пользователь сохраняет поиск через API → парсер находит подходящую и
+неподходящую квартиры → создаются уведомления (повторный запуск дублей не даёт)
+→ квартира из избранного дешевеет → уведомление «цена снижена» → отправка в
+Telegram (фейковый отправитель) → список, счётчик, прочтение через API.
+"""
+
+from collections.abc import AsyncIterator
+from decimal import Decimal
+
+import pytest
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+from bina.application.ports.notification_sender import DeliveryResult, INotificationSender
+from bina.application.ports.scraper import RawListing
+from bina.application.repositories.notifications import PendingNotification
+from bina.application.use_cases.notifications import (
+    CreateNotificationsUseCase,
+    DeliverNotificationsUseCase,
+)
+from bina.infrastructure.api.server import create_app
+from bina.infrastructure.api.settings import ApiSettings
+from bina.infrastructure.db.models import District
+from bina.infrastructure.db.repositories.listings import ListingsRepository
+from bina.infrastructure.db.repositories.notifications import (
+    NotificationsRepository,
+    SavedSearchesRepository,
+)
+from tests.support.telegram import sign_init_data
+
+BOT_TOKEN = "123456:TEST-TOKEN"
+USER = {"id": 777, "first_name": "Nino", "language_code": "ru"}
+OTHER = {"id": 888, "first_name": "Giorgi", "language_code": "en"}
+
+
+def headers(user: dict[str, object]) -> dict[str, str]:
+    return {"X-Telegram-Init-Data": sign_init_data(BOT_TOKEN, user)}
+
+
+def raw(source_id: str, price: float, rooms: int = 2, district: str = "Ваке") -> RawListing:
+    return RawListing(
+        source_id=source_id,
+        source_name="ss",
+        title=f"Квартира {source_id}",
+        description="",
+        price=price,
+        currency="GEL",
+        rooms=rooms,
+        area=60.0,
+        district=district,
+        url=f"https://home.ss.ge/ru/{source_id}",
+        photos=[f"https://static.ss.ge/{source_id}.jpg"],
+    )
+
+
+class RecordingSender(INotificationSender):
+    def __init__(self) -> None:
+        self.sent: list[PendingNotification] = []
+
+    async def send(self, pending: PendingNotification) -> DeliveryResult:
+        self.sent.append(pending)
+        return DeliveryResult.SENT
+
+
+@pytest.fixture
+async def client(session_factory: async_sessionmaker[AsyncSession]) -> AsyncIterator[AsyncClient]:
+    app = create_app(ApiSettings(bot_token=BOT_TOKEN), session_factory)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as http:
+        yield http
+
+
+@pytest.fixture
+async def vake(session: AsyncSession) -> District:
+    district = District(
+        name_ru="Ваке",
+        name_ka="ვაკე",
+        name_en="Vake",
+        avg_price_per_m2=Decimal(20),
+        safety_score=9,
+    )
+    session.add(district)
+    await session.commit()
+    return district
+
+
+async def create_notifications(session: AsyncSession) -> tuple[int, int]:
+    result = await CreateNotificationsUseCase(
+        SavedSearchesRepository(session),
+        ListingsRepository(session),
+        NotificationsRepository(session),
+    ).execute()
+    await session.commit()
+    return result.new_listings, result.price_drops
+
+
+async def test_saved_search_crud(client: AsyncClient, vake: District) -> None:
+    assert (await client.get("/api/searches")).status_code == 401
+
+    response = await client.post(
+        "/api/searches",
+        json={"filters": {"district": str(vake.id), "rooms": 2, "max_price": 2000}},
+        headers=headers(USER),
+    )
+    assert response.status_code == 201, response.text
+    search = response.json()
+    assert search["name"] == "Ваке, 2 комн., до 2 000 ₾"
+    assert search["filters"] == {
+        "district": str(vake.id),
+        "min_price": None,
+        "max_price": 2000.0,
+        "rooms": 2,
+    }
+    assert (search["notify"], search["new_count"]) == (True, 0)
+
+    bad = await client.post(
+        "/api/searches",
+        json={"filters": {"min_price": 3000, "max_price": 1000}},
+        headers=headers(USER),
+    )
+    assert bad.status_code == 422
+
+    patched = await client.patch(
+        f"/api/searches/{search['id']}",
+        json={"name": "Моя Ваке", "notify": False},
+        headers=headers(USER),
+    )
+    assert (patched.json()["name"], patched.json()["notify"]) == ("Моя Ваке", False)
+
+    # Чужой поиск не виден и не меняется
+    other = await client.patch(
+        f"/api/searches/{search['id']}", json={"notify": True}, headers=headers(OTHER)
+    )
+    assert other.status_code == 404
+    assert (await client.get("/api/searches", headers=headers(OTHER))).json() == {"items": []}
+
+    delete = await client.delete(f"/api/searches/{search['id']}", headers=headers(USER))
+    assert delete.status_code == 204
+    assert (await client.get("/api/searches", headers=headers(USER))).json() == {"items": []}
+
+
+async def test_notifications_flow(
+    client: AsyncClient, session: AsyncSession, vake: District
+) -> None:
+    response = await client.post(
+        "/api/searches",
+        json={"filters": {"district": str(vake.id), "rooms": 2, "max_price": 2000}},
+        headers=headers(USER),
+    )
+    search_id = response.json()["id"]
+
+    # Парсер: подходящая, дорогая и в другом районе
+    repository = ListingsRepository(session)
+    match = await repository.create_or_update_from_raw(raw("1", 1500))
+    await repository.create_or_update_from_raw(raw("2", 3500))
+    await repository.create_or_update_from_raw(raw("3", 1500, district="Глдани"))
+    await session.commit()
+
+    assert await create_notifications(session) == (1, 0)
+    assert await create_notifications(session) == (0, 0), "повторный запуск без дублей"
+
+    searches = (await client.get("/api/searches", headers=headers(USER))).json()["items"]
+    assert searches[0]["new_count"] == 1
+    viewed = await client.post(f"/api/searches/{search_id}/viewed", headers=headers(USER))
+    assert viewed.status_code == 204
+    searches = (await client.get("/api/searches", headers=headers(USER))).json()["items"]
+    assert searches[0]["new_count"] == 0
+
+    # Избранная квартира подешевела
+    favorite = await client.post(
+        "/api/favorites", json={"listing_id": str(match.id)}, headers=headers(USER)
+    )
+    assert favorite.status_code == 201
+    await repository.create_or_update_from_raw(raw("1", 1200))
+    await session.commit()
+    assert await create_notifications(session) == (0, 1)
+    assert await create_notifications(session) == (0, 0)
+
+    # Отправка в Telegram
+    sender = RecordingSender()
+    delivery = await DeliverNotificationsUseCase(NotificationsRepository(session), sender).execute()
+    await session.commit()
+    assert (delivery.sent, delivery.skipped, delivery.failed) == (2, 0, 0)
+    assert {item.notification.type for item in sender.sent} == {"new_listing", "price_drop"}
+    assert {item.telegram_id for item in sender.sent} == {777}
+    new_listing = next(item for item in sender.sent if item.notification.type == "new_listing")
+    assert new_listing.search_name == "Ваке, 2 комн., до 2 000 ₾"
+    again = await DeliverNotificationsUseCase(NotificationsRepository(session), sender).execute()
+    assert again.sent == 0, "отправленные не отправляются повторно"
+
+    # API уведомлений
+    count = (await client.get("/api/notifications/unread-count", headers=headers(USER))).json()
+    assert count == {"count": 2}
+    body = (await client.get("/api/notifications", headers=headers(USER))).json()
+    assert (body["total"], body["unread_count"], body["page"], body["pages"]) == (2, 2, 1, 1)
+    drop = next(item for item in body["items"] if item["type"] == "price_drop")
+    assert drop["old_price"] == 1500.0
+    assert drop["listing"]["price"] == 1200.0
+    assert drop["listing"]["image"] == "https://static.ss.ge/1.jpg"
+    assert drop["listing"]["title"] == {"ru": "Квартира 1"}
+    new = next(item for item in body["items"] if item["type"] == "new_listing")
+    assert (new["search_id"], new["search_name"]) == (search_id, "Ваке, 2 комн., до 2 000 ₾")
+
+    # Чужое уведомление прочитать нельзя
+    other = await client.post(f"/api/notifications/{new['id']}/read", headers=headers(OTHER))
+    assert other.status_code == 404
+    read = await client.post(f"/api/notifications/{new['id']}/read", headers=headers(USER))
+    assert read.status_code == 204
+    unread = (
+        await client.get("/api/notifications", params={"filter": "unread"}, headers=headers(USER))
+    ).json()
+    assert [item["type"] for item in unread["items"]] == ["price_drop"]
+
+    assert (
+        await client.post("/api/notifications/read-all", headers=headers(USER))
+    ).status_code == 204
+    count = (await client.get("/api/notifications/unread-count", headers=headers(USER))).json()
+    assert count == {"count": 0}
+
+
+async def test_notifications_off_and_back_on(
+    client: AsyncClient, session: AsyncSession, vake: District
+) -> None:
+    response = await client.post(
+        "/api/searches",
+        json={"filters": {"district": str(vake.id)}, "notify": False},
+        headers=headers(USER),
+    )
+    search_id = response.json()["id"]
+    repository = ListingsRepository(session)
+    await repository.create_or_update_from_raw(raw("10", 1000))
+    await session.commit()
+    assert await create_notifications(session) == (0, 0), "уведомления выключены"
+
+    # Включили: о квартирах, появившихся пока было выключено, не уведомляем
+    await client.patch(f"/api/searches/{search_id}", json={"notify": True}, headers=headers(USER))
+    assert await create_notifications(session) == (0, 0)
+    await repository.create_or_update_from_raw(raw("11", 1000))
+    await session.commit()
+    assert await create_notifications(session) == (1, 0)

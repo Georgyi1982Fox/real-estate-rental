@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock
 import pytest
 from click.testing import CliRunner
 
+from bina.application.use_cases.notifications import CreatedNotifications, DeliveryStats
 from bina.application.use_cases.translate_listings import TranslationStats
 from bina.infrastructure.scrapers import cli as scrape_cli
 from bina.infrastructure.scrapers.pipeline import ScrapeResult
@@ -52,6 +53,9 @@ def test_limit_bounds(scrape: AsyncMock, limit: str) -> None:
     assert result.exit_code == 2
 
 
+NO_NOTIFICATIONS = CreatedNotifications(new_listings=0, price_drops=0)
+
+
 class OneShotScheduler:
     """Вместо APScheduler: запускает задачу один раз и завершает команду."""
 
@@ -80,6 +84,8 @@ def run_schedule(monkeypatch: pytest.MonkeyPatch, args: list[str]) -> Any:
             await OneShotScheduler.instances[-1].job()
 
     monkeypatch.setattr("bina.infrastructure.scrapers.cli.asyncio.Event", Event)
+    if not isinstance(getattr(scrape_cli, "notify"), AsyncMock):
+        monkeypatch.setattr(scrape_cli, "notify", AsyncMock(return_value=(NO_NOTIFICATIONS, None)))
     return CliRunner().invoke(scrape_cli.cli, ["schedule", *args])
 
 
@@ -216,3 +222,41 @@ async def test_translate_commits_in_batches(monkeypatch: pytest.MonkeyPatch) -> 
     assert stats == TranslationStats(checked=23, translated=19, failed=4)
     assert all(session.commit.await_count == 1 for session in db.sessions)
     provider.close.assert_awaited_once()
+
+
+def test_notify_command(monkeypatch: pytest.MonkeyPatch) -> None:
+    notify = AsyncMock(
+        return_value=(
+            CreatedNotifications(new_listings=3, price_drops=1),
+            DeliveryStats(sent=3, skipped=1, failed=0),
+        )
+    )
+    monkeypatch.setattr(scrape_cli, "notify", notify)
+
+    result = CliRunner().invoke(scrape_cli.cli, ["notify"])
+
+    assert result.exit_code == 0, result.output
+    assert "новых квартир 3, снижений цены 1; отправлено 3, пропущено 1" in result.output
+
+
+def test_notify_command_without_bot_token(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(scrape_cli, "notify", AsyncMock(return_value=(NO_NOTIFICATIONS, None)))
+
+    result = CliRunner().invoke(scrape_cli.cli, ["notify"])
+
+    assert "не отправлены (нет BOT_TOKEN)" in result.output
+
+
+def test_schedule_creates_notifications_even_if_scrape_fails(
+    scrape: AsyncMock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("LLM_API_KEY", raising=False)
+    scrape.side_effect = RuntimeError("site down")
+    notify = AsyncMock(return_value=(CreatedNotifications(new_listings=2, price_drops=0), None))
+    monkeypatch.setattr(scrape_cli, "notify", notify)
+
+    result = run_schedule(monkeypatch, [])
+
+    assert result.exit_code == 0, result.output
+    notify.assert_awaited_once()
+    assert "новых квартир 2" in result.output
