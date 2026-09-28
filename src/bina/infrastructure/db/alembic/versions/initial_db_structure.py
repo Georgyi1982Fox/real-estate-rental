@@ -21,6 +21,10 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # pgvector: тип VECTOR для bina_embeddings. На новой базе расширения ещё нет
+    # (TASK-039: найдено при первом запуске через docker compose)
+    op.execute("CREATE EXTENSION IF NOT EXISTS vector")
+
     # Create bina_users table
     op.create_table(
         "bina_users",

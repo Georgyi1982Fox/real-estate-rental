@@ -1,0 +1,16 @@
+# В образ бэкенда нужны только pyproject.toml, README.md, alembic.ini и src/
+.git
+.github
+frontend
+tests
+docs
+**/__pycache__
+**/*.pyc
+.mypy_cache
+.pytest_cache
+.ruff_cache
+.venv
+venv
+.env
+*.dump
+scraped_html
