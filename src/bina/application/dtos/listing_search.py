@@ -11,6 +11,8 @@ class ListingSort(StrEnum):
     """Порядок выдачи объявлений (параметр ``sort`` API)."""
 
     NEWEST = "newest"
+    # По совпадению с текстом поиска (без текста — как newest)
+    RELEVANCE = "relevance"
     PRICE_ASC = "price_asc"
     PRICE_DESC = "price_desc"
     AREA_DESC = "area_desc"
@@ -33,6 +35,8 @@ class ListingSearchFilters(BaseModel):
     rooms_max: int | None = None
     area_min: Decimal | None = None
     area_max: Decimal | None = None
+    # Текст поиска: заголовок и описание на ru/ka/en (TASK-022)
+    query: str | None = None
 
     @model_validator(mode="after")
     def _check_ranges(self) -> "ListingSearchFilters":
@@ -69,6 +73,7 @@ def search_filters(
     rooms: int | None = None,
     area_min: Decimal | None = None,
     area_max: Decimal | None = None,
+    query: str | None = None,
 ) -> ListingSearchFilters:
     """Фильтры из параметров Mini App: ``rooms`` — точное число, 4 — «4 и больше».
 
@@ -83,4 +88,5 @@ def search_filters(
         rooms_max=None if rooms is None or rooms >= ROOMS_OR_MORE else rooms,
         area_min=area_min,
         area_max=area_max,
+        query=(query or "").strip() or None,
     )

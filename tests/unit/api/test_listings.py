@@ -191,3 +191,20 @@ async def test_area_filter_and_bad_sort(client: AsyncClient, store: Store) -> No
         await client.get("/api/listings", params={"min_area": "90", "max_area": "50"})
     ).status_code == 422
     assert (await client.get("/api/listings", params={"min_area": "-1"})).status_code == 422
+
+
+async def test_text_search(client: AsyncClient, store: Store) -> None:
+    district = store.add_district("Ваке")
+    store.add_listing(district, title_ru="Сдается квартира в Ваке")
+    store.add_listing(district, title_ru="Квартира в Сабуртало")
+
+    async def titles(**params: str) -> list[str]:
+        body = (await client.get("/api/listings", params=params)).json()
+        return [item["title"]["ru"] for item in body["items"]]
+
+    assert await titles(q="ваке") == ["Сдается квартира в Ваке"]
+    assert await titles(q="  <b>сабурт</b> ") == ["Квартира в Сабуртало"]
+    assert len(await titles(q="")) == 2
+    assert len(await titles(q="!!!")) == 2  # без слов — как пустой поиск
+    long = await client.get("/api/listings", params={"q": "x" * 101})
+    assert long.status_code == 422

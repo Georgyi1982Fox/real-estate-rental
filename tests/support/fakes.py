@@ -1,5 +1,6 @@
 """In-memory реализации репозиториев для тестов бота и API."""
 
+import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
@@ -142,6 +143,7 @@ class FakeListingsRepository:
             and (f.rooms_max is None or item.rooms <= f.rooms_max)
             and (f.area_min is None or item.area >= f.area_min)
             and (f.area_max is None or item.area <= f.area_max)
+            and (f.query is None or _matches_text(item, f.query))
         ]
         return sorted(result, key=lambda item: item.created_at, reverse=True)
 
@@ -211,3 +213,16 @@ class FakeFavoritesRepository:
 
 
 # --------------------------------------------------------------------------- telegram
+
+
+def _matches_text(listing: Listing, query: str) -> bool:
+    """Упрощённый аналог полнотекстового поиска: каждое слово — начало слова в тексте."""
+    text = " ".join(
+        str(getattr(listing, f"{field}_{code}", "") or "")
+        for field in ("title", "description")
+        for code in ("ru", "ka", "en")
+    ).lower()
+    words = re.findall(r"\w+", text)
+    return all(
+        any(word.startswith(part) for word in words) for part in re.findall(r"\w+", query.lower())
+    )
