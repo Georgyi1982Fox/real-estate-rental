@@ -6,8 +6,14 @@ import { haptic, openLink } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 import { useToast } from '../providers/ToastProvider';
 
-/** «Написать»: бэкенд возвращает {url}, куда вести пользователя (t.me, внешняя или внутренняя ссылка) */
-export function useContact(listingId: ListingId | null) {
+/**
+ * «Написать»: если ссылка на объявление-источник уже известна (sourceUrl), открываем её сразу.
+ * Иначе спрашиваем бэкенд ({url}: t.me, внешняя или внутренняя ссылка).
+ *
+ * Сразу — важно: Telegram открывает внешние ссылки только прямо в ответ на нажатие,
+ * после ожидания ответа сервера переход на телефоне молча блокируется.
+ */
+export function useContact(listingId: ListingId | null, sourceUrl?: string | null) {
   const { t } = useI18n();
   const showToast = useToast();
   const navigate = useNavigate();
@@ -15,6 +21,10 @@ export function useContact(listingId: ListingId | null) {
 
   const contact = useCallback(async () => {
     if (listingId === null) return;
+    if (sourceUrl) {
+      openLink(sourceUrl, (path) => navigate(path));
+      return;
+    }
     setLoading(true);
     try {
       const { url } = await apiPost<ContactResponse>(`/api/listings/${listingId}/contact`);
@@ -25,7 +35,7 @@ export function useContact(listingId: ListingId | null) {
     } finally {
       setLoading(false);
     }
-  }, [listingId, navigate, showToast, t]);
+  }, [listingId, sourceUrl, navigate, showToast, t]);
 
   return { contact, loading };
 }

@@ -165,11 +165,19 @@ export function openLink(url: string, navigateInternal: (path: string) => void):
   }
 
   const webApp = getWebApp();
-  if (webApp && target.hostname === 't.me') {
-    webApp.openTelegramLink(target.href);
-  } else if (webApp) {
-    webApp.openLink(target.href);
-  } else {
-    window.open(target.href, '_blank', 'noopener');
+  try {
+    if (webApp && target.hostname === 't.me') {
+      webApp.openTelegramLink(target.href);
+      return;
+    }
+    if (webApp) {
+      webApp.openLink(target.href);
+      return;
+    }
+  } catch {
+    // Старый клиент Telegram без openLink — откроем как в браузере
   }
+  // Браузер: новая вкладка; если её заблокировали — в этой же
+  const opened = window.open(target.href, '_blank', 'noopener,noreferrer');
+  if (!opened) window.location.assign(target.href);
 }

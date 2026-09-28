@@ -16,7 +16,7 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
 import { useTelegramMainButton } from '../hooks/useTelegramMainButton';
 import { fill, formatPrice, tr } from '../lib/format';
-import { openLink } from '../lib/telegram';
+import { isInTelegram, openLink } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 import NotFoundPage from './NotFoundPage';
 
@@ -41,7 +41,10 @@ export default function ListingPage() {
   useTelegramBackButton('/');
 
   // «Написать»: в Telegram — нативная MainButton внизу экрана, в браузере — обычная кнопка
-  const { contact, loading: contactLoading } = useContact(listing?.id ?? null);
+  const { contact, loading: contactLoading } = useContact(
+    listing?.id ?? null,
+    listing?.source_url,
+  );
   const nativeContact = useTelegramMainButton({
     text: lt.write,
     onClick: contact,
@@ -149,7 +152,8 @@ export default function ListingPage() {
                       rel="noopener noreferrer"
                       className="listing-source__link font-semibold text-[var(--primary)] underline-offset-2 hover:underline"
                       onClick={(event) => {
-                        // В Telegram внешние ссылки открываем через SDK (иначе откроются внутри Mini App)
+                        // В Telegram внешние ссылки — только через SDK; в браузере работает обычная ссылка
+                        if (!isInTelegram()) return;
                         event.preventDefault();
                         openLink(listing.source_url ?? '', (path) => navigate(path));
                       }}
