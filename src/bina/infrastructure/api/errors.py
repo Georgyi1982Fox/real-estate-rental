@@ -34,6 +34,7 @@ _REQUEST_ID_RE = re.compile(r"^[A-Za-z0-9._-]{8,64}$")
 ERROR_CODES: dict[int, str] = {
     400: "bad_request",
     401: "unauthorized",
+    402: "payment_required",
     403: "forbidden",
     404: "not_found",
     405: "method_not_allowed",

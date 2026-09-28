@@ -3,7 +3,7 @@ from uuid import UUID
 import structlog
 
 from bina.application.dtos.pagination import Page, validate_page_params
-from bina.application.errors import ListingNotFoundError
+from bina.application.errors import LimitReachedError, ListingNotFoundError
 from bina.application.repositories.favorites import IFavoritesRepository
 from bina.application.repositories.listings import IListingsRepository
 from bina.infrastructure.db.models import Listing
@@ -24,14 +24,18 @@ class ToggleFavoriteUseCase:
         self.favorites_repository = favorites_repository
         self.listings_repository = listings_repository
 
-    async def execute(self, user_id: UUID, listing_id: UUID) -> bool:
+    async def execute(self, user_id: UUID, listing_id: UUID, limit: int | None = None) -> bool:
         """Переключает состояние избранного.
+
+        Args:
+            limit: максимум избранного по тарифу (``None`` — без ограничения).
 
         Returns:
             True, если объявление теперь в избранном, иначе False.
 
         Raises:
             ListingNotFoundError: если добавляется несуществующее или удалённое объявление.
+            LimitReachedError: если избранное уже заполнено по тарифу.
         """
         if await self.favorites_repository.exists(user_id, listing_id):
             await self.favorites_repository.remove(user_id, listing_id)
@@ -41,6 +45,7 @@ class ToggleFavoriteUseCase:
         listing = await self.listings_repository.get_by_id(listing_id)
         if listing is None or listing.is_deleted:
             raise ListingNotFoundError(listing_id)
+        await _check_limit(self.favorites_repository, user_id, limit)
 
         await self.favorites_repository.add(user_id, listing_id)
         logger.info("Favorite added", user_id=user_id, listing_id=listing_id)
@@ -58,15 +63,22 @@ class AddFavoriteUseCase:
         self.favorites_repository = favorites_repository
         self.listings_repository = listings_repository
 
-    async def execute(self, user_id: UUID, listing_id: UUID) -> None:
+    async def execute(self, user_id: UUID, listing_id: UUID, limit: int | None = None) -> None:
         """Добавляет объявление; повторное добавление ничего не меняет.
+
+        Args:
+            limit: максимум избранного по тарифу (``None`` — без ограничения).
 
         Raises:
             ListingNotFoundError: если объявление не существует или удалено.
+            LimitReachedError: если избранное уже заполнено по тарифу.
         """
         listing = await self.listings_repository.get_by_id(listing_id)
         if listing is None or listing.is_deleted:
             raise ListingNotFoundError(listing_id)
+        if await self.favorites_repository.exists(user_id, listing_id):
+            return
+        await _check_limit(self.favorites_repository, user_id, limit)
         await self.favorites_repository.add(user_id, listing_id)
         logger.info("Favorite added", user_id=user_id, listing_id=listing_id)
 
@@ -118,3 +130,11 @@ class GetFavoritesUseCase:
             offset=page * page_size,
         )
         return Page(items=items, total=total, page=page, page_size=page_size)
+
+
+async def _check_limit(
+    favorites_repository: IFavoritesRepository, user_id: UUID, limit: int | None
+) -> None:
+    """Лимит избранного бесплатного тарифа (TASK-026)."""
+    if limit is not None and await favorites_repository.count_by_user(user_id) >= limit:
+        raise LimitReachedError("favorites", limit)

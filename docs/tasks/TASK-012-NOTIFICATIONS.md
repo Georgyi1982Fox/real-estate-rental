@@ -40,7 +40,7 @@
 | Метод | Путь | Ответ |
 |---|---|---|
 | GET | `/api/searches` | `{items: SavedSearch[]}` с `new_count` |
-| POST | `/api/searches` | 201; без `name` название из фильтров («Ваке, 2 комн., до 2 000 ₾»); 409 — больше 20; 422 |
+| POST | `/api/searches` | 201; без `name` название из фильтров («Ваке, 2 комн., до 2 000 ₾»); 402 — лимит тарифа (бесплатно 1, Premium 20, TASK-016); 422 |
 | PATCH | `/api/searches/{id}` | `{name?, notify?}`; 404 — нет или чужой |
 | POST | `/api/searches/{id}/viewed` | 204, обнуляет `new_count` |
 | DELETE | `/api/searches/{id}` | 204 |

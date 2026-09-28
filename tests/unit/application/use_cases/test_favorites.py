@@ -3,7 +3,7 @@ from uuid import uuid4
 
 import pytest
 
-from bina.application.errors import ListingNotFoundError
+from bina.application.errors import LimitReachedError, ListingNotFoundError
 from bina.application.use_cases.favorites import (
     AddFavoriteUseCase,
     GetFavoritesUseCase,
@@ -114,11 +114,50 @@ async def test_add_favorite(
 ) -> None:
     """Существующее объявление добавляется в избранное."""
     user_id, listing_id = uuid4(), uuid4()
+    favorites_repository.exists.return_value = False
     listings_repository.get_by_id.return_value = MagicMock(spec=Listing, is_deleted=False)
 
     await AddFavoriteUseCase(favorites_repository, listings_repository).execute(user_id, listing_id)
 
     favorites_repository.add.assert_awaited_once_with(user_id, listing_id)
+
+
+async def test_add_favorite_over_limit(
+    favorites_repository: AsyncMock,
+    listings_repository: AsyncMock,
+) -> None:
+    """Лимит тарифа: новое объявление не добавляется, уже избранное — не ошибка."""
+    listings_repository.get_by_id.return_value = MagicMock(spec=Listing, is_deleted=False)
+    favorites_repository.count_by_user.return_value = 20
+    use_case = AddFavoriteUseCase(favorites_repository, listings_repository)
+
+    favorites_repository.exists.return_value = False
+    with pytest.raises(LimitReachedError) as exc_info:
+        await use_case.execute(uuid4(), uuid4(), limit=20)
+    assert (exc_info.value.kind, exc_info.value.limit) == ("favorites", 20)
+
+    favorites_repository.exists.return_value = True
+    await use_case.execute(uuid4(), uuid4(), limit=20)
+    favorites_repository.add.assert_not_awaited()
+
+
+async def test_toggle_over_limit_still_removes(
+    toggle: ToggleFavoriteUseCase,
+    favorites_repository: AsyncMock,
+    listings_repository: AsyncMock,
+) -> None:
+    """При заполненном избранном можно убрать, но нельзя добавить."""
+    listings_repository.get_by_id.return_value = MagicMock(spec=Listing, is_deleted=False)
+    favorites_repository.count_by_user.return_value = 20
+
+    favorites_repository.exists.return_value = True
+    assert await toggle.execute(uuid4(), uuid4(), limit=20) is False
+
+    favorites_repository.exists.return_value = False
+    with pytest.raises(LimitReachedError):
+        await toggle.execute(uuid4(), uuid4(), limit=20)
+    favorites_repository.add.assert_not_awaited()
+    assert await toggle.execute(uuid4(), uuid4(), limit=None) is True
 
 
 @pytest.mark.parametrize("listing", [None, MagicMock(spec=Listing, is_deleted=True)])

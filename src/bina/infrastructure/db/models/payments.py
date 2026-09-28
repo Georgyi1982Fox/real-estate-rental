@@ -3,11 +3,11 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Numeric, String
+from sqlalchemy import ForeignKey, Numeric, String, text
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import Base
+from .base import Base, value_enum
 
 if TYPE_CHECKING:
     # TASK-007: добавлены недостающие импорты для аннотаций relationship (mypy name-defined).
@@ -37,7 +37,8 @@ class Payment(Base):
     id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
         primary_key=True,
-        server_default="gen_random_uuid()",
+        # TASK-026: text(), иначе строка уходит в SQL как литерал, а не как функция
+        server_default=text("gen_random_uuid()"),
     )
     user_id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
@@ -52,7 +53,9 @@ class Payment(Base):
         String,
         nullable=False,
     )
+    # TASK-026: value_enum — в БД значения ("telegram_stars"), как в миграции
     provider: Mapped[PaymentProvider] = mapped_column(
+        value_enum(PaymentProvider, "paymentprovider"),
         nullable=False,
     )
     provider_payment_id: Mapped[str] = mapped_column(
@@ -61,8 +64,11 @@ class Payment(Base):
         nullable=False,
     )
     status: Mapped[PaymentStatus] = mapped_column(
+        value_enum(PaymentStatus, "paymentstatus"),
         nullable=False,
     )
+    # Тариф (id из Plan), за который заплатили
+    plan: Mapped[str | None] = mapped_column(String, nullable=True)
 
     # Relationships
     user: Mapped["User"] = relationship(

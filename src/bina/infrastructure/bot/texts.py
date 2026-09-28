@@ -19,6 +19,7 @@ _RU: dict[str, str] = {
         "/search: поиск по району, цене и количеству комнат\n"
         "/favorites: избранные объявления\n"
         "/profile: профиль, подписка и язык\n"
+        "/premium: Premium-подписка\n"
         "/help: эта справка\n\n"
         "Добавляйте объявления в избранное кнопками ☆ под результатами поиска."
     ),
@@ -69,7 +70,7 @@ _RU: dict[str, str] = {
     ),
     "subscription_until": " (до {date})",
     "tier_free": "Бесплатная",
-    "tier_nomad": "Nomad",
+    "tier_nomad": "Premium",
     "tier_family": "Family",
     "tier_realtor": "Риелтор",
     "language_changed": "✅ Язык изменён.",
@@ -79,6 +80,35 @@ _RU: dict[str, str] = {
     "notify_price_drop": "📉 <b>Цена снижена</b>: {old} → <b>{new}</b>\n\n{listing}",
     "notify_details": "{price} · {rooms} комн. · {area} м²",
     "notify_open": "Открыть",
+    # TASK-026/027: подписка Premium
+    "premium_info": (
+        "⭐ <b>Bina.ai Premium</b>\n\n"
+        "{status}\n\n"
+        "<b>Бесплатно:</b> до {free_favorites} квартир в избранном, "
+        "{free_searches} сохранённый поиск.\n"
+        "<b>Premium:</b> избранное без ограничений, до {premium_searches} сохранённых поисков "
+        "с уведомлениями о новых квартирах.\n\n"
+        "Цена: <b>{price} ⭐</b> за {days} дн. Оплата звёздами Telegram."
+    ),
+    "premium_free": "Сейчас у вас бесплатный тариф.",
+    "premium_active": "✅ Premium действует до {date}.",
+    "premium_buy": "Купить за {price} ⭐",
+    "premium_extend": "Продлить на {days} дн. за {price} ⭐",
+    "premium_activated": "🎉 Спасибо! Premium действует до {date}.",
+    "premium_invoice_outdated": "Счёт устарел. Откройте /premium и попробуйте ещё раз.",
+    "premium_payment_problem": (
+        "⚠️ Оплата получена, но подписку не удалось включить автоматически. "
+        "Напишите в /paysupport, мы всё исправим."
+    ),
+    "fav_limit": (
+        "В бесплатном тарифе до {limit} квартир в избранном. "
+        "Уберите лишние или подключите Premium: /premium"
+    ),
+    "paysupport": (
+        "💬 <b>Вопросы по оплате</b>\n\n"
+        "Если подписка не включилась или нужен возврат звёзд, напишите нам "
+        "в ответ на это сообщение: опишите проблему и дату оплаты."
+    ),
 }
 
 _EN: dict[str, str] = {
@@ -94,6 +124,7 @@ _EN: dict[str, str] = {
         "/search: search by district, price and rooms\n"
         "/favorites: your saved listings\n"
         "/profile: profile, subscription and language\n"
+        "/premium: Premium subscription\n"
         "/help: this help\n\n"
         "Save listings with the ☆ buttons under search results."
     ),
@@ -144,7 +175,7 @@ _EN: dict[str, str] = {
     ),
     "subscription_until": " (until {date})",
     "tier_free": "Free",
-    "tier_nomad": "Nomad",
+    "tier_nomad": "Premium",
     "tier_family": "Family",
     "tier_realtor": "Realtor",
     "language_changed": "✅ Language updated.",
@@ -154,6 +185,33 @@ _EN: dict[str, str] = {
     "notify_price_drop": "📉 <b>Price dropped</b>: {old} → <b>{new}</b>\n\n{listing}",
     "notify_details": "{price} · {rooms} rooms · {area} m²",
     "notify_open": "Open",
+    # TASK-026/027: Premium subscription
+    "premium_info": (
+        "⭐ <b>Bina.ai Premium</b>\n\n"
+        "{status}\n\n"
+        "<b>Free:</b> up to {free_favorites} favorites, {free_searches} saved search.\n"
+        "<b>Premium:</b> unlimited favorites, up to {premium_searches} saved searches "
+        "with alerts about new apartments.\n\n"
+        "Price: <b>{price} ⭐</b> for {days} days. Paid with Telegram Stars."
+    ),
+    "premium_free": "You are on the free plan.",
+    "premium_active": "✅ Premium is active until {date}.",
+    "premium_buy": "Buy for {price} ⭐",
+    "premium_extend": "Extend by {days} days for {price} ⭐",
+    "premium_activated": "🎉 Thank you! Premium is active until {date}.",
+    "premium_invoice_outdated": "This invoice is outdated. Open /premium and try again.",
+    "premium_payment_problem": (
+        "⚠️ Payment received, but we couldn't activate the subscription automatically. "
+        "Please contact /paysupport and we'll fix it."
+    ),
+    "fav_limit": (
+        "The free plan allows up to {limit} favorites. Remove some or get Premium: /premium"
+    ),
+    "paysupport": (
+        "💬 <b>Payment support</b>\n\n"
+        "If your subscription wasn't activated or you need a refund of Stars, reply to "
+        "this message describing the problem and the payment date."
+    ),
 }
 
 TEXTS: dict[str, dict[str, str]] = {"ru": _RU, "en": _EN}

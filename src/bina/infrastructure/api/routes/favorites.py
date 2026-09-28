@@ -4,19 +4,21 @@
 (см. :mod:`bina.infrastructure.api.auth`).
 """
 
+from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Query, Response, status
 
-from bina.application.errors import ListingNotFoundError
+from bina.application.errors import LimitReachedError, ListingNotFoundError
+from bina.application.subscriptions import limits_for
 from bina.application.use_cases.favorites import (
     AddFavoriteUseCase,
     GetFavoritesUseCase,
     RemoveFavoriteUseCase,
 )
 from bina.infrastructure.api.dependencies import CurrentUserDep, SessionDep
-from bina.infrastructure.api.routes.common import MAX_PER_PAGE, not_found
+from bina.infrastructure.api.routes.common import MAX_PER_PAGE, not_found, payment_required
 from bina.infrastructure.api.schemas import (
     FavoriteIdsOut,
     FavoriteIn,
@@ -54,12 +56,18 @@ async def favorite_ids(user: CurrentUserDep, session: SessionDep) -> FavoriteIds
 
 @router.post("", response_model=FavoriteOut, status_code=status.HTTP_201_CREATED)
 async def add_favorite(body: FavoriteIn, user: CurrentUserDep, session: SessionDep) -> FavoriteOut:
-    """Добавить объявление в избранное (повторный вызов ничего не меняет)."""
+    """Добавить объявление в избранное (повторный вызов ничего не меняет).
+
+    402, если избранное бесплатного тарифа заполнено.
+    """
     use_case = AddFavoriteUseCase(FavoritesRepository(session), ListingsRepository(session))
+    limit = limits_for(user, datetime.now(UTC)).favorites
     try:
-        await use_case.execute(user.id, body.listing_id)
+        await use_case.execute(user.id, body.listing_id, limit=limit)
     except ListingNotFoundError as exc:
         raise not_found() from exc
+    except LimitReachedError as exc:
+        raise payment_required(exc.kind, exc.limit) from exc
     await session.commit()
     return FavoriteOut(listing_id=body.listing_id)
 

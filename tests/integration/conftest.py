@@ -31,6 +31,7 @@ MIGRATIONS = (
     "listing_translations_en",
     "saved_searches_notifications",
     "listing_search_vector",
+    "payments_plan",
 )
 
 

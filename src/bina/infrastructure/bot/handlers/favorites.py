@@ -1,9 +1,12 @@
+from datetime import UTC, datetime
+
 from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bina.application.errors import ListingNotFoundError
+from bina.application.errors import LimitReachedError, ListingNotFoundError
+from bina.application.subscriptions import limits_for
 from bina.application.use_cases.favorites import GetFavoritesUseCase, ToggleFavoriteUseCase
 from bina.infrastructure.bot.formatters import format_listings
 from bina.infrastructure.bot.handlers.common import edit_or_answer
@@ -56,10 +59,14 @@ async def on_favorite_toggle(
     звезда оставляет объявление на экране, чтобы действие можно было отменить.
     """
     use_case = ToggleFavoriteUseCase(FavoritesRepository(session), ListingsRepository(session))
+    limit = limits_for(user, datetime.now(UTC)).favorites
     try:
-        is_favorite = await use_case.execute(user.id, callback_data.listing_id)
+        is_favorite = await use_case.execute(user.id, callback_data.listing_id, limit=limit)
     except ListingNotFoundError:
         await callback.answer(t(user.language, "listing_unavailable"), show_alert=True)
+        return
+    except LimitReachedError as exc:
+        await callback.answer(t(user.language, "fav_limit", limit=exc.limit), show_alert=True)
         return
 
     message = callback.message

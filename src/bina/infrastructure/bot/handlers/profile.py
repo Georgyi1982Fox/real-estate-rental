@@ -1,8 +1,11 @@
+from datetime import UTC, datetime
+
 from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from bina.application.subscriptions import effective_tier, is_premium
 from bina.application.use_cases.register_user import SUPPORTED_LANGUAGES
 from bina.infrastructure.bot.formatters import format_number
 from bina.infrastructure.bot.handlers.common import edit_or_answer
@@ -61,8 +64,9 @@ async def on_language(
 
 def render_profile(user: User, favorites: int, language: str) -> str:
     """Текст профиля."""
+    now = datetime.now(UTC)
     expires = ""
-    if user.subscription_expires_at is not None:
+    if is_premium(user, now) and user.subscription_expires_at is not None:
         expires = t(
             language,
             "subscription_until",
@@ -72,7 +76,7 @@ def render_profile(user: User, favorites: int, language: str) -> str:
         language,
         "profile",
         language=LANGUAGE_NAMES.get(user.language, user.language),
-        tier=t(language, f"tier_{user.subscription_tier.value}"),
+        tier=t(language, f"tier_{effective_tier(user, now).value}"),
         expires=expires,
         balance=format_number(user.balance),
         favorites=favorites,

@@ -1,8 +1,10 @@
 from abc import abstractmethod
+from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
 from bina.infrastructure.db.models import User
+from bina.infrastructure.db.models.users import SubscriptionTier
 
 
 class IUsersRepository(Protocol):
@@ -26,4 +28,11 @@ class IUsersRepository(Protocol):
     @abstractmethod
     async def update_language(self, user_id: UUID, language: str) -> None:
         """Обновить язык интерфейса пользователя."""
+        ...
+
+    @abstractmethod
+    async def set_subscription(
+        self, user_id: UUID, tier: SubscriptionTier, expires_at: datetime
+    ) -> None:
+        """Установить тариф и дату окончания подписки (TASK-026)."""
         ...

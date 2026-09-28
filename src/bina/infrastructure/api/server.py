@@ -22,10 +22,12 @@ from bina.infrastructure.api.routes import (
     me,
     notifications,
     searches,
+    subscription,
 )
 from bina.infrastructure.api.settings import ApiConfigError, ApiSettings
 from bina.infrastructure.api.validation import install_body_limit
 from bina.infrastructure.db.session.manager import DatabaseManager
+from bina.infrastructure.payments.settings import load_plans
 
 
 def create_app(
@@ -49,6 +51,7 @@ def create_app(
     app = FastAPI(title="Bina.ai API", version="0.1.0", lifespan=lifespan)
     app.state.settings = settings
     app.state.session_factory = session_factory or (db.session_factory if db else None)
+    app.state.plans = load_plans()
 
     # Порядок важен: последний добавленный middleware — внешний. CORS снаружи,
     # чтобы заголовки попали и в ответы с ошибками (413, 500)
@@ -74,6 +77,7 @@ def create_app(
     app.include_router(me.router)
     app.include_router(searches.router)
     app.include_router(notifications.router)
+    app.include_router(subscription.router)
     return app
 
 

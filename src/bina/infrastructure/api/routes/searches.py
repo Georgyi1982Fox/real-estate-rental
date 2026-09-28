@@ -7,11 +7,12 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, Response, status
 
 from bina.application.dtos.listing_search import ROOMS_OR_MORE, search_filters
+from bina.application.subscriptions import limits_for
 from bina.infrastructure.api.dependencies import CurrentUserDep, SessionDep
-from bina.infrastructure.api.routes.common import bad_request, not_found
+from bina.infrastructure.api.routes.common import bad_request, not_found, payment_required
 from bina.infrastructure.api.schemas import (
     SavedSearchesOut,
     SavedSearchOut,
@@ -26,7 +27,6 @@ from bina.infrastructure.db.repositories.notifications import SavedSearchesRepos
 
 router = APIRouter(prefix="/api/searches", tags=["searches"])
 
-MAX_SEARCHES_PER_USER = 20
 # Короткое тире в диапазоне цен
 DASH = "\u2013"
 
@@ -98,13 +98,14 @@ async def list_searches(user: CurrentUserDep, session: SessionDep) -> SavedSearc
 async def create_search(
     body: SearchIn, user: CurrentUserDep, session: SessionDep
 ) -> SavedSearchOut:
-    """Сохранить поиск; без ``name`` название собирается из фильтров."""
+    """Сохранить поиск; без ``name`` название собирается из фильтров.
+
+    402, если поисков уже столько, сколько позволяет тариф (бесплатно 1, Premium 20).
+    """
     repository = SavedSearchesRepository(session)
-    if await repository.count_by_user(user.id) >= MAX_SEARCHES_PER_USER:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"At most {MAX_SEARCHES_PER_USER} saved searches",
-        )
+    limit = limits_for(user, datetime.now(UTC)).searches
+    if await repository.count_by_user(user.id) >= limit:
+        raise payment_required("searches", limit)
     filters = body.filters
     district = None
     if filters.district is not None:

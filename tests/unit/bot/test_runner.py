@@ -53,7 +53,11 @@ async def test_startup_sets_webhook_and_commands(
     [set_webhook] = harness.telegram.of(SetWebhook)
     assert set_webhook.url == "https://bina.example/telegram/webhook"
     assert set_webhook.secret_token == SECRET
-    assert set(set_webhook.allowed_updates or []) == {"message", "callback_query"}
+    assert set(set_webhook.allowed_updates or []) == {
+        "message",
+        "callback_query",
+        "pre_checkout_query",
+    }
     assert len(harness.telegram.of(SetMyCommands)) == 2
 
 
