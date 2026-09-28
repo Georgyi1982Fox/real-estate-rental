@@ -65,6 +65,8 @@ api/
   }
   ```
 - Документация OpenAPI: `/docs` (Swagger UI).
+- Ошибки: `{"error": {"code", "message", "request_id", "details"?}}`, заголовок `X-Request-ID`
+  (подробно — `TASK-013-ERRORS-VALIDATION.md`).
 
 ### 3. Авторизация избранного
 Mini App передаёт `Telegram.WebApp.initData` в заголовке `X-Telegram-Init-Data`
