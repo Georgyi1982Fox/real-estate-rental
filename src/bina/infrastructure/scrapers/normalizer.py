@@ -8,6 +8,10 @@ from bina.application.ports.scraper import RawListing
 logger = structlog.get_logger(__name__)
 
 
+# Символы валют → коды
+CURRENCY_SYMBOLS = {"₾": "GEL", "$": "USD", "€": "EUR"}
+
+
 class ListingNormalizer:
     """Нормализатор объявлений."""
 
@@ -45,7 +49,11 @@ class ListingNormalizer:
 
     @staticmethod
     def normalize_price(price: float, currency: str) -> tuple[float, str]:
-        """Нормализует цену к GEL по приблизительному курсу."""
+        """Нормализует цену к GEL по приблизительному курсу.
+
+        Валюта — код (``GEL``, ``USD``, ``EUR``) или символ (``₾``, ``$``, ``€``).
+        """
+        currency = CURRENCY_SYMBOLS.get(currency.strip(), currency.strip())
         if currency.upper() == "GEL":
             return price, "GEL"
         elif currency.upper() == "USD":

@@ -16,7 +16,7 @@ class QwenProvider(LLMProvider):
     def __init__(
         self,
         api_key: str,
-        base_url: str = "https://api.aitunnel.com/v1",
+        base_url: str = "https://api.aitunnel.ru/v1",
         model: str = "qwen-max",
         timeout: int = 30,
     ) -> None:

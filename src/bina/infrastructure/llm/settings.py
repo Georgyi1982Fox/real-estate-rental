@@ -6,7 +6,7 @@ BASE_DIR = Path(__file__).parent.parent.parent.parent
 # LLM Settings
 LLM_PROVIDER = "qwen"
 LLM_API_KEY = ""
-LLM_BASE_URL = "https://api.aitunnel.com/v1"  
+LLM_BASE_URL = "https://api.aitunnel.ru/v1"  
 LLM_MODEL = "qwen-max"
 
 # Redis Settings

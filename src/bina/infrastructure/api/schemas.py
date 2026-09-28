@@ -42,8 +42,10 @@ class ListingOut(BaseModel):
         """Преобразует ORM-модель."""
         return cls(
             id=listing.id,
-            title=localized(ka=listing.title_ka, ru=listing.title_ru),
-            description=localized(ka=listing.description_ka, ru=listing.description_ru),
+            title=localized(ka=listing.title_ka, ru=listing.title_ru, en=listing.title_en),
+            description=localized(
+                ka=listing.description_ka, ru=listing.description_ru, en=listing.description_en
+            ),
             price=float(listing.price),
             currency=listing.currency,
             rooms=listing.rooms,

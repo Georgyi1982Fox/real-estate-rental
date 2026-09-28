@@ -1,4 +1,5 @@
 import os
+from typing import Any
 
 from bina.application.ports.llm_provider import LLMProvider
 from bina.infrastructure.llm.providers.anthropic_provider import AnthropicProvider
@@ -19,8 +20,12 @@ class LLMFactory:
         base_url = os.getenv("LLM_BASE_URL", "")
         model = os.getenv("LLM_MODEL", "")
         
-        providers_config = {
-            "qwen": (QwenProvider, {"api_key": api_key}),
+        providers_config: dict[str, tuple[type[LLMProvider], dict[str, Any]]] = {
+            # Перевод длинного объявления на два языка идёт дольше 30 с (TASK-010)
+            "qwen": (
+                QwenProvider,
+                {"api_key": api_key, "timeout": int(os.getenv("LLM_TIMEOUT", "120"))},
+            ),
             "anthropic": (AnthropicProvider, {"api_key": api_key}),
             "openai": (OpenAIProvider, {"api_key": api_key}),
         }
@@ -34,7 +39,7 @@ class LLMFactory:
                 kwargs["model"] = model
             
             try:
-                return provider_class(**kwargs)  # type: ignore
+                return provider_class(**kwargs)
             except (TypeError, ValueError, KeyError) as e:
                 print(f"Failed to create {provider_name} provider: {e}")
         
@@ -53,7 +58,7 @@ class LLMFactory:
             
             try:
                 print(f"Falling back to {fallback_provider} provider")
-                return provider_class(**kwargs)  # type: ignore
+                return provider_class(**kwargs)
             except (TypeError, ValueError, KeyError) as e:
                 print(f"Failed to create fallback {fallback_provider} provider: {e}")
                 continue

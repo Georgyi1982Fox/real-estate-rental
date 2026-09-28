@@ -2,11 +2,12 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, func, select, update
+from sqlalchemy import ColumnElement, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bina.application.dtos.listing_search import ListingSearchFilters
 from bina.application.ports.scraper import RawListing
+from bina.application.ports.translator import LANGUAGES, ListingText
 from bina.application.repositories.listings import IListingsRepository
 from bina.infrastructure.db.models import District, Listing, ListingStatus
 
@@ -148,6 +149,12 @@ class ListingsRepository(IListingsRepository):
         }
 
         listing = await self.find_by_source(raw_listing.source_id, raw_listing.source_name)
+        if listing is not None:
+            values.update(
+                stale_translation_resets(
+                    listing, suffix, raw_listing.title, raw_listing.description
+                )
+            )
         if listing is None:
             listing = Listing(
                 source_id=raw_listing.source_id,
@@ -157,6 +164,8 @@ class ListingsRepository(IListingsRepository):
                 title_ka="",
                 description_ru="",
                 description_ka="",
+                title_en="",
+                description_en="",
             )
             self._session.add(listing)
         for key, value in values.items():
@@ -164,6 +173,33 @@ class ListingsRepository(IListingsRepository):
 
         await self._session.flush()  # ID нужен для embeddings
         return listing
+
+    async def list_untranslated(self, limit: int) -> list[Listing]:
+        """Активные объявления с пустым заголовком хотя бы на одном языке (новые сверху)."""
+        query = (
+            select(Listing)
+            .where(
+                Listing.status == ListingStatus.ACTIVE,
+                Listing.is_deleted.is_(False),
+                or_(*(getattr(Listing, f"title_{language}") == "" for language in LANGUAGES)),
+            )
+            .order_by(Listing.created_at.desc())
+            .limit(limit)
+        )
+        result = await self._session.execute(query)
+        return list(result.scalars().all())
+
+    async def save_texts(self, listing_id: UUID, texts: dict[str, ListingText]) -> None:
+        """Записать заголовок и описание для каждого языка из ``texts``."""
+        values: dict[str, str] = {}
+        for language, text in texts.items():
+            if language in LANGUAGES:
+                values[f"title_{language}"] = text.title
+                values[f"description_{language}"] = text.description
+        if values:
+            await self._session.execute(
+                update(Listing).where(Listing.id == listing_id).values(**values)
+            )
 
     async def _get_or_create_district(self, district_name: str) -> District:
         """Получает или создает район."""
@@ -176,3 +212,24 @@ class ListingsRepository(IListingsRepository):
         if district is None:
             district = await districts_repo.create_district(district_name)
         return district
+
+def stale_translation_resets(
+    listing: Listing, language: str, title: str, description: str
+) -> dict[str, str]:
+    """Пустые поля других языков, если исходный текст объявления изменился.
+
+    Перевод старого текста больше не верен: после сброса его заново сделает
+    ``TranslateListingsUseCase``. Если текст тот же, переводы остаются.
+    """
+    old = (
+        getattr(listing, f"title_{language}", "") or "",
+        getattr(listing, f"description_{language}", "") or "",
+    )
+    if old == (title, description):
+        return {}
+    resets: dict[str, str] = {}
+    for other in LANGUAGES:
+        if other != language:
+            resets[f"title_{other}"] = ""
+            resets[f"description_{other}"] = ""
+    return resets
