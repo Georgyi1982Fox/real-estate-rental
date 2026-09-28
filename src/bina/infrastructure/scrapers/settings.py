@@ -82,3 +82,5 @@ class SSSettings:
         "?currencyId=1&page={page}",
     )
     MAX_PAGES = int(os.getenv("SS_MAX_PAGES", "20"))
+    # В выдачу попадают и другие города (Батуми); 95 — Тбилиси (address.cityId)
+    CITY_ID = int(os.getenv("SS_CITY_ID", "95"))

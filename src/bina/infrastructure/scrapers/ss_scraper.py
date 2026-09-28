@@ -1,6 +1,7 @@
 import re
 from pathlib import Path
-from urllib.parse import urljoin
+from typing import Any
+from urllib.parse import quote, urljoin
 
 import httpx
 import structlog
@@ -8,16 +9,25 @@ from bs4 import BeautifulSoup
 
 from bina.application.ports.scraper import RawListing
 from bina.infrastructure.scrapers.base_scraper import BaseWebsiteScraper
+from bina.infrastructure.scrapers.nextjs import next_data, walk
 from bina.infrastructure.scrapers.settings import SSSettings
 
 logger = structlog.get_logger(__name__)
 
 # После стольких ошибок страниц списка подряд парсинг останавливается
 MAX_CONSECUTIVE_FAILURES = 3
+SOURCE_NAME = "ss"
+ROOMS_RE = re.compile(r"(\d+)\s*-?\s*(?:комнат|ოთახ|room)", re.IGNORECASE)
 
 
 class SSScraper(BaseWebsiteScraper):
-    """Парсер объявлений с SS.ge (home.ss.ge)."""
+    """Парсер объявлений с SS.ge (home.ss.ge).
+
+    Сайт на Next.js: объявления лежат JSON-ом в ``__NEXT_DATA__``
+    (``props.pageProps.applicationList.realStateItemModel``) вместе с полным
+    описанием, поэтому страницы объявлений не загружаются. Разбор HTML по
+    селекторам остался запасным вариантом.
+    """
 
     def __init__(
         self,
@@ -27,11 +37,13 @@ class SSScraper(BaseWebsiteScraper):
         *,
         search_path: str = SSSettings.SEARCH_PATH,
         max_pages: int = SSSettings.MAX_PAGES,
+        city_id: int | None = SSSettings.CITY_ID,
         dump_dir: Path | None = None,
     ) -> None:
         super().__init__(base_url, delay_seconds, user_agents)
         self.search_path = search_path
         self.max_pages = max_pages
+        self.city_id = city_id
         self.dump_dir = dump_dir
 
     async def scrape_listings(self, limit: int) -> list[RawListing]:
@@ -58,14 +70,13 @@ class SSScraper(BaseWebsiteScraper):
             if page == 1:
                 self._dump("ss_list.html", html)
 
-            fresh = [item for item in self._parse_listings(html) if item.source_id not in seen]
-            if not fresh:
+            page_ids, page_listings = self._parse_page(html)
+            if not page_ids - seen:
                 # Пустая страница или сайт игнорирует номер страницы и отдаёт ту же
                 logger.info("No more new listings on SS", page=page)
                 break
-            for item in fresh[: limit - len(listings)]:
-                seen.add(item.source_id)
-                listings.append(item)
+            seen |= page_ids
+            listings.extend(page_listings[: limit - len(listings)])
 
         logger.info("Finished SS scraping", total=len(listings))
         return listings
@@ -80,7 +91,51 @@ class SSScraper(BaseWebsiteScraper):
         logger.info("Saved raw HTML", path=str(path))
 
     def _parse_listings(self, html: str) -> list[RawListing]:
-        """Парсит объявления со страницы HTML."""
+        """Объявления нужного города со страницы поиска."""
+        return self._parse_page(html)[1]
+
+    def _parse_page(self, html: str) -> tuple[set[str], list[RawListing]]:
+        """ID всех объявлений страницы и объявления нужного города.
+
+        ID нужны отдельно: страница только с другими городами — не конец выдачи.
+        """
+        data = next_data(html)
+        items = _applications(data) if data is not None else []
+        if not items:
+            listings = self._parse_listings_html(html)
+            return {item.source_id for item in listings}, listings
+        ids = {str(item["applicationId"]) for item in items}
+        listings = [
+            self._from_application(item)
+            for item in items
+            if self.city_id is None or (item.get("address") or {}).get("cityId") == self.city_id
+        ]
+        return ids, listings
+
+    def _from_application(self, item: dict[str, Any]) -> RawListing:
+        """Объявление из JSON-объекта сайта."""
+        address = item.get("address") or {}
+        price = item.get("price") or {}
+        title = str(item.get("title") or "").strip()
+        detail = str(item.get("detailUrl") or "")
+        return RawListing(
+            source_id=str(item["applicationId"]),
+            source_name=SOURCE_NAME,
+            title=title,
+            description=str(item.get("description") or "").strip(),
+            price=float(price.get("priceGeo") or 0),
+            currency="GEL",
+            rooms=_rooms(title, item.get("numberOfBedrooms")),
+            area=float(item.get("totalArea") or 0),
+            district=str(
+                address.get("subdistrictTitle") or address.get("districtTitle") or "Unknown"
+            ).strip(),
+            url=f"{self.base_url}/ru/{quote('недвижимость/' + detail)}" if detail else "",
+            photos=_photos(item.get("appImages")),
+        )
+
+    def _parse_listings_html(self, html: str) -> list[RawListing]:
+        """Карточки со страницы поиска по CSS-селекторам (старая вёрстка)."""
         soup = BeautifulSoup(html, "lxml")
         listings: list[RawListing] = []
 
@@ -94,7 +149,7 @@ class SSScraper(BaseWebsiteScraper):
                 url = ""
                 source_id = "unknown"
                 if link_elem and link_elem.get("href"):
-                    url = urljoin(self.base_url, link_elem.get("href"))
+                    url = urljoin(self.base_url, str(link_elem.get("href")))
                     # Извлекаем ID из URL
                     id_match = re.search(r"/(\d+)", url)
                     if id_match:
@@ -109,7 +164,9 @@ class SSScraper(BaseWebsiteScraper):
                 price, currency = self._parse_price(price_text)
 
                 # Район
-                district_elem = element.select_one(".location") or element.select_one(".address-line")
+                district_elem = element.select_one(".location") or element.select_one(
+                    ".address-line"
+                )
                 district = district_elem.get_text(strip=True) if district_elem else "Unknown"
 
                 # Комнаты и площадь
@@ -140,14 +197,16 @@ class SSScraper(BaseWebsiteScraper):
                 if desc_elem:
                     description_parts.append(desc_elem.get_text(strip=True))
 
-                description = " | ".join(description_parts) if description_parts else "No description"
+                description = (
+                    " | ".join(description_parts) if description_parts else "No description"
+                )
 
                 # Фото
                 photos = []
                 img_elem = element.select_one("img")
                 if img_elem and img_elem.get("src"):
                     # Убираем параметры размера из URL
-                    img_src = img_elem.get("src").split("?")[0]
+                    img_src = str(img_elem.get("src")).split("?")[0]
                     photos.append(img_src)
 
                 listing = RawListing(
@@ -195,3 +254,41 @@ class SSScraper(BaseWebsiteScraper):
         price = float(price_clean) if price_clean else 0.0
 
         return price, currency
+
+
+def _applications(data: dict[str, Any]) -> list[dict[str, Any]]:
+    """Объявления из JSON страницы поиска (первый список объектов с ``applicationId``)."""
+    for value in walk(data):
+        if (
+            isinstance(value, list)
+            and value
+            and all(isinstance(item, dict) and "applicationId" in item for item in value)
+        ):
+            return value
+    return []
+
+
+def _rooms(title: str, bedrooms: Any) -> int:
+    """Комнаты из заголовка (``2-комнатная``), иначе спальни + гостиная."""
+    match = ROOMS_RE.search(title)
+    if match:
+        return int(match.group(1))
+    if isinstance(bedrooms, int) and bedrooms > 0:
+        return bedrooms + 1
+    return 1
+
+
+def _photos(images: Any) -> list[str]:
+    """Ссылки на фото, главное первым, по порядку сайта."""
+    if not isinstance(images, list):
+        return []
+    ordered = sorted(
+        (image for image in images if isinstance(image, dict)),
+        key=lambda image: (not image.get("isMain"), image.get("orderNo") or 0),
+    )
+    photos: list[str] = []
+    for image in ordered:
+        url = str(image.get("fileName") or "")
+        if url and url not in photos:
+            photos.append(url)
+    return photos
