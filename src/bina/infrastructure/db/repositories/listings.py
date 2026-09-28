@@ -7,8 +7,10 @@ from uuid import UUID
 from sqlalchemy import ColumnElement, func, literal_column, or_, select, update
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from bina.application.dtos.listing_search import ListingSearchFilters, ListingSort
+from bina.application.fraud import HIDE_SCORE
 from bina.application.ports.scraper import RawListing
 from bina.application.ports.translator import LANGUAGES, ListingText
 from bina.application.repositories.listings import IListingsRepository
@@ -17,6 +19,10 @@ from bina.infrastructure.db.models import District, Favorite, Listing, ListingSt
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+
+
+# Меньше объявлений в районе — медиана цены ненадёжна (TASK-011)
+MIN_MEDIAN_SAMPLES = 5
 
 
 class ListingsRepository(IListingsRepository):
@@ -109,6 +115,8 @@ class ListingsRepository(IListingsRepository):
         conditions: list[ColumnElement[bool]] = [
             Listing.status == ListingStatus.ACTIVE,
             Listing.is_deleted.is_(False),
+            # TASK-011: почти наверняка мошенники — не в поиске и не в уведомлениях
+            Listing.fraud_score < HIDE_SCORE,
         ]
         if filters.district_id is not None:
             conditions.append(Listing.district_id == filters.district_id)
@@ -165,10 +173,13 @@ class ListingsRepository(IListingsRepository):
                 )
             )
             new_price = values["price"]
-            if listing.price is not None and Decimal(listing.price) != new_price:
+            price_changed = listing.price is not None and Decimal(listing.price) != new_price
+            if price_changed:
                 # Для уведомления «цена снижена» (TASK-028)
                 values["previous_price"] = listing.price
                 values["price_changed_at"] = datetime.now(UTC)
+            if fraud_recheck_needed(listing, suffix, raw_listing, price_changed=price_changed):
+                values["fraud_checked_at"] = None
         if listing is None:
             listing = Listing(
                 source_id=raw_listing.source_id,
@@ -258,6 +269,57 @@ class ListingsRepository(IListingsRepository):
                 update(Listing).where(Listing.id == listing_id).values(**values)
             )
 
+    # ------------------------------------------------------------- TASK-011: антифрод
+
+    async def list_fraud_unchecked(self, limit: int) -> list[Listing]:
+        """Активные объявления без проверки на мошенничество (новые сверху), с районом."""
+        query = (
+            select(Listing)
+            .options(selectinload(Listing.district))
+            .where(
+                Listing.status == ListingStatus.ACTIVE,
+                Listing.is_deleted.is_(False),
+                Listing.fraud_checked_at.is_(None),
+            )
+            .order_by(Listing.created_at.desc())
+            .limit(limit)
+        )
+        return list((await self._session.execute(query)).scalars().all())
+
+    async def district_median_per_m2(self, district_id: UUID, currency: str) -> Decimal | None:
+        """Медиана цены за м² активных объявлений района в той же валюте.
+
+        None, если объявлений меньше :data:`MIN_MEDIAN_SAMPLES`: сравнивать не с чем.
+        """
+        per_m2 = Listing.price / Listing.area
+        query = select(
+            func.count(),
+            func.percentile_cont(0.5).within_group(per_m2),
+        ).where(
+            Listing.district_id == district_id,
+            Listing.currency == currency,
+            Listing.status == ListingStatus.ACTIVE,
+            Listing.is_deleted.is_(False),
+            Listing.area > 0,
+            Listing.price > 0,
+        )
+        count, median = (await self._session.execute(query)).one()
+        if count < MIN_MEDIAN_SAMPLES or median is None:
+            return None
+        return Decimal(str(median))
+
+    async def save_fraud(self, listing_id: UUID, score: int, reasons: list[str]) -> None:
+        """Записать оценку и время проверки."""
+        await self._session.execute(
+            update(Listing)
+            .where(Listing.id == listing_id)
+            .values(
+                fraud_score=score,
+                fraud_reasons=list(reasons),
+                fraud_checked_at=datetime.now(UTC),
+            )
+        )
+
     async def _get_or_create_district(self, district_name: str) -> District:
         """Получает или создает район."""
         # В реальной реализации нужно добавить репозиторий районов
@@ -269,6 +331,20 @@ class ListingsRepository(IListingsRepository):
         if district is None:
             district = await districts_repo.create_district(district_name)
         return district
+
+
+def fraud_recheck_needed(
+    listing: Listing, language: str, raw_listing: RawListing, *, price_changed: bool
+) -> bool:
+    """Проверку на мошенничество нужно повторить: изменились текст, цена или фото."""
+    old_text = (
+        getattr(listing, f"title_{language}", "") or "",
+        getattr(listing, f"description_{language}", "") or "",
+    )
+    photos_changed = bool(listing.images) != bool(raw_listing.photos)
+    return (
+        price_changed or old_text != (raw_listing.title, raw_listing.description) or photos_changed
+    )
 
 
 def stale_translation_resets(

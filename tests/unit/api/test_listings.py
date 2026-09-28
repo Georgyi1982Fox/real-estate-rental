@@ -54,6 +54,8 @@ async def test_listing_shape(client: AsyncClient, seeded: Store) -> None:
         "has_phone": False,
         "source_url": None,
         "owner_name": None,
+        "fraud_level": "none",
+        "fraud_reasons": [],
     }
 
 

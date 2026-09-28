@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 # Ключи блокировок (любые уникальные числа bigint)
 TRANSLATE_LOCK = 710_001
+FRAUD_LOCK = 710_002
 
 
 @asynccontextmanager

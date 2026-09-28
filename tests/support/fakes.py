@@ -8,6 +8,7 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from bina.application.dtos.listing_search import ListingSearchFilters, ListingSort
+from bina.application.fraud import HIDE_SCORE
 from bina.infrastructure.db.models import District, Listing, ListingStatus, User
 from bina.infrastructure.db.models.users import SubscriptionTier, UserRole
 
@@ -66,7 +67,8 @@ class Store:
             phone=kwargs.pop("phone", None),
             owner_name=kwargs.pop("owner_name", None),
             is_verified=kwargs.pop("is_verified", False),
-            fraud_score=0,
+            fraud_score=kwargs.pop("fraud_score", 0),
+            fraud_reasons=kwargs.pop("fraud_reasons", []),
             status=kwargs.pop("status", ListingStatus.ACTIVE),
             is_deleted=kwargs.pop("is_deleted", False),
             created_at=datetime(2026, 1, 1, tzinfo=UTC) + timedelta(minutes=len(self.listings)),
@@ -166,6 +168,7 @@ class FakeListingsRepository:
             for item in self._store.listings
             if item.status == ListingStatus.ACTIVE
             and not item.is_deleted
+            and item.fraud_score < HIDE_SCORE
             and (f.district_id is None or item.district_id == f.district_id)
             and (f.price_min is None or item.price >= f.price_min)
             and (f.price_max is None or item.price <= f.price_max)

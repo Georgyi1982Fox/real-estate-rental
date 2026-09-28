@@ -8,6 +8,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from bina.application.dtos.pagination import Page
+from bina.application.fraud import fraud_level
 from bina.application.subscriptions import Limits, Plan, effective_tier
 from bina.infrastructure.api.validation import clean_text
 from bina.infrastructure.db.models import District, Listing, Notification, SavedSearch, User
@@ -40,6 +41,13 @@ class ListingOut(BaseModel):
     )
     source_url: str | None = Field(default=None, description="Объявление на сайте-источнике")
     owner_name: str | None = None
+    # TASK-011: проверка на мошенничество
+    fraud_level: Literal["none", "warning", "high"] = Field(
+        default="none", description="warning — показать ⚠️; high — скрыто из поиска"
+    )
+    fraud_reasons: list[str] = Field(
+        default_factory=list, description="Коды причин (переводит фронтенд)"
+    )
 
     @classmethod
     def from_model(cls, listing: Listing) -> "ListingOut":
@@ -60,6 +68,8 @@ class ListingOut(BaseModel):
             has_phone=bool(listing.phone),
             source_url=listing.url or None,
             owner_name=listing.owner_name or None,
+            fraud_level=fraud_level(listing.fraud_score or 0).value,
+            fraud_reasons=list(listing.fraud_reasons or []),
         )
 
 
