@@ -24,6 +24,7 @@ from bina.infrastructure.api.schemas import (
     ListingsPageOut,
     PhoneOut,
 )
+from bina.infrastructure.api.validation import clean_text
 from bina.infrastructure.db.models import Listing
 from bina.infrastructure.db.repositories.listings import ListingsRepository
 
@@ -44,12 +45,19 @@ async def list_listings(
     rooms: Annotated[int | None, Query(ge=1, description="4 = «4 и больше»")] = None,
     min_area: Annotated[str | None, Query(description="Площадь от, м²")] = None,
     max_area: Annotated[str | None, Query(description="Площадь до, м²")] = None,
+    q: Annotated[
+        str | None,
+        Query(max_length=100, description="Текст поиска: заголовок и описание (ru, ka, en)"),
+    ] = None,
     sort: Annotated[
-        ListingSort,
-        Query(description="newest, price_asc, price_desc, area_desc, price_per_m2_asc"),
-    ] = ListingSort.NEWEST,
+        ListingSort | None,
+        Query(
+            description="newest, relevance, price_asc, price_desc, area_desc, price_per_m2_asc. "
+            "По умолчанию: relevance, если задан q, иначе newest"
+        ),
+    ] = None,
 ) -> ListingsPageOut:
-    """Активные объявления с пагинацией, фильтрами и сортировкой (по умолчанию новые сверху)."""
+    """Активные объявления с пагинацией, фильтрами, поиском по тексту и сортировкой."""
     try:
         filters = search_filters(
             district_id=parse_uuid(district, "district"),
@@ -58,12 +66,16 @@ async def list_listings(
             rooms=rooms,
             area_min=parse_decimal(min_area, "min_area"),
             area_max=parse_decimal(max_area, "max_area"),
+            query=clean_text(q) if q else None,
         )
     except ValidationError as exc:
         raise bad_request("min_price must be <= max_price and min_area <= max_area") from exc
 
     result = await SearchListingsUseCase(ListingsRepository(session)).execute(
-        filters, page=page - 1, page_size=per_page, sort=sort
+        filters,
+        page=page - 1,
+        page_size=per_page,
+        sort=sort or (ListingSort.RELEVANCE if filters.query else ListingSort.NEWEST),
     )
     return ListingsPageOut.from_page(result)
 

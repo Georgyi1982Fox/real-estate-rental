@@ -1,9 +1,11 @@
+import re
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, func, or_, select, update
+from sqlalchemy import ColumnElement, func, literal_column, or_, select, update
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bina.application.dtos.listing_search import ListingSearchFilters, ListingSort
@@ -88,7 +90,7 @@ class ListingsRepository(IListingsRepository):
         query = (
             select(Listing)
             .where(*self._search_conditions(filters))
-            .order_by(*_sort_order(sort), Listing.created_at.desc(), Listing.id)
+            .order_by(*_sort_order(sort, filters), Listing.created_at.desc(), Listing.id)
             .limit(limit)
             .offset(offset)
         )
@@ -122,6 +124,10 @@ class ListingsRepository(IListingsRepository):
             conditions.append(Listing.area >= filters.area_min)
         if filters.area_max is not None:
             conditions.append(Listing.area <= filters.area_max)
+        # Запрос без слов (только знаки) не фильтрует — как пустая строка поиска
+        ts_query = text_search_query(filters.query) if filters.query else None
+        if ts_query is not None:
+            conditions.append(SEARCH_VECTOR.op("@@")(ts_query))
         return conditions
 
     async def create_or_update_from_raw(
@@ -287,8 +293,13 @@ def stale_translation_resets(
     return resets
 
 
-def _sort_order(sort: ListingSort) -> list[Any]:
+def _sort_order(sort: ListingSort, filters: ListingSearchFilters) -> list[Any]:
     """ORDER BY для ``sort``; дальше всегда новые сверху (стабильная пагинация)."""
+    if sort is ListingSort.RELEVANCE:
+        ts_query = text_search_query(filters.query) if filters.query else None
+        if ts_query is None:
+            return []
+        return [func.ts_rank(SEARCH_VECTOR, ts_query).desc()]
     if sort is ListingSort.PRICE_ASC:
         return [Listing.price.asc()]
     if sort is ListingSort.PRICE_DESC:
@@ -299,3 +310,35 @@ def _sort_order(sort: ListingSort) -> list[Any]:
         # Без площади цена за м² неизвестна — такие в конце
         return [(Listing.price / func.nullif(Listing.area, 0)).asc().nulls_last()]
     return []
+
+
+# ---------------------------------------------------------------- TASK-022: поиск
+
+# Вычисляемый столбец из миграции listing_search_vector (в модели не описан: его пишет PostgreSQL)
+SEARCH_VECTOR = literal_column("bina_listings.search_vector", type_=TSVECTOR)
+# Словари: русский и английский — со словоформами, грузинский — как есть
+SEARCH_CONFIGS = ("russian", "english", "simple")
+MAX_QUERY_WORDS = 8
+_WORD_RE = re.compile(r"\w+", re.UNICODE)
+
+
+def text_search_query(text: str) -> ColumnElement[Any] | None:
+    """tsquery для текста поиска: все слова (по началу слова), любой из словарей.
+
+    «сабурт 2 комнаты» → ``сабурт:* & 2:* & комнаты:*`` в русском, английском и
+    простом словаре, объединённые через OR. В запросе остаются только буквы и цифры,
+    поэтому спецсимволы tsquery (``& | ! :``) из пользовательского текста невозможны.
+    ``None``, если слов нет.
+    """
+    words = _WORD_RE.findall(text.lower())[:MAX_QUERY_WORDS]
+    if not words:
+        return None
+    expression = " & ".join(f"{word}:*" for word in words)
+    queries = [
+        func.to_tsquery(literal_column(f"'{config}'::regconfig"), expression)
+        for config in SEARCH_CONFIGS
+    ]
+    combined: ColumnElement[Any] = queries[0]
+    for query in queries[1:]:
+        combined = combined.op("||")(query)
+    return combined
