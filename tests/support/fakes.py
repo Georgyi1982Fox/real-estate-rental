@@ -6,7 +6,7 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID, uuid4
 
-from bina.application.dtos.listing_search import ListingSearchFilters
+from bina.application.dtos.listing_search import ListingSearchFilters, ListingSort
 from bina.infrastructure.db.models import District, Listing, ListingStatus, User
 from bina.infrastructure.db.models.users import SubscriptionTier, UserRole
 
@@ -140,13 +140,28 @@ class FakeListingsRepository:
             and (f.price_max is None or item.price <= f.price_max)
             and (f.rooms_min is None or item.rooms >= f.rooms_min)
             and (f.rooms_max is None or item.rooms <= f.rooms_max)
+            and (f.area_min is None or item.area >= f.area_min)
+            and (f.area_max is None or item.area <= f.area_max)
         ]
         return sorted(result, key=lambda item: item.created_at, reverse=True)
 
     async def search(
-        self, filters: ListingSearchFilters, limit: int, offset: int = 0
+        self,
+        filters: ListingSearchFilters,
+        limit: int,
+        offset: int = 0,
+        sort: ListingSort = ListingSort.NEWEST,
     ) -> list[Listing]:
-        return self._matching(filters)[offset : offset + limit]
+        items = self._matching(filters)  # уже новые сверху; sorted() устойчива
+        keys: dict[ListingSort, Any] = {
+            ListingSort.PRICE_ASC: lambda item: item.price,
+            ListingSort.PRICE_DESC: lambda item: -item.price,
+            ListingSort.AREA_DESC: lambda item: -item.area,
+            ListingSort.PRICE_PER_M2_ASC: lambda item: item.price / item.area,
+        }
+        if sort in keys:
+            items = sorted(items, key=keys[sort])
+        return items[offset : offset + limit]
 
     async def count(self, filters: ListingSearchFilters) -> int:
         return len(self._matching(filters))

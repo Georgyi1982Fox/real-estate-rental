@@ -1,9 +1,20 @@
 """DTO фильтров поиска объявлений."""
 
 from decimal import Decimal
+from enum import StrEnum
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, model_validator
+
+
+class ListingSort(StrEnum):
+    """Порядок выдачи объявлений (параметр ``sort`` API)."""
+
+    NEWEST = "newest"
+    PRICE_ASC = "price_asc"
+    PRICE_DESC = "price_desc"
+    AREA_DESC = "area_desc"
+    PRICE_PER_M2_ASC = "price_per_m2_asc"
 
 
 class ListingSearchFilters(BaseModel):
@@ -20,6 +31,8 @@ class ListingSearchFilters(BaseModel):
     price_max: Decimal | None = None
     rooms_min: int | None = None
     rooms_max: int | None = None
+    area_min: Decimal | None = None
+    area_max: Decimal | None = None
 
     @model_validator(mode="after")
     def _check_ranges(self) -> "ListingSearchFilters":
@@ -36,6 +49,12 @@ class ListingSearchFilters(BaseModel):
             and self.rooms_min > self.rooms_max
         ):
             raise ValueError("rooms_min must be <= rooms_max")
+        if (
+            self.area_min is not None
+            and self.area_max is not None
+            and self.area_min > self.area_max
+        ):
+            raise ValueError("area_min must be <= area_max")
         return self
 
 
@@ -48,11 +67,13 @@ def search_filters(
     price_min: Decimal | None = None,
     price_max: Decimal | None = None,
     rooms: int | None = None,
+    area_min: Decimal | None = None,
+    area_max: Decimal | None = None,
 ) -> ListingSearchFilters:
     """Фильтры из параметров Mini App: ``rooms`` — точное число, 4 — «4 и больше».
 
     Raises:
-        pydantic.ValidationError: если ``price_min > price_max``.
+        pydantic.ValidationError: если нижняя граница цены или площади больше верхней.
     """
     return ListingSearchFilters(
         district_id=district_id,
@@ -60,4 +81,6 @@ def search_filters(
         price_max=price_max,
         rooms_min=rooms,
         rooms_max=None if rooms is None or rooms >= ROOMS_OR_MORE else rooms,
+        area_min=area_min,
+        area_max=area_max,
     )

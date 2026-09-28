@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Protocol
 from uuid import UUID
 
-from bina.application.dtos.listing_search import ListingSearchFilters
+from bina.application.dtos.listing_search import ListingSearchFilters, ListingSort
 from bina.infrastructure.db.models import Listing
 
 
@@ -48,8 +48,9 @@ class IListingsRepository(Protocol):
         filters: ListingSearchFilters,
         limit: int,
         offset: int = 0,
+        sort: ListingSort = ListingSort.NEWEST,
     ) -> list[Listing]:
-        """Найти активные объявления по фильтрам (новые сверху)."""
+        """Найти активные объявления по фильтрам в порядке ``sort``."""
         ...
 
     @abstractmethod

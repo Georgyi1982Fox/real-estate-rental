@@ -38,7 +38,7 @@ api/
 | Метод | Путь | Ответ |
 |---|---|---|
 | GET | `/api/health` | `{"status": "ok"}` |
-| GET | `/api/listings?page=&per_page=&district=&min_price=&max_price=&rooms=` | `{items, total, page, pages}` |
+| GET | `/api/listings?page=&per_page=&district=&min_price=&max_price=&rooms=&min_area=&max_area=&sort=` | `{items, total, page, pages}` |
 | GET | `/api/listings/{id}` | объявление; 404, если нет, удалено или ID не UUID |
 | GET | `/api/listings/{id}/similar` | `{items}`: до 3 объявлений того же района с ценой ±30% |
 | GET | `/api/districts` | `{items: [{id, name: {ka, ru, en}}]}` |
@@ -52,6 +52,9 @@ api/
 
 - `page` нумеруется с 1, `per_page` от 1 до 50 (по умолчанию 20). Объявления: только активные и не удалённые, новые сверху.
 - `rooms=4` означает «4 и больше» (как в `FilterPanel` фронтенда). Пустые параметры (`district=`) игнорируются.
+- `min_area`, `max_area` — площадь в м² (TASK-016).
+- `sort` (TASK-016): `newest` (по умолчанию), `price_asc`, `price_desc`, `area_desc`,
+  `price_per_m2_asc` (объявления без площади — в конце). Неизвестное значение — 422.
 - Формат объявления:
   ```json
   {
