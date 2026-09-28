@@ -72,7 +72,11 @@ class QwenProvider(LLMProvider):
 
         except httpx.HTTPStatusError as e:
             logger.error(
-                "HTTP error in Qwen completion", status_code=e.response.status_code, error=e
+                "HTTP error in Qwen completion",
+                status_code=e.response.status_code,
+                model=self.model,
+                # Причина от AITUNNEL (например, неизвестная модель); ключа в ответе нет
+                response=e.response.text[:500],
             )
             raise
         except httpx.RequestError as e:
@@ -131,7 +135,8 @@ class QwenProvider(LLMProvider):
             logger.error(
                 "HTTP error in Qwen structured completion",
                 status_code=e.response.status_code,
-                error=e,
+                model=self.model,
+                response=e.response.text[:500],
             )
             raise
         except httpx.RequestError as e:
