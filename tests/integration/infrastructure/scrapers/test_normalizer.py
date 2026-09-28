@@ -1,13 +1,11 @@
-import pytest
-
 from bina.application.ports.scraper import RawListing
 from bina.infrastructure.scrapers.normalizer import ListingNormalizer
 
 
-def test_normalize_real_world_data():
+def test_normalize_real_world_data() -> None:
     """Тест нормализации с реальными данными."""
     normalizer = ListingNormalizer()
-    
+
     # Тест с грузинскими символами и разными форматами
     raw_listing = RawListing(
         source_id="real123",
@@ -22,7 +20,7 @@ def test_normalize_real_world_data():
         url="https://www.myhome.ge/ru/123456",
         photos=["https://example.com/photo.jpg"],
     )
-    
+
     normalized = normalizer.normalize_listing(raw_listing)
     assert normalized is not None
     assert normalized.district == "Vake"
@@ -31,15 +29,15 @@ def test_normalize_real_world_data():
     assert normalized.currency == "GEL"
 
 
-def test_normalize_price_with_symbols():
+def test_normalize_price_with_symbols() -> None:
     """Тест нормализации цены с валютными символами."""
     normalizer = ListingNormalizer()
-    
+
     # Тест с символом лари
     price, currency = normalizer.normalize_price(1000.0, "₾")
     assert price == 1000.0
     assert currency == "GEL"
-    
+
     # Тест с символом доллара
     price, currency = normalizer.normalize_price(500.0, "$")
     assert currency == "GEL"

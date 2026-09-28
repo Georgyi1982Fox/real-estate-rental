@@ -224,7 +224,7 @@ class SSScraper(BaseWebsiteScraper):
                 )
                 listings.append(listing)
 
-            except Exception as e:
+            except (AttributeError, IndexError, TypeError, ValueError) as e:
                 logger.warning("Error parsing SS listing", error=str(e))
                 continue
 

@@ -7,6 +7,7 @@ import structlog
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from bina.application.ports.scraper import BaseScraper, RawListing
+from bina.infrastructure.scrapers.settings import DEFAULT_USER_AGENTS
 
 logger = structlog.get_logger(__name__)
 
@@ -22,11 +23,7 @@ class BaseWebsiteScraper(BaseScraper, ABC):
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.delay_seconds = delay_seconds
-        self.user_agents = user_agents or [
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-        ]
+        self.user_agents = user_agents or list(DEFAULT_USER_AGENTS)
         self._client: httpx.AsyncClient | None = None
 
     @property

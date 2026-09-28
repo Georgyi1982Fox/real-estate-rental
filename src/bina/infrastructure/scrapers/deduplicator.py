@@ -1,4 +1,3 @@
-
 import structlog
 
 from bina.application.ports.scraper import RawListing
@@ -28,7 +27,11 @@ class ListingDeduplicator:
             if existing_listing is None:
                 # Новое объявление
                 unique_listings.append(listing)
-                logger.debug("New listing found", source_id=listing.source_id, source_name=listing.source_name)
+                logger.debug(
+                    "New listing found",
+                    source_id=listing.source_id,
+                    source_name=listing.source_name,
+                )
             elif existing_listing.price != listing.price:
                 # Цена изменилась - обновляем
                 logger.info(

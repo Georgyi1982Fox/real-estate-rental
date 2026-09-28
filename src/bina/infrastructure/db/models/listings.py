@@ -12,6 +12,7 @@ from .base import Base, SoftDeleteMixin, value_enum
 
 if TYPE_CHECKING:
     from .districts import District
+
     # TASK-007: Favorite импортировался из .users, где его нет; Embedding не импортировался.
     from .embeddings import Embedding
     from .favorites import Favorite
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
 
 class ListingStatus(str, enum.Enum):
     """Статусы объявлений."""
-    
+
     ACTIVE = "active"
     SOLD = "sold"
     ARCHIVED = "archived"
@@ -27,9 +28,9 @@ class ListingStatus(str, enum.Enum):
 
 class Listing(Base, SoftDeleteMixin):
     """Модель объявления о недвижимости."""
-    
+
     __tablename__ = "bina_listings"
-    
+
     id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
         primary_key=True,
@@ -125,7 +126,7 @@ class Listing(Base, SoftDeleteMixin):
         default=ListingStatus.ACTIVE,
         nullable=False,
     )
-    
+
     # Relationships
     district: Mapped["District"] = relationship(
         back_populates="listings",

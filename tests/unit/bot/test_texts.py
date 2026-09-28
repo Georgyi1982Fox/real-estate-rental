@@ -36,8 +36,16 @@ def test_t_formats_placeholders() -> None:
 
 def test_t_allows_language_as_placeholder_name() -> None:
     """``language`` первого аргумента не конфликтует с плейсхолдером {language}."""
-    text = t("ru", "profile", language="English", tier="x", expires="", balance="0",
-             favorites=0, since="01.01.2026")
+    text = t(
+        "ru",
+        "profile",
+        language="English",
+        tier="x",
+        expires="",
+        balance="0",
+        favorites=0,
+        since="01.01.2026",
+    )
     assert "Язык: English" in text
 
 

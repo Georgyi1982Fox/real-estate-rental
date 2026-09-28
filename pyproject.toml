@@ -27,8 +27,9 @@ dependencies = [
 dev = [
     "pytest>=7.4.0",
     "pytest-asyncio>=0.23.0",
-    "mypy>=1.8.0",
-    "ruff>=0.4.0",
+    # Линтер и типы закреплены: новые правила в свежих версиях не должны внезапно ронять CI
+    "mypy==2.3.1",
+    "ruff==0.16.8",
 ]
 
 [project.scripts]
@@ -64,6 +65,8 @@ allowed-confusables = [
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
 "tests/**/*" = ["TID252"]
+# Enum моделей хранятся в БД значениями; (str, Enum) оставлен ради прежнего str()/format()
+"src/bina/infrastructure/db/models/*.py" = ["UP042"]
 
 [tool.mypy]
 python_version = "3.12"

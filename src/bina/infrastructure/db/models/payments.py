@@ -16,14 +16,14 @@ if TYPE_CHECKING:
 
 class PaymentProvider(str, enum.Enum):
     """Провайдеры платежей."""
-    
+
     TELEGRAM_STARS = "telegram_stars"
     STRIPE = "stripe"
 
 
 class PaymentStatus(str, enum.Enum):
     """Статусы платежей."""
-    
+
     PENDING = "pending"
     SUCCESS = "success"
     FAILED = "failed"
@@ -31,9 +31,9 @@ class PaymentStatus(str, enum.Enum):
 
 class Payment(Base):
     """Модель платежей."""
-    
+
     __tablename__ = "bina_payments"
-    
+
     id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
         primary_key=True,
@@ -63,7 +63,7 @@ class Payment(Base):
     status: Mapped[PaymentStatus] = mapped_column(
         nullable=False,
     )
-    
+
     # Relationships
     user: Mapped["User"] = relationship(
         back_populates="payments",

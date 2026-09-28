@@ -1,10 +1,11 @@
-from pydantic import BaseModel
-from typing import Optional
 from uuid import UUID
+
+from pydantic import BaseModel
 
 
 class TranslatedListingDTO(BaseModel):
     """DTO для переведенного объявления."""
+
     id: UUID
     title_ru: str
     description_ru: str

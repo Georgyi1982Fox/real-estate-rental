@@ -189,7 +189,9 @@ async def test_results_show_mini_app_button_when_configured(
 ) -> None:
     harness.store.add_listing(harness.store.add_district("Ваке"))
     settings = harness.dispatcher["settings"]
-    harness.dispatcher["settings"] = type(settings)(token=settings.token, mini_app_url="https://app")
+    harness.dispatcher["settings"] = type(settings)(
+        token=settings.token, mini_app_url="https://app"
+    )
 
     await harness.press(SearchCallback(step=SearchStep.RESULTS).pack())
 

@@ -1,8 +1,8 @@
-from unittest.mock import AsyncMock
 from decimal import Decimal
+from unittest.mock import AsyncMock
+from uuid import UUID
 
 import pytest
-from uuid import UUID
 
 from bina.application.dtos.listing_dto import TranslatedListingDTO
 from bina.application.use_cases.translate_listing import TranslateListingUseCase
@@ -16,7 +16,7 @@ async def test_translate_listing_use_case_with_mock_llm() -> None:
     llm_provider = AsyncMock()
     listing_repository = AsyncMock()
     semantic_cache = AsyncMock()
-    
+
     # Настройка мока репозитория
     listing_id = UUID("12345678-1234-5678-1234-567812345678")
     listing = Listing(
@@ -34,26 +34,26 @@ async def test_translate_listing_use_case_with_mock_llm() -> None:
         area=Decimal("50.0"),
     )
     listing_repository.get_by_id.return_value = listing
-    
+
     # Настройка мока кэша (пустой кэш)
     semantic_cache.get.return_value = None
-    
+
     # Настройка мока LLM
     llm_provider.complete_structured.return_value = {
         "title_ru": "Переведенный заголовок",
         "description_ru": "Переведенное описание",
     }
-    
+
     # Создаем use-case
     use_case = TranslateListingUseCase(
         llm_provider=llm_provider,
         listing_repository=listing_repository,
         semantic_cache=semantic_cache,
     )
-    
+
     # Выполняем перевод
     result = await use_case.execute(listing_id)
-    
+
     # Проверяем результат
     assert isinstance(result, TranslatedListingDTO)
     assert result.id == listing_id
@@ -62,7 +62,7 @@ async def test_translate_listing_use_case_with_mock_llm() -> None:
     assert result.price == 1000.0
     assert result.rooms == 2
     assert result.area == 50.0
-    
+
     # Проверяем вызовы
     listing_repository.get_by_id.assert_called_once_with(listing_id)
     semantic_cache.get.assert_called_once()
@@ -82,7 +82,7 @@ async def test_translate_listing_use_case_with_cached_result() -> None:
     llm_provider = AsyncMock()
     listing_repository = AsyncMock()
     semantic_cache = AsyncMock()
-    
+
     # Настройка мока репозитория
     listing_id = UUID("12345678-1234-5678-1234-567812345678")
     listing = Listing(
@@ -100,24 +100,24 @@ async def test_translate_listing_use_case_with_cached_result() -> None:
         area=Decimal("50.0"),
     )
     listing_repository.get_by_id.return_value = listing
-    
+
     # Настройка мока кэша (есть результат в кэше)
     cached_result = {
         "title_ru": "Кэшированный заголовок",
         "description_ru": "Кэшированное описание",
     }
     semantic_cache.get.return_value = cached_result
-    
+
     # Создаем use-case
     use_case = TranslateListingUseCase(
         llm_provider=llm_provider,
         listing_repository=listing_repository,
         semantic_cache=semantic_cache,
     )
-    
+
     # Выполняем перевод
     result = await use_case.execute(listing_id)
-    
+
     # Проверяем результат
     assert isinstance(result, TranslatedListingDTO)
     assert result.id == listing_id
@@ -126,7 +126,7 @@ async def test_translate_listing_use_case_with_cached_result() -> None:
     assert result.price == 1000.0
     assert result.rooms == 2
     assert result.area == 50.0
-    
+
     # Проверяем вызовы (LLM не должен быть вызван)
     listing_repository.get_by_id.assert_called_once_with(listing_id)
     semantic_cache.get.assert_called_once()
@@ -146,18 +146,18 @@ async def test_translate_listing_use_case_listing_not_found() -> None:
     llm_provider = AsyncMock()
     listing_repository = AsyncMock()
     semantic_cache = AsyncMock()
-    
+
     # Настройка мока репозитория (объявление не найдено)
     listing_id = UUID("12345678-1234-5678-1234-567812345678")
     listing_repository.get_by_id.return_value = None
-    
+
     # Создаем use-case
     use_case = TranslateListingUseCase(
         llm_provider=llm_provider,
         listing_repository=listing_repository,
         semantic_cache=semantic_cache,
     )
-    
+
     # Проверяем, что выбрасывается исключение
     with pytest.raises(ValueError, match=f"Listing with id {listing_id} not found"):
         await use_case.execute(listing_id)

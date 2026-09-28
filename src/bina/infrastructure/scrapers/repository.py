@@ -33,9 +33,7 @@ class ScrapedListingsRepository:
         for raw_listing in listings:
             try:
                 async with self.session.begin_nested():
-                    listing = await self.listing_repository.create_or_update_from_raw(
-                        raw_listing
-                    )
+                    listing = await self.listing_repository.create_or_update_from_raw(raw_listing)
             except (SQLAlchemyError, ValueError) as exc:
                 logger.error(
                     "Error saving listing",

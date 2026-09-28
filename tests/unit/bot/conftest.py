@@ -185,7 +185,5 @@ def harness(
         telegram=telegram,
         store=store,
         sessions=sessions,
-        telegram_user=TelegramUser(
-            id=CHAT_ID, is_bot=False, first_name="Nino", language_code="ru"
-        ),
+        telegram_user=TelegramUser(id=CHAT_ID, is_bot=False, first_name="Nino", language_code="ru"),
     )

@@ -30,15 +30,15 @@ class TranslateListingUseCase:
     async def execute(self, listing_id: UUID) -> TranslatedListingDTO:
         """Выполняет перевод объявления по ID."""
         logger.info("Translating listing", listing_id=listing_id)
-        
+
         # Получаем объявление из БД
         listing = await self.listing_repository.get_by_id(listing_id)
         if not listing:
             raise ValueError(f"Listing with id {listing_id} not found")
-        
+
         # Формируем текст для перевода
         georgian_text = f"Заголовок: {listing.title_ka}\nОписание: {listing.description_ka}"
-        
+
         # Проверяем кэш
         cached_result = await self.semantic_cache.get(georgian_text)
         if cached_result:
@@ -53,19 +53,20 @@ Title: {listing.title_ka}
 
 Description: {listing.description_ka}
 
-Return only the translated title and description in JSON format with keys "title_ru" and "description_ru". Do not include any other text."""
-            
+Return only the translated title and description in JSON format with keys "title_ru"
+and "description_ru". Do not include any other text."""
+
             translation_response = await complete_structured_with_validation(
                 self.llm_provider,
                 prompt,
                 TranslationResponse,
             )
             result = translation_response.model_dump()
-            
+
             # Сохраняем в кэш
             await self.semantic_cache.set(georgian_text, result)
             logger.debug("Translation completed and cached", listing_id=listing_id)
-        
+
         # Создаем DTO
         dto = TranslatedListingDTO(
             id=listing.id,
@@ -75,7 +76,7 @@ Return only the translated title and description in JSON format with keys "title
             rooms=listing.rooms,
             area=float(listing.area),
         )
-        
+
         # Сохраняем перевод в БД
         await self.listing_repository.save_translation(
             listing_id,
@@ -83,5 +84,5 @@ Return only the translated title and description in JSON format with keys "title
             description_ru=dto.description_ru,
         )
         logger.info("Translation saved to DB", listing_id=listing_id)
-        
+
         return dto

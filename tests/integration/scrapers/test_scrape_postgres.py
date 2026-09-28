@@ -73,7 +73,10 @@ async def test_create_and_update_from_raw(session: AsyncSession) -> None:
 async def test_districts_are_reused_and_created(session: AsyncSession) -> None:
     session.add(
         District(
-            name_ru="Ваке", name_ka="ვაკე", name_en="Vake", avg_price_per_m2=Decimal(20),
+            name_ru="Ваке",
+            name_ka="ვაკე",
+            name_en="Vake",
+            avg_price_per_m2=Decimal(20),
             safety_score=9,
         )
     )

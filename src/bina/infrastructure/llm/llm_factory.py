@@ -10,7 +10,7 @@ from bina.infrastructure.llm.providers.qwen_provider import QwenProvider
 
 class LLMFactory:
     """Фабрика для создания LLM провайдеров."""
-    
+
     @staticmethod
     def create_provider() -> LLMProvider:
         """Создает провайдер на основе конфигурации с fallback цепочкой."""
@@ -19,7 +19,7 @@ class LLMFactory:
         api_key = os.getenv("LLM_API_KEY", "")
         base_url = os.getenv("LLM_BASE_URL", "")
         model = os.getenv("LLM_MODEL", "")
-        
+
         providers_config: dict[str, tuple[type[LLMProvider], dict[str, Any]]] = {
             # Перевод длинного объявления на два языка идёт дольше 30 с (TASK-010)
             "qwen": (
@@ -29,7 +29,7 @@ class LLMFactory:
             "anthropic": (AnthropicProvider, {"api_key": api_key}),
             "openai": (OpenAIProvider, {"api_key": api_key}),
         }
-        
+
         # Попробуем основного провайдера
         if provider_name in providers_config:
             provider_class, kwargs = providers_config[provider_name]
@@ -37,39 +37,41 @@ class LLMFactory:
                 kwargs["base_url"] = base_url
             if model:
                 kwargs["model"] = model
-            
+
             try:
                 return provider_class(**kwargs)
             except (TypeError, ValueError, KeyError) as e:
                 print(f"Failed to create {provider_name} provider: {e}")
-        
+
         # Fallback цепочка: qwen -> openai -> anthropic
         fallback_chain = ["qwen", "openai", "anthropic"]
-        
+
         for fallback_provider in fallback_chain:
             if fallback_provider == provider_name:
                 continue
-                
+
             provider_class, kwargs = providers_config[fallback_provider]
             if base_url and fallback_provider != provider_name:
                 kwargs["base_url"] = base_url
             if model and fallback_provider != provider_name:
                 kwargs["model"] = model
-            
+
             try:
                 print(f"Falling back to {fallback_provider} provider")
                 return provider_class(**kwargs)
             except (TypeError, ValueError, KeyError) as e:
                 print(f"Failed to create fallback {fallback_provider} provider: {e}")
                 continue
-        
+
         raise RuntimeError("Failed to create any LLM provider")
 
     @staticmethod
     def create_embeddings_provider() -> BaseEmbeddingsProvider:
         """Создает провайдера embeddings на основе конфигурации."""
         # Для простоты используем OpenAI embeddings как заглушку
-        from bina.infrastructure.llm.providers.openai_embeddings_provider import OpenAIEmbeddingsProvider
-        
+        from bina.infrastructure.llm.providers.openai_embeddings_provider import (
+            OpenAIEmbeddingsProvider,
+        )
+
         api_key = os.getenv("OPENAI_API_KEY", "")
         return OpenAIEmbeddingsProvider(api_key=api_key)

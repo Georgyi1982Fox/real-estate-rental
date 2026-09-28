@@ -44,8 +44,14 @@ async def test_reuses_existing_district_and_resets(session: AsyncSession) -> Non
     data = {
         "districts": [{"id": "vake", "name": {"ka": "ვაკე", "ru": "Ваке", "en": "Vake"}}],
         "listings": [
-            {"id": 1, "title": {"ru": "А", "ka": "ა"}, "price": 1000, "rooms": 2, "area": 50,
-             "district": "vake"},
+            {
+                "id": 1,
+                "title": {"ru": "А", "ka": "ა"},
+                "price": 1000,
+                "rooms": 2,
+                "area": 50,
+                "district": "vake",
+            },
         ],
     }
     await load_demo_data(session, data)

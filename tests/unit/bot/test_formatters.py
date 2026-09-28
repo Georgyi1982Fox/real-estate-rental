@@ -86,8 +86,7 @@ def test_format_listing_escapes_html() -> None:
     text = format_listing(listing, 3, "ru")
 
     assert text == (
-        "<b>3. &lt;b&gt;Акция&lt;/b&gt; &amp; скидки</b>\n"
-        "💰 1 200 ₾ · 🚪 2 комн. · 📐 55.5 м² · ✅"
+        "<b>3. &lt;b&gt;Акция&lt;/b&gt; &amp; скидки</b>\n💰 1 200 ₾ · 🚪 2 комн. · 📐 55.5 м² · ✅"
     )
 
 

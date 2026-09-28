@@ -1,5 +1,6 @@
 import dataclasses
 import re
+from typing import ClassVar
 
 import structlog
 
@@ -16,7 +17,7 @@ class ListingNormalizer:
     """Нормализатор объявлений."""
 
     # Маппинг районов Тбилиси на англоязычные названия для унификации
-    DISTRICT_MAPPING = {
+    DISTRICT_MAPPING: ClassVar[dict[str, str]] = {
         # MyHome.ge и SS.ge могут использовать разные названия
         "ვაკე": "Vake",
         "ვაჟის უბანი": "Vazisubani",
@@ -106,7 +107,11 @@ class ListingNormalizer:
         """Валидирует поля объявления."""
         # Проверяем обязательные поля
         if not listing.source_id or not listing.source_name:
-            logger.warning("Missing required fields", source_id=listing.source_id, source_name=listing.source_name)
+            logger.warning(
+                "Missing required fields",
+                source_id=listing.source_id,
+                source_name=listing.source_name,
+            )
             return False
 
         # Проверяем числовые поля
@@ -131,7 +136,9 @@ class ListingNormalizer:
             return None
 
         # Нормализация цены
-        normalized_price, normalized_currency = self.normalize_price(listing.price, listing.currency)
+        normalized_price, normalized_currency = self.normalize_price(
+            listing.price, listing.currency
+        )
 
         # Очистка текста
         normalized_title = self.clean_text(listing.title)
