@@ -53,3 +53,9 @@ class LanguageCallback(CallbackData, prefix="lang"):
 
 class NoopCallback(CallbackData, prefix="noop"):
     """Неактивная кнопка (счётчик страниц)."""
+
+
+class PremiumBuyCallback(CallbackData, prefix="buy"):
+    """Купить тариф (прислать счёт в звёздах)."""
+
+    plan: str

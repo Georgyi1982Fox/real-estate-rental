@@ -1,6 +1,6 @@
 """Схемы ответов API (контракт — ``frontend/src/api/types.ts``)."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Literal
 from uuid import UUID
@@ -8,8 +8,10 @@ from uuid import UUID
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from bina.application.dtos.pagination import Page
+from bina.application.subscriptions import Limits, Plan, effective_tier
 from bina.infrastructure.api.validation import clean_text
 from bina.infrastructure.db.models import District, Listing, Notification, SavedSearch, User
+from bina.infrastructure.db.models.users import SubscriptionTier
 
 # Текст на нескольких языках: {"ka": ..., "ru": ..., "en": ...}; пустые языки опускаются
 Localized = dict[str, str]
@@ -149,8 +151,11 @@ class MeOut(BaseModel):
 
     telegram_id: int
     language: str
+    # С учётом срока: истёкшая подписка — "free"
     subscription_tier: str
+    # Только у действующей подписки
     subscription_expires_at: datetime | None
+    is_premium: bool
     balance: float
     favorites_count: int
     created_at: datetime
@@ -158,11 +163,14 @@ class MeOut(BaseModel):
     @classmethod
     def from_model(cls, user: User, favorites_count: int) -> "MeOut":
         """Преобразует ORM-модель."""
+        tier = effective_tier(user, datetime.now(UTC))
+        premium = tier != SubscriptionTier.FREE
         return cls(
             telegram_id=user.telegram_id,
             language=user.language,
-            subscription_tier=user.subscription_tier.value,
-            subscription_expires_at=user.subscription_expires_at,
+            subscription_tier=tier.value,
+            subscription_expires_at=user.subscription_expires_at if premium else None,
+            is_premium=premium,
             balance=float(user.balance),
             favorites_count=favorites_count,
             created_at=user.created_at,
@@ -173,6 +181,79 @@ class MeIn(BaseModel):
     """Тело PATCH /api/me."""
 
     language: Language
+
+
+# ------------------------------------------------------ TASK-026: подписка
+
+
+class PlanOut(BaseModel):
+    """Платный тариф."""
+
+    id: str
+    tier: str
+    days: int
+    price_stars: int
+
+
+class LimitsOut(BaseModel):
+    """Ограничения тарифа; ``favorites: null`` — без ограничения."""
+
+    favorites: int | None
+    searches: int
+
+
+class UsageOut(BaseModel):
+    """Сколько уже использовано."""
+
+    favorites: int
+    searches: int
+
+
+class SubscriptionOut(BaseModel):
+    """Ответ ``GET /api/subscription``."""
+
+    tier: str
+    is_premium: bool
+    expires_at: datetime | None
+    limits: LimitsOut
+    usage: UsageOut
+    plans: list[PlanOut]
+
+    @classmethod
+    def build(
+        cls,
+        user: User,
+        *,
+        premium: bool,
+        limits: Limits,
+        favorites: int,
+        searches: int,
+        plans: list[Plan],
+    ) -> "SubscriptionOut":
+        """Собирает ответ."""
+        return cls(
+            tier=user.subscription_tier.value if premium else SubscriptionTier.FREE.value,
+            is_premium=premium,
+            expires_at=user.subscription_expires_at if premium else None,
+            limits=LimitsOut(favorites=limits.favorites, searches=limits.searches),
+            usage=UsageOut(favorites=favorites, searches=searches),
+            plans=[
+                PlanOut(id=p.id, tier=p.tier.value, days=p.days, price_stars=p.price_stars)
+                for p in plans
+            ],
+        )
+
+
+class InvoiceIn(BaseModel):
+    """Тело ``POST /api/subscription/invoice``."""
+
+    plan: str = Field(min_length=1, max_length=64)
+
+
+class InvoiceOut(BaseModel):
+    """Ссылка для ``Telegram.WebApp.openInvoice``."""
+
+    url: str
 
 
 # ------------------------------------------------------------- TASK-028: поиски

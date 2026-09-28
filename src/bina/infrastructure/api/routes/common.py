@@ -22,6 +22,14 @@ def bad_request(detail: str) -> HTTPException:
     return HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=detail)
 
 
+def payment_required(kind: str, limit: int) -> HTTPException:
+    """Ошибка 402: лимит бесплатного тарифа исчерпан, нужен Premium (TASK-026)."""
+    return HTTPException(
+        status_code=status.HTTP_402_PAYMENT_REQUIRED,
+        detail=f"Free plan limit reached: {kind} ({limit}). Upgrade to Premium",
+    )
+
+
 def parse_uuid(value: str | None, name: str) -> UUID | None:
     """UUID из query-параметра; пустая строка означает «не задано»."""
     if not value:

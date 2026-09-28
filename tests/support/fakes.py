@@ -20,6 +20,8 @@ class Store:
     districts: list[District] = field(default_factory=list)
     listings: list[Listing] = field(default_factory=list)
     favorites: list[tuple[UUID, UUID]] = field(default_factory=list)
+    # (user_id, charge_id, amount, plan)
+    payments: list[tuple[UUID, str, Decimal, str]] = field(default_factory=list)
 
     def add_district(self, name_ru: str, name_en: str = "", name_ka: str = "") -> District:
         """Добавить район."""
@@ -109,6 +111,34 @@ class FakeUsersRepository:
         user = await self.get_by_id(user_id)
         assert user is not None
         user.language = language
+
+    async def set_subscription(
+        self, user_id: UUID, tier: SubscriptionTier, expires_at: datetime
+    ) -> None:
+        user = await self.get_by_id(user_id)
+        assert user is not None
+        user.subscription_tier = tier
+        user.subscription_expires_at = expires_at
+
+
+class FakePaymentsRepository:
+    """In-memory :class:`IPaymentsRepository`."""
+
+    def __init__(self, store: Store) -> None:
+        self._store = store
+
+    async def exists(self, provider_payment_id: str) -> bool:
+        return any(item[1] == provider_payment_id for item in self._store.payments)
+
+    async def add_success(
+        self,
+        user_id: UUID,
+        amount: Decimal,
+        currency: str,
+        provider_payment_id: str,
+        plan: str,
+    ) -> None:
+        self._store.payments.append((user_id, provider_payment_id, amount, plan))
 
 
 class FakeDistrictsRepository:

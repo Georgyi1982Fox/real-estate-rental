@@ -1,6 +1,6 @@
 """Сценарии бота целиком: апдейт -> middleware -> роутеры -> вызовы Telegram API."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
@@ -25,6 +25,7 @@ from bina.infrastructure.bot.keyboards.callbacks import (
     SearchCallback,
     SearchStep,
 )
+from bina.infrastructure.db.models.users import SubscriptionTier
 
 from .conftest import BotHarness
 
@@ -277,13 +278,15 @@ async def test_favorites_hide_deleted_listings(harness: BotHarness) -> None:
 
 async def test_profile(harness: BotHarness) -> None:
     await harness.send("/start")
-    harness.user.subscription_expires_at = datetime(2026, 12, 31, tzinfo=UTC)
+    # Истёкшая подписка показывается как бесплатная
+    harness.user.subscription_tier = SubscriptionTier.NOMAD
+    harness.user.subscription_expires_at = datetime.now(UTC) - timedelta(days=1)
 
     await harness.send("👤 Профиль")
 
     text = harness.last_text()
     assert "Язык: Русский" in text
-    assert "Подписка: Бесплатная (до 31.12.2026)" in text
+    assert "Подписка: Бесплатная\n" in text
     assert "С нами с 01.09.2026" in text
     assert buttons(harness.last_markup()) == [["✅ Русский", "English", "ქართული"]]
 

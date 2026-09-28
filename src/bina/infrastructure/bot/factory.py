@@ -10,18 +10,21 @@ from bina.infrastructure.bot.handlers import build_router
 from bina.infrastructure.bot.middlewares import DbSessionMiddleware, RegistrationMiddleware
 from bina.infrastructure.bot.settings import BotSettings
 from bina.infrastructure.bot.texts import t
+from bina.infrastructure.payments.settings import load_plans
 
 COMMANDS: dict[str, dict[str, str]] = {
     "ru": {
         "search": "Поиск жилья",
         "favorites": "Избранное",
         "profile": "Профиль и язык",
+        "premium": "Premium-подписка",
         "help": "Справка",
     },
     "en": {
         "search": "Find a home",
         "favorites": "Favorites",
         "profile": "Profile and language",
+        "premium": "Premium subscription",
         "help": "Help",
     },
 }
@@ -42,10 +45,10 @@ def create_dispatcher(
 ) -> Dispatcher:
     """Создаёт Dispatcher с middleware и роутерами.
 
-    ``settings`` доступны в обработчиках как аргумент ``settings``.
+    ``settings`` и тарифы ``plans`` доступны в обработчиках как одноимённые аргументы.
     Порядок middleware: сессия БД, затем регистрация (ей нужна сессия).
     """
-    dispatcher = Dispatcher(settings=settings)
+    dispatcher = Dispatcher(settings=settings, plans=load_plans())
     dispatcher.update.outer_middleware(DbSessionMiddleware(session_factory))
     dispatcher.update.outer_middleware(RegistrationMiddleware())
     dispatcher.include_router(build_router())

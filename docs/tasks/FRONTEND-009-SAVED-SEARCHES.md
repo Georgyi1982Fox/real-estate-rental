@@ -62,7 +62,7 @@ git checkout -b feature/frontend-009-saved-searches
 ```
 GET    /api/searches              → { items: SavedSearch[] }
 POST   /api/searches              тело { name?, filters, notify } → 201 SavedSearch
-                                  409 — уже 20 поисков; 422 — min_price > max_price или нет такого района
+                                  402 — лимит тарифа (бесплатно 1 поиск, Premium 20), см. FRONTEND-011; 422 — min_price > max_price или нет такого района
 PATCH  /api/searches/{id}         тело { name?, notify? } → SavedSearch; 404 — нет или чужой
 POST   /api/searches/{id}/viewed  → 204: пользователь открыл поиск, new_count обнуляется
 DELETE /api/searches/{id}         → 204

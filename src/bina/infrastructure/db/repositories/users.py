@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import select, update
@@ -6,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bina.application.repositories.users import IUsersRepository
 from bina.infrastructure.db.models import User
+from bina.infrastructure.db.models.users import SubscriptionTier
 
 
 class UsersRepository(IUsersRepository):
@@ -52,4 +54,15 @@ class UsersRepository(IUsersRepository):
     async def update_language(self, user_id: UUID, language: str) -> None:
         """Обновить язык интерфейса пользователя."""
         query = update(User).where(User.id == user_id).values(language=language)
+        await self._session.execute(query)
+
+    async def set_subscription(
+        self, user_id: UUID, tier: SubscriptionTier, expires_at: datetime
+    ) -> None:
+        """Установить тариф и дату окончания подписки (TASK-026)."""
+        query = (
+            update(User)
+            .where(User.id == user_id)
+            .values(subscription_tier=tier, subscription_expires_at=expires_at)
+        )
         await self._session.execute(query)
