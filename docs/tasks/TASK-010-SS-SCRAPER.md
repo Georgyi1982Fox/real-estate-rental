@@ -47,6 +47,13 @@ bina-scrape --source ss --limit 100
 bina-scrape --source all --limit 100   # MyHome и SS.ge
 ```
 
+Автозапуск (пункт 008): оба сайта сразу и затем каждые `--interval` часов
+(по умолчанию `SCRAPE_INTERVAL_HOURS`, 6). После каждого запуска печатается итог;
+ошибка одного запуска не останавливает расписание. Работает, пока открыто окно.
+```bash
+bina-scrape schedule --interval 6 --limit 100
+```
+
 ## Definition of Done
 1. ✅ Объявления SS.ge разбираются с настоящей страницы
 2. ✅ Только Тбилиси

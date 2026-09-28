@@ -1,6 +1,7 @@
 """CLI парсера: ``bina-scrape --source myhome --limit 100``."""
 
 import asyncio
+from datetime import datetime
 from pathlib import Path
 
 import click
@@ -118,11 +119,7 @@ def cli(
     results = asyncio.run(
         scrape(sources, limit, details=details, embeddings=embeddings, dump_dir=dump_dir)
     )
-    for result in results:
-        click.echo(
-            f"{result.source}: найдено {result.scraped}, прошло проверку {result.valid}, "
-            f"новых или изменённых {result.changed}, сохранено {result.saved}"
-        )
+    _echo_results(results)
 
 
 @cli.command()
@@ -139,7 +136,11 @@ def schedule(interval: int, limit: int) -> None:
 
     async def job() -> None:
         try:
-            await scrape(list(SOURCES), limit)
+            results = await scrape(list(SOURCES), limit)
+            click.echo(
+                f"[{datetime.now():%Y-%m-%d %H:%M}] парсинг завершён, следующий через {interval} ч"
+            )
+            _echo_results(results)
         except Exception as exc:  # noqa: BLE001 - ошибка одного запуска не останавливает расписание
             logger.error("Scheduled scrape failed", error=str(exc))
 
@@ -152,6 +153,15 @@ def schedule(interval: int, limit: int) -> None:
             await scheduler.stop()
 
     asyncio.run(run())
+
+
+def _echo_results(results: list[ScrapeResult]) -> None:
+    """Итог по каждому источнику."""
+    for result in results:
+        click.echo(
+            f"{result.source}: найдено {result.scraped}, прошло проверку {result.valid}, "
+            f"новых или изменённых {result.changed}, сохранено {result.saved}"
+        )
 
 
 def main() -> None:
