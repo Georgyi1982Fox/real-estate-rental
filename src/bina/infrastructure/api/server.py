@@ -14,7 +14,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bina.infrastructure.api.auth import INIT_DATA_HEADER
-from bina.infrastructure.api.routes import districts, favorites, listings, me
+from bina.infrastructure.api.routes import (
+    districts,
+    favorites,
+    listings,
+    me,
+    notifications,
+    searches,
+)
 from bina.infrastructure.api.settings import ApiConfigError, ApiSettings
 from bina.infrastructure.db.session.manager import DatabaseManager
 
@@ -58,6 +65,8 @@ def create_app(
     app.include_router(districts.router)
     app.include_router(favorites.router)
     app.include_router(me.router)
+    app.include_router(searches.router)
+    app.include_router(notifications.router)
     return app
 
 

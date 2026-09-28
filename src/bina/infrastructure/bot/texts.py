@@ -73,6 +73,12 @@ _RU: dict[str, str] = {
     "tier_family": "Family",
     "tier_realtor": "Риелтор",
     "language_changed": "✅ Язык изменён.",
+    # TASK-028: уведомления
+    "notify_new_listing": "🏠 <b>Новая квартира</b> по поиску «{search}»\n\n{listing}",
+    "notify_new_listing_no_search": "🏠 <b>Новая квартира</b> по вашему поиску\n\n{listing}",
+    "notify_price_drop": "📉 <b>Цена снижена</b>: {old} → <b>{new}</b>\n\n{listing}",
+    "notify_details": "{price} · {rooms} комн. · {area} м²",
+    "notify_open": "Открыть",
 }
 
 _EN: dict[str, str] = {
@@ -142,6 +148,12 @@ _EN: dict[str, str] = {
     "tier_family": "Family",
     "tier_realtor": "Realtor",
     "language_changed": "✅ Language updated.",
+    # TASK-028: notifications
+    "notify_new_listing": "🏠 <b>New apartment</b> for your search “{search}”\n\n{listing}",
+    "notify_new_listing_no_search": "🏠 <b>New apartment</b> for your search\n\n{listing}",
+    "notify_price_drop": "📉 <b>Price dropped</b>: {old} → <b>{new}</b>\n\n{listing}",
+    "notify_details": "{price} · {rooms} rooms · {area} m²",
+    "notify_open": "Open",
 }
 
 TEXTS: dict[str, dict[str, str]] = {"ru": _RU, "en": _EN}

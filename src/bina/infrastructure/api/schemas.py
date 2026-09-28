@@ -1,13 +1,14 @@
 """Схемы ответов API (контракт — ``frontend/src/api/types.ts``)."""
 
 from datetime import datetime
+from decimal import Decimal
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from bina.application.dtos.pagination import Page
-from bina.infrastructure.db.models import District, Listing, User
+from bina.infrastructure.db.models import District, Listing, Notification, SavedSearch, User
 
 # Текст на нескольких языках: {"ka": ..., "ru": ..., "en": ...}; пустые языки опускаются
 Localized = dict[str, str]
@@ -165,3 +166,152 @@ class MeIn(BaseModel):
     """Тело PATCH /api/me."""
 
     language: Language
+
+
+# ------------------------------------------------------------- TASK-028: поиски
+
+
+class SearchFiltersIn(BaseModel):
+    """Фильтры сохранённого поиска (как параметры ``GET /api/listings``)."""
+
+    district: UUID | None = None
+    min_price: Decimal | None = Field(default=None, ge=0)
+    max_price: Decimal | None = Field(default=None, ge=0)
+    rooms: int | None = Field(default=None, ge=1, le=10, description="4 = «4 и больше»")
+
+    @model_validator(mode="after")
+    def _check_prices(self) -> "SearchFiltersIn":
+        if (
+            self.min_price is not None
+            and self.max_price is not None
+            and self.min_price > self.max_price
+        ):
+            raise ValueError("min_price must be <= max_price")
+        return self
+
+
+class SearchFiltersOut(BaseModel):
+    """Фильтры сохранённого поиска; незаданные поля не возвращаются."""
+
+    district: UUID | None = None
+    min_price: float | None = None
+    max_price: float | None = None
+    rooms: int | None = None
+
+
+class SearchIn(BaseModel):
+    """Тело ``POST /api/searches``."""
+
+    name: str | None = Field(default=None, max_length=100)
+    filters: SearchFiltersIn = Field(default_factory=SearchFiltersIn)
+    notify: bool = True
+
+
+class SearchPatchIn(BaseModel):
+    """Тело ``PATCH /api/searches/{id}``."""
+
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    notify: bool | None = None
+
+
+class SavedSearchOut(BaseModel):
+    """Сохранённый поиск."""
+
+    id: UUID
+    name: str
+    filters: SearchFiltersOut
+    notify: bool
+    new_count: int = Field(description="Новых квартир с последнего просмотра поиска")
+    created_at: datetime
+
+    @classmethod
+    def from_model(cls, search: SavedSearch, new_count: int) -> "SavedSearchOut":
+        """Преобразует ORM-модель."""
+        return cls(
+            id=search.id,
+            name=search.name,
+            filters=SearchFiltersOut(
+                district=search.district_id,
+                min_price=float(search.price_min) if search.price_min is not None else None,
+                max_price=float(search.price_max) if search.price_max is not None else None,
+                rooms=search.rooms,
+            ),
+            notify=search.notify,
+            new_count=new_count,
+            created_at=search.created_at,
+        )
+
+
+class SavedSearchesOut(BaseModel):
+    """Список сохранённых поисков."""
+
+    items: list[SavedSearchOut]
+
+
+# ------------------------------------------------------- TASK-028: уведомления
+
+
+class NotificationListingOut(BaseModel):
+    """Квартира в уведомлении."""
+
+    id: UUID
+    title: Localized
+    price: float
+    currency: str
+    image: str | None = None
+
+
+class NotificationOut(BaseModel):
+    """Уведомление."""
+
+    id: UUID
+    type: str
+    created_at: datetime
+    is_read: bool
+    listing: NotificationListingOut | None = None
+    old_price: float | None = None
+    search_id: UUID | None = None
+    search_name: str | None = None
+    text: Localized | None = None
+
+    @classmethod
+    def from_model(cls, notification: Notification) -> "NotificationOut":
+        """Преобразует ORM-модель (``listing`` и ``search`` должны быть загружены)."""
+        listing = notification.listing
+        return cls(
+            id=notification.id,
+            type=notification.type,
+            created_at=notification.created_at,
+            is_read=notification.is_read,
+            listing=NotificationListingOut(
+                id=listing.id,
+                title=localized(ka=listing.title_ka, ru=listing.title_ru, en=listing.title_en),
+                price=float(listing.price),
+                currency=listing.currency,
+                image=listing.images[0] if listing.images else None,
+            )
+            if listing is not None
+            else None,
+            old_price=float(notification.old_price) if notification.old_price is not None else None,
+            search_id=notification.search_id,
+            search_name=notification.search.name if notification.search else None,
+            text={str(k): str(v) for k, v in notification.text.items() if v}
+            if notification.text
+            else None,
+        )
+
+
+class NotificationsPageOut(BaseModel):
+    """Страница уведомлений; ``page`` нумеруется с 1."""
+
+    items: list[NotificationOut]
+    total: int
+    page: int
+    pages: int
+    unread_count: int
+
+
+class UnreadCountOut(BaseModel):
+    """Число непрочитанных уведомлений."""
+
+    count: int

@@ -1,9 +1,10 @@
 import enum
+from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import JSON, Boolean, ForeignKey, Numeric, String, Text, text
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Numeric, String, Text, text
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -58,6 +59,11 @@ class Listing(Base, SoftDeleteMixin):
     description_ka: Mapped[str] = mapped_column(
         Text,
         nullable=False,
+    )
+    # TASK-028: цена до последнего изменения (уведомление «цена снижена»)
+    previous_price: Mapped[Decimal | None] = mapped_column(Numeric, nullable=True)
+    price_changed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
     )
     # TASK-010: английский перевод; пустая строка — перевода ещё нет
     title_en: Mapped[str] = mapped_column(

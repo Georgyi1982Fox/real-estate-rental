@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 from uuid import UUID
@@ -9,7 +10,8 @@ from bina.application.dtos.listing_search import ListingSearchFilters
 from bina.application.ports.scraper import RawListing
 from bina.application.ports.translator import LANGUAGES, ListingText
 from bina.application.repositories.listings import IListingsRepository
-from bina.infrastructure.db.models import District, Listing, ListingStatus
+from bina.application.repositories.notifications import PriceDrop
+from bina.infrastructure.db.models import District, Favorite, Listing, ListingStatus, User
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -155,6 +157,11 @@ class ListingsRepository(IListingsRepository):
                     listing, suffix, raw_listing.title, raw_listing.description
                 )
             )
+            new_price = values["price"]
+            if listing.price is not None and Decimal(listing.price) != new_price:
+                # Для уведомления «цена снижена» (TASK-028)
+                values["previous_price"] = listing.price
+                values["price_changed_at"] = datetime.now(UTC)
         if listing is None:
             listing = Listing(
                 source_id=raw_listing.source_id,
@@ -173,6 +180,47 @@ class ListingsRepository(IListingsRepository):
 
         await self._session.flush()  # ID нужен для embeddings
         return listing
+
+    async def search_created_since(
+        self, filters: ListingSearchFilters, since: datetime, limit: int
+    ) -> list[Listing]:
+        """Активные объявления под фильтры, появившиеся после ``since`` (новые сверху)."""
+        query = (
+            select(Listing)
+            .where(*self._search_conditions(filters), Listing.created_at > since)
+            .order_by(Listing.created_at.desc())
+            .limit(limit)
+        )
+        return list((await self._session.execute(query)).scalars().all())
+
+    async def count_created_since(self, filters: ListingSearchFilters, since: datetime) -> int:
+        """Сколько активных объявлений под фильтры появилось после ``since``."""
+        query = (
+            select(func.count())
+            .select_from(Listing)
+            .where(*self._search_conditions(filters), Listing.created_at > since)
+        )
+        return int((await self._session.execute(query)).scalar_one())
+
+    async def favorite_price_drops(self, since: datetime) -> list[PriceDrop]:
+        """Подешевевшие после ``since`` объявления из избранного пользователей."""
+        query = (
+            select(Favorite.user_id, Listing)
+            .join(Listing, Listing.id == Favorite.listing_id)
+            .join(User, User.id == Favorite.user_id)
+            .where(
+                Listing.status == ListingStatus.ACTIVE,
+                Listing.is_deleted.is_(False),
+                User.is_deleted.is_(False),
+                Listing.price_changed_at > since,
+                Listing.previous_price > Listing.price,
+            )
+        )
+        rows = (await self._session.execute(query)).all()
+        return [
+            PriceDrop(user_id=user_id, listing=listing, old_price=listing.previous_price)
+            for user_id, listing in rows
+        ]
 
     async def list_untranslated(self, limit: int) -> list[Listing]:
         """Активные объявления с пустым заголовком хотя бы на одном языке (новые сверху)."""
