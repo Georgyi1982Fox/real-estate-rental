@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import Protocol
 from uuid import UUID
 
@@ -12,7 +12,7 @@ class IDistrictsRepository(Protocol):
     async def get_by_name(self, name: str) -> District | None:
         """Получить район по названию."""
         ...
-    
+
     @abstractmethod
     async def get_by_id(self, district_id: UUID) -> District | None:
         """Получить район по ID."""

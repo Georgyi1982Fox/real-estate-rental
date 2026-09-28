@@ -50,7 +50,7 @@ class District(Base, SoftDeleteMixin):
         JSON,
         nullable=True,
     )
-    
+
     # Relationships
     listings: Mapped[list["Listing"]] = relationship(
         back_populates="district",

@@ -114,9 +114,7 @@ async def test_listing_search_filters_and_order(session: AsyncSession) -> None:
         in_range_new.id,
         in_range_old.id,
     ]
-    assert [item.id for item in await repo.search(filters, limit=1, offset=1)] == [
-        in_range_old.id
-    ]
+    assert [item.id for item in await repo.search(filters, limit=1, offset=1)] == [in_range_old.id]
     assert await repo.count(ListingSearchFilters()) == 5
 
 

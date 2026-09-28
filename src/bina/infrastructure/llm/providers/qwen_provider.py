@@ -71,7 +71,9 @@ class QwenProvider(LLMProvider):
             return result
 
         except httpx.HTTPStatusError as e:
-            logger.error("HTTP error in Qwen completion", status_code=e.response.status_code, error=e)
+            logger.error(
+                "HTTP error in Qwen completion", status_code=e.response.status_code, error=e
+            )
             raise
         except httpx.RequestError as e:
             logger.error("Request error in Qwen completion", error=str(e))
@@ -120,11 +122,17 @@ class QwenProvider(LLMProvider):
                 raise ValueError("No tool calls in response")
 
             result: dict[str, Any] = json.loads(tool_calls[0]["function"]["arguments"])
-            logger.debug("Completed structured prompt successfully", result_keys=list(result.keys()))
+            logger.debug(
+                "Completed structured prompt successfully", result_keys=list(result.keys())
+            )
             return result
 
         except httpx.HTTPStatusError as e:
-            logger.error("HTTP error in Qwen structured completion", status_code=e.response.status_code, error=e)
+            logger.error(
+                "HTTP error in Qwen structured completion",
+                status_code=e.response.status_code,
+                error=e,
+            )
             raise
         except httpx.RequestError as e:
             logger.error("Request error in Qwen structured completion", error=str(e))

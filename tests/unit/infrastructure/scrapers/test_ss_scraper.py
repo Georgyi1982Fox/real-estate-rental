@@ -7,19 +7,18 @@ from bina.infrastructure.scrapers.ss_scraper import SSScraper
 
 
 @pytest.fixture
-def ss_scraper():
+def ss_scraper() -> SSScraper:
     """Фикстура для SS парсера."""
     return SSScraper(delay_seconds=0)
 
 
 @pytest.mark.asyncio
-async def test_ss_parse_listings(ss_scraper):
+async def test_ss_parse_listings(ss_scraper: SSScraper) -> None:
     """Тест парсинга объявлений с SS."""
     # Читаем тестовые данные
-    with open(
-        "tests/unit/infrastructure/scrapers/test_data/ss_test.html", "r", encoding="utf-8"
-    ) as f:
-        html = f.read()
+    html = Path("tests/unit/infrastructure/scrapers/test_data/ss_test.html").read_text(
+        encoding="utf-8"
+    )
 
     # Парсим объявления
     listings = ss_scraper._parse_listings(html)
@@ -71,12 +70,12 @@ def _list_html() -> str:
 
 
 @pytest.mark.asyncio
-async def test_ss_scrape_listings_pages_and_limit(ss_scraper, tmp_path):
+async def test_ss_scrape_listings_pages_and_limit(ss_scraper: SSScraper, tmp_path: Path) -> None:
     """Лимит, остановка на пустой странице, сохранение HTML первой страницы."""
     html = _list_html()
     second = html.replace("12345", "22222").replace("67890", "33333")
     fake = FakePages({1: html, 2: second})
-    ss_scraper._fetch_page = fake
+    setattr(ss_scraper, "_fetch_page", fake)
     ss_scraper.dump_dir = tmp_path
 
     listings = await ss_scraper.scrape_listings(10)
@@ -86,15 +85,15 @@ async def test_ss_scrape_listings_pages_and_limit(ss_scraper, tmp_path):
     assert fake.requested[0].startswith("https://home.ss.ge/ru/")
     assert (tmp_path / "ss_list.html").read_text(encoding="utf-8") == html
 
-    ss_scraper._fetch_page = FakePages({1: html, 2: second})
+    setattr(ss_scraper, "_fetch_page", FakePages({1: html, 2: second}))
     assert len(await ss_scraper.scrape_listings(3)) == 3
 
 
 @pytest.mark.asyncio
-async def test_ss_stops_when_page_number_is_ignored(ss_scraper):
+async def test_ss_stops_when_page_number_is_ignored(ss_scraper: SSScraper) -> None:
     """Сайт отдаёт одну и ту же страницу на любой номер — не зацикливаемся."""
     fake = FakePages({}, default=_list_html())
-    ss_scraper._fetch_page = fake
+    setattr(ss_scraper, "_fetch_page", fake)
 
     listings = await ss_scraper.scrape_listings(100)
 
@@ -103,15 +102,15 @@ async def test_ss_stops_when_page_number_is_ignored(ss_scraper):
 
 
 @pytest.mark.asyncio
-async def test_ss_skips_failed_pages(ss_scraper):
+async def test_ss_skips_failed_pages(ss_scraper: SSScraper) -> None:
     html = _list_html()
     error = httpx.ConnectError("boom")
     fake = FakePages({1: error, 2: html})
-    ss_scraper._fetch_page = fake
+    setattr(ss_scraper, "_fetch_page", fake)
     assert len(await ss_scraper.scrape_listings(10)) == 2
 
     fake = FakePages({1: error, 2: error, 3: error, 4: html})
-    ss_scraper._fetch_page = fake
+    setattr(ss_scraper, "_fetch_page", fake)
     assert await ss_scraper.scrape_listings(10) == []
     assert len(fake.requested) == 3
 
@@ -121,7 +120,7 @@ NEXT_LIST_HTML = Path("tests/unit/infrastructure/scrapers/test_data/ss_next_list
 )
 
 
-def test_parse_next_data_page(ss_scraper):
+def test_parse_next_data_page(ss_scraper: SSScraper) -> None:
     """Настоящая страница home.ss.ge: JSON __NEXT_DATA__, только Тбилиси."""
     listings = ss_scraper._parse_listings(NEXT_LIST_HTML)
 
@@ -143,7 +142,7 @@ def test_parse_next_data_page(ss_scraper):
     assert first.photos[0].endswith("15_d33e55ba-47db-4e92-8fb3-4baa6239b437_Thumb.jpg")
 
 
-def test_other_cities_do_not_stop_paging(ss_scraper):
+def test_other_cities_do_not_stop_paging(ss_scraper: SSScraper) -> None:
     """Страница только с Батуми — не конец выдачи; без фильтра города берутся все."""
     ids, listings = ss_scraper._parse_page(NEXT_LIST_HTML)
     assert ids == {"36583130", "36627728", "36773935"}
@@ -153,7 +152,7 @@ def test_other_cities_do_not_stop_paging(ss_scraper):
     assert len(ss_scraper._parse_listings(NEXT_LIST_HTML)) == 3
 
 
-def test_rooms_fallback_to_bedrooms():
+def test_rooms_fallback_to_bedrooms() -> None:
     from bina.infrastructure.scrapers.ss_scraper import _rooms
 
     assert _rooms("Аренда 3-комнатная Квартира", 2) == 3

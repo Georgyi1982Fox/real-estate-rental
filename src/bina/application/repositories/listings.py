@@ -1,8 +1,9 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import Protocol
 from uuid import UUID
 
 from bina.application.dtos.listing_search import ListingSearchFilters, ListingSort
+from bina.application.ports.scraper import RawListing
 from bina.infrastructure.db.models import Listing
 
 
@@ -17,12 +18,12 @@ class IListingsRepository(Protocol):
     ) -> list[Listing]:
         """Получить активные объявления по району."""
         ...
-    
+
     @abstractmethod
     async def get_by_id(self, listing_id: UUID) -> Listing | None:
         """Получить объявление по ID."""
         ...
-    
+
     @abstractmethod
     async def find_by_source(
         self,
@@ -31,7 +32,7 @@ class IListingsRepository(Protocol):
     ) -> Listing | None:
         """Найти объявление по source_id и source_name."""
         ...
-    
+
     @abstractmethod
     async def save_translation(
         self,
@@ -41,7 +42,7 @@ class IListingsRepository(Protocol):
     ) -> None:
         """Сохранить перевод объявления."""
         ...
-    
+
     @abstractmethod
     async def search(
         self,
@@ -61,7 +62,7 @@ class IListingsRepository(Protocol):
     @abstractmethod
     async def create_or_update_from_raw(
         self,
-        raw_listing: "RawListing",  # type: ignore[name-defined]
+        raw_listing: RawListing,
     ) -> Listing:
         """Создать или обновить объявление из RawListing."""
         ...

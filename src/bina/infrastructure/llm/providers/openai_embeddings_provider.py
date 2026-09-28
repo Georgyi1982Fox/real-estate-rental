@@ -1,5 +1,3 @@
-from typing import List
-
 import httpx
 import structlog
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -49,10 +47,10 @@ class OpenAIEmbeddingsProvider(BaseEmbeddingsProvider):
         wait=wait_exponential(multiplier=1, min=4, max=10),
         reraise=True,
     )
-    async def generate_embedding(self, text: str) -> List[float]:
+    async def generate_embedding(self, text: str) -> list[float]:
         """Генерирует embedding для текста."""
         logger.debug("Generating embedding", text_length=len(text))
-        
+
         try:
             response = await self.client.post(
                 f"{self.base_url}/embeddings",
@@ -64,12 +62,14 @@ class OpenAIEmbeddingsProvider(BaseEmbeddingsProvider):
             response.raise_for_status()
 
             data = response.json()
-            embedding = data["data"][0]["embedding"]
+            embedding: list[float] = data["data"][0]["embedding"]
             logger.debug("Generated embedding successfully", embedding_length=len(embedding))
             return embedding
 
         except httpx.HTTPStatusError as e:
-            logger.error("HTTP error in OpenAI embeddings", status_code=e.response.status_code, error=e)
+            logger.error(
+                "HTTP error in OpenAI embeddings", status_code=e.response.status_code, error=e
+            )
             raise
         except httpx.RequestError as e:
             logger.error("Request error in OpenAI embeddings", error=str(e))

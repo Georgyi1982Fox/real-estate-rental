@@ -8,7 +8,7 @@ from bina.application.repositories.districts import IDistrictsRepository
 from bina.infrastructure.db.models import District
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    pass
 
 
 class DistrictsRepository(IDistrictsRepository):
@@ -38,11 +38,7 @@ class DistrictsRepository(IDistrictsRepository):
 
     async def list_all(self) -> list[District]:
         """Получить все (не удалённые) районы, отсортированные по названию."""
-        query = (
-            select(District)
-            .where(District.is_deleted.is_(False))
-            .order_by(District.name_ru)
-        )
+        query = select(District).where(District.is_deleted.is_(False)).order_by(District.name_ru)
         result = await self._session.execute(query)
         return list(result.scalars().all())
 

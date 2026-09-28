@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import BigInteger, ForeignKey, Numeric, String, UniqueConstraint
+from sqlalchemy import BigInteger, Numeric, String
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 class UserRole(str, enum.Enum):
     """Роли пользователей."""
-    
+
     USER = "user"
     REALTOR = "realtor"
     ADMIN = "admin"
@@ -26,7 +26,7 @@ class UserRole(str, enum.Enum):
 
 class SubscriptionTier(str, enum.Enum):
     """Уровни подписки."""
-    
+
     FREE = "free"
     NOMAD = "nomad"
     FAMILY = "family"
@@ -35,9 +35,9 @@ class SubscriptionTier(str, enum.Enum):
 
 class User(Base, SoftDeleteMixin):
     """Модель пользователя."""
-    
+
     __tablename__ = "bina_users"
-    
+
     id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
         primary_key=True,
@@ -73,7 +73,7 @@ class User(Base, SoftDeleteMixin):
     subscription_expires_at: Mapped[datetime | None] = mapped_column(
         nullable=True,
     )
-    
+
     # Relationships
     favorites: Mapped[list["Favorite"]] = relationship(
         back_populates="user",

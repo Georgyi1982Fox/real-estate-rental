@@ -38,6 +38,4 @@ class Favorite(Base):
 
     # Уникальный индекс (user_id, listing_id) - обеспечивается primary_key=True для обоих полей
 
-    __table_args__ = (
-        UniqueConstraint("user_id", "listing_id", name="uq_favorites_user_listing"),
-    )
+    __table_args__ = (UniqueConstraint("user_id", "listing_id", name="uq_favorites_user_listing"),)

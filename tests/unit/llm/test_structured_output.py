@@ -8,6 +8,7 @@ from bina.infrastructure.llm.structured_output import complete_structured_with_v
 
 class _TestModel(BaseModel):
     """Тестовая модель для валидации."""
+
     name: str
     age: int
 

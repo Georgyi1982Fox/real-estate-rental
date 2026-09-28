@@ -80,7 +80,10 @@ def client(
 @pytest.fixture
 async def vake(session: AsyncSession) -> District:
     district = District(
-        name_ru="Ваке", name_ka="ვაკე", name_en="Vake", avg_price_per_m2=Decimal(20),
+        name_ru="Ваке",
+        name_ka="ვაკე",
+        name_en="Vake",
+        avg_price_per_m2=Decimal(20),
         safety_score=9,
     )
     session.add(district)
@@ -88,9 +91,15 @@ async def vake(session: AsyncSession) -> District:
     for n in range(3):
         session.add(
             Listing(
-                source_id=f"mh-{n}", source_name="myhome", title_ru=f"Квартира {n}",
-                title_ka="ბინა", description_ru="", description_ka="",
-                price=Decimal(1000 + n * 100), district_id=district.id, rooms=2,
+                source_id=f"mh-{n}",
+                source_name="myhome",
+                title_ru=f"Квартира {n}",
+                title_ka="ბინა",
+                description_ru="",
+                description_ka="",
+                price=Decimal(1000 + n * 100),
+                district_id=district.id,
+                rooms=2,
                 area=Decimal(50),
             )
         )

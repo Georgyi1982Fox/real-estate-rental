@@ -3,14 +3,14 @@ from typing import NamedTuple
 
 class FraudDetectionPrompt(NamedTuple):
     """Промпт для детекции мошенничества в объявлении."""
-    
+
     title: str
     description: str
     price: float
     district: str
     rooms: int
     area: float
-    
+
     def __str__(self) -> str:
         return f"""Analyze the following real estate listing for potential fraud indicators.
 

@@ -1,8 +1,11 @@
 import asyncio
+import os
+from collections.abc import Coroutine
 from logging.config import fileConfig
+from typing import Any
 
 from alembic import context
-from sqlalchemy import pool
+from sqlalchemy import Connection, pool
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from bina.infrastructure.db.models import Base
@@ -26,19 +29,17 @@ target_metadata = Base.metadata
 # ... etc.
 
 
-def run_async(coro):
+def run_async(coro: Coroutine[Any, Any, None]) -> None:
     """Запуск асинхронной корутины."""
-    return asyncio.run(coro)
+    asyncio.run(coro)
 
 
-def get_url():
+def get_url() -> str:
     """Получить URL базы данных из переменных окружения."""
-    import os
-
     return os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/bina")
 
 
-def do_run_migrations(connection):
+def do_run_migrations(connection: Connection) -> None:
     """Выполнить миграции."""
     context.configure(
         connection=connection,
@@ -51,7 +52,7 @@ def do_run_migrations(connection):
         context.run_migrations()
 
 
-async def run_async_migrations():
+async def run_async_migrations() -> None:
     """Запустить асинхронные миграции."""
     connectable = create_async_engine(
         get_url(),
@@ -64,7 +65,7 @@ async def run_async_migrations():
     await connectable.dispose()
 
 
-def run_migrations_offline():
+def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 
     This configures the context with just a URL
@@ -90,7 +91,7 @@ def run_migrations_offline():
         context.run_migrations()
 
 
-def run_migrations_online():
+def run_migrations_online() -> None:
     """Run migrations in 'online' mode.
 
     In this scenario we need to create an Engine

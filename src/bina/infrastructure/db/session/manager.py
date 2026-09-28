@@ -1,5 +1,5 @@
 import os
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -12,7 +12,7 @@ from bina.infrastructure.db.models import Base
 
 class DatabaseManager:
     """Менеджер базы данных."""
-    
+
     def __init__(self) -> None:
         self._engine = create_async_engine(
             os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/bina"),
@@ -27,7 +27,7 @@ class DatabaseManager:
             expire_on_commit=False,
             autoflush=False,
         )
-    
+
     @property
     def session_factory(self) -> async_sessionmaker[AsyncSession]:
         """Фабрика сессий (для middleware бота и фоновых задач)."""
@@ -41,12 +41,12 @@ class DatabaseManager:
         """Создать все таблицы."""
         async with self._engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-    
+
     async def drop_all(self) -> None:
         """Удалить все таблицы."""
         async with self._engine.begin() as conn:
             await conn.run_sync(Base.metadata.drop_all)
-    
+
     async def session(self) -> AsyncGenerator[AsyncSession, None]:
         """Генератор сессий."""
         async with self._session_factory() as session:

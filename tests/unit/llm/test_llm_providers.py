@@ -1,5 +1,3 @@
-from unittest.mock import AsyncMock, MagicMock
-
 import pytest
 
 from bina.application.ports.llm_provider import LLMProvider
@@ -25,7 +23,7 @@ async def test_qwen_complete_method_signature(qwen_provider: QwenProvider) -> No
     assert callable(qwen_provider.complete)
 
 
-@pytest.mark.asyncio  
+@pytest.mark.asyncio
 async def test_qwen_complete_structured_method_signature(qwen_provider: QwenProvider) -> None:
     """Проверка сигнатуры метода complete_structured."""
     # Проверяем только сигнатуру, без реального вызова

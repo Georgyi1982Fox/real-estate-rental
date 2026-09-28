@@ -5,6 +5,7 @@ Revises: initial_db_structure
 Create Date: 2026-09-27
 
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa

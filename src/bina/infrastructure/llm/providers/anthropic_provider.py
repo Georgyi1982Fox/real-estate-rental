@@ -11,7 +11,7 @@ logger = structlog.get_logger(__name__)
 
 class AnthropicProvider(LLMProvider):
     """Заглушка для Anthropic провайдера."""
-    
+
     def __init__(
         self,
         api_key: str,
@@ -24,7 +24,7 @@ class AnthropicProvider(LLMProvider):
         self.model = model
         self.timeout = timeout
         self._client: httpx.AsyncClient | None = None
-    
+
     @property
     def client(self) -> httpx.AsyncClient:
         """Ленивый инициализатор HTTP клиента."""
@@ -38,13 +38,13 @@ class AnthropicProvider(LLMProvider):
                 },
             )
         return self._client
-    
+
     async def close(self) -> None:
         """Закрывает HTTP клиент."""
         if self._client:
             await self._client.aclose()
             self._client = None
-    
+
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=4, max=10),
@@ -53,7 +53,7 @@ class AnthropicProvider(LLMProvider):
     async def complete(self, prompt: str) -> str:
         """Генерирует текстовый ответ на промпт."""
         logger.debug("Completing prompt with Anthropic", prompt=prompt[:100] + "...")
-        
+
         try:
             response = await self.client.post(
                 f"{self.base_url}/messages",
@@ -64,16 +64,16 @@ class AnthropicProvider(LLMProvider):
                 },
             )
             response.raise_for_status()
-            
+
             data = response.json()
             result: str = data["content"][0]["text"]
             logger.debug("Completed prompt successfully", result_length=len(result))
             return result
-            
+
         except (httpx.HTTPStatusError, httpx.RequestError, KeyError, ValueError) as e:
             logger.error("Error in Anthropic completion", error=str(e))
             raise NotImplementedError("Anthropic provider is a stub")
-    
+
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=4, max=10),
@@ -82,7 +82,7 @@ class AnthropicProvider(LLMProvider):
     async def complete_structured(self, prompt: str, schema: dict[str, Any]) -> dict[str, Any]:
         """Генерирует структурированный ответ в соответствии со схемой."""
         logger.debug("Completing structured prompt with Anthropic", prompt=prompt[:100] + "...")
-        
+
         # Заглушка - всегда вызываем NotImplementedError
         logger.warning("Anthropic structured completion is not implemented")
         raise NotImplementedError("Anthropic provider is a stub")

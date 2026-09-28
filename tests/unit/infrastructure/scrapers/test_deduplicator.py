@@ -1,8 +1,8 @@
 from decimal import Decimal
 from unittest.mock import AsyncMock
+from uuid import UUID
 
 import pytest
-from uuid import UUID
 
 from bina.application.ports.scraper import RawListing
 from bina.infrastructure.db.models import Listing, ListingStatus
@@ -10,23 +10,25 @@ from bina.infrastructure.scrapers.deduplicator import ListingDeduplicator
 
 
 @pytest.fixture
-def mock_listing_repository():
+def mock_listing_repository() -> AsyncMock:
     """Мок репозитория объявлений."""
     return AsyncMock()
 
 
 @pytest.fixture
-def deduplicator(mock_listing_repository):
+def deduplicator(mock_listing_repository: AsyncMock) -> ListingDeduplicator:
     """Фикстура для дедупликатора."""
     return ListingDeduplicator(mock_listing_repository)
 
 
 @pytest.mark.asyncio
-async def test_deduplicate_new_listings(deduplicator, mock_listing_repository):
+async def test_deduplicate_new_listings(
+    deduplicator: ListingDeduplicator, mock_listing_repository: AsyncMock
+) -> None:
     """Тест дедупликации новых объявлений."""
     # Настраиваем мок - не находим существующие объявления
     mock_listing_repository.find_by_source.return_value = None
-    
+
     # Создаем тестовые объявления
     listings = [
         RawListing(
@@ -56,10 +58,10 @@ async def test_deduplicate_new_listings(deduplicator, mock_listing_repository):
             photos=[],
         ),
     ]
-    
+
     # Выполняем дедупликацию
     result = await deduplicator.deduplicate(listings)
-    
+
     # Проверяем результат
     assert len(result) == 2
     mock_listing_repository.find_by_source.assert_any_call("123", "myhome")
@@ -67,7 +69,9 @@ async def test_deduplicate_new_listings(deduplicator, mock_listing_repository):
 
 
 @pytest.mark.asyncio
-async def test_deduplicate_duplicate_same_price(deduplicator, mock_listing_repository):
+async def test_deduplicate_duplicate_same_price(
+    deduplicator: ListingDeduplicator, mock_listing_repository: AsyncMock
+) -> None:
     """Тест дедупликации дубликатов с той же ценой."""
     # Настраиваем мок - находим существующее объявление с той же ценой
     existing_listing = Listing(
@@ -88,7 +92,7 @@ async def test_deduplicate_duplicate_same_price(deduplicator, mock_listing_repos
         status=ListingStatus.ACTIVE,
     )
     mock_listing_repository.find_by_source.return_value = existing_listing
-    
+
     # Создаем тестовое объявление (дубликат)
     listings = [
         RawListing(
@@ -105,16 +109,18 @@ async def test_deduplicate_duplicate_same_price(deduplicator, mock_listing_repos
             photos=[],
         ),
     ]
-    
+
     # Выполняем дедупликацию
     result = await deduplicator.deduplicate(listings)
-    
+
     # Проверяем результат - дубликат должен быть проигнорирован
     assert len(result) == 0
 
 
 @pytest.mark.asyncio
-async def test_deduplicate_price_changed(deduplicator, mock_listing_repository):
+async def test_deduplicate_price_changed(
+    deduplicator: ListingDeduplicator, mock_listing_repository: AsyncMock
+) -> None:
     """Тест дедупликации при изменении цены."""
     # Настраиваем мок - находим существующее объявление с другой ценой
     existing_listing = Listing(
@@ -135,7 +141,7 @@ async def test_deduplicate_price_changed(deduplicator, mock_listing_repository):
         status=ListingStatus.ACTIVE,
     )
     mock_listing_repository.find_by_source.return_value = existing_listing
-    
+
     # Создаем тестовое объявление с измененной ценой
     listings = [
         RawListing(
@@ -152,9 +158,9 @@ async def test_deduplicate_price_changed(deduplicator, mock_listing_repository):
             photos=[],
         ),
     ]
-    
+
     # Выполняем дедупликацию
     result = await deduplicator.deduplicate(listings)
-    
+
     # Проверяем результат - объявление должно быть включено для обновления
     assert len(result) == 1

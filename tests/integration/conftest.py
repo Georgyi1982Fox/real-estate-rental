@@ -32,6 +32,7 @@ MIGRATIONS = (
     "saved_searches_notifications",
 )
 
+
 def _apply_migrations(connection: Connection) -> None:
     for name in MIGRATIONS:
         spec = importlib.util.spec_from_file_location(name, VERSIONS / f"{name}.py")

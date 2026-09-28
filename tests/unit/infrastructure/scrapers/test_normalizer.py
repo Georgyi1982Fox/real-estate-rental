@@ -4,7 +4,7 @@ from bina.application.ports.scraper import RawListing
 from bina.infrastructure.scrapers.normalizer import ListingNormalizer
 
 
-def test_normalize_price_gel():
+def test_normalize_price_gel() -> None:
     """Тест нормализации цены в GEL."""
     normalizer = ListingNormalizer()
     price, currency = normalizer.normalize_price(1000.0, "GEL")
@@ -12,7 +12,7 @@ def test_normalize_price_gel():
     assert currency == "GEL"
 
 
-def test_normalize_price_usd():
+def test_normalize_price_usd() -> None:
     """Тест нормализации цены из USD в GEL."""
     normalizer = ListingNormalizer()
     price, currency = normalizer.normalize_price(1000.0, "USD")
@@ -21,7 +21,7 @@ def test_normalize_price_usd():
     assert currency == "GEL"
 
 
-def test_normalize_price_eur():
+def test_normalize_price_eur() -> None:
     """Тест нормализации цены из EUR в GEL."""
     normalizer = ListingNormalizer()
     price, currency = normalizer.normalize_price(1000.0, "EUR")
@@ -30,28 +30,28 @@ def test_normalize_price_eur():
     assert currency == "GEL"
 
 
-def test_clean_text():
+def test_clean_text() -> None:
     """Тест очистки текста."""
     normalizer = ListingNormalizer()
     cleaned = normalizer.clean_text("   Hello   World!   ")
     assert cleaned == "Hello World"
 
 
-def test_normalize_district_georgian():
+def test_normalize_district_georgian() -> None:
     """Тест нормализации грузинского района."""
     normalizer = ListingNormalizer()
     normalized = normalizer.normalize_district("ვაკე")
     assert normalized == "Vake"
 
 
-def test_normalize_district_english():
+def test_normalize_district_english() -> None:
     """Тест нормализации английского района."""
     normalizer = ListingNormalizer()
     normalized = normalizer.normalize_district("Vake")
     assert normalized == "Vake"
 
 
-def test_validate_fields_valid():
+def test_validate_fields_valid() -> None:
     """Тест валидации корректных полей."""
     normalizer = ListingNormalizer()
     listing = RawListing(
@@ -70,7 +70,7 @@ def test_validate_fields_valid():
     assert normalizer.validate_fields(listing) is True
 
 
-def test_validate_fields_invalid_price():
+def test_validate_fields_invalid_price() -> None:
     """Тест валидации с некорректной ценой."""
     normalizer = ListingNormalizer()
     listing = RawListing(
@@ -89,7 +89,7 @@ def test_validate_fields_invalid_price():
     assert normalizer.validate_fields(listing) is False
 
 
-def test_normalize_listing_complete():
+def test_normalize_listing_complete() -> None:
     """Тест полной нормализации объявления."""
     normalizer = ListingNormalizer()
     raw_listing = RawListing(
@@ -105,7 +105,7 @@ def test_normalize_listing_complete():
         url="https://example.com",
         photos=["https://example.com/photo.jpg"],
     )
-    
+
     normalized = normalizer.normalize_listing(raw_listing)
     assert normalized is not None
     assert normalized.title == "Test Title"

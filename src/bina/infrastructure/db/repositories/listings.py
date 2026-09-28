@@ -43,13 +43,13 @@ class ListingsRepository(IListingsRepository):
         result = await self._session.execute(query)
         listings: Sequence[Listing] = result.scalars().all()
         return list(listings)
-    
+
     async def get_by_id(self, listing_id: UUID) -> Listing | None:
         """Получить объявление по ID."""
         query = select(Listing).where(Listing.id == listing_id)
         result = await self._session.execute(query)
         return result.scalar_one_or_none()
-    
+
     async def find_by_source(
         self,
         source_id: str,
@@ -62,7 +62,7 @@ class ListingsRepository(IListingsRepository):
         )
         result = await self._session.execute(query)
         return result.scalar_one_or_none()
-    
+
     async def save_translation(
         self,
         listing_id: UUID,
@@ -76,7 +76,7 @@ class ListingsRepository(IListingsRepository):
             .values(title_ru=title_ru, description_ru=description_ru)
         )
         await self._session.execute(query)
-    
+
     async def search(
         self,
         filters: ListingSearchFilters,
@@ -97,11 +97,7 @@ class ListingsRepository(IListingsRepository):
 
     async def count(self, filters: ListingSearchFilters) -> int:
         """Количество активных объявлений, подходящих под фильтры."""
-        query = (
-            select(func.count())
-            .select_from(Listing)
-            .where(*self._search_conditions(filters))
-        )
+        query = select(func.count()).select_from(Listing).where(*self._search_conditions(filters))
         result = await self._session.execute(query)
         return int(result.scalar_one())
 
@@ -222,9 +218,11 @@ class ListingsRepository(IListingsRepository):
             )
         )
         rows = (await self._session.execute(query)).all()
+        # previous_price не NULL (условие выше), проверка — для типов
         return [
             PriceDrop(user_id=user_id, listing=listing, old_price=listing.previous_price)
             for user_id, listing in rows
+            if listing.previous_price is not None
         ]
 
     async def list_untranslated(self, limit: int) -> list[Listing]:
@@ -259,12 +257,13 @@ class ListingsRepository(IListingsRepository):
         # В реальной реализации нужно добавить репозиторий районов
         # Пока вернем первый найденный район или создадим заглушку
         from bina.infrastructure.db.repositories.districts import DistrictsRepository
-        
+
         districts_repo = DistrictsRepository(self._session)
         district = await districts_repo.get_by_name(district_name)
         if district is None:
             district = await districts_repo.create_district(district_name)
         return district
+
 
 def stale_translation_resets(
     listing: Listing, language: str, title: str, description: str

@@ -65,7 +65,4 @@ class Base(DeclarativeBase, TimestampMixin):
 
     def to_dict(self) -> dict[str, Any]:
         """Преобразует объект в словарь."""
-        return {
-            column.name: getattr(self, column.name)
-            for column in self.__table__.columns
-        }
+        return {column.name: getattr(self, column.name) for column in self.__table__.columns}

@@ -32,8 +32,7 @@ def favorite_buttons(
         for offset, listing in enumerate(listings)
     ]
     return [
-        buttons[i : i + FAV_BUTTONS_PER_ROW]
-        for i in range(0, len(buttons), FAV_BUTTONS_PER_ROW)
+        buttons[i : i + FAV_BUTTONS_PER_ROW] for i in range(0, len(buttons), FAV_BUTTONS_PER_ROW)
     ]
 
 

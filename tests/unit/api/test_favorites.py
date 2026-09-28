@@ -124,9 +124,7 @@ async def test_tampered_init_data_is_rejected(client: AsyncClient, auth: dict[st
 
 
 @pytest.mark.parametrize("settings", [ApiSettings(bot_token=None)])
-async def test_missing_bot_token_is_server_error(
-    client: AsyncClient, auth: dict[str, str]
-) -> None:
+async def test_missing_bot_token_is_server_error(client: AsyncClient, auth: dict[str, str]) -> None:
     response = await client.get("/api/favorites", headers=auth)
     assert response.status_code == 503
 
@@ -143,9 +141,7 @@ async def test_insecure_user_id_mode(
     assert 42 in store.users
 
 
-async def test_favorite_ids(
-    client: AsyncClient, listings: list[str], auth: dict[str, str]
-) -> None:
+async def test_favorite_ids(client: AsyncClient, listings: list[str], auth: dict[str, str]) -> None:
     assert (await client.get("/api/favorites/ids")).status_code == 401
     assert (await client.get("/api/favorites/ids", headers=auth)).json() == {"ids": []}
 
