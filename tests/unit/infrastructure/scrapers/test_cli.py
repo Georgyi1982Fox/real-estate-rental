@@ -1,3 +1,5 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, ClassVar
 from unittest.mock import AsyncMock
@@ -137,6 +139,17 @@ def test_translate_command(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "переведено 4, ошибок 1" in result.output
 
 
+def test_translate_command_when_busy(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LLM_API_KEY", "test-key")
+    translate = AsyncMock(side_effect=scrape_cli.TranslationBusyError("busy"))
+    monkeypatch.setattr(scrape_cli, "translate", translate)
+
+    result = CliRunner().invoke(scrape_cli.cli, ["translate"])
+
+    assert result.exit_code == 1
+    assert "перевод уже идёт" in result.output
+
+
 def test_schedule_translates_after_scraping(
     scrape: AsyncMock, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -171,7 +184,7 @@ class FakeUseCase:
     batches: ClassVar[list[TranslationStats]] = []
     limits: ClassVar[list[int]] = []
 
-    def __init__(self, translator: Any, repository: Any) -> None:
+    def __init__(self, translator: Any, repository: Any, after_save: Any = None) -> None:
         pass
 
     async def execute(self, limit: int) -> TranslationStats:
@@ -180,6 +193,8 @@ class FakeUseCase:
 
 
 class FakeDb:
+    engine = None
+
     def __init__(self) -> None:
         self.sessions: list[AsyncMock] = []
 
@@ -209,6 +224,12 @@ async def test_translate_commits_in_batches(monkeypatch: pytest.MonkeyPatch) -> 
         staticmethod(lambda: provider),
     )
     monkeypatch.setattr(scrape_cli, "TranslateListingsUseCase", FakeUseCase)
+
+    @asynccontextmanager
+    async def free_lock(engine: Any, key: int) -> AsyncIterator[bool]:
+        yield True
+
+    monkeypatch.setattr(scrape_cli, "advisory_lock", free_lock)
     FakeUseCase.limits.clear()
     FakeUseCase.batches[:] = [
         TranslationStats(checked=10, translated=9, failed=1),

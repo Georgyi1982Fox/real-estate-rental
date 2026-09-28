@@ -2,6 +2,7 @@ import os
 from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
@@ -27,6 +28,11 @@ class DatabaseManager:
             expire_on_commit=False,
             autoflush=False,
         )
+
+    @property
+    def engine(self) -> AsyncEngine:
+        """Движок (для отдельного соединения, например под advisory lock)."""
+        return self._engine
 
     @property
     def session_factory(self) -> async_sessionmaker[AsyncSession]:

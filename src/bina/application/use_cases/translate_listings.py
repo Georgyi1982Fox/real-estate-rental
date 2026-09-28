@@ -5,6 +5,7 @@
 Ошибка на одном объявлении не останавливает остальные.
 """
 
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
 import structlog
@@ -58,14 +59,21 @@ class TranslateListingsUseCase:
         self,
         translator: ITranslator,
         repository: IListingTranslationsRepository,
+        after_save: Callable[[], Awaitable[None]] | None = None,
     ) -> None:
+        """``after_save`` вызывается после каждого сохранённого перевода (обычно commit).
+
+        Перевод одного объявления идёт секунды: без промежуточного commit строки
+        остаются заблокированными на всё время пачки и мешают парсеру.
+        """
         self._translator = translator
         self._repository = repository
+        self._after_save = after_save
 
     async def execute(self, limit: int) -> TranslationStats:
         """Находит объявления без перевода и переводит их.
 
-        Не коммитит: транзакцией управляет вызывающий код.
+        Сам не коммитит: транзакцией управляет вызывающий код (см. ``after_save``).
         """
         listings = await self._repository.list_untranslated(limit)
         translated = failed = 0
@@ -85,6 +93,8 @@ class TranslateListingsUseCase:
                 )
                 continue
             await self._repository.save_texts(listing.id, texts)
+            if self._after_save is not None:
+                await self._after_save()
             translated += 1
             logger.debug(
                 "Listing translated", listing_id=str(listing.id), source=source, targets=targets

@@ -20,6 +20,7 @@ from bina.application.use_cases.translate_listings import (
     TranslateListingsUseCase,
     TranslationStats,
 )
+from bina.infrastructure.db.locks import TRANSLATE_LOCK, advisory_lock
 from bina.infrastructure.db.repositories.listings import ListingsRepository
 from bina.infrastructure.db.repositories.notifications import (
     NotificationsRepository,
@@ -152,31 +153,55 @@ def llm_configured() -> bool:
     return bool(os.getenv("LLM_API_KEY"))
 
 
+class TranslationBusyError(RuntimeError):
+    """Перевод уже идёт в другом процессе (например, в сервисе ``scraper``)."""
+
+
 async def translate(limit: int) -> TranslationStats:
-    """Переводит до ``limit`` объявлений на недостающие языки (ru, ka, en)."""
-    provider = LLMFactory.create_provider()
+    """Переводит до ``limit`` объявлений на недостающие языки (ru, ka, en).
+
+    Одновременно работает только один перевод (advisory lock в PostgreSQL): иначе
+    два процесса переводят одни и те же объявления (двойная оплата AI) и ловят deadlock.
+
+    Raises:
+        TranslationBusyError: перевод уже запущен в другом процессе.
+    """
     db = DatabaseManager()
     checked = translated = failed = 0
     try:
-        while checked < limit:
-            async with db.session_factory() as session:
-                use_case = TranslateListingsUseCase(
-                    LLMTranslator(provider), ListingsRepository(session)
-                )
-                stats = await use_case.execute(min(TRANSLATE_BATCH, limit - checked))
-                await session.commit()
-            checked += stats.checked
-            translated += stats.translated
-            failed += stats.failed
-            # Больше нечего переводить или вся пачка не перевелась (не крутим одни и те же)
-            if stats.checked == 0 or stats.translated == 0:
-                break
+        async with advisory_lock(db.engine, TRANSLATE_LOCK) as acquired:
+            if not acquired:
+                raise TranslationBusyError("translation is already running")
+            provider = LLMFactory.create_provider()
+            try:
+                while checked < limit:
+                    async with db.session_factory() as session:
+                        use_case = TranslateListingsUseCase(
+                            LLMTranslator(provider),
+                            ListingsRepository(session),
+                            after_save=session.commit,
+                        )
+                        stats = await use_case.execute(min(TRANSLATE_BATCH, limit - checked))
+                        await session.commit()
+                    checked += stats.checked
+                    translated += stats.translated
+                    failed += stats.failed
+                    # Больше нечего переводить или вся пачка не перевелась (не крутим одни и те же)
+                    if stats.checked == 0 or stats.translated == 0:
+                        break
+            finally:
+                close = getattr(provider, "close", None)
+                if close is not None:
+                    await close()
     finally:
-        close = getattr(provider, "close", None)
-        if close is not None:
-            await close()
         await db.dispose()
     return TranslationStats(checked=checked, translated=translated, failed=failed)
+
+
+BUSY_MESSAGE = (
+    "перевод уже идёт в другом процессе (сервис scraper переводит сам после парсинга), "
+    "попробуйте через несколько минут"
+)
 
 
 def _echo_translation(stats: TranslationStats) -> None:
@@ -262,7 +287,10 @@ def translate_command(limit: int) -> None:
         raise click.ClickException(
             'Не задан LLM_API_KEY (ключ AITUNNEL). Пример: $env:LLM_API_KEY="..."'
         )
-    _echo_translation(asyncio.run(translate(limit)))
+    try:
+        _echo_translation(asyncio.run(translate(limit)))
+    except TranslationBusyError as exc:
+        raise click.ClickException(BUSY_MESSAGE) from exc
 
 
 @cli.command()
@@ -306,6 +334,8 @@ def schedule(interval: int, limit: int, with_translation: bool, translate_limit:
         if with_translation:
             try:
                 _echo_translation(await translate(translate_limit))
+            except TranslationBusyError:
+                click.echo(BUSY_MESSAGE)
             except Exception as exc:  # noqa: BLE001 - сбой перевода не останавливает расписание
                 logger.error("Scheduled translation failed", error=str(exc))
         try:
