@@ -17,11 +17,18 @@ from bina.application.use_cases.favorites import (
 )
 from bina.infrastructure.api.dependencies import CurrentUserDep, SessionDep
 from bina.infrastructure.api.routes.common import MAX_PER_PAGE, not_found
-from bina.infrastructure.api.schemas import FavoriteIn, FavoriteOut, ListingsPageOut
+from bina.infrastructure.api.schemas import (
+    FavoriteIdsOut,
+    FavoriteIn,
+    FavoriteOut,
+    ListingsPageOut,
+)
 from bina.infrastructure.db.repositories.favorites import FavoritesRepository
 from bina.infrastructure.db.repositories.listings import ListingsRepository
 
 router = APIRouter(prefix="/api/favorites", tags=["favorites"])
+
+MAX_FAVORITE_IDS = 1000
 
 
 @router.get("", response_model=ListingsPageOut)
@@ -36,6 +43,13 @@ async def list_favorites(
         user.id, page=page - 1, page_size=per_page
     )
     return ListingsPageOut.from_page(result)
+
+
+@router.get("/ids", response_model=FavoriteIdsOut)
+async def favorite_ids(user: CurrentUserDep, session: SessionDep) -> FavoriteIdsOut:
+    """ID всех избранных объявлений (для отметок ♥ на карточках), последние добавленные сверху."""
+    ids = await FavoritesRepository(session).list_ids(user.id, limit=MAX_FAVORITE_IDS)
+    return FavoriteIdsOut(ids=ids)
 
 
 @router.post("", response_model=FavoriteOut, status_code=status.HTTP_201_CREATED)

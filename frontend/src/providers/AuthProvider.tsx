@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { ReactNode } from 'react';
 import { apiGet, apiPost } from '../api/client';
 import type { AuthResponse, AuthUser, LoginRequest, RegisterRequest } from '../api/types';
-import { clearFavorites } from '../hooks/useFavorites';
+import { clearFavorites, refreshFavorites } from '../hooks/useFavorites';
 import { WEB_AUTH_ENABLED } from '../lib/config';
 import {
   clearMockToken,
@@ -65,6 +65,8 @@ export function AuthProvider({ children, onLogout }: AuthProviderProps) {
     writeSignedOut(false);
     setSignedOut(false);
     saveMockToken('telegram');
+    // Избранное хранится на сервере — после входа подтягиваем его
+    void refreshFavorites();
   }, []);
 
   const signIn = useCallback(async (data: LoginRequest) => {

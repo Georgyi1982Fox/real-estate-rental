@@ -183,6 +183,9 @@ class FakeFavoritesRepository:
     async def count_by_user(self, user_id: UUID) -> int:
         return len(self._user_listings(user_id))
 
+    async def list_ids(self, user_id: UUID, limit: int) -> list[UUID]:
+        return [listing.id for listing in self._user_listings(user_id)][:limit]
+
     def _user_listings(self, user_id: UUID) -> list[Listing]:
         result = []
         for uid, lid in reversed(self._store.favorites):

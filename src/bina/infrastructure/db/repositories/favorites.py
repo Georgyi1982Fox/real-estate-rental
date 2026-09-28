@@ -79,6 +79,18 @@ class FavoritesRepository(IFavoritesRepository):
         result = await self._session.execute(query)
         return list(result.scalars().all())
 
+    async def list_ids(self, user_id: UUID, limit: int) -> list[UUID]:
+        """ID избранных объявлений пользователя (новые сверху, удалённые не возвращаются)."""
+        query = (
+            select(Favorite.listing_id)
+            .join(Listing, Favorite.listing_id == Listing.id)
+            .where(Favorite.user_id == user_id, Listing.is_deleted.is_(False))
+            .order_by(Favorite.created_at.desc())
+            .limit(limit)
+        )
+        result = await self._session.execute(query)
+        return list(result.scalars().all())
+
     async def count_by_user(self, user_id: UUID) -> int:
         """Количество избранных объявлений пользователя."""
         query = (
