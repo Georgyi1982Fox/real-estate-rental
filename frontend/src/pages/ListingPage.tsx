@@ -1,4 +1,4 @@
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { ListResponse, Listing } from '../api/types';
 import ContactButton from '../components/ContactButton';
 import ErrorState from '../components/ErrorState';
@@ -15,7 +15,8 @@ import { useDistricts } from '../hooks/useDistricts';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
 import { useTelegramMainButton } from '../hooks/useTelegramMainButton';
-import { formatPrice, tr } from '../lib/format';
+import { fill, formatPrice, tr } from '../lib/format';
+import { openLink } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 import NotFoundPage from './NotFoundPage';
 
@@ -26,6 +27,7 @@ export default function ListingPage() {
   const { lang, t } = useI18n();
   const lt = t.listing;
   const { names } = useDistricts();
+  const navigate = useNavigate();
   const {
     data: listing,
     error,
@@ -48,6 +50,8 @@ export default function ListingPage() {
   });
 
   const title = listing ? tr(listing.title, lang) : '';
+  // Сайт-источник для ссылки «Открыть на …»: myhome.ge, home.ss.ge → ss.ge
+  const sourceSite = listing?.source_url ? siteName(listing.source_url) : '';
   useDocumentTitle(title ? `${title} — Bina.ai` : 'Bina.ai');
 
   if (listingId === null || error?.isNotFound) return <NotFoundPage />;
@@ -136,6 +140,25 @@ export default function ListingPage() {
                   {listing.has_phone && <PhoneReveal listingId={listing.id} />}
                   <FavoriteButton listingId={listing.id} />
                 </section>
+
+                {listing.source_url && sourceSite && (
+                  <p className="listing-source m-0 text-sm text-[var(--text-secondary)]">
+                    <a
+                      href={listing.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="listing-source__link font-semibold text-[var(--primary)] underline-offset-2 hover:underline"
+                      onClick={(event) => {
+                        // В Telegram внешние ссылки открываем через SDK (иначе откроются внутри Mini App)
+                        event.preventDefault();
+                        openLink(listing.source_url ?? '', (path) => navigate(path));
+                      }}
+                    >
+                      {fill(lt.open_source, sourceSite)} ↗
+                    </a>
+                    {!listing.has_phone && <span className="block">{lt.source_hint}</span>}
+                  </p>
+                )}
               </div>
             </section>
 
@@ -179,4 +202,16 @@ export default function ListingPage() {
       )}
     </>
   );
+}
+
+/** Короткое имя сайта для подписи: www.myhome.ge → MyHome.ge, home.ss.ge → SS.ge */
+function siteName(url: string): string {
+  try {
+    const host = new URL(url).hostname.replace(/^(www|home)\./, '');
+    if (host === 'myhome.ge') return 'MyHome.ge';
+    if (host === 'ss.ge') return 'SS.ge';
+    return host;
+  } catch {
+    return '';
+  }
 }
