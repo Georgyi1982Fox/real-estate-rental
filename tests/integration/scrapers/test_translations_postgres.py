@@ -2,16 +2,21 @@
 
 from collections.abc import Sequence
 
+import pytest
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from bina.application.ports.scraper import RawListing
 from bina.application.ports.translator import ITranslator, ListingText
 from bina.application.use_cases.translate_listings import TranslateListingsUseCase
 from bina.infrastructure.api.server import create_app
 from bina.infrastructure.api.settings import ApiSettings
+from bina.infrastructure.db.locks import TRANSLATE_LOCK, advisory_lock
 from bina.infrastructure.db.models import Listing
 from bina.infrastructure.db.repositories.listings import ListingsRepository
+from bina.infrastructure.llm.llm_factory import LLMFactory
+from bina.infrastructure.scrapers import cli as scrape_cli
+from tests.integration.conftest import DATABASE_URL
 
 
 def raw(source_id: str, title: str, description: str = "Описание") -> RawListing:
@@ -92,3 +97,54 @@ async def test_translate_save_reset_and_api(
         "ru": "Квартира в Ваке, после ремонта",
         "en": "[en] Квартира в Ваке, после ремонта",
     }
+
+
+async def test_each_translation_is_committed(
+    session: AsyncSession, session_factory: async_sessionmaker[AsyncSession]
+) -> None:
+    """Перевод сохраняется сразу: сбой на следующем объявлении его не откатывает."""
+    repository = ListingsRepository(session)
+    await repository.create_or_update_from_raw(raw("1", "Первая"))
+    await repository.create_or_update_from_raw(raw("2", "Вторая"))
+    await session.commit()
+
+    class FailSecond(EchoTranslator):
+        async def translate(
+            self, text: ListingText, source: str, targets: Sequence[str]
+        ) -> dict[str, ListingText]:
+            if self.calls == 1:
+                raise RuntimeError("AI is down")
+            return await super().translate(text, source, targets)
+
+    async with session_factory() as work:
+        use_case = TranslateListingsUseCase(
+            FailSecond(), ListingsRepository(work), after_save=work.commit
+        )
+        with pytest.raises(RuntimeError):
+            await use_case.execute(limit=10)
+        await work.rollback()
+
+    async with session_factory() as check:
+        pending = await ListingsRepository(check).list_untranslated(10)
+    assert len(pending) == 1, "первый перевод сохранён, несмотря на сбой на втором"
+
+
+async def test_only_one_translation_at_a_time(
+    engine: AsyncEngine, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Второй запуск перевода (другой процесс) не стартует, пока идёт первый."""
+    assert DATABASE_URL
+    monkeypatch.setenv("DATABASE_URL", DATABASE_URL)
+    monkeypatch.setattr(LLMFactory, "create_provider", staticmethod(lambda: object()))
+    monkeypatch.setattr(scrape_cli, "LLMTranslator", lambda provider: EchoTranslator())
+
+    async with advisory_lock(engine, TRANSLATE_LOCK) as first:
+        assert first
+        async with advisory_lock(engine, TRANSLATE_LOCK) as second:
+            assert not second
+        with pytest.raises(scrape_cli.TranslationBusyError):
+            await scrape_cli.translate(10)
+
+    # Блокировка снята — перевод запускается
+    stats = await scrape_cli.translate(10)
+    assert stats.checked == 0
