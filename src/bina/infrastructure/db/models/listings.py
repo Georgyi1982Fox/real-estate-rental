@@ -59,6 +59,19 @@ class Listing(Base, SoftDeleteMixin):
         Text,
         nullable=False,
     )
+    # TASK-010: английский перевод; пустая строка — перевода ещё нет
+    title_en: Mapped[str] = mapped_column(
+        String,
+        default="",
+        server_default="",
+        nullable=False,
+    )
+    description_en: Mapped[str] = mapped_column(
+        Text,
+        default="",
+        server_default="",
+        nullable=False,
+    )
     price: Mapped[Decimal] = mapped_column(
         Numeric,
         nullable=False,

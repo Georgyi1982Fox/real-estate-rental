@@ -56,14 +56,15 @@ async def test_create_and_update_from_raw(session: AsyncSession) -> None:
     assert (listing.phone, listing.owner_name) == ("+995555123456", "Нино")
     assert listing.url == "https://www.myhome.ge/ru/1/"
 
-    # Перевод на русский не затирается при повторном парсинге грузинского текста
+    # Перевод на русский не затирается, если текст тот же (изменилась только цена).
+    # Изменение текста сбрасывает перевод: test_translations_postgres.py
     listing.title_ru = "Квартира (перевод)"
     updated = await repository.create_or_update_from_raw(
-        raw("1", language="ka", title="ბინა 2", price=1500.0)
+        raw("1", language="ka", title="ბინა", price=1500.0)
     )
     assert updated.id == listing.id
     assert (updated.title_ka, updated.title_ru, updated.price) == (
-        "ბინა 2",
+        "ბინა",
         "Квартира (перевод)",
         Decimal(1500),
     )

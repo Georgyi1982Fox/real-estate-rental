@@ -24,7 +24,12 @@ from sqlalchemy.ext.asyncio import (
 DATABASE_URL = os.getenv("BINA_TEST_DATABASE_URL")
 VERSIONS = Path(__file__).parents[2] / "src/bina/infrastructure/db/alembic/versions"
 # Порядок применения миграций (down_revision → revision)
-MIGRATIONS = ("initial_db_structure", "listing_images", "listing_contacts")
+MIGRATIONS = (
+    "initial_db_structure",
+    "listing_images",
+    "listing_contacts",
+    "listing_translations_en",
+)
 
 def _apply_migrations(connection: Connection) -> None:
     for name in MIGRATIONS:

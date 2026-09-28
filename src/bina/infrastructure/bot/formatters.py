@@ -37,12 +37,16 @@ def truncate(text: str, limit: int) -> str:
 
 def listing_title(listing: Listing, language: str) -> str:
     """Заголовок объявления на языке пользователя (с запасным вариантом)."""
-    primary, fallback = (
-        (listing.title_ka, listing.title_ru)
-        if language == "ka"
-        else (listing.title_ru, listing.title_ka)
-    )
-    return primary or fallback or "—"
+    titles = {
+        "ru": listing.title_ru,
+        "ka": listing.title_ka,
+        "en": getattr(listing, "title_en", "") or "",
+    }
+    # Сначала язык пользователя, затем русский, грузинский, английский
+    for code in (language, "ru", "ka", "en"):
+        if titles.get(code):
+            return titles[code]
+    return "—"
 
 
 def district_name(district: District, language: str) -> str:

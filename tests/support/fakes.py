@@ -51,6 +51,8 @@ class Store:
             title_ka=kwargs.pop("title_ka", "ბინა"),
             description_ru="",
             description_ka="",
+            title_en=kwargs.pop("title_en", ""),
+            description_en=kwargs.pop("description_en", ""),
             price=Decimal(price),
             currency=kwargs.pop("currency", "GEL"),
             district_id=district.id,

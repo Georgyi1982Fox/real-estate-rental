@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock
 import pytest
 from click.testing import CliRunner
 
+from bina.application.use_cases.translate_listings import TranslationStats
 from bina.infrastructure.scrapers import cli as scrape_cli
 from bina.infrastructure.scrapers.pipeline import ScrapeResult
 
@@ -104,3 +105,114 @@ def test_schedule_survives_failed_run(scrape: AsyncMock, monkeypatch: pytest.Mon
 
     assert result.exit_code == 0, result.output
     assert "найдено" not in result.output
+
+
+def test_translate_requires_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("LLM_API_KEY", raising=False)
+    translate = AsyncMock()
+    monkeypatch.setattr(scrape_cli, "translate", translate)
+
+    result = CliRunner().invoke(scrape_cli.cli, ["translate"])
+
+    assert result.exit_code == 1
+    assert "LLM_API_KEY" in result.output
+    translate.assert_not_awaited()
+
+
+def test_translate_command(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LLM_API_KEY", "test-key")
+    translate = AsyncMock(return_value=TranslationStats(checked=5, translated=4, failed=1))
+    monkeypatch.setattr(scrape_cli, "translate", translate)
+
+    result = CliRunner().invoke(scrape_cli.cli, ["translate", "--limit", "5"])
+
+    assert result.exit_code == 0, result.output
+    translate.assert_awaited_once_with(5)
+    assert "переведено 4, ошибок 1" in result.output
+
+
+def test_schedule_translates_after_scraping(
+    scrape: AsyncMock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("LLM_API_KEY", "test-key")
+    translate = AsyncMock(return_value=TranslationStats(checked=2, translated=2, failed=0))
+    monkeypatch.setattr(scrape_cli, "translate", translate)
+
+    result = run_schedule(monkeypatch, ["--translate-limit", "30"])
+
+    assert result.exit_code == 0, result.output
+    translate.assert_awaited_once_with(30)
+    assert "перевод: проверено 2, переведено 2" in result.output
+
+
+def test_schedule_without_key_only_scrapes(
+    scrape: AsyncMock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("LLM_API_KEY", raising=False)
+    translate = AsyncMock()
+    monkeypatch.setattr(scrape_cli, "translate", translate)
+
+    result = run_schedule(monkeypatch, [])
+
+    assert result.exit_code == 0, result.output
+    assert "перевод отключён" in result.output
+    translate.assert_not_awaited()
+
+
+class FakeUseCase:
+    """Вместо TranslateListingsUseCase: заданные итоги по пачкам."""
+
+    batches: ClassVar[list[TranslationStats]] = []
+    limits: ClassVar[list[int]] = []
+
+    def __init__(self, translator: Any, repository: Any) -> None:
+        pass
+
+    async def execute(self, limit: int) -> TranslationStats:
+        FakeUseCase.limits.append(limit)
+        return FakeUseCase.batches.pop(0)
+
+
+class FakeDb:
+    def __init__(self) -> None:
+        self.sessions: list[AsyncMock] = []
+
+    def session_factory(self) -> Any:
+        session = AsyncMock()
+        self.sessions.append(session)
+
+        class Context:
+            async def __aenter__(self) -> AsyncMock:
+                return session
+
+            async def __aexit__(self, *args: object) -> None:
+                return None
+
+        return Context()
+
+    async def dispose(self) -> None:
+        pass
+
+
+async def test_translate_commits_in_batches(monkeypatch: pytest.MonkeyPatch) -> None:
+    db = FakeDb()
+    provider = AsyncMock()
+    monkeypatch.setattr(scrape_cli, "DatabaseManager", lambda: db)
+    monkeypatch.setattr(
+        "bina.infrastructure.scrapers.cli.LLMFactory.create_provider",
+        staticmethod(lambda: provider),
+    )
+    monkeypatch.setattr(scrape_cli, "TranslateListingsUseCase", FakeUseCase)
+    FakeUseCase.limits.clear()
+    FakeUseCase.batches[:] = [
+        TranslationStats(checked=10, translated=9, failed=1),
+        TranslationStats(checked=10, translated=10, failed=0),
+        TranslationStats(checked=3, translated=0, failed=3),  # дальше только ошибки — стоп
+    ]
+
+    stats = await scrape_cli.translate(25)
+
+    assert FakeUseCase.limits == [10, 10, 5]
+    assert stats == TranslationStats(checked=23, translated=19, failed=4)
+    assert all(session.commit.await_count == 1 for session in db.sessions)
+    provider.close.assert_awaited_once()
