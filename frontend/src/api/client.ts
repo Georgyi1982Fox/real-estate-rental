@@ -1,4 +1,4 @@
-// Единая точка общения с бэкендом: все запросы идут через apiGet/apiPost/apiPatch
+// Единая точка общения с бэкендом: все запросы идут через apiGet/apiPost/apiPatch/apiDelete
 
 import { isSignedOut } from '../lib/session';
 import { getInitData } from '../lib/telegram';
@@ -23,7 +23,7 @@ export class ApiError extends Error {
 }
 
 async function request<T>(
-  method: 'GET' | 'POST' | 'PATCH',
+  method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
   path: string,
   body?: unknown,
   signal?: AbortSignal,
@@ -70,4 +70,9 @@ export function apiPost<T>(path: string, body?: unknown, signal?: AbortSignal): 
 /** Частичное обновление ресурса, body сериализуется в JSON */
 export function apiPatch<T>(path: string, body: unknown, signal?: AbortSignal): Promise<T> {
   return request<T>('PATCH', path, body, signal);
+}
+
+/** Удаление ресурса (обычно ответ 204 без тела) */
+export function apiDelete<T = void>(path: string, signal?: AbortSignal): Promise<T> {
+  return request<T>('DELETE', path, undefined, signal);
 }

@@ -1,20 +1,16 @@
 import { Link } from 'react-router-dom';
-import type { Listing, ListingsPage } from '../api/types';
 import EmptyState from '../components/EmptyState';
 import ErrorState from '../components/ErrorState';
 import ListingCard from '../components/ListingCard';
 import Skeleton from '../components/Skeleton';
-import { useApi } from '../hooks/useApi';
 import { useDistricts } from '../hooks/useDistricts';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { useFavoriteListings } from '../hooks/useFavoriteListings';
 import { useFavorites } from '../hooks/useFavorites';
 import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
 import { fill } from '../lib/format';
 import { useI18n } from '../providers/I18nProvider';
 
-// Временно: берём общий список и фильтруем по избранным ID.
-// Со следующей задачей данные придут из GET /api/favorites.
-const LISTINGS_PATH = '/api/listings?per_page=50';
 const MAX_SKELETONS = 4;
 const GRID_CLASS = 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
 
@@ -23,23 +19,14 @@ export default function FavoritesPage() {
   const ft = t.favorites;
   const { ids, remove } = useFavorites();
   const { names } = useDistricts();
-  // Пустое избранное — запрос не нужен
-  const { data, error, loading, reload } = useApi<ListingsPage>(
-    ids.length > 0 ? LISTINGS_PATH : null,
-  );
+  // Последние добавленные — сверху
+  const newestFirst = [...ids].reverse();
+  const { listings, error, loading, reload } = useFavoriteListings(newestFirst);
 
   useDocumentTitle(`${ft.page_title} — Bina.ai`);
   useTelegramBackButton('/');
 
-  // Порядок как в избранном, последние добавленные — сверху; ID сравниваем строками
-  const byId = new Map<string, Listing>(
-    data?.items.map((listing) => [String(listing.id), listing]),
-  );
-  const listings = [...ids]
-    .reverse()
-    .map((id) => byId.get(id))
-    .filter((listing): listing is Listing => listing !== undefined);
-  const isEmpty = ids.length === 0 || (data !== undefined && listings.length === 0);
+  const isEmpty = ids.length === 0 || (!loading && !error && listings.length === 0);
 
   return (
     <section className="favorites space-y-6" aria-labelledby="favorites-title" aria-busy={loading}>

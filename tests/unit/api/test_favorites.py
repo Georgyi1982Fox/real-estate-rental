@@ -141,3 +141,16 @@ async def test_insecure_user_id_mode(
 
     assert response.status_code == 201
     assert 42 in store.users
+
+
+async def test_favorite_ids(
+    client: AsyncClient, listings: list[str], auth: dict[str, str]
+) -> None:
+    assert (await client.get("/api/favorites/ids")).status_code == 401
+    assert (await client.get("/api/favorites/ids", headers=auth)).json() == {"ids": []}
+
+    for listing_id in (listings[0], listings[2]):
+        await client.post("/api/favorites", json={"listing_id": listing_id}, headers=auth)
+
+    body = (await client.get("/api/favorites/ids", headers=auth)).json()
+    assert body == {"ids": [listings[2], listings[0]]}

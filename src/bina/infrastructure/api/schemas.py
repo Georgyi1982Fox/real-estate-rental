@@ -112,6 +112,12 @@ class FavoriteIn(BaseModel):
     listing_id: UUID
 
 
+class FavoriteIdsOut(BaseModel):
+    """ID избранных объявлений."""
+
+    ids: list[UUID]
+
+
 class FavoriteOut(BaseModel):
     """Результат добавления в избранное."""
 
