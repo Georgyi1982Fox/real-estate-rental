@@ -1,0 +1,85 @@
+# Весь бэкенд Bina.ai одной командой (TASK-039):
+#   docker compose up -d --build     — собрать и запустить в фоне
+#   docker compose ps                — что запущено
+#   docker compose logs -f api       — логи сервиса (api, bot, scraper, db)
+#   docker compose down              — остановить (данные базы сохраняются)
+# Настройки — в .env (пример: .env.example). Подробно: docs/tasks/TASK-015-DOCKER.md
+name: bina
+
+x-app: &app
+  build: .
+  image: bina-backend:latest
+  restart: unless-stopped
+  env_file: .env
+  environment:
+    DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?Задайте POSTGRES_PASSWORD в .env}@db:5432/${POSTGRES_DB:-bina}
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Задайте POSTGRES_PASSWORD в .env}
+      POSTGRES_DB: ${POSTGRES_DB:-bina}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      # Только с этого компьютера: для отладки и переноса данных
+      - "127.0.0.1:${DB_PORT:-5434}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Миграции базы: выполняются при каждом запуске и завершаются
+  migrate:
+    <<: *app
+    restart: "no"
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    <<: *app
+    command: ["bina-api", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "127.0.0.1:${API_PORT:-8000}:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  bot:
+    <<: *app
+    command: ["bina-bot", "polling"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  # Парсинг MyHome и SS.ge → перевод (если есть LLM_API_KEY) → уведомления; сразу и каждые N часов
+  scraper:
+    <<: *app
+    command:
+      - bina-scrape
+      - schedule
+      - --interval
+      - "${SCRAPE_INTERVAL_HOURS:-6}"
+      - --limit
+      - "${SCRAPE_LIMIT:-100}"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  db-data:

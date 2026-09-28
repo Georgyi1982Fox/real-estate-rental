@@ -3,6 +3,7 @@ name: CI
 # Проверки на каждый PR и на каждый пуш в develop (TASK-040).
 # Бэкенд: ruff (линтер и форматирование), mypy, pytest (unit + интеграционные на PostgreSQL + pgvector).
 # Фронтенд: проверка типов TypeScript и сборка.
+# Docker: docker-compose.yml валиден, образ бэкенда собирается (TASK-039).
 on:
   pull_request:
     branches: ["develop", "main"]
@@ -95,3 +96,28 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  docker:
+    name: Docker (compose config, image build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compose config
+        run: |
+          cp .env.example .env
+          sed -i 's/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=ci-password/' .env
+          docker compose config -q
+
+      - name: Build backend image
+        run: docker build -t bina-backend:ci .
+
+      - name: Image entry points
+        run: |
+          docker run --rm bina-backend:ci bina-api --help
+          docker run --rm bina-backend:ci bina-bot --help
+          docker run --rm bina-backend:ci bina-scrape --help
+          docker run --rm bina-backend:ci alembic --help
