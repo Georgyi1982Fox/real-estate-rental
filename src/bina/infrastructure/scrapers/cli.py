@@ -29,7 +29,7 @@ def make_scraper(source: str, *, details: bool, dump_dir: Path | None) -> BaseSc
     if source == "myhome":
         return MyHomeScraper(**common, fetch_details=details, dump_dir=dump_dir)  # type: ignore[arg-type]
     if source == "ss":
-        return SSScraper(**common)  # type: ignore[arg-type]
+        return SSScraper(**common, dump_dir=dump_dir)  # type: ignore[arg-type]
     raise click.BadParameter(f"unknown source {source!r}")
 
 

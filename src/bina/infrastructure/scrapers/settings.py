@@ -67,3 +67,18 @@ class MyHomeSettings:
     )
     MAX_PAGES = int(os.getenv("MYHOME_MAX_PAGES", "20"))
     SELECTORS = MyHomeSelectors()
+
+
+class SSSettings:
+    """URL поиска SS.ge (переопределяются переменными окружения)."""
+
+    BASE_URL = os.getenv("SS_BASE_URL", "https://home.ss.ge")
+    # /ru/недвижимость/l/Квартира/Аренда, цены в лари; {page}: номер страницы.
+    # Адрес взят с сайта в сентябре 2026.
+    SEARCH_PATH = os.getenv(
+        "SS_SEARCH_PATH",
+        "/ru/%D0%BD%D0%B5%D0%B4%D0%B2%D0%B8%D0%B6%D0%B8%D0%BC%D0%BE%D1%81%D1%82%D1%8C/l"
+        "/%D0%9A%D0%B2%D0%B0%D1%80%D1%82%D0%B8%D1%80%D0%B0/%D0%90%D1%80%D0%B5%D0%BD%D0%B4%D0%B0"
+        "?currencyId=1&page={page}",
+    )
+    MAX_PAGES = int(os.getenv("SS_MAX_PAGES", "20"))

@@ -1,58 +1,83 @@
 import re
+from pathlib import Path
 from urllib.parse import urljoin
 
+import httpx
 import structlog
 from bs4 import BeautifulSoup
 
 from bina.application.ports.scraper import RawListing
 from bina.infrastructure.scrapers.base_scraper import BaseWebsiteScraper
+from bina.infrastructure.scrapers.settings import SSSettings
 
 logger = structlog.get_logger(__name__)
 
+# После стольких ошибок страниц списка подряд парсинг останавливается
+MAX_CONSECUTIVE_FAILURES = 3
+
 
 class SSScraper(BaseWebsiteScraper):
-    """Парсер объявлений с SS.ge."""
+    """Парсер объявлений с SS.ge (home.ss.ge)."""
 
     def __init__(
         self,
-        base_url: str = "https://ss.ge",
+        base_url: str = SSSettings.BASE_URL,
         delay_seconds: int = 2,
         user_agents: list[str] | None = None,
+        *,
+        search_path: str = SSSettings.SEARCH_PATH,
+        max_pages: int = SSSettings.MAX_PAGES,
+        dump_dir: Path | None = None,
     ) -> None:
         super().__init__(base_url, delay_seconds, user_agents)
+        self.search_path = search_path
+        self.max_pages = max_pages
+        self.dump_dir = dump_dir
 
     async def scrape_listings(self, limit: int) -> list[RawListing]:
-        """Парсит объявления с SS.ge."""
+        """Парсит до ``limit`` объявлений со страниц поиска."""
         logger.info("Starting SS scraping", limit=limit)
-
         listings: list[RawListing] = []
-        page = 1
+        seen: set[str] = set()
+        failures = 0
 
-        while len(listings) < limit:
-            # Формируем URL для аренды жилья в Тбилиси
-            url = f"{self.base_url}/ru/le/ixiris-nawlebis-teqebi/tebilisi?Page={page}"
-
+        for page in range(1, self.max_pages + 1):
+            if len(listings) >= limit:
+                break
+            url = self.base_url + self.search_path.format(page=page)
             try:
                 html = await self._fetch_page(url)
-                page_listings = self._parse_listings(html)
-
-                if not page_listings:
-                    logger.info("No more listings found on SS")
+            except httpx.HTTPError as exc:
+                failures += 1
+                logger.error("SS list page failed", page=page, error=str(exc))
+                if failures >= MAX_CONSECUTIVE_FAILURES:
+                    logger.error("Too many failed pages, stopping", failures=failures)
                     break
+                continue
+            failures = 0
+            if page == 1:
+                self._dump("ss_list.html", html)
 
-                # Добавляем объявления до достижения лимита
-                remaining = limit - len(listings)
-                listings.extend(page_listings[:remaining])
-
-                logger.debug("Parsed listings from page", page=page, count=len(page_listings), total=len(listings))
-                page += 1
-
-            except Exception as e:
-                logger.error("Error scraping SS page", page=page, error=str(e))
+            fresh = [item for item in self._parse_listings(html) if item.source_id not in seen]
+            if not fresh:
+                # Пустая страница или сайт игнорирует номер страницы и отдаёт ту же
+                logger.info("No more new listings on SS", page=page)
                 break
+            for item in fresh[: limit - len(listings)]:
+                seen.add(item.source_id)
+                listings.append(item)
 
-        logger.info("Finished SS scraping", total_scraped=len(listings))
+        logger.info("Finished SS scraping", total=len(listings))
         return listings
+
+    def _dump(self, filename: str, html: str) -> None:
+        """Сохраняет сырой HTML для сверки разбора с реальным сайтом."""
+        if self.dump_dir is None:
+            return
+        self.dump_dir.mkdir(parents=True, exist_ok=True)
+        path = self.dump_dir / filename
+        path.write_text(html, encoding="utf-8")
+        logger.info("Saved raw HTML", path=str(path))
 
     def _parse_listings(self, html: str) -> list[RawListing]:
         """Парсит объявления со страницы HTML."""

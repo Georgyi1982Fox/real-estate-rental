@@ -1,5 +1,7 @@
+from pathlib import Path
+
+import httpx
 import pytest
-from unittest.mock import AsyncMock, patch
 
 from bina.infrastructure.scrapers.ss_scraper import SSScraper
 
@@ -43,21 +45,70 @@ async def test_ss_parse_listings(ss_scraper):
     assert listing2.district == "საბურთალო"
 
 
+class FakePages:
+    """Подменяет ``_fetch_page``: номер страницы → HTML или исключение."""
+
+    def __init__(self, pages: dict[int, str | Exception], default: str = "<html></html>") -> None:
+        self.pages = pages
+        self.default = default
+        self.requested: list[str] = []
+
+    async def __call__(self, url: str) -> str:
+        self.requested.append(url)
+        page = int(url.rsplit("page=", 1)[1])
+        value = self.pages.get(page, self.default)
+        if isinstance(value, Exception):
+            raise value
+        return value
+
+
+def _list_html() -> str:
+    return Path("tests/unit/infrastructure/scrapers/test_data/ss_test.html").read_text(
+        encoding="utf-8"
+    )
+
+
 @pytest.mark.asyncio
-async def test_ss_scrape_listings_integration(ss_scraper):
-    """Интеграционный тест парсинга с моком HTTP."""
-    # Переопределяем метод для одной страницы
-    original_scrape_listings = ss_scraper.scrape_listings
-    
-    async def mock_scrape_listings(limit: int):
-        # Мокаем HTML ответ
-        with open("tests/unit/infrastructure/scrapers/test_data/ss_test.html", "r", encoding="utf-8") as f:
-            html = f.read()
-        return ss_scraper._parse_listings(html)[:limit]
-    
-    with patch.object(ss_scraper, "scrape_listings", side_effect=mock_scrape_listings):
-        # Вызываем метод
-        listings = await original_scrape_listings(10)
-        
-        # Проверяем результат
-        assert len(listings) == 2
+async def test_ss_scrape_listings_pages_and_limit(ss_scraper, tmp_path):
+    """Лимит, остановка на пустой странице, сохранение HTML первой страницы."""
+    html = _list_html()
+    second = html.replace("12345", "22222").replace("67890", "33333")
+    fake = FakePages({1: html, 2: second})
+    ss_scraper._fetch_page = fake
+    ss_scraper.dump_dir = tmp_path
+
+    listings = await ss_scraper.scrape_listings(10)
+
+    assert [item.source_id for item in listings] == ["12345", "67890", "22222", "33333"]
+    assert len(fake.requested) == 3  # третья страница пустая
+    assert fake.requested[0].startswith("https://home.ss.ge/ru/")
+    assert (tmp_path / "ss_list.html").read_text(encoding="utf-8") == html
+
+    ss_scraper._fetch_page = FakePages({1: html, 2: second})
+    assert len(await ss_scraper.scrape_listings(3)) == 3
+
+
+@pytest.mark.asyncio
+async def test_ss_stops_when_page_number_is_ignored(ss_scraper):
+    """Сайт отдаёт одну и ту же страницу на любой номер — не зацикливаемся."""
+    fake = FakePages({}, default=_list_html())
+    ss_scraper._fetch_page = fake
+
+    listings = await ss_scraper.scrape_listings(100)
+
+    assert [item.source_id for item in listings] == ["12345", "67890"]
+    assert len(fake.requested) == 2
+
+
+@pytest.mark.asyncio
+async def test_ss_skips_failed_pages(ss_scraper):
+    html = _list_html()
+    error = httpx.ConnectError("boom")
+    fake = FakePages({1: error, 2: html})
+    ss_scraper._fetch_page = fake
+    assert len(await ss_scraper.scrape_listings(10)) == 2
+
+    fake = FakePages({1: error, 2: error, 3: error, 4: html})
+    ss_scraper._fetch_page = fake
+    assert await ss_scraper.scrape_listings(10) == []
+    assert len(fake.requested) == 3
