@@ -22,7 +22,7 @@ function RowContent({ icon, label }: { icon: IconName; label: string }) {
   );
 }
 
-/** Меню профиля: избранное, помощь (бот), о приложении */
+/** Меню профиля: избранное, сохранённые поиски, помощь (бот), о приложении */
 export default function ProfileMenu() {
   const { t } = useI18n();
   const pt = t.profile;
@@ -37,6 +37,11 @@ export default function ProfileMenu() {
         <li>
           <Link to="/favorites" className={ROW_CLASS} onClick={() => haptic('light')}>
             <RowContent icon="heart" label={t.header.favorites} />
+          </Link>
+        </li>
+        <li>
+          <Link to="/searches" className={ROW_CLASS} onClick={() => haptic('light')}>
+            <RowContent icon="bell" label={t.header.searches} />
           </Link>
         </li>
         <li>

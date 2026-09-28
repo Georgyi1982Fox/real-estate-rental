@@ -103,3 +103,77 @@ export interface Me {
 export interface UpdateMeRequest {
   language: Lang;
 }
+
+/** Фильтры поиска квартир: в адресе страницы, в /api/listings и в сохранённых поисках */
+export interface SearchFilters {
+  /** ID района (UUID на бэкенде) */
+  district?: string;
+  min_price?: number;
+  max_price?: number;
+  /** 4 = «4 и больше» */
+  rooms?: number;
+}
+
+/** Сохранённый поиск (/api/searches, нужен X-Telegram-Init-Data, иначе 401) */
+export interface SavedSearch {
+  id: string;
+  /** Если не передать при создании, сервер соберёт из фильтров: «Ваке, 2 комн., до 2000 ₾» */
+  name: string;
+  filters: SearchFilters;
+  /** Присылать уведомления о новых квартирах */
+  notify: boolean;
+  /** Новых квартир с последнего просмотра */
+  new_count: number;
+  created_at: string;
+}
+
+export interface CreateSavedSearchRequest {
+  name?: string;
+  filters: SearchFilters;
+  notify: boolean;
+}
+
+export interface UpdateSavedSearchRequest {
+  name?: string;
+  notify?: boolean;
+}
+
+/** Уведомление: новая квартира по сохранённому поиску, снижение цены в избранном, служебное */
+export type NotificationType = 'new_listing' | 'price_drop' | 'system';
+
+export interface NotificationListing {
+  id: string;
+  title: Localized;
+  price: number;
+  currency: string;
+  image?: string | null;
+}
+
+/** Уведомление (/api/notifications, нужен X-Telegram-Init-Data, иначе 401) */
+export interface AppNotification {
+  id: string;
+  type: NotificationType;
+  created_at: string;
+  is_read: boolean;
+  /** Для new_listing и price_drop */
+  listing?: NotificationListing | null;
+  /** Для price_drop */
+  old_price?: number | null;
+  /** Для new_listing */
+  search_id?: string | null;
+  search_name?: string | null;
+  /** Для system */
+  text?: Localized | null;
+}
+
+export interface NotificationsPage {
+  items: AppNotification[];
+  total: number;
+  page: number;
+  pages: number;
+  unread_count: number;
+}
+
+export interface UnreadCountResponse {
+  count: number;
+}

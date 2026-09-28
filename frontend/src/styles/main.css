@@ -156,8 +156,39 @@
       transform: perspective(160px) rotateY(360deg);
     }
   }
+  /* Колокольчик «звонит» раз в 11 с: качается от верхней точки подвеса ~1 с, затухая */
+  .bell-ring {
+    transform-origin: 50% 8%;
+    animation: bell-ring 11s ease-in-out 3s infinite;
+  }
+  @keyframes bell-ring {
+    0%,
+    10%,
+    100% {
+      transform: rotate(0deg);
+    }
+    1% {
+      transform: rotate(18deg);
+    }
+    2.5% {
+      transform: rotate(-16deg);
+    }
+    4% {
+      transform: rotate(12deg);
+    }
+    5.5% {
+      transform: rotate(-9deg);
+    }
+    7% {
+      transform: rotate(5deg);
+    }
+    8.5% {
+      transform: rotate(-2deg);
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
-    .medallion {
+    .medallion,
+    .bell-ring {
       animation: none;
     }
   }

@@ -41,10 +41,7 @@ export default function ListingPage() {
   useTelegramBackButton('/');
 
   // «Написать»: в Telegram — нативная MainButton внизу экрана, в браузере — обычная кнопка
-  const { contact, loading: contactLoading } = useContact(
-    listing?.id ?? null,
-    listing?.source_url,
-  );
+  const { contact, loading: contactLoading } = useContact(listing?.id ?? null, listing?.source_url);
   const nativeContact = useTelegramMainButton({
     text: lt.write,
     onClick: contact,

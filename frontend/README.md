@@ -74,6 +74,21 @@ npm run build      # tsc + vite build → dist/
 
 `user`: `{id, first_name, last_name?, username?, photo_url?, email?}`.
 
+### Сохранённые поиски (бэкенд — TASK-028)
+
+Нужен `X-Telegram-Init-Data`, без него — 401 (фронтенд показывает «Откройте в Telegram»). Пока эндпоинта нет
+(404) или нет сети, фронтенд работает с mock в `localStorage` (`bina:saved_searches`).
+
+| Метод | Путь | Тело | Ответ |
+|---|---|---|---|
+| GET | `/api/searches` | — | `{items: SavedSearch[]}` |
+| POST | `/api/searches` | `{name?, filters, notify}` | 201 `SavedSearch`; без `name` сервер собирает его из фильтров |
+| PATCH | `/api/searches/{id}` | `{name?, notify?}` | `SavedSearch`; 404 — нет такого |
+| DELETE | `/api/searches/{id}` | — | 204; 404 — нет такого |
+
+`SavedSearch`: `{id, name, filters: {district?, min_price?, max_price?, rooms?}, notify, new_count, created_at}`.
+`rooms=4` — «4 и больше» (и в `/api/listings`). Фильтры главной хранятся в адресе: `/?district=..&min_price=..&max_price=..&rooms=..&page=..`.
+
 Тексты с бэкенда (`title`, `description`, `address`, `owner.name`, `district.name`) — объект `{ka, ru, en}` или строка.
 Типы — `src/api/types.ts`.
 

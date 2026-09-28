@@ -42,6 +42,33 @@ export function formatDate(iso: string, lang: Lang): string {
   }).format(date);
 }
 
+const MINUTE = 60_000;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
+
+/** Полночь локального дня — для «вчера» считаем календарные дни, а не 24 часа */
+function startOfDay(date: Date): number {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
+
+/**
+ * Относительное время на языке интерфейса: «сейчас», «5 мин. назад», «3 ч. назад»,
+ * «вчера», «4 дня назад»; старше недели — обычная дата. Невалидная строка — ''.
+ */
+export function timeAgo(iso: string, lang: Lang, now: Date = new Date()): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  const rtf = new Intl.RelativeTimeFormat(DATE_LOCALES[lang], { numeric: 'auto', style: 'short' });
+  // Часы сервера могут спешить — будущее время показываем как «сейчас»
+  const diff = Math.max(0, now.getTime() - date.getTime());
+  if (diff < MINUTE) return rtf.format(0, 'second');
+  if (diff < HOUR) return rtf.format(-Math.floor(diff / MINUTE), 'minute');
+  const days = Math.round((startOfDay(now) - startOfDay(date)) / DAY);
+  if (days === 0) return rtf.format(-Math.floor(diff / HOUR), 'hour');
+  if (days < 7) return rtf.format(-days, 'day');
+  return formatDate(iso, lang);
+}
+
 /** Локализованное значение из {ka, ru, en} с фолбэком ka → en → ru; строки возвращаются как есть */
 export function tr(value: Localized | null | undefined, lang: Lang): string {
   if (value == null) return '';
@@ -52,4 +79,11 @@ export function tr(value: Localized | null | undefined, lang: Lang): string {
 /** Подстановка {n} в строку словаря */
 export function fill(template: string, n: number | string): string {
   return template.replace('{n}', String(n));
+}
+
+/** Подстановка именованных полей: fillVars('{old} → {price}', { old: '1 ₾', price: '2 ₾' }) */
+export function fillVars(template: string, values: Record<string, number | string>): string {
+  return template.replace(/\{(\w+)\}/g, (match, key: string) =>
+    key in values ? String(values[key]) : match,
+  );
 }
