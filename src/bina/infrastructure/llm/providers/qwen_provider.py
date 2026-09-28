@@ -17,7 +17,7 @@ class QwenProvider(LLMProvider):
         self,
         api_key: str,
         base_url: str = "https://api.aitunnel.ru/v1",
-        model: str = "qwen-max",
+        model: str = "qwen3-max",
         timeout: int = 30,
     ) -> None:
         self.api_key = api_key
