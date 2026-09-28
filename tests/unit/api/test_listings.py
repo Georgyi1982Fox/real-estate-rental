@@ -155,3 +155,39 @@ async def test_districts(client: AsyncClient, seeded: Store) -> None:
         "id": str(seeded.districts[0].id),
         "name": {"ka": "ვაკე", "ru": "Ваке", "en": "Vake"},
     }
+
+
+@pytest.mark.parametrize(
+    ("sort", "expected"),
+    [
+        ("newest", [4, 3, 2, 1]),
+        ("price_asc", [1, 2, 3, 4]),
+        ("price_desc", [4, 3, 2, 1]),
+        ("area_desc", [3, 1, 4, 2]),
+        ("price_per_m2_asc", [1, 3, 2, 4]),
+    ],
+)
+async def test_sort(client: AsyncClient, store: Store, sort: str, expected: list[int]) -> None:
+    district = store.add_district("Ваке")
+    # (цена, площадь): за м² — 10, 40, 20, 50
+    for number, (price, area) in enumerate([(1000, 100), (2000, 50), (3000, 150), (4000, 80)], 1):
+        store.add_listing(district, price=price, title_ru=f"№{number}", area=area)
+
+    body = (await client.get("/api/listings", params={"sort": sort})).json()
+
+    assert [int(item["title"]["ru"][1:]) for item in body["items"]] == expected
+
+
+async def test_area_filter_and_bad_sort(client: AsyncClient, store: Store) -> None:
+    district = store.add_district("Ваке")
+    for area in (40, 60, 90):
+        store.add_listing(district, title_ru=f"{area}", area=area)
+
+    body = (await client.get("/api/listings", params={"min_area": "50", "max_area": "90"})).json()
+    assert sorted(item["title"]["ru"] for item in body["items"]) == ["60", "90"]
+
+    assert (await client.get("/api/listings", params={"sort": "cheapest"})).status_code == 422
+    assert (
+        await client.get("/api/listings", params={"min_area": "90", "max_area": "50"})
+    ).status_code == 422
+    assert (await client.get("/api/listings", params={"min_area": "-1"})).status_code == 422

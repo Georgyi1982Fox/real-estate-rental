@@ -28,16 +28,26 @@ async def client(
 @pytest.fixture
 async def listing_ids(session: AsyncSession) -> list[str]:
     district = District(
-        name_ru="Ваке", name_ka="ვაკე", name_en="Vake", avg_price_per_m2=Decimal(20),
+        name_ru="Ваке",
+        name_ka="ვაკე",
+        name_en="Vake",
+        avg_price_per_m2=Decimal(20),
         safety_score=9,
     )
     session.add(district)
     await session.flush()
     listings = [
         Listing(
-            source_id=f"mh-{n}", source_name="myhome", title_ru=f"Квартира {n}",
-            title_ka="ბინა", description_ru="", description_ka="",
-            price=Decimal(1000 + n * 100), district_id=district.id, rooms=2, area=Decimal(50),
+            source_id=f"mh-{n}",
+            source_name="myhome",
+            title_ru=f"Квартира {n}",
+            title_ka="ბინა",
+            description_ru="",
+            description_ka="",
+            price=Decimal(1000 + n * 100),
+            district_id=district.id,
+            rooms=2,
+            area=Decimal(50),
         )
         for n in range(3)
     ]
@@ -87,3 +97,42 @@ async def test_favorites_are_persisted(
     assert response.status_code == 204
     body = (await client.get("/api/favorites", headers=headers)).json()
     assert [item["id"] for item in body["items"]] == [listing_ids[1]]
+
+
+async def test_sort_and_area_on_postgres(client: AsyncClient, session: AsyncSession) -> None:
+    district = District(
+        name_ru="Сабуртало",
+        name_ka="საბურთალო",
+        name_en="Saburtalo",
+        avg_price_per_m2=Decimal(20),
+        safety_score=8,
+    )
+    session.add(district)
+    await session.flush()
+    # (цена, площадь): за м² — 10, 40, 20, 50
+    for number, (price, area) in enumerate([(1000, 100), (2000, 50), (3000, 150), (4000, 80)], 1):
+        session.add(
+            Listing(
+                source_id=f"sort-{number}",
+                source_name="ss",
+                title_ru=f"№{number}",
+                title_ka="",
+                description_ru="",
+                description_ka="",
+                price=Decimal(price),
+                district_id=district.id,
+                rooms=2,
+                area=Decimal(area),
+            )
+        )
+    await session.commit()
+
+    async def order(**params: str) -> list[str]:
+        body = (await client.get("/api/listings", params=params)).json()
+        return [item["title"]["ru"] for item in body["items"]]
+
+    assert await order(sort="price_asc") == ["№1", "№2", "№3", "№4"]
+    assert await order(sort="price_desc") == ["№4", "№3", "№2", "№1"]
+    assert await order(sort="area_desc") == ["№3", "№1", "№4", "№2"]
+    assert await order(sort="price_per_m2_asc") == ["№1", "№3", "№2", "№4"]
+    assert await order(sort="price_asc", min_area="60", max_area="120") == ["№1", "№4"]

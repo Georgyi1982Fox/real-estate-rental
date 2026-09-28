@@ -1,4 +1,4 @@
-from bina.application.dtos.listing_search import ListingSearchFilters
+from bina.application.dtos.listing_search import ListingSearchFilters, ListingSort
 from bina.application.dtos.pagination import Page, validate_page_params
 from bina.application.repositories.listings import IListingsRepository
 from bina.infrastructure.db.models import Listing
@@ -17,6 +17,7 @@ class SearchListingsUseCase:
         filters: ListingSearchFilters,
         page: int = 0,
         page_size: int = 5,
+        sort: ListingSort = ListingSort.NEWEST,
     ) -> Page[Listing]:
         """Возвращает страницу объявлений и общее количество найденных.
 
@@ -33,5 +34,6 @@ class SearchListingsUseCase:
             filters,
             limit=page_size,
             offset=page * page_size,
+            sort=sort,
         )
         return Page(items=items, total=total, page=page, page_size=page_size)

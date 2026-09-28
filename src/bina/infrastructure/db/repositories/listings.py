@@ -1,12 +1,12 @@
 from datetime import UTC, datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy import ColumnElement, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bina.application.dtos.listing_search import ListingSearchFilters
+from bina.application.dtos.listing_search import ListingSearchFilters, ListingSort
 from bina.application.ports.scraper import RawListing
 from bina.application.ports.translator import LANGUAGES, ListingText
 from bina.application.repositories.listings import IListingsRepository
@@ -82,12 +82,13 @@ class ListingsRepository(IListingsRepository):
         filters: ListingSearchFilters,
         limit: int,
         offset: int = 0,
+        sort: ListingSort = ListingSort.NEWEST,
     ) -> list[Listing]:
-        """Найти активные объявления по фильтрам (новые сверху)."""
+        """Найти активные объявления по фильтрам в порядке ``sort`` (по умолчанию новые сверху)."""
         query = (
             select(Listing)
             .where(*self._search_conditions(filters))
-            .order_by(Listing.created_at.desc(), Listing.id)
+            .order_by(*_sort_order(sort), Listing.created_at.desc(), Listing.id)
             .limit(limit)
             .offset(offset)
         )
@@ -121,6 +122,10 @@ class ListingsRepository(IListingsRepository):
             conditions.append(Listing.rooms >= filters.rooms_min)
         if filters.rooms_max is not None:
             conditions.append(Listing.rooms <= filters.rooms_max)
+        if filters.area_min is not None:
+            conditions.append(Listing.area >= filters.area_min)
+        if filters.area_max is not None:
+            conditions.append(Listing.area <= filters.area_max)
         return conditions
 
     async def create_or_update_from_raw(
@@ -281,3 +286,17 @@ def stale_translation_resets(
             resets[f"title_{other}"] = ""
             resets[f"description_{other}"] = ""
     return resets
+
+
+def _sort_order(sort: ListingSort) -> list[Any]:
+    """ORDER BY для ``sort``; дальше всегда новые сверху (стабильная пагинация)."""
+    if sort is ListingSort.PRICE_ASC:
+        return [Listing.price.asc()]
+    if sort is ListingSort.PRICE_DESC:
+        return [Listing.price.desc()]
+    if sort is ListingSort.AREA_DESC:
+        return [Listing.area.desc()]
+    if sort is ListingSort.PRICE_PER_M2_ASC:
+        # Без площади цена за м² неизвестна — такие в конце
+        return [(Listing.price / func.nullif(Listing.area, 0)).asc().nulls_last()]
+    return []

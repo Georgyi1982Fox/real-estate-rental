@@ -6,7 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Query
 from pydantic import ValidationError
 
-from bina.application.dtos.listing_search import ListingSearchFilters, search_filters
+from bina.application.dtos.listing_search import ListingSearchFilters, ListingSort, search_filters
 from bina.application.use_cases.search_listings import SearchListingsUseCase
 from bina.infrastructure.api.dependencies import SessionDep
 from bina.infrastructure.api.routes.common import (
@@ -42,20 +42,28 @@ async def list_listings(
     min_price: Annotated[str | None, Query()] = None,
     max_price: Annotated[str | None, Query()] = None,
     rooms: Annotated[int | None, Query(ge=1, description="4 = «4 и больше»")] = None,
+    min_area: Annotated[str | None, Query(description="Площадь от, м²")] = None,
+    max_area: Annotated[str | None, Query(description="Площадь до, м²")] = None,
+    sort: Annotated[
+        ListingSort,
+        Query(description="newest, price_asc, price_desc, area_desc, price_per_m2_asc"),
+    ] = ListingSort.NEWEST,
 ) -> ListingsPageOut:
-    """Активные объявления, новые сверху, с пагинацией и фильтрами."""
+    """Активные объявления с пагинацией, фильтрами и сортировкой (по умолчанию новые сверху)."""
     try:
         filters = search_filters(
             district_id=parse_uuid(district, "district"),
             price_min=parse_decimal(min_price, "min_price"),
             price_max=parse_decimal(max_price, "max_price"),
             rooms=rooms,
+            area_min=parse_decimal(min_area, "min_area"),
+            area_max=parse_decimal(max_area, "max_area"),
         )
     except ValidationError as exc:
-        raise bad_request("min_price must be <= max_price") from exc
+        raise bad_request("min_price must be <= max_price and min_area <= max_area") from exc
 
     result = await SearchListingsUseCase(ListingsRepository(session)).execute(
-        filters, page=page - 1, page_size=per_page
+        filters, page=page - 1, page_size=per_page, sort=sort
     )
     return ListingsPageOut.from_page(result)
 

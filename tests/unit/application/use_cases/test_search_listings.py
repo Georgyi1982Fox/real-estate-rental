@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from bina.application.dtos.listing_search import ListingSearchFilters
+from bina.application.dtos.listing_search import ListingSearchFilters, ListingSort
 from bina.application.use_cases.search_listings import SearchListingsUseCase
 from bina.infrastructure.db.models import Listing
 
@@ -23,7 +23,9 @@ async def test_returns_page_with_offset(listings_repository: AsyncMock) -> None:
 
     page = await SearchListingsUseCase(listings_repository).execute(filters, page=2, page_size=5)
 
-    listings_repository.search.assert_awaited_once_with(filters, limit=5, offset=10)
+    listings_repository.search.assert_awaited_once_with(
+        filters, limit=5, offset=10, sort=ListingSort.NEWEST
+    )
     assert page.items == items
     assert page.total == 12
     assert page.pages == 3
