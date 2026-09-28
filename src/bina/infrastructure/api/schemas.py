@@ -273,9 +273,17 @@ class SearchFiltersIn(BaseModel):
     """Фильтры сохранённого поиска (как параметры ``GET /api/listings``)."""
 
     district: UUID | None = None
+    districts: list[UUID] = Field(
+        default_factory=list, max_length=20, description="Несколько районов (любой из них)"
+    )
     min_price: Decimal | None = Field(default=None, ge=0)
     max_price: Decimal | None = Field(default=None, ge=0)
     rooms: int | None = Field(default=None, ge=1, le=10, description="4 = «4 и больше»")
+
+    @property
+    def district_ids(self) -> list[UUID]:
+        """``districts`` и ``district`` вместе, без повторов."""
+        return list(dict.fromkeys([*self.districts, *([self.district] if self.district else [])]))
 
     @model_validator(mode="after")
     def _check_prices(self) -> "SearchFiltersIn":
@@ -291,7 +299,9 @@ class SearchFiltersIn(BaseModel):
 class SearchFiltersOut(BaseModel):
     """Фильтры сохранённого поиска; незаданные поля не возвращаются."""
 
+    # Ровно один район; при нескольких — None, а все районы в ``districts``
     district: UUID | None = None
+    districts: list[UUID] = Field(default_factory=list)
     min_price: float | None = None
     max_price: float | None = None
     rooms: int | None = None
@@ -341,11 +351,13 @@ class SavedSearchOut(BaseModel):
     @classmethod
     def from_model(cls, search: SavedSearch, new_count: int) -> "SavedSearchOut":
         """Преобразует ORM-модель."""
+        districts = search.all_district_ids
         return cls(
             id=search.id,
             name=search.name,
             filters=SearchFiltersOut(
-                district=search.district_id,
+                district=districts[0] if len(districts) == 1 else None,
+                districts=districts,
                 min_price=float(search.price_min) if search.price_min is not None else None,
                 max_price=float(search.price_max) if search.price_max is not None else None,
                 rooms=search.rooms,

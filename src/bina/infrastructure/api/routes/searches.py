@@ -46,15 +46,24 @@ def _amount(value: Decimal) -> str:
     return f"{int(value):,}".replace(",", " ")
 
 
-def default_search_name(filters: SearchFiltersIn, district: District | None, language: str) -> str:
+# Больше районов в названии не перечисляем: «Ваке, Сабуртало +3»
+NAMED_DISTRICTS = 2
+
+
+def _district_name(district: District, language: str) -> str:
+    localized_names = {"ru": district.name_ru, "en": district.name_en, "ka": district.name_ka}
+    return localized_names.get(language) or district.name_ru or ""
+
+
+def default_search_name(filters: SearchFiltersIn, districts: list[District], language: str) -> str:
     """Название из фильтров: «Ваке, 2 комн., 800-2000 ₾» (через короткое тире)."""
     parts = _NAME_PARTS.get(language, _NAME_PARTS["ru"])
     result: list[str] = []
-    if district is not None:
-        localized_names = {"ru": district.name_ru, "en": district.name_en, "ka": district.name_ka}
-        district_name = localized_names.get(language) or district.name_ru
-        if district_name:
-            result.append(district_name)
+    names = [name for district in districts if (name := _district_name(district, language))]
+    if names:
+        shown = ", ".join(names[:NAMED_DISTRICTS])
+        rest = len(names) - NAMED_DISTRICTS
+        result.append(f"{shown} +{rest}" if rest > 0 else shown)
     if filters.rooms is not None:
         rooms = f"{ROOMS_OR_MORE}+" if filters.rooms >= ROOMS_OR_MORE else str(filters.rooms)
         result.append(parts["rooms"].format(n=rooms))
@@ -69,7 +78,7 @@ def default_search_name(filters: SearchFiltersIn, district: District | None, lan
 
 async def _search_out(session: SessionDep, search: SavedSearch) -> SavedSearchOut:
     filters = search_filters(
-        district_id=search.district_id,
+        district_ids=search.all_district_ids,
         price_min=search.price_min,
         price_max=search.price_max,
         rooms=search.rooms,
@@ -107,16 +116,20 @@ async def create_search(
     if await repository.count_by_user(user.id) >= limit:
         raise payment_required("searches", limit)
     filters = body.filters
-    district = None
-    if filters.district is not None:
-        district = await DistrictsRepository(session).get_by_id(filters.district)
+    district_ids = filters.district_ids
+    districts: list[District] = []
+    for district_id in district_ids:
+        district = await DistrictsRepository(session).get_by_id(district_id)
         if district is None:
             raise bad_request("district not found")
-    name = (body.name or "").strip() or default_search_name(filters, district, user.language)
+        districts.append(district)
+    name = (body.name or "").strip() or default_search_name(filters, districts, user.language)
     search = await repository.create(
         user.id,
         name=name,
-        district_id=filters.district,
+        # Один район — в district_id (как раньше), несколько — в district_ids
+        district_id=district_ids[0] if len(district_ids) == 1 else None,
+        district_ids=district_ids if len(district_ids) > 1 else None,
         price_min=filters.min_price,
         price_max=filters.max_price,
         rooms=filters.rooms,

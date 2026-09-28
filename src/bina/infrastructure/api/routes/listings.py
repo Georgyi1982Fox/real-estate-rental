@@ -15,7 +15,7 @@ from bina.infrastructure.api.routes.common import (
     get_listing_or_404,
     not_found,
     parse_decimal,
-    parse_uuid,
+    parse_districts,
 )
 from bina.infrastructure.api.schemas import (
     ContactOut,
@@ -39,7 +39,12 @@ async def list_listings(
     session: SessionDep,
     page: Annotated[int, Query(ge=1)] = 1,
     per_page: Annotated[int, Query(ge=1, le=MAX_PER_PAGE)] = 20,
-    district: Annotated[str | None, Query(description="ID района")] = None,
+    district: Annotated[
+        list[str] | None,
+        Query(
+            description="ID района; несколько — повтором (district=a&district=b) или через запятую"
+        ),
+    ] = None,
     min_price: Annotated[str | None, Query()] = None,
     max_price: Annotated[str | None, Query()] = None,
     rooms: Annotated[int | None, Query(ge=1, description="4 = «4 и больше»")] = None,
@@ -60,7 +65,7 @@ async def list_listings(
     """Активные объявления с пагинацией, фильтрами, поиском по тексту и сортировкой."""
     try:
         filters = search_filters(
-            district_id=parse_uuid(district, "district"),
+            district_ids=parse_districts(district),
             price_min=parse_decimal(min_price, "min_price"),
             price_max=parse_decimal(max_price, "max_price"),
             rooms=rooms,
