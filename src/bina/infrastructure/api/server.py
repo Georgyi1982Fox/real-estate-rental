@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bina.infrastructure.api.auth import INIT_DATA_HEADER
+from bina.infrastructure.api.errors import REQUEST_ID_HEADER, install_error_handling
 from bina.infrastructure.api.routes import (
     districts,
     favorites,
@@ -23,6 +24,7 @@ from bina.infrastructure.api.routes import (
     searches,
 )
 from bina.infrastructure.api.settings import ApiConfigError, ApiSettings
+from bina.infrastructure.api.validation import install_body_limit
 from bina.infrastructure.db.session.manager import DatabaseManager
 
 
@@ -48,12 +50,17 @@ def create_app(
     app.state.settings = settings
     app.state.session_factory = session_factory or (db.session_factory if db else None)
 
+    # Порядок важен: последний добавленный middleware — внешний. CORS снаружи,
+    # чтобы заголовки попали и в ответы с ошибками (413, 500)
+    install_body_limit(app)
+    install_error_handling(app)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=list(settings.cors_origins),
         allow_credentials=True,
         allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-        allow_headers=["Accept", "Content-Type", INIT_DATA_HEADER],
+        allow_headers=["Accept", "Content-Type", INIT_DATA_HEADER, REQUEST_ID_HEADER],
+        expose_headers=[REQUEST_ID_HEADER],
     )
 
     @app.get("/api/health", tags=["health"])

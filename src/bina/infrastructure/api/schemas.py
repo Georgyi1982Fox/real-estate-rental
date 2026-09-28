@@ -5,9 +5,10 @@ from decimal import Decimal
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from bina.application.dtos.pagination import Page
+from bina.infrastructure.api.validation import clean_text
 from bina.infrastructure.db.models import District, Listing, Notification, SavedSearch, User
 
 # Текст на нескольких языках: {"ka": ..., "ru": ..., "en": ...}; пустые языки опускаются
@@ -212,12 +213,28 @@ class SearchIn(BaseModel):
     filters: SearchFiltersIn = Field(default_factory=SearchFiltersIn)
     notify: bool = True
 
+    @field_validator("name")
+    @classmethod
+    def _clean_name(cls, value: str | None) -> str | None:
+        # Пустое после очистки — название соберётся из фильтров
+        return (clean_text(value) or None) if value is not None else None
+
 
 class SearchPatchIn(BaseModel):
     """Тело ``PATCH /api/searches/{id}``."""
 
     name: str | None = Field(default=None, min_length=1, max_length=100)
     notify: bool | None = None
+
+    @field_validator("name")
+    @classmethod
+    def _clean_name(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        cleaned = clean_text(value)
+        if not cleaned:
+            raise ValueError("name must contain visible text")
+        return cleaned
 
 
 class SavedSearchOut(BaseModel):
