@@ -169,7 +169,7 @@ class FakeListingsRepository:
             if item.status == ListingStatus.ACTIVE
             and not item.is_deleted
             and item.fraud_score < HIDE_SCORE
-            and (f.district_id is None or item.district_id == f.district_id)
+            and (not f.all_district_ids or item.district_id in f.all_district_ids)
             and (f.price_min is None or item.price >= f.price_min)
             and (f.price_max is None or item.price <= f.price_max)
             and (f.rooms_min is None or item.rooms >= f.rooms_min)

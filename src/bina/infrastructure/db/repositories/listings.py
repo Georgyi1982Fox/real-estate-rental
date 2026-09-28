@@ -118,8 +118,11 @@ class ListingsRepository(IListingsRepository):
             # TASK-011: почти наверняка мошенники — не в поиске и не в уведомлениях
             Listing.fraud_score < HIDE_SCORE,
         ]
-        if filters.district_id is not None:
-            conditions.append(Listing.district_id == filters.district_id)
+        district_ids = filters.all_district_ids
+        if len(district_ids) == 1:
+            conditions.append(Listing.district_id == district_ids[0])
+        elif district_ids:
+            conditions.append(Listing.district_id.in_(district_ids))
         if filters.price_min is not None:
             conditions.append(Listing.price >= filters.price_min)
         if filters.price_max is not None:

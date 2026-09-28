@@ -40,6 +40,18 @@ def parse_uuid(value: str | None, name: str) -> UUID | None:
         raise bad_request(f"{name} must be a UUID") from exc
 
 
+MAX_DISTRICTS = 20
+
+
+def parse_districts(values: list[str] | None) -> list[UUID]:
+    """Районы из ``district``: повтором параметра или через запятую; пустые — не заданы."""
+    parts = [part.strip() for value in values or [] for part in value.split(",")]
+    ids = list(dict.fromkeys(uuid for part in parts if (uuid := parse_uuid(part, "district"))))
+    if len(ids) > MAX_DISTRICTS:
+        raise bad_request(f"At most {MAX_DISTRICTS} districts")
+    return ids
+
+
 def parse_decimal(value: str | None, name: str) -> Decimal | None:
     """Число из query-параметра; пустая строка означает «не задано»."""
     if not value:

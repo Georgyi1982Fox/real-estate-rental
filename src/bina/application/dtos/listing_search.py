@@ -1,5 +1,6 @@
 """DTO фильтров поиска объявлений."""
 
+from collections.abc import Sequence
 from decimal import Decimal
 from enum import StrEnum
 from uuid import UUID
@@ -29,6 +30,8 @@ class ListingSearchFilters(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     district_id: UUID | None = None
+    # Несколько районов (любой из них); вместе с district_id — объединение
+    district_ids: tuple[UUID, ...] = ()
     price_min: Decimal | None = None
     price_max: Decimal | None = None
     rooms_min: int | None = None
@@ -37,6 +40,12 @@ class ListingSearchFilters(BaseModel):
     area_max: Decimal | None = None
     # Текст поиска: заголовок и описание на ru/ka/en (TASK-022)
     query: str | None = None
+
+    @property
+    def all_district_ids(self) -> list[UUID]:
+        """Все районы фильтра без повторов (пусто — любой район)."""
+        ids = [*self.district_ids, *([self.district_id] if self.district_id else [])]
+        return list(dict.fromkeys(ids))
 
     @model_validator(mode="after")
     def _check_ranges(self) -> "ListingSearchFilters":
@@ -74,6 +83,7 @@ def search_filters(
     area_min: Decimal | None = None,
     area_max: Decimal | None = None,
     query: str | None = None,
+    district_ids: Sequence[UUID] = (),
 ) -> ListingSearchFilters:
     """Фильтры из параметров Mini App: ``rooms`` — точное число, 4 — «4 и больше».
 
@@ -82,6 +92,7 @@ def search_filters(
     """
     return ListingSearchFilters(
         district_id=district_id,
+        district_ids=tuple(district_ids),
         price_min=price_min,
         price_max=price_max,
         rooms_min=rooms,

@@ -108,6 +108,7 @@ async def test_saved_search_crud(client: AsyncClient, vake: District) -> None:
     assert search["name"] == "Ваке, 2 комн., до 2 000 ₾"
     assert search["filters"] == {
         "district": str(vake.id),
+        "districts": [str(vake.id)],
         "min_price": None,
         "max_price": 2000.0,
         "rooms": 2,
@@ -239,3 +240,44 @@ async def test_notifications_off_and_back_on(
     await repository.create_or_update_from_raw(raw("11", 1000))
     await session.commit()
     assert await create_notifications(session) == (1, 0)
+
+
+async def test_search_with_several_districts(
+    client: AsyncClient, session: AsyncSession, vake: District
+) -> None:
+    """Поиск по нескольким районам: API списка, сохранённый поиск и уведомления."""
+    repository = ListingsRepository(session)
+    in_vake = await repository.create_or_update_from_raw(raw("v1", 1500))
+    in_saburtalo = await repository.create_or_update_from_raw(raw("s1", 1400, district="Сабуртало"))
+    await repository.create_or_update_from_raw(raw("d1", 1300, district="Дидубе"))
+    await session.commit()
+    vake_id, saburtalo_id = in_vake.district_id, in_saburtalo.district_id
+    both = {str(in_vake.id), str(in_saburtalo.id)}
+
+    # Повтором параметра и через запятую — одно и то же
+    for query in (
+        f"district={vake_id}&district={saburtalo_id}",
+        f"district={vake_id},{saburtalo_id}",
+    ):
+        body = (await client.get(f"/api/listings?{query}")).json()
+        assert {item["id"] for item in body["items"]} == both
+    assert (await client.get("/api/listings?district=nope")).status_code == 422
+
+    response = await client.post(
+        "/api/searches",
+        json={"filters": {"districts": [str(vake_id), str(saburtalo_id)]}},
+        headers=headers(OTHER),
+    )
+    assert response.status_code == 201, response.text
+    search = response.json()
+    assert search["name"] == "Vake, Сабуртало"  # у нового района из парсера нет перевода
+    assert search["filters"]["district"] is None
+    assert search["filters"]["districts"] == [str(vake_id), str(saburtalo_id)]
+
+    # Новые квартиры в обоих районах попадают в уведомления, в третьем — нет
+    await repository.create_or_update_from_raw(raw("v2", 1600))
+    await repository.create_or_update_from_raw(raw("s2", 1700, district="Сабуртало"))
+    await repository.create_or_update_from_raw(raw("d2", 1800, district="Дидубе"))
+    await session.commit()
+    new_listings, _ = await create_notifications(session)
+    assert new_listings == 2

@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, Numeric, String, text
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -40,6 +41,10 @@ class SavedSearch(Base):
     district_id: Mapped[UUID | None] = mapped_column(
         PG_UUID(as_uuid=True), ForeignKey("bina_districts.id"), nullable=True
     )
+    # Два и больше районов (миграция saved_search_districts); один — в district_id
+    district_ids: Mapped[list[UUID] | None] = mapped_column(
+        ARRAY(PG_UUID(as_uuid=True)), nullable=True
+    )
     price_min: Mapped[Decimal | None] = mapped_column(Numeric, nullable=True)
     price_max: Mapped[Decimal | None] = mapped_column(Numeric, nullable=True)
     # 4 = «4 и больше», как в фильтре API
@@ -53,6 +58,13 @@ class SavedSearch(Base):
     last_viewed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+    @property
+    def all_district_ids(self) -> list[UUID]:
+        """Районы поиска (пусто — любой район)."""
+        if self.district_ids:
+            return list(self.district_ids)
+        return [self.district_id] if self.district_id else []
 
 
 class Notification(Base):

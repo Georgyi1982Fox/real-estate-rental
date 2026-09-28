@@ -69,7 +69,7 @@ class CreateNotificationsUseCase:
         new_listings = 0
         for search in await self._searches.list_notifiable():
             filters = search_filters(
-                district_id=search.district_id,
+                district_ids=search.all_district_ids,
                 price_min=search.price_min,
                 price_max=search.price_max,
                 rooms=search.rooms,
