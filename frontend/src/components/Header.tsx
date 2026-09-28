@@ -1,16 +1,20 @@
 import { Link } from 'react-router-dom';
 import { useFavorites } from '../hooks/useFavorites';
+import { useUnreadNotifications } from '../hooks/useNotificationFeed';
 import { LOGO_URL } from '../lib/config';
 import { fill } from '../lib/format';
 import { useAuth } from '../providers/AuthProvider';
 import { useI18n } from '../providers/I18nProvider';
 import Avatar from './Avatar';
+import CountBadge from './CountBadge';
+import Icon from './Icon';
 import LanguageSwitcher from './LanguageSwitcher';
 
 export default function Header() {
   const { t } = useI18n();
   const { count } = useFavorites();
   const { user, loading } = useAuth();
+  const unread = useUnreadNotifications();
 
   return (
     // relative z-30: backdrop-blur создаёт свой stacking context — без z-index меню языка уходит под контент
@@ -42,15 +46,22 @@ export default function Header() {
             aria-label={count > 0 ? fill(t.header.favorites_count, count) : t.header.favorites}
           >
             <span aria-hidden="true">♡</span>
-            {count > 0 && (
-              <span
-                className="app-header__badge absolute -right-0.5 -top-0.5 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[var(--danger)] px-1 text-[11px] font-bold leading-none text-white"
-                aria-hidden="true"
-              >
-                {count > 99 ? '99+' : count}
-              </span>
-            )}
+            <CountBadge count={count} max={99} />
           </Link>
+          {/* Гостю уведомлений нет — колокольчик не показываем */}
+          {user && (
+            <Link
+              to="/notifications"
+              className="app-icon-button app-header__notifications relative"
+              aria-label={
+                unread > 0 ? fill(t.header.notifications_count, unread) : t.header.notifications
+              }
+            >
+              {/* Колокольчик качается, только когда есть непрочитанные */}
+              <Icon name="bell" className={`size-5 ${unread > 0 ? 'bell-ring' : ''}`} />
+              <CountBadge count={unread} max={9} />
+            </Link>
+          )}
           {user ? (
             <Link
               to="/profile"

@@ -1,16 +1,20 @@
-import { useSearchParams } from 'react-router-dom';
 import type { ListingsPage } from '../api/types';
 import EmptyState from '../components/EmptyState';
 import ErrorState from '../components/ErrorState';
 import FilterPanel from '../components/FilterPanel';
+import Icon from '../components/Icon';
 import ListingCard from '../components/ListingCard';
 import Pagination from '../components/Pagination';
+import SaveSearchButton from '../components/SaveSearchButton';
 import SearchBar from '../components/SearchBar';
 import Skeleton from '../components/Skeleton';
 import { useApi } from '../hooks/useApi';
 import { useDistricts } from '../hooks/useDistricts';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { useSearchFilters } from '../hooks/useSearchFilters';
 import { fill } from '../lib/format';
+import { filtersToQuery, hasFilters } from '../lib/searchFilters';
+import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 
 const LISTINGS_PER_PAGE = 6;
@@ -20,20 +24,18 @@ const GRID_CLASS = 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid
 export default function HomePage() {
   const { t } = useI18n();
   const ht = t.home;
-  const [searchParams, setSearchParams] = useSearchParams();
-  const page = Math.max(1, Number.parseInt(searchParams.get('page') ?? '1', 10) || 1);
+  const { filters, page, setFilters, resetFilters, setPage } = useSearchFilters();
+  const filterQuery = filtersToQuery(filters);
   const { data, error, loading, reload } = useApi<ListingsPage>(
-    `/api/listings?page=${page}&per_page=${LISTINGS_PER_PAGE}`,
+    `/api/listings?page=${page}&per_page=${LISTINGS_PER_PAGE}${filterQuery ? `&${filterQuery}` : ''}`,
   );
   const { districts, names } = useDistricts();
+  const filtered = hasFilters(filters);
 
   useDocumentTitle(`Bina.ai — ${ht.page_title}`);
 
   const changePage = (next: number) => {
-    setSearchParams((params) => {
-      params.set('page', String(next));
-      return params;
-    });
+    setPage(next);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -50,7 +52,26 @@ export default function HomePage() {
       </header>
 
       <SearchBar />
-      <FilterPanel districts={districts} />
+
+      <section className="home__filters flex flex-col gap-4" aria-label={ht.filters}>
+        <FilterPanel districts={districts} filters={filters} onChange={setFilters} />
+        <div className="home__filter-actions flex flex-wrap items-center gap-3">
+          <SaveSearchButton filters={filters} />
+          {filtered && (
+            <button
+              type="button"
+              className="home__reset inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-md)] px-3 py-2.5 text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] active:scale-[.98]"
+              onClick={() => {
+                haptic('light');
+                resetFilters();
+              }}
+            >
+              <Icon name="close" className="size-4" />
+              {ht.reset_filters}
+            </button>
+          )}
+        </div>
+      </section>
 
       <section
         className="home__listings space-y-6"
@@ -59,7 +80,7 @@ export default function HomePage() {
       >
         <header className="flex items-baseline justify-between gap-3">
           <h2 id="home-listings-title" className="text-xl font-bold tracking-tight">
-            {ht.featured}
+            {filtered ? ht.results : ht.featured}
           </h2>
           {data && (
             <span className="text-sm text-[var(--text-secondary)]">
@@ -79,7 +100,20 @@ export default function HomePage() {
         {error && <ErrorState onRetry={reload} />}
 
         {data && data.items.length === 0 && (
-          <EmptyState title={ht.empty_title} text={ht.empty_text} />
+          <EmptyState title={ht.empty_title} text={ht.empty_text}>
+            {filtered && (
+              <button
+                type="button"
+                className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-md)] bg-[var(--primary)] px-5 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--primary-hover)] active:scale-[.98]"
+                onClick={() => {
+                  haptic('light');
+                  resetFilters();
+                }}
+              >
+                {ht.reset_filters}
+              </button>
+            )}
+          </EmptyState>
         )}
 
         {data && data.items.length > 0 && (

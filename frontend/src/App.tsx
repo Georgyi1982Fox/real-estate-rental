@@ -5,7 +5,9 @@ import FavoritesPage from './pages/FavoritesPage';
 import HomePage from './pages/HomePage';
 import ListingPage from './pages/ListingPage';
 import NotFoundPage from './pages/NotFoundPage';
+import NotificationsPage from './pages/NotificationsPage';
 import ProfilePage from './pages/ProfilePage';
+import SavedSearchesPage from './pages/SavedSearchesPage';
 import TestCardPage from './pages/TestCardPage';
 import { AuthProvider } from './providers/AuthProvider';
 import { I18nProvider } from './providers/I18nProvider';
@@ -20,6 +22,8 @@ const router = createBrowserRouter(
         { path: '/listing/:id', element: <ListingPage /> },
         { path: '/favorites', element: <FavoritesPage /> },
         { path: '/profile', element: <ProfilePage /> },
+        { path: '/searches', element: <SavedSearchesPage /> },
+        { path: '/notifications', element: <NotificationsPage /> },
         { path: '/test_card', element: <TestCardPage /> },
         { path: '*', element: <NotFoundPage /> },
       ],

@@ -61,7 +61,10 @@ export default function Pagination({ current, total, onChange }: PaginationProps
   };
 
   return (
-    <nav aria-label={t.home.pagination} className="pagination flex flex-col items-center gap-2 pt-2">
+    <nav
+      aria-label={t.home.pagination}
+      className="pagination flex flex-col items-center gap-2 pt-2"
+    >
       <div className="flex items-center justify-center gap-2">
         {arrow(current - 1, labels.prev, '‹')}
         {pageWindow(current, total).map((page) => {
