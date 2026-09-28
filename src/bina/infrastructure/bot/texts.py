@@ -100,6 +100,7 @@ _RU: dict[str, str] = {
         "⚠️ Оплата получена, но подписку не удалось включить автоматически. "
         "Напишите в /paysupport, мы всё исправим."
     ),
+    "fraud_warning": "Есть признаки мошенничества: не платите до просмотра",
     "fav_limit": (
         "В бесплатном тарифе до {limit} квартир в избранном. "
         "Уберите лишние или подключите Premium: /premium"
@@ -204,6 +205,7 @@ _EN: dict[str, str] = {
         "⚠️ Payment received, but we couldn't activate the subscription automatically. "
         "Please contact /paysupport and we'll fix it."
     ),
+    "fraud_warning": "Possible scam signs: never pay before a viewing",
     "fav_limit": (
         "The free plan allows up to {limit} favorites. Remove some or get Premium: /premium"
     ),

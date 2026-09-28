@@ -120,6 +120,17 @@ class Listing(Base, SoftDeleteMixin):
         default=0,
         nullable=False,
     )
+    # TASK-011: коды причин (bina.application.ports.fraud.REASONS) и время проверки;
+    # None — ещё не проверено (или текст/цена изменились и нужна новая проверка)
+    fraud_reasons: Mapped[list[str]] = mapped_column(
+        JSON,
+        default=list,
+        server_default=text("'[]'"),
+        nullable=False,
+    )
+    fraud_checked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     # TASK-007: value_enum: хранить значения enum, как в миграции
     status: Mapped[ListingStatus] = mapped_column(
         value_enum(ListingStatus, "listingstatus"),

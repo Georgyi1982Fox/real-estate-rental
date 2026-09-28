@@ -10,6 +10,7 @@ import click
 import structlog
 
 from bina.application.ports.scraper import BaseScraper
+from bina.application.use_cases.check_fraud import CheckFraudUseCase, FraudStats
 from bina.application.use_cases.notifications import (
     CreatedNotifications,
     CreateNotificationsUseCase,
@@ -20,13 +21,14 @@ from bina.application.use_cases.translate_listings import (
     TranslateListingsUseCase,
     TranslationStats,
 )
-from bina.infrastructure.db.locks import TRANSLATE_LOCK, advisory_lock
+from bina.infrastructure.db.locks import FRAUD_LOCK, TRANSLATE_LOCK, advisory_lock
 from bina.infrastructure.db.repositories.listings import ListingsRepository
 from bina.infrastructure.db.repositories.notifications import (
     NotificationsRepository,
     SavedSearchesRepository,
 )
 from bina.infrastructure.db.session.manager import DatabaseManager
+from bina.infrastructure.llm.fraud_analyzer import LLMFraudAnalyzer
 from bina.infrastructure.llm.llm_factory import LLMFactory
 from bina.infrastructure.llm.translator import LLMTranslator
 from bina.infrastructure.scrapers.myhome_scraper import MyHomeScraper
@@ -204,6 +206,65 @@ BUSY_MESSAGE = (
 )
 
 
+class FraudCheckBusyError(RuntimeError):
+    """Проверка на мошенничество уже идёт в другом процессе."""
+
+
+FRAUD_BUSY_MESSAGE = (
+    "проверка на мошенничество уже идёт в другом процессе, попробуйте через несколько минут"
+)
+
+
+async def check_fraud(limit: int) -> FraudStats:
+    """Проверяет до ``limit`` объявлений на мошенничество (правила + AI).
+
+    Одновременно — только одна проверка (advisory lock), как и перевод.
+
+    Raises:
+        FraudCheckBusyError: проверка уже запущена в другом процессе.
+    """
+    db = DatabaseManager()
+    checked = suspicious = hidden = failed = 0
+    try:
+        async with advisory_lock(db.engine, FRAUD_LOCK) as acquired:
+            if not acquired:
+                raise FraudCheckBusyError("fraud check is already running")
+            provider = LLMFactory.create_provider()
+            try:
+                while checked + failed < limit:
+                    async with db.session_factory() as session:
+                        use_case = CheckFraudUseCase(
+                            LLMFraudAnalyzer(provider),
+                            ListingsRepository(session),
+                            after_save=session.commit,
+                        )
+                        stats = await use_case.execute(
+                            min(TRANSLATE_BATCH, limit - checked - failed)
+                        )
+                        await session.commit()
+                    checked += stats.checked
+                    suspicious += stats.suspicious
+                    hidden += stats.hidden
+                    failed += stats.failed
+                    # Больше нечего проверять или вся пачка не прошла (не крутим одни и те же)
+                    if stats.checked == 0:
+                        break
+            finally:
+                close = getattr(provider, "close", None)
+                if close is not None:
+                    await close()
+    finally:
+        await db.dispose()
+    return FraudStats(checked=checked, suspicious=suspicious, hidden=hidden, failed=failed)
+
+
+def _echo_fraud(stats: FraudStats) -> None:
+    click.echo(
+        f"антифрод: проверено {stats.checked}, подозрительных {stats.suspicious}, "
+        f"скрыто {stats.hidden}, ошибок {stats.failed}"
+    )
+
+
 def _echo_translation(stats: TranslationStats) -> None:
     click.echo(
         f"перевод: проверено {stats.checked}, переведено {stats.translated}, ошибок {stats.failed}"
@@ -293,6 +354,20 @@ def translate_command(limit: int) -> None:
         raise click.ClickException(BUSY_MESSAGE) from exc
 
 
+@cli.command(name="fraud")
+@click.option("--limit", default=50, show_default=True, type=click.IntRange(1, 5000))
+def fraud_command(limit: int) -> None:
+    """Проверить новые объявления на мошенничество (правила + AI, нужен LLM_API_KEY)."""
+    if not llm_configured():
+        raise click.ClickException(
+            'Не задан LLM_API_KEY (ключ AITUNNEL). Пример: $env:LLM_API_KEY="..."'
+        )
+    try:
+        _echo_fraud(asyncio.run(check_fraud(limit)))
+    except FraudCheckBusyError as exc:
+        raise click.ClickException(FRAUD_BUSY_MESSAGE) from exc
+
+
 @cli.command()
 @click.option(
     "--interval",
@@ -316,7 +391,16 @@ def translate_command(limit: int) -> None:
     type=click.IntRange(1, 5000),
     help="Максимум объявлений для перевода за запуск.",
 )
-def schedule(interval: int, limit: int, with_translation: bool, translate_limit: int) -> None:
+@click.option(
+    "--fraud-limit",
+    default=200,
+    show_default=True,
+    type=click.IntRange(1, 5000),
+    help="Максимум объявлений для проверки на мошенничество за запуск (с --translate).",
+)
+def schedule(
+    interval: int, limit: int, with_translation: bool, translate_limit: int, fraud_limit: int
+) -> None:
     """Парсить все источники по расписанию (первый запуск сразу, Ctrl+C: стоп)."""
     if with_translation and not llm_configured():
         click.echo("LLM_API_KEY не задан: перевод отключён, только парсинг.")
@@ -338,6 +422,13 @@ def schedule(interval: int, limit: int, with_translation: bool, translate_limit:
                 click.echo(BUSY_MESSAGE)
             except Exception as exc:  # noqa: BLE001 - сбой перевода не останавливает расписание
                 logger.error("Scheduled translation failed", error=str(exc))
+            # До уведомлений: подозрительные объявления не должны в них попасть
+            try:
+                _echo_fraud(await check_fraud(fraud_limit))
+            except FraudCheckBusyError:
+                click.echo(FRAUD_BUSY_MESSAGE)
+            except Exception as exc:  # noqa: BLE001 - сбой проверки не останавливает расписание
+                logger.error("Scheduled fraud check failed", error=str(exc))
         try:
             _echo_notifications(*await notify())
         except Exception as exc:  # noqa: BLE001 - сбой уведомлений не останавливает расписание

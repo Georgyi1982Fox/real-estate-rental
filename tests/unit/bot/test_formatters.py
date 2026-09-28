@@ -94,3 +94,14 @@ def test_format_listings_numbering() -> None:
     text = format_listings([make_listing(), make_listing()], 6, "en")
     assert "<b>6. " in text and "<b>7. " in text
     assert "2 rooms" in text
+
+
+@pytest.mark.parametrize(
+    ("score", "warned"), [(None, False), (0, False), (39, False), (40, True), (95, True)]
+)
+def test_fraud_warning(score: int | None, warned: bool) -> None:
+    listing = make_listing(fraud_score=score)
+    text = format_listing(listing, 1, "ru")
+    assert ("⚠️" in text) is warned
+    if warned:
+        assert "не платите до просмотра" in text

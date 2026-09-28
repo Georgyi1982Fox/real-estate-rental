@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock
 import pytest
 from click.testing import CliRunner
 
+from bina.application.use_cases.check_fraud import FraudStats
 from bina.application.use_cases.notifications import CreatedNotifications, DeliveryStats
 from bina.application.use_cases.translate_listings import TranslationStats
 from bina.infrastructure.scrapers import cli as scrape_cli
@@ -76,6 +77,9 @@ class OneShotScheduler:
         self.stopped = True
 
 
+NO_FRAUD = FraudStats(checked=0, suspicious=0, hidden=0, failed=0)
+
+
 def run_schedule(monkeypatch: pytest.MonkeyPatch, args: list[str]) -> Any:
     """Вызывает ``schedule``: вместо вечного ожидания один раз выполняет задачу."""
     OneShotScheduler.instances.clear()
@@ -88,6 +92,8 @@ def run_schedule(monkeypatch: pytest.MonkeyPatch, args: list[str]) -> Any:
     monkeypatch.setattr("bina.infrastructure.scrapers.cli.asyncio.Event", Event)
     if not isinstance(getattr(scrape_cli, "notify"), AsyncMock):
         monkeypatch.setattr(scrape_cli, "notify", AsyncMock(return_value=(NO_NOTIFICATIONS, None)))
+    if not isinstance(getattr(scrape_cli, "check_fraud"), AsyncMock):
+        monkeypatch.setattr(scrape_cli, "check_fraud", AsyncMock(return_value=NO_FRAUD))
     return CliRunner().invoke(scrape_cli.cli, ["schedule", *args])
 
 
@@ -150,6 +156,21 @@ def test_translate_command_when_busy(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "перевод уже идёт" in result.output
 
 
+def test_fraud_command(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LLM_API_KEY", "test-key")
+    check = AsyncMock(return_value=FraudStats(checked=7, suspicious=2, hidden=1, failed=0))
+    monkeypatch.setattr(scrape_cli, "check_fraud", check)
+
+    result = CliRunner().invoke(scrape_cli.cli, ["fraud", "--limit", "7"])
+
+    assert result.exit_code == 0, result.output
+    check.assert_awaited_once_with(7)
+    assert "подозрительных 2, скрыто 1" in result.output
+
+    monkeypatch.delenv("LLM_API_KEY")
+    assert CliRunner().invoke(scrape_cli.cli, ["fraud"]).exit_code == 1
+
+
 def test_schedule_translates_after_scraping(
     scrape: AsyncMock, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -157,11 +178,34 @@ def test_schedule_translates_after_scraping(
     translate = AsyncMock(return_value=TranslationStats(checked=2, translated=2, failed=0))
     monkeypatch.setattr(scrape_cli, "translate", translate)
 
-    result = run_schedule(monkeypatch, ["--translate-limit", "30"])
+    calls: list[str] = []
+
+    async def fake_translate(limit: int) -> TranslationStats:
+        calls.append("translate")
+        return TranslationStats(checked=2, translated=2, failed=0)
+
+    async def fake_fraud(limit: int) -> FraudStats:
+        calls.append("fraud")
+        return NO_FRAUD
+
+    async def fake_notify() -> tuple[CreatedNotifications, None]:
+        calls.append("notify")
+        return NO_NOTIFICATIONS, None
+
+    translate.side_effect = fake_translate
+    check = AsyncMock(side_effect=fake_fraud)
+    monkeypatch.setattr(scrape_cli, "check_fraud", check)
+    monkeypatch.setattr(scrape_cli, "notify", AsyncMock(side_effect=fake_notify))
+
+    result = run_schedule(monkeypatch, ["--translate-limit", "30", "--fraud-limit", "40"])
 
     assert result.exit_code == 0, result.output
     translate.assert_awaited_once_with(30)
+    check.assert_awaited_once_with(40)
+    # Проверка на мошенничество — до уведомлений
+    assert calls == ["translate", "fraud", "notify"]
     assert "перевод: проверено 2, переведено 2" in result.output
+    assert "антифрод: проверено 0" in result.output
 
 
 def test_schedule_without_key_only_scrapes(

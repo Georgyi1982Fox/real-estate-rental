@@ -3,6 +3,7 @@
 from decimal import Decimal
 from html import escape
 
+from bina.application.fraud import FraudLevel, fraud_level
 from bina.infrastructure.bot.texts import t
 from bina.infrastructure.db.models import District, Listing
 
@@ -71,7 +72,10 @@ def format_listing(listing: Listing, index: int, language: str) -> str:
     ]
     if listing.is_verified:
         details.append("✅")
-    return f"<b>{index}. {title}</b>\n" + " · ".join(details)
+    text = f"<b>{index}. {title}</b>\n" + " · ".join(details)
+    if fraud_level(listing.fraud_score or 0) is not FraudLevel.NONE:
+        text += f"\n⚠️ <i>{t(language, 'fraud_warning')}</i>"
+    return text
 
 
 def format_listings(listings: list[Listing], start_index: int, language: str) -> str:
