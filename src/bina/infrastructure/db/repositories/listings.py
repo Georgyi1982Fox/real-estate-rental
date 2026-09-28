@@ -218,9 +218,11 @@ class ListingsRepository(IListingsRepository):
             )
         )
         rows = (await self._session.execute(query)).all()
+        # previous_price не NULL (условие выше), проверка — для типов
         return [
             PriceDrop(user_id=user_id, listing=listing, old_price=listing.previous_price)
             for user_id, listing in rows
+            if listing.previous_price is not None
         ]
 
     async def list_untranslated(self, limit: int) -> list[Listing]:
