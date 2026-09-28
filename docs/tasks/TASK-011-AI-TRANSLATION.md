@@ -50,7 +50,7 @@ bina-scrape schedule --no-translate               # только парсинг
 | `LLM_API_KEY` | — | Ключ AITUNNEL (обязательно) |
 | `LLM_PROVIDER` | `qwen` | `qwen` (любой OpenAI-совместимый API, в т. ч. AITUNNEL) |
 | `LLM_BASE_URL` | `https://api.aitunnel.ru/v1` | Адрес API (сверить в кабинете AITUNNEL) |
-| `LLM_MODEL` | `qwen-max` | Модель из каталога AITUNNEL |
+| `LLM_MODEL` | `qwen3-max` | Модель из каталога AITUNNEL |
 | `LLM_TIMEOUT` | `120` | Таймаут запроса, секунды |
 
 ### 6. Тесты

@@ -7,7 +7,7 @@ BASE_DIR = Path(__file__).parent.parent.parent.parent
 LLM_PROVIDER = "qwen"
 LLM_API_KEY = ""
 LLM_BASE_URL = "https://api.aitunnel.ru/v1"
-LLM_MODEL = "qwen-max"
+LLM_MODEL = "qwen3-max"
 
 # Redis Settings
 REDIS_URL = "redis://localhost:6379"
