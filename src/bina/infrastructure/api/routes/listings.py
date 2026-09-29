@@ -26,6 +26,7 @@ from bina.infrastructure.api.schemas import (
     ListingsOut,
     ListingsPageOut,
     PhoneOut,
+    SourceLinkOut,
 )
 from bina.infrastructure.api.validation import clean_text
 from bina.infrastructure.db.models import Listing
@@ -123,7 +124,14 @@ async def list_listings(
 @router.get("/{listing_id}", response_model=ListingOut)
 async def get_listing(listing_id: str, session: SessionDep) -> ListingOut:
     """Одно объявление; 404, если его нет или оно удалено."""
-    return ListingOut.from_model(await get_listing_or_404(session, listing_id))
+    listing = await get_listing_or_404(session, listing_id)
+    out = ListingOut.from_model(listing)
+    # TASK-090: ссылки на ту же квартиру на других сайтах
+    links = await ListingsRepository(session).same_apartment_links(listing)
+    out.also_on = [
+        SourceLinkOut(source=source, url=url) for source, url in links if url != listing.url
+    ]
+    return out
 
 
 @router.get("/{listing_id}/similar", response_model=ListingsOut)

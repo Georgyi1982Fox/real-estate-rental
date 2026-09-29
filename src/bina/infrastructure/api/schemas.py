@@ -42,6 +42,10 @@ class ListingOut(BaseModel):
         default=False, description="Есть ли телефон (GET /api/listings/{id}/phone)"
     )
     source_url: str | None = Field(default=None, description="Объявление на сайте-источнике")
+    also_on: list["SourceLinkOut"] = Field(
+        default_factory=list,
+        description="TASK-090: та же квартира на других сайтах (только в GET /api/listings/{id})",
+    )
     owner_name: str | None = None
     # TASK-011: проверка на мошенничество
     fraud_level: Literal["none", "warning", "high"] = Field(
@@ -116,6 +120,13 @@ class OwnerOut(BaseModel):
         """``None``, если сайт не указал имя."""
         names = localize_name(name)
         return cls(name=names) if names else None
+
+
+class SourceLinkOut(BaseModel):
+    """Та же квартира на другом сайте."""
+
+    source: str = Field(description="myhome или ss")
+    url: str
 
 
 def _owner_type(value: str | None) -> Literal["owner", "agent"] | None:
