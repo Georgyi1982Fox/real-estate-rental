@@ -12,6 +12,7 @@ from bina.application.fraud import fraud_level
 from bina.application.listing_details import CONDITIONS, FEATURES, clean_features
 from bina.application.localization import localize_address, localize_name
 from bina.application.price_analysis import PriceAnalysis, PriceLevel
+from bina.application.risk_report import RiskReport
 from bina.application.subscriptions import Limits, Plan, effective_tier
 from bina.infrastructure.api.validation import clean_text
 from bina.infrastructure.db.models import District, Listing, Notification, SavedSearch, User
@@ -161,6 +162,45 @@ class PriceAnalysisOut(BaseModel):
             currency=currency,
             sample=analysis.sample,
             basis=analysis.basis.value if analysis.basis else None,
+        )
+
+
+class RiskReasonOut(BaseModel):
+    """Причина подозрения: код — всем, название и объяснение — Premium."""
+
+    code: str
+    title: str | None = None
+    explanation: str | None = None
+
+
+class RiskOut(BaseModel):
+    """TASK-094: разбор риска объявления.
+
+    Всем: ``level`` и коды причин. Premium: названия и объяснения причин на языке
+    пользователя и ``checklist`` — что проверить и спросить до встречи.
+    """
+
+    level: Literal["none", "warning", "high"]
+    reasons: list[RiskReasonOut]
+    checklist: list[str] = Field(default_factory=list)
+    premium_required: bool = False
+
+    @classmethod
+    def build(cls, report: RiskReport, *, premium: bool) -> "RiskOut":
+        """Ответ с учётом тарифа."""
+        if not premium:
+            return cls(
+                level=report.level.value,
+                reasons=[RiskReasonOut(code=code) for code, _ in report.reasons],
+                premium_required=True,
+            )
+        return cls(
+            level=report.level.value,
+            reasons=[
+                RiskReasonOut(code=code, title=text.title, explanation=text.explanation)
+                for code, text in report.reasons
+            ],
+            checklist=report.checklist,
         )
 
 

@@ -99,3 +99,37 @@ async def test_price_analysis(client: AsyncClient, session: AsyncSession) -> Non
     assert (unknown["level"], unknown["premium_required"]) == ("unknown", False)
 
     assert (await client.get(f"/api/listings/{cheap.id}/price")).status_code == 401
+
+
+async def test_risk_report(client: AsyncClient, session: AsyncSession) -> None:
+    """TASK-094: причины — всем, объяснения и советы — Premium, на языке пользователя."""
+    repository = ListingsRepository(session)
+    listing = await repository.create_or_update_from_raw(raw("risky", 400))
+    await repository.save_fraud(listing.id, 55, ["prepayment", "price_far_below_market"])
+    await session.commit()
+
+    free = (await client.get(f"/api/listings/{listing.id}/risk", headers=HEADERS)).json()
+    assert free == {
+        "level": "warning",
+        "reasons": [
+            {"code": "prepayment", "title": None, "explanation": None},
+            {"code": "price_far_below_market", "title": None, "explanation": None},
+        ],
+        "checklist": [],
+        "premium_required": True,
+    }
+
+    await session.execute(
+        update(User)
+        .where(User.telegram_id == 777)
+        .values(
+            subscription_tier=SubscriptionTier.NOMAD,
+            subscription_expires_at=datetime.now(UTC) + timedelta(days=1),
+        )
+    )
+    await session.commit()
+    premium = (await client.get(f"/api/listings/{listing.id}/risk", headers=HEADERS)).json()
+    assert premium["premium_required"] is False
+    assert premium["reasons"][0]["title"] == "Просят предоплату"  # язык пользователя — ru
+    assert premium["checklist"][0] == "Не переводите деньги до просмотра и подписания договора."
+    assert len(premium["checklist"]) == 6
