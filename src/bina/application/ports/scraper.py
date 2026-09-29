@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 
@@ -48,11 +49,23 @@ class RawListing:
     updated_at: datetime | None = None
     # Загружена ли страница объявления (иначе — только краткие данные из списка)
     has_details: bool = False
+    # False — страница объявления говорит, что оно снято (сдано, удалено)
+    active: bool = True
+
+
+# Нужно ли открывать страницу объявления (False — оно уже есть в базе и не менялось)
+NeedsDetails = Callable[[RawListing], Awaitable[bool]]
 
 
 class BaseScraper(ABC):
     """Базовый класс парсера объявлений."""
 
     @abstractmethod
-    async def scrape_listings(self, limit: int) -> list[RawListing]:
-        """Парсит объявления из источника."""
+    async def scrape_listings(
+        self, limit: int, needs_details: NeedsDetails | None = None
+    ) -> list[RawListing]:
+        """Парсит объявления из источника.
+
+        ``needs_details`` решает, открывать ли страницу объявления; без него —
+        открывать все.
+        """

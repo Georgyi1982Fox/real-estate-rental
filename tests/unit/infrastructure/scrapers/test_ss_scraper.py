@@ -56,7 +56,7 @@ class FakePages:
         self.default = default
         self.requested: list[str] = []
 
-    async def __call__(self, url: str) -> str:
+    async def __call__(self, url: str, expect: str | None = None) -> str:
         self.requested.append(url)
         page = int(url.rsplit("page=", 1)[1])
         value = self.pages.get(page, self.default)
@@ -183,7 +183,7 @@ async def test_ss_detail_page_adds_everything() -> None:
     )
     requested: list[str] = []
 
-    async def fetch(url: str) -> str:
+    async def fetch(url: str, expect: str | None = None) -> str:
         requested.append(url)
         return DETAIL_HTML.read_text(encoding="utf-8")
 
@@ -228,14 +228,27 @@ async def test_ss_detail_page_failure_keeps_card() -> None:
     scraper = SSScraper(delay_seconds=0)
     card = RawListing("1", "ss", "t", "d", 1000, "GEL", 2, 50, "Ваке", "https://x/1")
 
-    async def fail(url: str) -> str:
+    async def fail(url: str, expect: str | None = None) -> str:
         raise httpx.ConnectError("down")
 
     setattr(scraper, "_fetch_page", fail)
     assert await scraper.with_details(card) is card
 
-    async def junk(url: str) -> str:
+    async def junk(url: str, expect: str | None = None) -> str:
         return "<html>no data</html>"
 
     setattr(scraper, "_fetch_page", junk)
     assert (await scraper.with_details(card)).has_details is False
+
+
+def test_ss_detail_inactive_listing() -> None:
+    html = DETAIL_HTML.read_text(encoding="utf-8")
+    scraper = SSScraper(delay_seconds=0)
+
+    active = scraper.details_from_html(html)
+    inactive = scraper.details_from_html(
+        html.replace('"isInactiveApplication": false', '"isInactiveApplication": true')
+    )
+
+    assert active is not None and "active" not in active
+    assert inactive is not None and inactive["active"] is False

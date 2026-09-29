@@ -2,7 +2,7 @@
 
 import asyncio
 import os
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
@@ -263,8 +263,13 @@ async def check_fraud(limit: int) -> FraudStats:
     return FraudStats(checked=checked, suspicious=suspicious, hidden=hidden, failed=failed)
 
 
-async def fill_details(limit: int) -> BackfillStats:
-    """Загружает страницы объявлений, собранных без подробностей (до ``limit``)."""
+async def fill_details(limit: int, recheck_days: int = 0) -> BackfillStats:
+    """Открывает страницы до ``limit`` объявлений: без подробностей и давно не виденных.
+
+    ``recheck_days``: через сколько дней без появления в списке сайта объявление
+    проверяется заново (снятое уходит в архив); 0 — не проверять.
+    """
+    recheck_before = datetime.now(UTC) - timedelta(days=recheck_days) if recheck_days else None
     db = DatabaseManager()
     scrapers = {source: make_scraper(source, details=True, dump_dir=None) for source in SOURCES}
     try:
@@ -272,6 +277,7 @@ async def fill_details(limit: int) -> BackfillStats:
             db.session_factory,
             {source: cast(DetailsSource, scraper) for source, scraper in scrapers.items()},
             limit,
+            recheck_before,
         )
     finally:
         for scraper in scrapers.values():
@@ -405,11 +411,21 @@ def languages_command() -> None:
         click.echo("перевести: bina-scrape translate --limit 5000")
 
 
+RECHECK_OPTION = click.option(
+    "--recheck-days",
+    default=ScraperSettings.RECHECK_DAYS,
+    show_default=True,
+    type=click.IntRange(0, 365),
+    help="Заново проверять объявления, которых столько дней не было в списке сайта (0 — нет).",
+)
+
+
 @cli.command(name="details")
 @click.option("--limit", default=100, show_default=True, type=click.IntRange(1, 5000))
-def details_command(limit: int) -> None:
-    """Дозагрузить подробности (описание, удобства, этажи) для уже собранных объявлений."""
-    _echo_details(asyncio.run(fill_details(limit)))
+@RECHECK_OPTION
+def details_command(limit: int, recheck_days: int) -> None:
+    """Дозагрузить подробности и проверить, не сняты ли старые объявления с сайта."""
+    _echo_details(asyncio.run(fill_details(limit, recheck_days)))
 
 
 @cli.command(name="fraud")
@@ -434,7 +450,7 @@ def fraud_command(limit: int) -> None:
     type=click.IntRange(1, 168),
     help="Интервал в часах.",
 )
-@click.option("--limit", default=100, show_default=True, type=click.IntRange(1, 1000))
+@click.option("--limit", default=500, show_default=True, type=click.IntRange(1, 1000))
 @click.option(
     "--translate/--no-translate",
     "with_translation",
@@ -451,11 +467,12 @@ def fraud_command(limit: int) -> None:
 )
 @click.option(
     "--details-limit",
-    default=100,
+    default=200,
     show_default=True,
     type=click.IntRange(0, 5000),
-    help="Сколько старых объявлений без подробностей дозагрузить за запуск (0 — не надо).",
+    help="Сколько старых объявлений дозагрузить и перепроверить за запуск (0 — не надо).",
 )
+@RECHECK_OPTION
 @click.option(
     "--fraud-limit",
     default=200,
@@ -469,6 +486,7 @@ def schedule(
     with_translation: bool,
     translate_limit: int,
     details_limit: int,
+    recheck_days: int,
     fraud_limit: int,
 ) -> None:
     """Парсить все источники по расписанию (первый запуск сразу, Ctrl+C: стоп)."""
@@ -487,7 +505,7 @@ def schedule(
             logger.error("Scheduled scrape failed", error=str(exc))
         if details_limit:
             try:
-                _echo_details(await fill_details(details_limit))
+                _echo_details(await fill_details(details_limit, recheck_days))
             except Exception as exc:  # noqa: BLE001 - сбой дозагрузки не останавливает расписание
                 logger.error("Scheduled details backfill failed", error=str(exc))
         if with_translation:
@@ -527,6 +545,11 @@ def _echo_results(results: list[ScrapeResult]) -> None:
             f"{result.source}: найдено {result.scraped}, прошло проверку {result.valid}, "
             f"новых или изменённых {result.changed}, сохранено {result.saved}"
         )
+        if not result.scraped:
+            click.echo(
+                f"ВНИМАНИЕ: {result.source} не дал ни одного объявления — "
+                "сайт недоступен или изменился (нужна проверка парсера)"
+            )
 
 
 def main() -> None:

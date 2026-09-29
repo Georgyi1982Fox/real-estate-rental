@@ -76,7 +76,7 @@ services:
       - --interval
       - "${SCRAPE_INTERVAL_HOURS:-6}"
       - --limit
-      - "${SCRAPE_LIMIT:-100}"
+      - "${SCRAPE_LIMIT:-500}"
     depends_on:
       migrate:
         condition: service_completed_successfully

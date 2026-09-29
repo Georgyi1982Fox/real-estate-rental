@@ -144,6 +144,9 @@ class Listing(Base, SoftDeleteMixin):
     details_fetched_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # Когда объявление последний раз видели на сайте (в списке или на его странице);
+    # старые проверяются заново, снятые уходят в архив. None — ещё не проверяли
+    checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # TASK-011: коды причин (bina.application.ports.fraud.REASONS) и время проверки;
     # None — ещё не проверено (или текст/цена изменились и нужна новая проверка)
     fraud_reasons: Mapped[list[str]] = mapped_column(

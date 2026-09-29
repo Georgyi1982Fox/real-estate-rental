@@ -174,10 +174,10 @@ def test_details_command(monkeypatch: pytest.MonkeyPatch) -> None:
     fill = AsyncMock(return_value=BackfillStats(checked=5, updated=4, archived=1, failed=0))
     monkeypatch.setattr(scrape_cli, "fill_details", fill)
 
-    result = CliRunner().invoke(scrape_cli.cli, ["details", "--limit", "5"])
+    result = CliRunner().invoke(scrape_cli.cli, ["details", "--limit", "5", "--recheck-days", "2"])
 
     assert result.exit_code == 0, result.output
-    fill.assert_awaited_once_with(5)
+    fill.assert_awaited_once_with(5, 2)
     assert "обновлено 4, снято с сайта 1" in result.output
 
 
@@ -209,7 +209,7 @@ def test_schedule_translates_after_scraping(
         calls.append("translate")
         return TranslationStats(checked=2, translated=2, failed=0)
 
-    async def fake_details(limit: int) -> BackfillStats:
+    async def fake_details(limit: int, recheck_days: int = 0) -> BackfillStats:
         calls.append("details")
         return BackfillStats(checked=3, updated=2, archived=1, failed=0)
 

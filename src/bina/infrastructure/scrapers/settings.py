@@ -17,6 +17,9 @@ class ScraperSettings:
     # Интервал между запусками парсинга (в часах)
     SCRAPE_INTERVAL_HOURS = int(os.getenv("SCRAPE_INTERVAL_HOURS", "6"))
 
+    # Через сколько дней объявление, которого не было в списке сайта, проверяется заново
+    RECHECK_DAYS = int(os.getenv("RECHECK_DAYS", "3"))
+
     # Задержка между запросами (в секундах)
     SCRAPE_DELAY_SECONDS = int(os.getenv("SCRAPE_DELAY_SECONDS", "2"))
 

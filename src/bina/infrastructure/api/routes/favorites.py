@@ -58,7 +58,7 @@ async def favorite_ids(user: CurrentUserDep, session: SessionDep) -> FavoriteIds
 async def add_favorite(body: FavoriteIn, user: CurrentUserDep, session: SessionDep) -> FavoriteOut:
     """Добавить объявление в избранное (повторный вызов ничего не меняет).
 
-    402, если избранное бесплатного тарифа заполнено.
+    402, если у тарифа есть лимит избранного и он заполнен (сейчас лимитов нет).
     """
     use_case = AddFavoriteUseCase(FavoritesRepository(session), ListingsRepository(session))
     limit = limits_for(user, datetime.now(UTC)).favorites
