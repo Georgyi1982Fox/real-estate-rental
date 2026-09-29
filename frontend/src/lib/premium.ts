@@ -3,7 +3,8 @@ import type { Plan, SubscriptionLimits } from '../api/types';
 // /api/subscription отдаёт лимиты только текущего тарифа, а таблице «Бесплатно / Premium»
 // нужны обе колонки: вторую берём отсюда. Эти же значения видит гость (без запроса к API)
 
-export const FREE_LIMITS: SubscriptionLimits = { favorites: 20, searches: 1 };
+// Избранное без ограничений на всех тарифах (TASK-016)
+export const FREE_LIMITS: SubscriptionLimits = { favorites: null, searches: 1 };
 
 export const PREMIUM_LIMITS: SubscriptionLimits = { favorites: null, searches: 20 };
 

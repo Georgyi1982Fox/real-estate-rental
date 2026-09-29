@@ -192,7 +192,7 @@ const ka = {
   premium: {
     page_title: 'Premium',
     title: 'Bina Premium',
-    subtitle: 'მეტი ფავორიტი და შენახული ძიება — იპოვეთ ბინა უფრო სწრაფად.',
+    subtitle: 'მეტი შენახული ძიება შეტყობინებებით — იპოვეთ ბინა უფრო სწრაფად.',
     active_until: 'Premium მოქმედებს {n}-მდე',
     compare: 'ტარიფების შედარება',
     current_plan: 'თქვენი ტარიფი',
@@ -220,7 +220,7 @@ const ka = {
     limit_title: 'უფასო ტარიფის ლიმიტი',
     limit_favorites: 'უფასო ტარიფში ფავორიტებში {n} ბინამდე შეიძლება.',
     limit_searches: 'უფასო ტარიფში შეიძლება {n} შენახული ძიება.',
-    limit_text: 'Premium-ით — ფავორიტები შეზღუდვის გარეშე და {n}-მდე შენახული ძიება.',
+    limit_text: 'Premium-ით — {n}-მდე შენახული ძიება შეტყობინებებით.',
     get_premium: 'Premium-ის ჩართვა',
   },
   gallery: {
@@ -458,7 +458,7 @@ const ru: Strings = {
   premium: {
     page_title: 'Premium',
     title: 'Bina Premium',
-    subtitle: 'Больше избранного и сохранённых поисков — находите квартиру быстрее.',
+    subtitle: 'Больше сохранённых поисков с уведомлениями — находите квартиру быстрее.',
     active_until: 'Premium до {n}',
     compare: 'Сравнение тарифов',
     current_plan: 'Ваш тариф',
@@ -486,7 +486,7 @@ const ru: Strings = {
     limit_title: 'Лимит бесплатного тарифа',
     limit_favorites: 'В бесплатном тарифе до {n} квартир в избранном.',
     limit_searches: 'В бесплатном тарифе — {n} сохранённый поиск.',
-    limit_text: 'С Premium — избранное без ограничений и до {n} сохранённых поисков.',
+    limit_text: 'С Premium — до {n} сохранённых поисков с уведомлениями.',
     get_premium: 'Подключить Premium',
   },
   gallery: {
@@ -722,7 +722,7 @@ const en: Strings = {
   premium: {
     page_title: 'Premium',
     title: 'Bina Premium',
-    subtitle: 'More favorites and saved searches — find your apartment faster.',
+    subtitle: 'More saved searches with alerts — find your apartment faster.',
     active_until: 'Premium until {n}',
     compare: 'Plan comparison',
     current_plan: 'Your plan',
@@ -750,7 +750,7 @@ const en: Strings = {
     limit_title: 'Free plan limit',
     limit_favorites: 'The free plan allows up to {n} apartments in favorites.',
     limit_searches: 'The free plan includes {n} saved search.',
-    limit_text: 'With Premium — unlimited favorites and up to {n} saved searches.',
+    limit_text: 'With Premium — up to {n} saved searches with alerts.',
     get_premium: 'Get Premium',
   },
   gallery: {
