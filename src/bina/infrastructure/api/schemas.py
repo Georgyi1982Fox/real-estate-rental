@@ -2,13 +2,14 @@
 
 from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Literal
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from bina.application.dtos.pagination import Page
 from bina.application.fraud import fraud_level
+from bina.application.listing_details import CONDITIONS, FEATURES, clean_features
 from bina.application.localization import localize_address, localize_name
 from bina.application.subscriptions import Limits, Plan, effective_tier
 from bina.infrastructure.api.validation import clean_text
@@ -331,21 +332,74 @@ class SearchFiltersIn(BaseModel):
     min_price: Decimal | None = Field(default=None, ge=0)
     max_price: Decimal | None = Field(default=None, ge=0)
     rooms: int | None = Field(default=None, ge=1, le=10, description="4 = «4 и больше»")
+    # TASK-086: остальные фильтры, как в GET /api/listings
+    min_area: Decimal | None = Field(default=None, ge=0)
+    max_area: Decimal | None = Field(default=None, ge=0)
+    q: str | None = Field(default=None, max_length=200, description="Текст поиска")
+    floor_min: int | None = Field(default=None, ge=0, le=100)
+    floor_max: int | None = Field(default=None, ge=0, le=100)
+    not_first_floor: bool = False
+    not_last_floor: bool = False
+    bedrooms: int | None = Field(default=None, ge=1, le=10, description="Спален от")
+    bathrooms: int | None = Field(default=None, ge=1, le=10, description="Санузлов от")
+    features: list[str] = Field(default_factory=list, description="Нужны все удобства")
+    condition: list[str] = Field(default_factory=list, description="Любое из состояний")
+    owner_only: bool = False
 
     @property
     def district_ids(self) -> list[UUID]:
         """``districts`` и ``district`` вместе, без повторов."""
         return list(dict.fromkeys([*self.districts, *([self.district] if self.district else [])]))
 
+    @field_validator("q")
+    @classmethod
+    def _clean_query(cls, value: str | None) -> str | None:
+        return (clean_text(value) or None) if value is not None else None
+
+    @field_validator("features")
+    @classmethod
+    def _check_features(cls, value: list[str]) -> list[str]:
+        unknown = sorted(set(value) - set(FEATURES))
+        if unknown:
+            raise ValueError(f"unknown features: {', '.join(unknown)}")
+        return clean_features(value)
+
+    @field_validator("condition")
+    @classmethod
+    def _check_condition(cls, value: list[str]) -> list[str]:
+        unknown = sorted(set(value) - set(CONDITIONS))
+        if unknown:
+            raise ValueError(f"unknown condition: {', '.join(unknown)}")
+        return [code for code in CONDITIONS if code in value]
+
     @model_validator(mode="after")
     def _check_prices(self) -> "SearchFiltersIn":
-        if (
-            self.min_price is not None
-            and self.max_price is not None
-            and self.min_price > self.max_price
+        for low, high, name in (
+            (self.min_price, self.max_price, "min_price must be <= max_price"),
+            (self.min_area, self.max_area, "min_area must be <= max_area"),
+            (self.floor_min, self.floor_max, "floor_min must be <= floor_max"),
         ):
-            raise ValueError("min_price must be <= max_price")
+            if low is not None and high is not None and low > high:
+                raise ValueError(name)
         return self
+
+    def details(self) -> dict[str, Any]:
+        """Фильтры для ``SavedSearch.details`` (только заданные; ключи ListingSearchFilters)."""
+        values: dict[str, Any] = {
+            "area_min": float(self.min_area) if self.min_area is not None else None,
+            "area_max": float(self.max_area) if self.max_area is not None else None,
+            "query": self.q,
+            "floor_min": self.floor_min,
+            "floor_max": self.floor_max,
+            "not_first_floor": self.not_first_floor or None,
+            "not_last_floor": self.not_last_floor or None,
+            "bedrooms_min": self.bedrooms,
+            "bathrooms_min": self.bathrooms,
+            "features": self.features or None,
+            "conditions": self.condition or None,
+            "owner_only": self.owner_only or None,
+        }
+        return {key: value for key, value in values.items() if value is not None}
 
 
 class SearchFiltersOut(BaseModel):
@@ -357,6 +411,44 @@ class SearchFiltersOut(BaseModel):
     min_price: float | None = None
     max_price: float | None = None
     rooms: int | None = None
+    # TASK-086
+    min_area: float | None = None
+    max_area: float | None = None
+    q: str | None = None
+    floor_min: int | None = None
+    floor_max: int | None = None
+    not_first_floor: bool = False
+    not_last_floor: bool = False
+    bedrooms: int | None = None
+    bathrooms: int | None = None
+    features: list[str] = Field(default_factory=list)
+    condition: list[str] = Field(default_factory=list)
+    owner_only: bool = False
+
+    @classmethod
+    def from_model(cls, search: SavedSearch) -> "SearchFiltersOut":
+        """Фильтры поиска: колонки и ``details``."""
+        districts = search.all_district_ids
+        details = search.details or {}
+        return cls(
+            district=districts[0] if len(districts) == 1 else None,
+            districts=districts,
+            min_price=float(search.price_min) if search.price_min is not None else None,
+            max_price=float(search.price_max) if search.price_max is not None else None,
+            rooms=search.rooms,
+            min_area=details.get("area_min"),
+            max_area=details.get("area_max"),
+            q=details.get("query"),
+            floor_min=details.get("floor_min"),
+            floor_max=details.get("floor_max"),
+            not_first_floor=bool(details.get("not_first_floor")),
+            not_last_floor=bool(details.get("not_last_floor")),
+            bedrooms=details.get("bedrooms_min"),
+            bathrooms=details.get("bathrooms_min"),
+            features=list(details.get("features") or []),
+            condition=list(details.get("conditions") or []),
+            owner_only=bool(details.get("owner_only")),
+        )
 
 
 class SearchIn(BaseModel):
@@ -403,17 +495,10 @@ class SavedSearchOut(BaseModel):
     @classmethod
     def from_model(cls, search: SavedSearch, new_count: int) -> "SavedSearchOut":
         """Преобразует ORM-модель."""
-        districts = search.all_district_ids
         return cls(
             id=search.id,
             name=search.name,
-            filters=SearchFiltersOut(
-                district=districts[0] if len(districts) == 1 else None,
-                districts=districts,
-                min_price=float(search.price_min) if search.price_min is not None else None,
-                max_price=float(search.price_max) if search.price_max is not None else None,
-                rooms=search.rooms,
-            ),
+            filters=SearchFiltersOut.from_model(search),
             notify=search.notify,
             new_count=new_count,
             created_at=search.created_at,

@@ -18,13 +18,13 @@ from datetime import UTC, datetime, timedelta
 
 import structlog
 
-from bina.application.dtos.listing_search import search_filters
 from bina.application.ports.notification_sender import DeliveryResult, INotificationSender
 from bina.application.repositories.notifications import (
     IListingMatchesRepository,
     INotificationsRepository,
     ISavedSearchesRepository,
 )
+from bina.application.saved_searches import saved_search_filters
 
 logger = structlog.get_logger(__name__)
 
@@ -73,12 +73,7 @@ class CreateNotificationsUseCase:
         now = now or datetime.now(UTC)
         new_listings = 0
         for search in await self._searches.list_notifiable():
-            filters = search_filters(
-                district_ids=search.all_district_ids,
-                price_min=search.price_min,
-                price_max=search.price_max,
-                rooms=search.rooms,
-            )
+            filters = saved_search_filters(search)
             matches = await self._listings.search_created_since(
                 filters, search.notify_since, MATCHES_PER_SEARCH
             )
