@@ -4,7 +4,17 @@ from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, case, cast, func, literal_column, or_, select, update
+from sqlalchemy import (
+    ColumnElement,
+    and_,
+    case,
+    cast,
+    func,
+    literal_column,
+    or_,
+    select,
+    update,
+)
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -12,7 +22,7 @@ from sqlalchemy.orm import selectinload
 from bina.application.dtos.listing_search import ListingSearchFilters, ListingSort
 from bina.application.fraud import HIDE_SCORE
 from bina.application.listing_details import clean_features
-from bina.application.localization import district_names
+from bina.application.localization import district_names, script_of
 from bina.application.ports.scraper import RawListing
 from bina.application.ports.translator import LANGUAGES, ListingText
 from bina.application.repositories.listings import IListingsRepository
@@ -150,14 +160,15 @@ class ListingsRepository(IListingsRepository):
     ) -> Listing:
         """Создать или обновить объявление из RawListing.
 
-        Текст попадает в ``title_ru``/``description_ru`` или ``*_ka`` по
-        ``raw_listing.language``; перевод на другой язык при обновлении сохраняется.
+        Заголовок и описания попадают в колонки того языка, на котором они
+        **написаны** (TASK-019): на русской странице сайта описание бывает на
+        грузинском. Переводы на другие языки при обновлении сохраняются, если
+        исходный текст не изменился.
         """
         district = await self._get_or_create_district(raw_listing.district)
-        suffix = "ka" if raw_listing.language == "ka" else "ru"
+        texts = source_texts(raw_listing)
         values: dict[str, object] = {
-            f"title_{suffix}": raw_listing.title,
-            f"description_{suffix}": raw_listing.description,
+            **texts,
             "price": Decimal(str(raw_listing.price)),
             "currency": raw_listing.currency,
             "rooms": raw_listing.rooms,
@@ -179,7 +190,9 @@ class ListingsRepository(IListingsRepository):
         ):
             # Страница объявления не загрузилась: краткий текст из списка (у SS обрезан)
             # не должен затирать полный, а удобства — пропадать
-            values.pop(f"description_{suffix}")
+            for column in [key for key in texts if key.startswith("description_")]:
+                values.pop(column)
+                del texts[column]
             values.pop("images")
             if not raw_listing.phone:
                 values.pop("phone")
@@ -187,27 +200,18 @@ class ListingsRepository(IListingsRepository):
             values.update(detail_values(raw_listing))
         values.update(source_dates(raw_listing))
         if listing is not None:
-            description = str(values.get(f"description_{suffix}", listing_text_of(listing, suffix)))
             photos = values.get("images", listing.images)
-            values.update(stale_translation_resets(listing, suffix, raw_listing.title, description))
+            text_changed = source_text_changed(listing, texts)
+            if text_changed:
+                values.update(stale_translation_resets(texts))
             new_price = values["price"]
             price_changed = listing.price is not None and Decimal(listing.price) != new_price
             if price_changed:
                 # Для уведомления «цена снижена» (TASK-028)
                 values["previous_price"] = listing.price
                 values["price_changed_at"] = datetime.now(UTC)
-            if fraud_recheck_needed(
-                listing,
-                suffix,
-                (raw_listing.title, description),
-                bool(photos),
-                price_changed=price_changed,
-            ):
+            if text_changed or price_changed or bool(listing.images) != bool(photos):
                 values["fraud_checked_at"] = None
-        # Описания на других языках от самого сайта (SS.ge): переводить их не нужно
-        for code, text in raw_listing.descriptions.items():
-            if code in LANGUAGES and code != suffix and text:
-                values[f"description_{code}"] = text
         if listing is None:
             listing = Listing(
                 source_id=raw_listing.source_id,
@@ -271,13 +275,25 @@ class ListingsRepository(IListingsRepository):
         ]
 
     async def list_untranslated(self, limit: int) -> list[Listing]:
-        """Активные объявления с пустым заголовком хотя бы на одном языке (новые сверху)."""
+        """Активные объявления без заголовка или без описания хотя бы на одном языке.
+
+        Без описания — только если оно есть на другом языке (иначе переводить нечего).
+        Новые сверху.
+        """
+        descriptions = [getattr(Listing, f"description_{language}") for language in LANGUAGES]
+        has_description = or_(*(func.coalesce(column, "") != "" for column in descriptions))
         query = (
             select(Listing)
             .where(
                 Listing.status == ListingStatus.ACTIVE,
                 Listing.is_deleted.is_(False),
-                or_(*(getattr(Listing, f"title_{language}") == "" for language in LANGUAGES)),
+                or_(
+                    *(getattr(Listing, f"title_{language}") == "" for language in LANGUAGES),
+                    and_(
+                        has_description,
+                        or_(*(func.coalesce(column, "") == "" for column in descriptions)),
+                    ),
+                ),
             )
             .order_by(Listing.created_at.desc())
             .limit(limit)
@@ -286,17 +302,19 @@ class ListingsRepository(IListingsRepository):
         return list(result.scalars().all())
 
     async def save_texts(self, listing_id: UUID, texts: dict[str, ListingText]) -> None:
-        """Записать заголовок и описание для каждого языка из ``texts``.
+        """Записать переводы только в пустые поля.
 
-        Описание, которое уже есть (сайт сам дал его на этом языке, TASK-018), не заменяется.
+        Текст, который уже есть (с сайта на этом языке или от прошлого перевода),
+        не заменяется: переводятся только недостающие заголовки и описания.
         """
         values: dict[str, Any] = {}
         for language, text in texts.items():
-            if language in LANGUAGES:
-                values[f"title_{language}"] = text.title
-                column = getattr(Listing, f"description_{language}")
-                values[f"description_{language}"] = case(
-                    (func.coalesce(column, "") == "", text.description), else_=column
+            if language not in LANGUAGES:
+                continue
+            for kind, value in (("title", text.title), ("description", text.description)):
+                column = getattr(Listing, f"{kind}_{language}")
+                values[f"{kind}_{language}"] = case(
+                    (func.coalesce(column, "") == "", value), else_=column
                 )
         if values:
             await self._session.execute(
@@ -369,9 +387,38 @@ class ListingsRepository(IListingsRepository):
         return await districts_repo.create_district(district_name)
 
 
-def listing_text_of(listing: Listing, language: str) -> str:
-    """Текущее описание объявления на языке ``language``."""
-    return getattr(listing, f"description_{language}", "") or ""
+def source_texts(raw: RawListing) -> dict[str, str]:
+    """Колонки текстов из источника по языку, на котором текст написан.
+
+    Заголовок и основное описание — по письменности (грузинская, кириллица,
+    латиница); пустые не записываются. Описания, которые сайт дал сам на других
+    языках (SS.ge), занимают свободные языки.
+    """
+    default = "ka" if raw.language == "ka" else "ru"
+    title_lang = script_of(raw.title) if raw.title.strip() else default
+    texts: dict[str, str] = {}
+    if raw.title.strip():
+        texts[f"title_{title_lang}"] = raw.title
+    for text in (raw.description, *raw.descriptions.values()):
+        if text and text.strip():
+            column = f"description_{script_of(text)}"
+            texts.setdefault(column, text)
+    return texts
+
+
+def source_text_changed(listing: Listing, texts: dict[str, str]) -> bool:
+    """Изменился ли текст с сайта (тогда старые переводы неверны)."""
+    return any((getattr(listing, column, "") or "") != text for column, text in texts.items())
+
+
+def stale_translation_resets(texts: dict[str, str]) -> dict[str, str]:
+    """Пустые тексты во всех колонках, кроме пришедших с сайта: их заново переведёт AI."""
+    return {
+        f"{kind}_{language}": ""
+        for kind in ("title", "description")
+        for language in LANGUAGES
+        if f"{kind}_{language}" not in texts
+    }
 
 
 def detail_values(raw: RawListing) -> dict[str, object]:
@@ -409,44 +456,6 @@ def source_dates(raw: RawListing) -> dict[str, object]:
     if raw.updated_at is not None:
         dates["source_updated_at"] = raw.updated_at
     return dates
-
-
-def fraud_recheck_needed(
-    listing: Listing,
-    language: str,
-    new_text: tuple[str, str],
-    has_photos: bool,
-    *,
-    price_changed: bool,
-) -> bool:
-    """Проверку на мошенничество нужно повторить: изменились текст, цена или наличие фото."""
-    old_text = (
-        getattr(listing, f"title_{language}", "") or "",
-        getattr(listing, f"description_{language}", "") or "",
-    )
-    return price_changed or old_text != new_text or bool(listing.images) != has_photos
-
-
-def stale_translation_resets(
-    listing: Listing, language: str, title: str, description: str
-) -> dict[str, str]:
-    """Пустые поля других языков, если исходный текст объявления изменился.
-
-    Перевод старого текста больше не верен: после сброса его заново сделает
-    ``TranslateListingsUseCase``. Если текст тот же, переводы остаются.
-    """
-    old = (
-        getattr(listing, f"title_{language}", "") or "",
-        getattr(listing, f"description_{language}", "") or "",
-    )
-    if old == (title, description):
-        return {}
-    resets: dict[str, str] = {}
-    for other in LANGUAGES:
-        if other != language:
-            resets[f"title_{other}"] = ""
-            resets[f"description_{other}"] = ""
-    return resets
 
 
 # «Новые сверху»: дата обновления на сайте, для объявлений без неё — дата появления у нас

@@ -91,3 +91,31 @@ def test_unknown_district_is_transliterated() -> None:
 
 def test_transliterate_same_script_unchanged() -> None:
     assert transliterate("Ваке", "ru") == "Ваке"
+
+
+def test_text_languages_migration_moves_texts() -> None:
+    """Миграция text_languages: грузинский текст из *_ru переезжает в *_ka."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "text_languages", "src/bina/infrastructure/db/alembic/versions/text_languages.py"
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    row = {
+        "title_ru": "Квартира",
+        "description_ru": "ქირავდება ბინა",
+        "title_ka": "",
+        "description_ka": "",
+        "title_en": "Apartment",
+        "description_en": "Квартира с ремонтом",
+    }
+    assert module.fixes(row) == {
+        "description_ka": "ქირავდება ბინა",
+        # русский текст из английской колонки переезжает в освободившуюся русскую
+        "description_ru": "Квартира с ремонтом",
+        "description_en": "",
+    }
+    assert module.fixes({"title_ru": "Квартира", "description_ru": "Ремонт"}) == {}
