@@ -558,6 +558,32 @@ class ListingsRepository(IListingsRepository):
         count, median = (await self._session.execute(query)).one()
         return int(count), Decimal(str(median)) if median is not None else None
 
+    async def cheaper_similar(self, listing: Listing, limit: int) -> list[Listing]:
+        """Похожие и дешевле (TASK-095): тот же район и комнаты, площадь ±20%, цена ниже."""
+        area = Decimal(str(listing.area or 0))
+        rooms_condition = (
+            Listing.rooms >= ROOMS_GROUP_MAX
+            if listing.rooms >= ROOMS_GROUP_MAX
+            else Listing.rooms == listing.rooms
+        )
+        query = (
+            select(Listing)
+            .options(selectinload(Listing.district))
+            .where(
+                *self._visible(),
+                Listing.id != listing.id,
+                Listing.district_id == listing.district_id,
+                Listing.currency == listing.currency,
+                Listing.price < listing.price,
+                Listing.price > 0,
+                rooms_condition,
+                Listing.area.between(area * Decimal("0.8"), area * Decimal("1.2")),
+            )
+            .order_by(Listing.price, Listing.id)
+            .limit(limit)
+        )
+        return list((await self._session.execute(query)).scalars().all())
+
     @staticmethod
     def _visible() -> list[ColumnElement[bool]]:
         """Объявления, которые видит пользователь (для статистики цен)."""
