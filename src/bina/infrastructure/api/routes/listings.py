@@ -14,6 +14,7 @@ from bina.application.dtos.listing_search import (
     search_filters,
 )
 from bina.application.listing_details import CONDITIONS, FEATURES
+from bina.application.risk_report import risk_report
 from bina.application.subscriptions import is_premium
 from bina.application.use_cases.analyze_price import AnalyzePriceUseCase
 from bina.application.use_cases.search_listings import SearchListingsUseCase
@@ -34,6 +35,7 @@ from bina.infrastructure.api.schemas import (
     ListingsPageOut,
     PhoneOut,
     PriceAnalysisOut,
+    RiskOut,
     SourceLinkOut,
 )
 from bina.infrastructure.api.validation import clean_text
@@ -160,6 +162,14 @@ async def price_analysis(
     return PriceAnalysisOut.build(
         analysis, listing.currency, premium=is_premium(user, datetime.now(UTC))
     )
+
+
+@router.get("/{listing_id}/risk", response_model=RiskOut)
+async def risk(listing_id: str, user: CurrentUserDep, session: SessionDep) -> RiskOut:
+    """Разбор риска (TASK-094): уровень и причины — всем, объяснения и советы — Premium."""
+    listing = await get_listing_or_404(session, listing_id)
+    report = risk_report(listing.fraud_score or 0, list(listing.fraud_reasons or []), user.language)
+    return RiskOut.build(report, premium=is_premium(user, datetime.now(UTC)))
 
 
 @router.get("/{listing_id}/similar", response_model=ListingsOut)
