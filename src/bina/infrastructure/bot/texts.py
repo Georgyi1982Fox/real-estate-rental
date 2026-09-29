@@ -87,11 +87,12 @@ _RU: dict[str, str] = {
         "<b>Бесплатно:</b> избранное без ограничений, {free_searches} сохранённый поиск.\n"
         "<b>Premium:</b> до {premium_searches} сохранённых поисков "
         "с уведомлениями о новых квартирах.\n\n"
-        "Цена: <b>{price} ⭐</b> за {days} дн. Оплата звёздами Telegram."
+        "Цена: {prices}. Оплата звёздами Telegram."
     ),
     "premium_free": "Сейчас у вас бесплатный тариф.",
     "premium_active": "✅ Premium действует до {date}.",
-    "premium_buy": "Купить за {price} ⭐",
+    "premium_price": "<b>{price} ⭐</b> за {days} дн.",
+    "premium_buy": "Купить {days} дн. за {price} ⭐",
     "premium_extend": "Продлить на {days} дн. за {price} ⭐",
     "premium_activated": "🎉 Спасибо! Premium действует до {date}.",
     "premium_invoice_outdated": "Счёт устарел. Откройте /premium и попробуйте ещё раз.",
@@ -192,11 +193,12 @@ _EN: dict[str, str] = {
         "<b>Free:</b> unlimited favorites, {free_searches} saved search.\n"
         "<b>Premium:</b> up to {premium_searches} saved searches "
         "with alerts about new apartments.\n\n"
-        "Price: <b>{price} ⭐</b> for {days} days. Paid with Telegram Stars."
+        "Price: {prices}. Paid with Telegram Stars."
     ),
     "premium_free": "You are on the free plan.",
     "premium_active": "✅ Premium is active until {date}.",
-    "premium_buy": "Buy for {price} ⭐",
+    "premium_price": "<b>{price} ⭐</b> for {days} days",
+    "premium_buy": "Buy {days} days for {price} ⭐",
     "premium_extend": "Extend by {days} days for {price} ⭐",
     "premium_activated": "🎉 Thank you! Premium is active until {date}.",
     "premium_invoice_outdated": "This invoice is outdated. Open /premium and try again.",

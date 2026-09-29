@@ -20,7 +20,7 @@ from bina.infrastructure.db.models import User
 from bina.infrastructure.db.models.users import SubscriptionTier
 from bina.infrastructure.db.repositories.payments import PaymentsRepository
 from bina.infrastructure.db.repositories.users import UsersRepository
-from bina.infrastructure.payments.settings import PREMIUM_MONTH, load_plans
+from bina.infrastructure.payments.settings import PREMIUM_MONTH, PREMIUM_WEEK, load_plans
 from tests.support.telegram import sign_init_data
 
 BOT_TOKEN = "123456:TEST-TOKEN"
@@ -58,7 +58,10 @@ async def test_free_limits_and_premium(
     assert (body["tier"], body["is_premium"], body["expires_at"]) == ("free", False, None)
     assert body["limits"] == {"favorites": None, "searches": 1}
     assert body["usage"] == {"favorites": 0, "searches": 0}
-    assert body["plans"] == [{"id": PREMIUM_MONTH, "tier": "nomad", "days": 30, "price_stars": 250}]
+    assert body["plans"] == [
+        {"id": PREMIUM_MONTH, "tier": "nomad", "days": 30, "price_stars": 250},
+        {"id": PREMIUM_WEEK, "tier": "nomad", "days": 7, "price_stars": 100},
+    ]
 
     first = await client.post("/api/searches", json={"filters": {"rooms": 2}}, headers=HEADERS)
     assert first.status_code == 201

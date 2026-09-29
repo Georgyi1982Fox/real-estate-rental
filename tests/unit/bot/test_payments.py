@@ -10,7 +10,7 @@ from aiogram.types import Chat, Message, PreCheckoutQuery, SuccessfulPayment, Up
 
 from bina.infrastructure.bot.keyboards.callbacks import FavoriteToggleCallback, PremiumBuyCallback
 from bina.infrastructure.db.models.users import SubscriptionTier
-from bina.infrastructure.payments.settings import PREMIUM_MONTH
+from bina.infrastructure.payments.settings import PREMIUM_MONTH, PREMIUM_WEEK
 from tests.support.telegram import CHAT_ID
 
 from .conftest import BotHarness
@@ -67,6 +67,8 @@ def default_prices(monkeypatch: pytest.MonkeyPatch) -> None:
     """Цена по умолчанию, даже если в окружении задана другая."""
     monkeypatch.delenv("PREMIUM_PRICE_STARS", raising=False)
     monkeypatch.delenv("PREMIUM_DAYS", raising=False)
+    monkeypatch.delenv("PREMIUM_WEEK_PRICE_STARS", raising=False)
+    monkeypatch.delenv("PREMIUM_WEEK_DAYS", raising=False)
 
 
 async def test_premium_shows_price_and_buy_button(harness: BotHarness) -> None:
@@ -77,10 +79,11 @@ async def test_premium_shows_price_and_buy_button(harness: BotHarness) -> None:
 
     text = harness.last_text()
     assert "бесплатный тариф" in text
-    assert "250 ⭐" in text
-    [[button]] = harness.last_markup().inline_keyboard
-    assert button.text == "Купить за 250 ⭐"
-    assert button.callback_data == PremiumBuyCallback(plan=PREMIUM_MONTH).pack()
+    assert "<b>100 ⭐</b> за 7 дн., <b>250 ⭐</b> за 30 дн." in text
+    [[week], [month]] = harness.last_markup().inline_keyboard
+    assert (week.text, month.text) == ("Купить 7 дн. за 100 ⭐", "Купить 30 дн. за 250 ⭐")
+    assert week.callback_data == PremiumBuyCallback(plan=PREMIUM_WEEK).pack()
+    assert month.callback_data == PremiumBuyCallback(plan=PREMIUM_MONTH).pack()
 
 
 async def test_buy_sends_stars_invoice(harness: BotHarness) -> None:
@@ -95,6 +98,19 @@ async def test_buy_sends_stars_invoice(harness: BotHarness) -> None:
     assert invoice.payload == PAYLOAD
     assert [price.amount for price in invoice.prices] == [250]
     assert not invoice.provider_token
+
+
+async def test_buy_week_plan(harness: BotHarness) -> None:
+    """TASK-084: недельный пропуск — счёт на 100 ⭐ и продление на 7 дней."""
+    await harness.send("/start")
+    harness.reset()
+
+    await harness.press(PremiumBuyCallback(plan=PREMIUM_WEEK).pack())
+
+    [invoice] = harness.telegram.of(SendInvoice)
+    assert invoice.payload == f"sub:{PREMIUM_WEEK}"
+    assert [price.amount for price in invoice.prices] == [100]
+    assert "7" in invoice.description
 
 
 async def test_buy_unknown_plan(harness: BotHarness) -> None:
@@ -188,8 +204,9 @@ async def test_premium_user_sees_expiry_and_extend(harness: BotHarness) -> None:
     await harness.send("/premium")
 
     assert "Premium действует до" in harness.last_text()
-    [[button]] = harness.last_markup().inline_keyboard
-    assert button.text.startswith("Продлить")
+    [[week], [month]] = harness.last_markup().inline_keyboard
+    assert week.text == "Продлить на 7 дн. за 100 ⭐"
+    assert month.text == "Продлить на 30 дн. за 250 ⭐"
 
 
 async def test_paysupport(harness: BotHarness) -> None:
