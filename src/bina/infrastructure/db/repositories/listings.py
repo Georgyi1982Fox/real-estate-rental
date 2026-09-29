@@ -280,26 +280,28 @@ class ListingsRepository(IListingsRepository):
         Без описания — только если оно есть на другом языке (иначе переводить нечего).
         Новые сверху.
         """
-        descriptions = [getattr(Listing, f"description_{language}") for language in LANGUAGES]
-        has_description = or_(*(func.coalesce(column, "") != "" for column in descriptions))
         query = (
             select(Listing)
             .where(
                 Listing.status == ListingStatus.ACTIVE,
                 Listing.is_deleted.is_(False),
-                or_(
-                    *(getattr(Listing, f"title_{language}") == "" for language in LANGUAGES),
-                    and_(
-                        has_description,
-                        or_(*(func.coalesce(column, "") == "" for column in descriptions)),
-                    ),
-                ),
+                _untranslated(),
             )
             .order_by(Listing.created_at.desc())
             .limit(limit)
         )
         result = await self._session.execute(query)
         return list(result.scalars().all())
+
+    async def language_coverage(self) -> tuple[int, int]:
+        """Активных объявлений всего и сколько из них ещё ждут перевода."""
+        active = and_(Listing.status == ListingStatus.ACTIVE, Listing.is_deleted.is_(False))
+        query = select(
+            func.count().filter(active),
+            func.count().filter(and_(active, _untranslated())),
+        )
+        total, missing = (await self._session.execute(query)).one()
+        return int(total), int(missing)
 
     async def save_texts(self, listing_id: UUID, texts: dict[str, ListingText]) -> None:
         """Записать переводы только в пустые поля.
@@ -385,6 +387,16 @@ class ListingsRepository(IListingsRepository):
             if district is not None:
                 return district
         return await districts_repo.create_district(district_name)
+
+
+def _untranslated() -> ColumnElement[bool]:
+    """Нет заголовка на каком-то языке или нет описания (при том что на другом оно есть)."""
+    descriptions = [getattr(Listing, f"description_{language}") for language in LANGUAGES]
+    has_description = or_(*(func.coalesce(column, "") != "" for column in descriptions))
+    return or_(
+        *(func.coalesce(getattr(Listing, f"title_{language}"), "") == "" for language in LANGUAGES),
+        and_(has_description, or_(*(func.coalesce(column, "") == "" for column in descriptions))),
+    )
 
 
 def source_texts(raw: RawListing) -> dict[str, str]:

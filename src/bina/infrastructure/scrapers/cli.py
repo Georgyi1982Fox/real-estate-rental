@@ -380,6 +380,27 @@ def translate_command(limit: int) -> None:
         raise click.ClickException(BUSY_MESSAGE) from exc
 
 
+async def language_status() -> tuple[int, int]:
+    """(активных объявлений, из них ждут перевода)."""
+    db = DatabaseManager()
+    try:
+        async with db.session_factory() as session:
+            return await ListingsRepository(session).language_coverage()
+    finally:
+        await db.dispose()
+
+
+@cli.command(name="languages")
+def languages_command() -> None:
+    """Сколько объявлений уже на всех трёх языках (ka, ru, en) и сколько ждут перевода."""
+    total, missing = asyncio.run(language_status())
+    click.echo(
+        f"языки: объявлений {total}, на всех трёх языках {total - missing}, ждут перевода {missing}"
+    )
+    if missing:
+        click.echo("перевести: bina-scrape translate --limit 5000")
+
+
 @cli.command(name="details")
 @click.option("--limit", default=100, show_default=True, type=click.IntRange(1, 5000))
 def details_command(limit: int) -> None:

@@ -37,6 +37,7 @@ MIGRATIONS = (
     "listing_details",
     "district_names",
     "text_languages",
+    "clean_html_texts",
 )
 
 

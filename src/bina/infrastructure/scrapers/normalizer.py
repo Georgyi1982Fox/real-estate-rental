@@ -5,6 +5,7 @@ from typing import ClassVar
 import structlog
 
 from bina.application.ports.scraper import RawListing
+from bina.application.text import html_to_text
 
 logger = structlog.get_logger(__name__)
 
@@ -87,6 +88,7 @@ class ListingNormalizer:
         """Как :meth:`clean_text`, но сохраняет переносы строк (абзацы описания)."""
         if not text:
             return ""
+        text = html_to_text(text)
         lines = [re.sub(r"[ \t\f\v\r]+", " ", line).strip() for line in text.split("\n")]
         # Не больше одной пустой строки подряд
         text = re.sub(r"\n{3,}", "\n\n", "\n".join(lines))
