@@ -9,7 +9,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Response, status
 
-from bina.application.dtos.listing_search import ROOMS_OR_MORE, search_filters
+from bina.application.dtos.listing_search import ROOMS_OR_MORE
+from bina.application.saved_searches import saved_search_filters
 from bina.application.subscriptions import limits_for
 from bina.infrastructure.api.dependencies import CurrentUserDep, SessionDep
 from bina.infrastructure.api.routes.common import bad_request, not_found, payment_required
@@ -31,14 +32,27 @@ router = APIRouter(prefix="/api/searches", tags=["searches"])
 DASH = "\u2013"
 
 _NAME_PARTS: dict[str, dict[str, str]] = {
-    "ru": {"all": "Все квартиры", "rooms": "{n} комн.", "from": "от {n} ₾", "to": "до {n} ₾"},
+    "ru": {
+        "all": "Все квартиры",
+        "rooms": "{n} комн.",
+        "from": "от {n} ₾",
+        "to": "до {n} ₾",
+        "more": "ещё фильтров: {n}",
+    },
     "en": {
         "all": "All apartments",
         "rooms": "{n} rooms",
         "from": "from {n} ₾",
         "to": "up to {n} ₾",
+        "more": "{n} more filters",
     },
-    "ka": {"all": "ყველა ბინა", "rooms": "{n} ოთახი", "from": "{n} ₾-დან", "to": "{n} ₾-მდე"},
+    "ka": {
+        "all": "ყველა ბინა",
+        "rooms": "{n} ოთახი",
+        "from": "{n} ₾-დან",
+        "to": "{n} ₾-მდე",
+        "more": "კიდევ {n} ფილტრი",
+    },
 }
 
 
@@ -73,16 +87,13 @@ def default_search_name(filters: SearchFiltersIn, districts: list[District], lan
         result.append(parts["from"].format(n=_amount(filters.min_price)))
     elif filters.max_price is not None:
         result.append(parts["to"].format(n=_amount(filters.max_price)))
+    if details := filters.details():
+        result.append(parts["more"].format(n=len(details)))
     return ", ".join(result) or parts["all"]
 
 
 async def _search_out(session: SessionDep, search: SavedSearch) -> SavedSearchOut:
-    filters = search_filters(
-        district_ids=search.all_district_ids,
-        price_min=search.price_min,
-        price_max=search.price_max,
-        rooms=search.rooms,
-    )
+    filters = saved_search_filters(search)
     new_count = await ListingsRepository(session).count_created_since(
         filters, search.last_viewed_at
     )
@@ -133,6 +144,7 @@ async def create_search(
         price_min=filters.min_price,
         price_max=filters.max_price,
         rooms=filters.rooms,
+        details=filters.details(),
         notify=body.notify,
     )
     await session.commit()

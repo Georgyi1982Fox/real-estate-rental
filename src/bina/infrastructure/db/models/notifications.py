@@ -49,6 +49,11 @@ class SavedSearch(Base):
     price_max: Mapped[Decimal | None] = mapped_column(Numeric, nullable=True)
     # 4 = «4 и больше», как в фильтре API
     rooms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # TASK-086: остальные фильтры (площадь, текст, этаж, удобства, состояние, собственник);
+    # ключи — поля ListingSearchFilters (application.saved_searches.DETAIL_FIELDS)
+    details: Mapped[dict[str, Any]] = mapped_column(
+        JSON, default=dict, server_default=text("'{}'"), nullable=False
+    )
     notify: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     # Уведомлять о квартирах, появившихся после этого момента (сдвигается при включении)
     notify_since: Mapped[datetime] = mapped_column(

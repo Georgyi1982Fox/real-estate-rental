@@ -39,6 +39,7 @@ MIGRATIONS = (
     "text_languages",
     "clean_html_texts",
     "listing_checked_at",
+    "saved_search_details",
 )
 
 

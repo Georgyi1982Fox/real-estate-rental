@@ -6,6 +6,7 @@
 Telegram (фейковый отправитель) → список, счётчик, прочтение через API.
 """
 
+import dataclasses
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
@@ -115,6 +116,19 @@ async def test_saved_search_crud(client: AsyncClient, vake: District) -> None:
         "min_price": None,
         "max_price": 2000.0,
         "rooms": 2,
+        # TASK-086: остальные фильтры не заданы
+        "min_area": None,
+        "max_area": None,
+        "q": None,
+        "floor_min": None,
+        "floor_max": None,
+        "not_first_floor": False,
+        "not_last_floor": False,
+        "bedrooms": None,
+        "bathrooms": None,
+        "features": [],
+        "condition": [],
+        "owner_only": False,
     }
     assert (search["notify"], search["new_count"]) == (True, 0)
 
@@ -325,3 +339,73 @@ async def test_search_with_several_districts(
     await session.commit()
     new_listings, _ = await create_notifications(session)
     assert new_listings == 2
+
+
+async def test_saved_search_keeps_all_filters(
+    client: AsyncClient, session: AsyncSession, vake: District
+) -> None:
+    """TASK-086: этаж, удобства, состояние, собственник, площадь сохраняются и работают."""
+    filters = {
+        "district": str(vake.id),
+        "min_area": 50,
+        "floor_min": 2,
+        "not_last_floor": True,
+        "bedrooms": 2,
+        "features": ["air_conditioning", "furniture"],
+        "condition": ["newly_renovated"],
+        "owner_only": True,
+    }
+    response = await client.post("/api/searches", json={"filters": filters}, headers=headers(USER))
+    assert response.status_code == 201, response.text
+    body = response.json()
+    assert body["name"] == "Ваке, ещё фильтров: 7"
+    saved = body["filters"]
+    assert (saved["min_area"], saved["floor_min"], saved["bedrooms"]) == (50, 2, 2)
+    assert saved["features"] == ["furniture", "air_conditioning"]
+    assert saved["condition"] == ["newly_renovated"]
+    assert (saved["not_last_floor"], saved["owner_only"], saved["not_first_floor"]) == (
+        True,
+        True,
+        False,
+    )
+
+    def detailed(source_id: str, **fields: object) -> RawListing:
+        values: dict[str, object] = {
+            "has_details": True,
+            "floor": 3,
+            "total_floors": 9,
+            "bedrooms": 2,
+            "features": ["furniture", "air_conditioning", "balcony"],
+            "condition": "newly_renovated",
+            "owner_type": "owner",
+            **fields,
+        }
+        return dataclasses.replace(raw(source_id, 1500), **values)  # type: ignore[arg-type]
+
+    repository = ListingsRepository(session)
+    for listing in (
+        detailed("fits"),
+        detailed("agent", owner_type="agent"),
+        detailed("top-floor", floor=9),
+        detailed("no-ac", features=["furniture"]),
+        detailed("old-repair", condition="needs_renovation"),
+        detailed("small", area=40.0),
+    ):
+        await repository.create_or_update_from_raw(listing)
+    await session.commit()
+
+    assert await create_notifications(session) == (1, 0)
+    searches = (await client.get("/api/searches", headers=headers(USER))).json()["items"]
+    assert searches[0]["new_count"] == 1
+    assert searches[0]["filters"]["features"] == ["furniture", "air_conditioning"]
+
+
+@pytest.mark.parametrize(
+    "filters",
+    [{"features": ["jacuzzi"]}, {"condition": ["palace"]}, {"min_area": 80, "max_area": 50}],
+)
+async def test_saved_search_rejects_bad_filters(
+    client: AsyncClient, filters: dict[str, object]
+) -> None:
+    response = await client.post("/api/searches", json={"filters": filters}, headers=headers(USER))
+    assert response.status_code == 422
