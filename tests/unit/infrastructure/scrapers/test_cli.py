@@ -259,7 +259,9 @@ class FakeUseCase:
     batches: ClassVar[list[TranslationStats]] = []
     limits: ClassVar[list[int]] = []
 
-    def __init__(self, translator: Any, repository: Any, after_save: Any = None) -> None:
+    def __init__(
+        self, translator: Any, repository: Any, after_save: Any = None, concurrency: int = 1
+    ) -> None:
         pass
 
     async def execute(self, limit: int) -> TranslationStats:
@@ -314,7 +316,7 @@ async def test_translate_commits_in_batches(monkeypatch: pytest.MonkeyPatch) -> 
 
     stats = await scrape_cli.translate(25)
 
-    assert FakeUseCase.limits == [10, 10, 5]
+    assert FakeUseCase.limits == [20, 15, 5]
     assert stats == TranslationStats(checked=23, translated=19, failed=4)
     assert all(session.commit.await_count == 1 for session in db.sessions)
     provider.close.assert_awaited_once()
