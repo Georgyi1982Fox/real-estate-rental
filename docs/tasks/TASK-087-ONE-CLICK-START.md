@@ -7,6 +7,8 @@
 | `start-bina.bat` | Запускает Docker Desktop (если выключен) и ждёт его; `docker compose up -d`; открывает окно туннеля (`cloudflared tunnel run realtybot-dev`) и окно сайта (`npm run dev -- --host 127.0.0.1`) |
 | `update-bina.bat` | `git checkout develop` + `git pull`, `docker compose up -d --build`, `npm install` для сайта |
 | `stop-bina.bat` | `docker compose stop` (данные базы сохраняются) |
+| `backup-now.bat` | Копия базы сейчас (TASK-044) |
+| `restore-bina.bat` | Восстановить базу из копии (TASK-045) |
 
 После перезагрузки компьютера — только `start-bina.bat`. После сообщения «смержил» —
 `update-bina.bat`, затем закрыть окно сайта и снова `start-bina.bat`.

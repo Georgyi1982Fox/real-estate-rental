@@ -1,2 +1,4 @@
 # Windows-скрипты: CRLF, иначе cmd неправильно читает метки goto
 *.bat text eol=crlf
+# Shell-скрипты монтируются в Linux-контейнеры: только LF
+*.sh text eol=lf
