@@ -39,17 +39,39 @@ def listing_text(listing: Listing, language: str) -> ListingText:
     )
 
 
-def source_language(listing: Listing) -> str | None:
-    """Язык, с которого переводить: первый из ru, ka, en с непустым заголовком."""
+def title_language(listing: Listing) -> str | None:
+    """Первый из ru, ka, en с непустым заголовком."""
     for language in LANGUAGES:
         if listing_text(listing, language).title:
             return language
     return None
 
 
+def description_language(listing: Listing) -> str | None:
+    """Язык описания: там же, где заголовок, иначе первый с непустым описанием."""
+    title_lang = title_language(listing)
+    if title_lang is not None and listing_text(listing, title_lang).description:
+        return title_lang
+    for language in LANGUAGES:
+        if listing_text(listing, language).description:
+            return language
+    return None
+
+
+def source_language(listing: Listing) -> str | None:
+    """Язык, на котором у объявления больше всего текста (для проверки на мошенничество)."""
+    return description_language(listing) or title_language(listing)
+
+
 def missing_languages(listing: Listing) -> list[str]:
-    """Языки с пустым заголовком."""
-    return [language for language in LANGUAGES if not listing_text(listing, language).title]
+    """Языки без заголовка или без описания (если описание вообще есть)."""
+    has_description = description_language(listing) is not None
+    return [
+        language
+        for language in LANGUAGES
+        if not listing_text(listing, language).title
+        or (has_description and not listing_text(listing, language).description)
+    ]
 
 
 class TranslateListingsUseCase:
@@ -78,14 +100,12 @@ class TranslateListingsUseCase:
         listings = await self._repository.list_untranslated(limit)
         translated = failed = 0
         for listing in listings:
-            source = source_language(listing)
+            source = title_language(listing)
             targets = missing_languages(listing)
             if source is None or not targets:
                 continue
             try:
-                texts = await self._translator.translate(
-                    listing_text(listing, source), source, targets
-                )
+                texts = await self._translate(listing, source, targets)
             except TranslationError as exc:
                 failed += 1
                 logger.warning(
@@ -104,3 +124,29 @@ class TranslateListingsUseCase:
             "Translation finished", checked=len(listings), translated=translated, failed=failed
         )
         return TranslationStats(checked=len(listings), translated=translated, failed=failed)
+
+    async def _translate(
+        self, listing: Listing, title_lang: str, targets: list[str]
+    ) -> dict[str, ListingText]:
+        """Переводы на ``targets``; сохраняются только в пустые поля (``save_texts``).
+
+        Заголовок и описание бывают на разных языках (русский заголовок сайта и
+        грузинское описание хозяина). Тогда сначала заголовок переводится на язык
+        описания, и дальше всё переводится с языка описания.
+        """
+        desc_lang = description_language(listing)
+        if desc_lang is None or desc_lang == title_lang:
+            return await self._translator.translate(
+                listing_text(listing, title_lang), title_lang, targets
+            )
+        title = listing_text(listing, desc_lang).title
+        if not title:
+            only_title = ListingText(listing_text(listing, title_lang).title)
+            first = await self._translator.translate(only_title, title_lang, [desc_lang])
+            title = first[desc_lang].title
+        source = ListingText(title, listing_text(listing, desc_lang).description)
+        texts = await self._translator.translate(
+            source, desc_lang, [code for code in targets if code != desc_lang]
+        )
+        texts[desc_lang] = ListingText(title, source.description)
+        return texts
