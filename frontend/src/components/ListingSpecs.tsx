@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Listing } from '../api/types';
+import { featureName } from '../i18n/features';
 import { formatPrice } from '../lib/format';
 import { useI18n } from '../providers/I18nProvider';
 
@@ -18,10 +19,13 @@ function SpecItem({ label, children }: { label: string; children: ReactNode }) {
 
 /** Характеристики + удобства. Необязательные поля показываются, только если пришли числом */
 export default function ListingSpecs({ listing }: ListingSpecsProps) {
-  const { t } = useI18n();
+  const { lang, t } = useI18n();
   const lt = t.listing;
-  const featureNames: Record<string, string> = lt.features;
-  const features = listing.features ?? [];
+  // Только известные коды, на языке интерфейса
+  const features = (listing.features ?? []).flatMap((code) => {
+    const name = featureName(code, lang);
+    return name ? [{ code, name }] : [];
+  });
 
   return (
     <section
@@ -56,7 +60,7 @@ export default function ListingSpecs({ listing }: ListingSpecsProps) {
             {lt.amenities}
           </h3>
           <ul className="listing-specs__features flex list-none flex-wrap gap-2 p-0">
-            {features.map((code) => (
+            {features.map(({ code, name }) => (
               <li
                 key={code}
                 className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] px-3 py-1.5 text-sm"
@@ -64,7 +68,7 @@ export default function ListingSpecs({ listing }: ListingSpecsProps) {
                 <span className="text-[var(--secondary)]" aria-hidden="true">
                   ✓
                 </span>
-                {featureNames[code] ?? code}
+                {name}
               </li>
             ))}
           </ul>

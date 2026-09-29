@@ -270,7 +270,8 @@ async def test_search_with_several_districts(
     )
     assert response.status_code == 201, response.text
     search = response.json()
-    assert search["name"] == "Vake, Сабуртало"  # у нового района из парсера нет перевода
+    # Район из парсера сразу получает название на английском (TASK-019)
+    assert search["name"] == "Vake, Saburtalo"
     assert search["filters"]["district"] is None
     assert search["filters"]["districts"] == [str(vake_id), str(saburtalo_id)]
 

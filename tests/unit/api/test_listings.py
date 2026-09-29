@@ -63,7 +63,8 @@ async def test_listing_shape(client: AsyncClient, seeded: Store) -> None:
         "condition": None,
         "features": [],
         "owner_type": None,
-        "address": None,
+        "address": {},
+        "owner": None,
         "latitude": None,
         "longitude": None,
         # Даты с сайта нет — дата появления у нас

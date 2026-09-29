@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from bina.application.localization import district_names
 from bina.application.repositories.districts import IDistrictsRepository
 from bina.infrastructure.db.models import District
 
@@ -44,11 +45,13 @@ class DistrictsRepository(IDistrictsRepository):
 
     async def create_district(self, name: str) -> District:
         """Создать новый район."""
-        # Одинаковое название на всех языках; статистика района пока неизвестна
+        # Названия на трёх языках: словарь районов Тбилиси, иначе транслитерация (TASK-019);
+        # статистика района пока неизвестна
+        names = district_names(name) or {"ka": name, "ru": name, "en": name}
         new_district = District(
-            name_ka=name,
-            name_ru=name,
-            name_en=name,
+            name_ka=names["ka"],
+            name_ru=names["ru"],
+            name_en=names["en"],
             avg_price_per_m2=0,
             safety_score=0,
         )

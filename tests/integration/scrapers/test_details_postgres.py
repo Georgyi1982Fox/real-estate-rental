@@ -110,7 +110,11 @@ async def test_details_filters_and_sort(
         # Коды в постоянном порядке, неизвестные отброшены
         assert body["features"] == ["furniture", "air_conditioning", "washing_machine"]
         assert (body["floor"], body["total_floors"], body["owner_type"]) == (9, 9, "agent")
-        assert body["address"] == "ул. Мачабели 6"
+        assert body["address"] == {
+            "ka": "მაჩაბელი ქ. 6",
+            "ru": "ул. Мачабели 6",
+            "en": "Machabeli St. 6",
+        }
         updated = datetime.fromisoformat(body["updated_at"].replace("Z", "+00:00"))
         assert updated == NOW - timedelta(hours=1)
 
@@ -209,3 +213,24 @@ async def test_backfill_details(
     # Второй запуск: делать больше нечего
     again = await backfill_details(session_factory, {"ss": FakeSite()}, limit=10)
     assert again.checked == 0
+
+
+async def test_district_names_on_create_and_migration(
+    session: AsyncSession, session_factory: async_sessionmaker[AsyncSession]
+) -> None:
+    """Новый район — сразу на трёх языках; опечатка сайта находит тот же район (TASK-019)."""
+    repository = ListingsRepository(session)
+    first = await repository.create_or_update_from_raw(raw("n1", district="Старый Тбилиси"))
+    second = await repository.create_or_update_from_raw(raw("n2", district="Старий Тбилиси"))
+    await session.commit()
+    assert first.district_id == second.district_id
+
+    app = create_app(ApiSettings(), session_factory)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        districts = (await client.get("/api/districts")).json()["items"]
+    names = {item["id"]: item["name"] for item in districts}
+    assert names[str(first.district_id)] == {
+        "ka": "ძველი თბილისი",
+        "ru": "Старый Тбилиси",
+        "en": "Old Tbilisi",
+    }

@@ -12,6 +12,7 @@ from sqlalchemy.orm import selectinload
 from bina.application.dtos.listing_search import ListingSearchFilters, ListingSort
 from bina.application.fraud import HIDE_SCORE
 from bina.application.listing_details import clean_features
+from bina.application.localization import district_names
 from bina.application.ports.scraper import RawListing
 from bina.application.ports.translator import LANGUAGES, ListingText
 from bina.application.repositories.listings import IListingsRepository
@@ -360,10 +361,12 @@ class ListingsRepository(IListingsRepository):
         from bina.infrastructure.db.repositories.districts import DistrictsRepository
 
         districts_repo = DistrictsRepository(self._session)
-        district = await districts_repo.get_by_name(district_name)
-        if district is None:
-            district = await districts_repo.create_district(district_name)
-        return district
+        # Сайты пишут по-разному («Старий Тбилиси»): ищем и по словарным названиям (TASK-019)
+        for candidate in dict.fromkeys([district_name, *district_names(district_name).values()]):
+            district = await districts_repo.get_by_name(candidate)
+            if district is not None:
+                return district
+        return await districts_repo.create_district(district_name)
 
 
 def listing_text_of(listing: Listing, language: str) -> str:
