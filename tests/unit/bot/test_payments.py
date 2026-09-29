@@ -197,7 +197,7 @@ async def test_paysupport(harness: BotHarness) -> None:
     assert "Вопросы по оплате" in harness.last_text()
 
 
-async def test_favorites_limit_on_free_plan(harness: BotHarness) -> None:
+async def test_favorites_unlimited_on_free_plan(harness: BotHarness) -> None:
     await harness.send("/start")
     district = harness.store.add_district("Ваке")
     listings = [harness.store.add_listing(district) for _ in range(21)]
@@ -207,12 +207,6 @@ async def test_favorites_limit_on_free_plan(harness: BotHarness) -> None:
 
     await harness.press(FavoriteToggleCallback(listing_id=listings[20].id).pack())
 
-    assert len(harness.store.favorites) == 20
-    [answer] = harness.telegram.of(AnswerCallbackQuery)
-    assert answer.show_alert
-    assert "/premium" in (answer.text or "")
-
-    # С Premium ограничения нет
-    await pay(harness)
-    await harness.press(FavoriteToggleCallback(listing_id=listings[20].id).pack())
     assert len(harness.store.favorites) == 21
+    [answer] = harness.telegram.of(AnswerCallbackQuery)
+    assert not answer.show_alert

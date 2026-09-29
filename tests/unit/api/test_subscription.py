@@ -30,35 +30,22 @@ def patch_subscription(monkeypatch: pytest.MonkeyPatch, store: Store) -> None:
     monkeypatch.setattr(subscription, "SavedSearchesRepository", Searches)
 
 
-async def test_favorites_limit_returns_402(
+async def test_favorites_unlimited_on_free_plan(
     client: AsyncClient, store: Store, auth: dict[str, str]
 ) -> None:
     district = store.add_district("Ваке")
-    ids = [str(store.add_listing(district).id) for _ in range(21)]
-    for listing_id in ids[:20]:
+    ids = [str(store.add_listing(district).id) for _ in range(25)]
+    for listing_id in ids:
         response = await client.post(
             "/api/favorites", json={"listing_id": listing_id}, headers=auth
         )
         assert response.status_code == 201
 
-    over = await client.post("/api/favorites", json={"listing_id": ids[20]}, headers=auth)
-    assert over.status_code == 402
-    assert over.json()["error"]["code"] == "payment_required"
-    # Уже избранное — не ошибка
-    again = await client.post("/api/favorites", json={"listing_id": ids[0]}, headers=auth)
-    assert again.status_code == 201
-
-    user = store.users[555]
-    user.subscription_tier = SubscriptionTier.NOMAD
-    user.subscription_expires_at = datetime.now(UTC) + timedelta(days=1)
-    premium = await client.post("/api/favorites", json={"listing_id": ids[20]}, headers=auth)
-    assert premium.status_code == 201
-
 
 async def test_subscription_and_me(client: AsyncClient, store: Store, auth: dict[str, str]) -> None:
     body = (await client.get("/api/subscription", headers=auth)).json()
     assert body["tier"] == "free"
-    assert body["limits"] == {"favorites": 20, "searches": 1}
+    assert body["limits"] == {"favorites": None, "searches": 1}
     assert body["plans"][0]["price_stars"] == 250
 
     user = store.users[555]
