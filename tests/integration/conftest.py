@@ -38,6 +38,7 @@ MIGRATIONS = (
     "district_names",
     "text_languages",
     "clean_html_texts",
+    "listing_checked_at",
 )
 
 

@@ -50,7 +50,6 @@ def render_premium(user: User, plans: dict[str, Plan], now: datetime) -> str:
         language,
         "premium_info",
         status=status,
-        free_favorites=FREE_LIMITS.favorites,
         free_searches=FREE_LIMITS.searches,
         premium_searches=PREMIUM_LIMITS.searches,
         price=plan.price_stars,

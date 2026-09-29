@@ -10,8 +10,12 @@ import structlog
 from bs4 import BeautifulSoup, Tag
 
 from bina.application.listing_details import clean_features
-from bina.application.ports.scraper import RawListing
-from bina.infrastructure.scrapers.base_scraper import BaseWebsiteScraper
+from bina.application.ports.scraper import NeedsDetails, RawListing
+from bina.infrastructure.scrapers.base_scraper import (
+    KNOWN_PAGES_TO_STOP,
+    BaseWebsiteScraper,
+    ListingGoneError,
+)
 from bina.infrastructure.scrapers.details import (
     condition_code,
     owner_type_code,
@@ -61,11 +65,13 @@ class MyHomeScraper(BaseWebsiteScraper):
         self.fetch_details = fetch_details
         self.dump_dir = dump_dir
 
-    async def scrape_listings(self, limit: int) -> list[RawListing]:
+    async def scrape_listings(
+        self, limit: int, needs_details: NeedsDetails | None = None
+    ) -> list[RawListing]:
         """Парсит до ``limit`` объявлений (список + страницы объявлений)."""
         logger.info("Starting MyHome scraping", limit=limit, details=self.fetch_details)
         listings: list[RawListing] = []
-        failures = 0
+        failures = known_pages = 0
 
         for page in range(1, self.max_pages + 1):
             if len(listings) >= limit:
@@ -88,8 +94,11 @@ class MyHomeScraper(BaseWebsiteScraper):
             if not cards:
                 logger.info("No more listings on MyHome", page=page)
                 break
-            for card in cards[: limit - len(listings)]:
-                listings.append(await self.with_details(card, first=not listings))
+            fresh = await self._add_cards(cards, listings, limit, needs_details)
+            known_pages = 0 if fresh or needs_details is None else known_pages + 1
+            if known_pages >= KNOWN_PAGES_TO_STOP:
+                logger.info("No new or changed listings on MyHome, stopping", page=page)
+                break
 
         logger.info("Finished MyHome scraping", total=len(listings))
         return listings
@@ -99,8 +108,8 @@ class MyHomeScraper(BaseWebsiteScraper):
         if not self.fetch_details or not card.url:
             return card
         try:
-            html = await self._fetch_page(card.url)
-        except httpx.HTTPError as exc:
+            html = await self._fetch_page(card.url, expect=card.source_id)
+        except (httpx.HTTPError, ListingGoneError) as exc:
             logger.warning("MyHome detail page failed", url=card.url, error=str(exc))
             return card
         if first:
@@ -369,6 +378,9 @@ def _statement_details(item: dict[str, Any]) -> dict[str, Any]:
         details["owner_name"] = owner
     details.update(_statement_extras(item))
     details["has_details"] = True
+    if item.get("is_active") is False:
+        # Снято владельцем или истёк срок
+        details["active"] = False
     return details
 
 

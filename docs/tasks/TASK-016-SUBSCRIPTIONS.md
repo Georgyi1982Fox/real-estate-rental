@@ -5,7 +5,7 @@
 ## Тарифы
 | | Бесплатно | Premium |
 |---|---|---|
-| Избранное | до 20 | без ограничений |
+| Избранное | без ограничений | без ограничений |
 | Сохранённые поиски (с уведомлениями) | 1 | до 20 |
 | Цена | — | 250 ⭐ за 30 дней |
 
@@ -41,7 +41,7 @@ POST /api/subscription/invoice   тело { plan: "premium_month" } → { url }
 ```json
 {
   "tier": "free", "is_premium": false, "expires_at": null,
-  "limits": { "favorites": 20, "searches": 1 },
+  "limits": { "favorites": null, "searches": 1 },
   "usage": { "favorites": 3, "searches": 1 },
   "plans": [{ "id": "premium_month", "tier": "nomad", "days": 30, "price_stars": 250 }]
 }

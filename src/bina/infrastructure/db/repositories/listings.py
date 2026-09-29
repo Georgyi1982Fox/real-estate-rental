@@ -178,8 +178,10 @@ class ListingsRepository(IListingsRepository):
             "url": raw_listing.url or None,
             "phone": raw_listing.phone,
             "owner_name": raw_listing.owner_name,
-            "status": ListingStatus.ACTIVE,
+            # Страница объявления может сказать, что оно уже снято
+            "status": ListingStatus.ACTIVE if raw_listing.active else ListingStatus.ARCHIVED,
             "is_deleted": False,
+            "checked_at": datetime.now(UTC),
         }
 
         listing = await self.find_by_source(raw_listing.source_id, raw_listing.source_name)
@@ -230,6 +232,27 @@ class ListingsRepository(IListingsRepository):
 
         await self._session.flush()  # ID нужен для embeddings
         return listing
+
+    async def source_snapshot(self, source_name: str) -> list[Any]:
+        """Цена, статус и даты всех объявлений источника (строки ``source_id, ...``)."""
+        query = select(
+            Listing.source_id,
+            Listing.price,
+            Listing.status,
+            Listing.details_fetched_at,
+            Listing.source_updated_at,
+        ).where(Listing.source_name == source_name, Listing.is_deleted.is_(False))
+        return list((await self._session.execute(query)).all())
+
+    async def mark_checked(self, source_name: str, source_ids: list[str]) -> None:
+        """Объявления видели на сайте сейчас (в списке): откладывает их повторную проверку."""
+        if not source_ids:
+            return
+        await self._session.execute(
+            update(Listing)
+            .where(Listing.source_name == source_name, Listing.source_id.in_(source_ids))
+            .values(checked_at=datetime.now(UTC))
+        )
 
     async def search_created_since(
         self, filters: ListingSearchFilters, since: datetime, limit: int

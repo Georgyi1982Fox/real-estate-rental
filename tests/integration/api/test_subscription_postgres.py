@@ -56,7 +56,7 @@ async def test_free_limits_and_premium(
 ) -> None:
     body = (await client.get("/api/subscription", headers=HEADERS)).json()
     assert (body["tier"], body["is_premium"], body["expires_at"]) == ("free", False, None)
-    assert body["limits"] == {"favorites": 20, "searches": 1}
+    assert body["limits"] == {"favorites": None, "searches": 1}
     assert body["usage"] == {"favorites": 0, "searches": 0}
     assert body["plans"] == [{"id": PREMIUM_MONTH, "tier": "nomad", "days": 30, "price_stars": 250}]
 

@@ -12,15 +12,17 @@ from typing import Any
 
 import httpx
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bina.application.ports.scraper import RawListing
 from bina.application.ports.translator import ListingText
 from bina.infrastructure.api.server import create_app
 from bina.infrastructure.api.settings import ApiSettings
-from bina.infrastructure.db.models import ListingStatus
+from bina.infrastructure.db.models import Listing, ListingStatus
 from bina.infrastructure.db.repositories.listings import ListingsRepository
 from bina.infrastructure.scrapers.backfill import backfill_details
+from bina.infrastructure.scrapers.base_scraper import ListingGoneError
 from bina.infrastructure.scrapers.ss_scraper import SSScraper
 
 NOW = datetime.now(UTC).replace(microsecond=0)
@@ -172,14 +174,19 @@ class FakeSite(SSScraper):
         super().__init__(delay_seconds=0)
         self.requested: list[str] = []
 
-    async def _fetch_page(self, url: str) -> str:
+    async def _fetch_page(self, url: str, expect: str | None = None) -> str:
         self.requested.append(url)
         if url.endswith("gone"):
             request = httpx.Request("GET", url)
             raise httpx.HTTPStatusError(
                 "404", request=request, response=httpx.Response(404, request=request)
             )
-        return SS_DETAIL.read_text(encoding="utf-8")
+        if url.endswith("moved"):
+            raise ListingGoneError(url, "https://home.ss.ge/ru/search")
+        html = SS_DETAIL.read_text(encoding="utf-8")
+        if url.endswith("inactive"):
+            html = html.replace('"isInactiveApplication": false', '"isInactiveApplication": true')
+        return html
 
 
 async def test_backfill_details(
@@ -211,6 +218,48 @@ async def test_backfill_details(
     assert gone.status == ListingStatus.ARCHIVED
 
     # Второй запуск: делать больше нечего
+    again = await backfill_details(session_factory, {"ss": FakeSite()}, limit=10)
+    assert again.checked == 0
+
+
+async def test_recheck_archives_listings_removed_from_site(
+    session: AsyncSession, session_factory: async_sessionmaker[AsyncSession]
+) -> None:
+    """Давно не виденные в списке объявления проверяются заново; снятые уходят в архив."""
+    repository = ListingsRepository(session)
+    for source_id in ("alive", "gone", "moved", "inactive", "recent"):
+        await repository.create_or_update_from_raw(detailed(source_id))
+    await session.commit()
+    await session.execute(
+        update(Listing)
+        .where(Listing.source_id != "recent")
+        .values(checked_at=NOW - timedelta(days=5))
+    )
+    await session.commit()
+
+    site = FakeSite()
+    stats = await backfill_details(
+        session_factory, {"ss": site}, limit=10, recheck_before=NOW - timedelta(days=3)
+    )
+
+    assert (stats.checked, stats.updated, stats.archived, stats.failed) == (4, 1, 3, 0)
+    assert not any(url.endswith("recent") for url in site.requested)
+    session.expire_all()
+    status = {
+        source_id: (await repository.find_by_source(source_id, "ss"))
+        for source_id in ("alive", "gone", "moved", "inactive", "recent")
+    }
+    assert {key: listing.status for key, listing in status.items() if listing} == {
+        "alive": ListingStatus.ACTIVE,
+        "gone": ListingStatus.ARCHIVED,
+        "moved": ListingStatus.ARCHIVED,
+        "inactive": ListingStatus.ARCHIVED,
+        "recent": ListingStatus.ACTIVE,
+    }
+    alive = status["alive"]
+    assert alive is not None and alive.checked_at is not None and alive.checked_at > NOW
+
+    # Без recheck_before объявления с подробностями не трогаются
     again = await backfill_details(session_factory, {"ss": FakeSite()}, limit=10)
     assert again.checked == 0
 

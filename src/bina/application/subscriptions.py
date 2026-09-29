@@ -1,6 +1,7 @@
 """Тарифы, лимиты и продление подписки (TASK-026).
 
-Бесплатный тариф ограничивает избранное и сохранённые поиски, Premium их снимает.
+Избранное без ограничений на всех тарифах; бесплатный тариф ограничивает
+сохранённые поиски, Premium даёт их больше.
 Подписка оплачивается звёздами Telegram (XTR) и продлевается от даты окончания
 текущей, если она ещё действует.
 """
@@ -39,7 +40,7 @@ class Limits:
     searches: int
 
 
-FREE_LIMITS = Limits(favorites=20, searches=1)
+FREE_LIMITS = Limits(favorites=None, searches=1)
 PREMIUM_LIMITS = Limits(favorites=None, searches=20)
 
 
