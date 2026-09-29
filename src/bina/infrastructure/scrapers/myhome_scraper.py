@@ -9,8 +9,16 @@ import httpx
 import structlog
 from bs4 import BeautifulSoup, Tag
 
+from bina.application.listing_details import clean_features
 from bina.application.ports.scraper import RawListing
 from bina.infrastructure.scrapers.base_scraper import BaseWebsiteScraper
+from bina.infrastructure.scrapers.details import (
+    condition_code,
+    owner_type_code,
+    to_datetime,
+    to_float,
+    to_int,
+)
 from bina.infrastructure.scrapers.nextjs import next_data, walk
 from bina.infrastructure.scrapers.settings import MyHomeSelectors, MyHomeSettings
 
@@ -81,12 +89,12 @@ class MyHomeScraper(BaseWebsiteScraper):
                 logger.info("No more listings on MyHome", page=page)
                 break
             for card in cards[: limit - len(listings)]:
-                listings.append(await self._with_details(card, first=not listings))
+                listings.append(await self.with_details(card, first=not listings))
 
         logger.info("Finished MyHome scraping", total=len(listings))
         return listings
 
-    async def _with_details(self, card: RawListing, *, first: bool) -> RawListing:
+    async def with_details(self, card: RawListing, *, first: bool = False) -> RawListing:
         """Дополняет карточку данными со страницы объявления (при ошибке оставляет как есть)."""
         if not self.fetch_details or not card.url:
             return card
@@ -143,6 +151,7 @@ class MyHomeScraper(BaseWebsiteScraper):
             url=self.base_url + path,
             photos=_statement_photos(item),
             owner_name=str(item.get("user_title") or "").strip() or None,
+            **_statement_extras(item),
         )
 
     def _parse_listings_html(self, html: str) -> list[RawListing]:
@@ -180,6 +189,14 @@ class MyHomeScraper(BaseWebsiteScraper):
         return listings
 
     # ---------------------------------------------------------------- detail page
+
+    def details_from_html(self, html: str) -> dict[str, Any] | None:
+        """Поля ``RawListing`` со страницы объявления; None — страница не разобрана."""
+        try:
+            details = self._parse_detail(html)
+        except (ValueError, AttributeError):
+            return None
+        return details or None
 
     def _parse_detail(self, html: str) -> dict[str, Any]:
         """Поля со страницы объявления; отсутствующие на странице не возвращаются."""
@@ -350,4 +367,79 @@ def _statement_details(item: dict[str, Any]) -> dict[str, Any]:
             break
     if owner := str(item.get("user_title") or item.get("owner_name") or "").strip():
         details["owner_name"] = owner
+    details.update(_statement_extras(item))
+    details["has_details"] = True
     return details
+
+
+# Параметры (``parameters[].key``) страницы объявления → наши коды удобств
+_MYHOME_FEATURES: dict[str, str] = {
+    "furniture": "furniture",
+    "kitchen": "kitchen_appliances",
+    "conditioner": "air_conditioning",
+    "air_conditioner": "air_conditioning",
+    "heating": "heating",
+    "hot_water": "hot_water",
+    "washing_machine": "washing_machine",
+    "dishwasher": "dishwasher",
+    "refrigerator": "fridge",
+    "tv": "tv",
+    "internet": "internet",
+    "wifi": "internet",
+    "gas": "gas",
+    "elevator": "elevator",
+    "lift": "elevator",
+    "parking": "parking",
+    "garage": "parking",
+    "balcony": "balcony",
+    "loggia": "balcony",
+    "storeroom": "storage",
+    "pool": "pool",
+    "swimming_pool": "pool",
+    "pets": "pets_allowed",
+    "pets_allowed": "pets_allowed",
+    "alarm": "security",
+    "security": "security",
+}
+
+
+def _statement_extras(item: dict[str, Any]) -> dict[str, Any]:
+    """Этажи, спальни, удобства, состояние, адрес, даты (из списка и страницы объявления)."""
+    extras: dict[str, Any] = {}
+    user_type = item.get("user_type")
+    for key, value in (
+        ("floor", to_int(item.get("floor"))),
+        ("total_floors", to_int(item.get("total_floors"))),
+        ("bedrooms", to_int(item.get("bedroom"))),
+        ("condition", condition_code(item.get("condition"))),
+        (
+            "owner_type",
+            owner_type_code(user_type.get("type") if isinstance(user_type, dict) else None),
+        ),
+        ("address", str(item.get("address") or "").strip() or None),
+        ("latitude", to_float(item.get("lat"))),
+        ("longitude", to_float(item.get("lng"))),
+        ("published_at", to_datetime(item.get("created_at"))),
+        ("updated_at", to_datetime(item.get("last_updated"))),
+    ):
+        if value is not None:
+            extras[key] = value
+
+    parameters = item.get("parameters")
+    if isinstance(parameters, list) and parameters:
+        codes = [
+            _MYHOME_FEATURES[str(parameter.get("key"))]
+            for parameter in parameters
+            if isinstance(parameter, dict) and str(parameter.get("key")) in _MYHOME_FEATURES
+        ]
+        if to_int(item.get("balconies")):
+            codes.append("balcony")
+        for key, code in (
+            ("heating_type_id", "heating"),
+            ("hot_water_type_id", "hot_water"),
+            ("parking_type_id", "parking"),
+        ):
+            if item.get(key):
+                codes.append(code)
+        extras["features"] = clean_features(codes)
+    return extras

@@ -1,15 +1,17 @@
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
 import pytest
 
+from bina.application.ports.scraper import RawListing
 from bina.infrastructure.scrapers.ss_scraper import SSScraper
 
 
 @pytest.fixture
 def ss_scraper() -> SSScraper:
-    """Фикстура для SS парсера."""
-    return SSScraper(delay_seconds=0)
+    """Фикстура для SS парсера (только страницы списка)."""
+    return SSScraper(delay_seconds=0, fetch_details=False)
 
 
 @pytest.mark.asyncio
@@ -158,3 +160,82 @@ def test_rooms_fallback_to_bedrooms() -> None:
     assert _rooms("Аренда 3-комнатная Квартира", 2) == 3
     assert _rooms("Аренда Квартира", 2) == 3
     assert _rooms("Аренда Квартира", None) == 1
+
+
+DETAIL_HTML = Path("tests/unit/infrastructure/scrapers/test_data/ss_detail.html")
+
+
+@pytest.mark.asyncio
+async def test_ss_detail_page_adds_everything() -> None:
+    """Страница объявления (реальная, сокращённая): полное описание, удобства, этажи."""
+    scraper = SSScraper(delay_seconds=0)
+    card = RawListing(
+        source_id="36583130",
+        source_name="ss",
+        title="Аренда 2-комнатная Квартира. Сололаки",
+        description="Сдается комфортная… (обрезано)",
+        price=2610,
+        currency="GEL",
+        rooms=2,
+        area=68,
+        district="Сололаки",
+        url="https://home.ss.ge/ru/detail",
+    )
+    requested: list[str] = []
+
+    async def fetch(url: str) -> str:
+        requested.append(url)
+        return DETAIL_HTML.read_text(encoding="utf-8")
+
+    setattr(scraper, "_fetch_page", fetch)
+    listing = await scraper.with_details(card)
+
+    assert requested == ["https://home.ss.ge/ru/detail"]
+    assert listing.has_details
+    assert listing.description.startswith("Сдается комфортная, отремонтированная квартира")
+    assert len(listing.description) > 500
+    assert set(listing.descriptions) == {"ka", "en"}
+    assert listing.descriptions["ka"].startswith("ქირავდება")
+    assert listing.phone == "595000000"
+    assert (listing.owner_name, listing.owner_type) == ("სალომე", "owner")
+    assert (listing.floor, listing.total_floors, listing.bedrooms, listing.bathrooms) == (
+        4,
+        4,
+        1,
+        1,
+    )
+    assert listing.condition == "newly_renovated"
+    assert listing.features == [
+        "furniture",
+        "air_conditioning",
+        "heating",
+        "hot_water",
+        "washing_machine",
+        "fridge",
+        "tv",
+        "internet",
+        "gas",
+        "storage",
+    ]
+    assert listing.address == "ул. Мачабели 6"
+    assert listing.latitude == pytest.approx(41.6917456)
+    assert listing.updated_at == datetime(2026, 9, 28, 6, 4, 32, 440921, tzinfo=UTC)
+    assert listing.photos[0].endswith(".jpg") and "_Thumb" not in listing.photos[0]
+
+
+@pytest.mark.asyncio
+async def test_ss_detail_page_failure_keeps_card() -> None:
+    scraper = SSScraper(delay_seconds=0)
+    card = RawListing("1", "ss", "t", "d", 1000, "GEL", 2, 50, "Ваке", "https://x/1")
+
+    async def fail(url: str) -> str:
+        raise httpx.ConnectError("down")
+
+    setattr(scraper, "_fetch_page", fail)
+    assert await scraper.with_details(card) is card
+
+    async def junk(url: str) -> str:
+        return "<html>no data</html>"
+
+    setattr(scraper, "_fetch_page", junk)
+    assert (await scraper.with_details(card)).has_details is False

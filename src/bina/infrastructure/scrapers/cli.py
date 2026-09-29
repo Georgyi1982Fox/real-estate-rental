@@ -4,7 +4,7 @@ import asyncio
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import click
 import structlog
@@ -31,6 +31,7 @@ from bina.infrastructure.db.session.manager import DatabaseManager
 from bina.infrastructure.llm.fraud_analyzer import LLMFraudAnalyzer
 from bina.infrastructure.llm.llm_factory import LLMFactory
 from bina.infrastructure.llm.translator import LLMTranslator
+from bina.infrastructure.scrapers.backfill import BackfillStats, DetailsSource, backfill_details
 from bina.infrastructure.scrapers.myhome_scraper import MyHomeScraper
 from bina.infrastructure.scrapers.pipeline import ScrapeResult, run_scrape
 from bina.infrastructure.scrapers.scheduler import ScraperScheduler
@@ -58,7 +59,7 @@ def make_scraper(source: str, *, details: bool, dump_dir: Path | None) -> BaseSc
     if source == "myhome":
         return MyHomeScraper(**common, fetch_details=details, dump_dir=dump_dir)  # type: ignore[arg-type]
     if source == "ss":
-        return SSScraper(**common, dump_dir=dump_dir)  # type: ignore[arg-type]
+        return SSScraper(**common, fetch_details=details, dump_dir=dump_dir)  # type: ignore[arg-type]
     raise click.BadParameter(f"unknown source {source!r}")
 
 
@@ -258,6 +259,31 @@ async def check_fraud(limit: int) -> FraudStats:
     return FraudStats(checked=checked, suspicious=suspicious, hidden=hidden, failed=failed)
 
 
+async def fill_details(limit: int) -> BackfillStats:
+    """Загружает страницы объявлений, собранных без подробностей (до ``limit``)."""
+    db = DatabaseManager()
+    scrapers = {source: make_scraper(source, details=True, dump_dir=None) for source in SOURCES}
+    try:
+        return await backfill_details(
+            db.session_factory,
+            {source: cast(DetailsSource, scraper) for source, scraper in scrapers.items()},
+            limit,
+        )
+    finally:
+        for scraper in scrapers.values():
+            close = getattr(scraper, "close", None)
+            if close is not None:
+                await close()
+        await db.dispose()
+
+
+def _echo_details(stats: BackfillStats) -> None:
+    click.echo(
+        f"подробности: проверено {stats.checked}, обновлено {stats.updated}, "
+        f"снято с сайта {stats.archived}, ошибок {stats.failed}"
+    )
+
+
 def _echo_fraud(stats: FraudStats) -> None:
     click.echo(
         f"антифрод: проверено {stats.checked}, подозрительных {stats.suspicious}, "
@@ -354,6 +380,13 @@ def translate_command(limit: int) -> None:
         raise click.ClickException(BUSY_MESSAGE) from exc
 
 
+@cli.command(name="details")
+@click.option("--limit", default=100, show_default=True, type=click.IntRange(1, 5000))
+def details_command(limit: int) -> None:
+    """Дозагрузить подробности (описание, удобства, этажи) для уже собранных объявлений."""
+    _echo_details(asyncio.run(fill_details(limit)))
+
+
 @cli.command(name="fraud")
 @click.option("--limit", default=50, show_default=True, type=click.IntRange(1, 5000))
 def fraud_command(limit: int) -> None:
@@ -392,6 +425,13 @@ def fraud_command(limit: int) -> None:
     help="Максимум объявлений для перевода за запуск.",
 )
 @click.option(
+    "--details-limit",
+    default=100,
+    show_default=True,
+    type=click.IntRange(0, 5000),
+    help="Сколько старых объявлений без подробностей дозагрузить за запуск (0 — не надо).",
+)
+@click.option(
     "--fraud-limit",
     default=200,
     show_default=True,
@@ -399,7 +439,12 @@ def fraud_command(limit: int) -> None:
     help="Максимум объявлений для проверки на мошенничество за запуск (с --translate).",
 )
 def schedule(
-    interval: int, limit: int, with_translation: bool, translate_limit: int, fraud_limit: int
+    interval: int,
+    limit: int,
+    with_translation: bool,
+    translate_limit: int,
+    details_limit: int,
+    fraud_limit: int,
 ) -> None:
     """Парсить все источники по расписанию (первый запуск сразу, Ctrl+C: стоп)."""
     if with_translation and not llm_configured():
@@ -415,6 +460,11 @@ def schedule(
             _echo_results(results)
         except Exception as exc:  # noqa: BLE001 - ошибка одного запуска не останавливает расписание
             logger.error("Scheduled scrape failed", error=str(exc))
+        if details_limit:
+            try:
+                _echo_details(await fill_details(details_limit))
+            except Exception as exc:  # noqa: BLE001 - сбой дозагрузки не останавливает расписание
+                logger.error("Scheduled details backfill failed", error=str(exc))
         if with_translation:
             try:
                 _echo_translation(await translate(translate_limit))

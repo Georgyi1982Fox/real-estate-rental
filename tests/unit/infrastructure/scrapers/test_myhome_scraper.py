@@ -1,6 +1,7 @@
 """Парсер MyHome.ge на HTML-фикстурах (без сети)."""
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -131,6 +132,7 @@ def test_parse_next_data_detail_page(scraper: MyHomeScraper) -> None:
         "photos": ["https://img/1.webp"],
         "phone": "+995555123456",
         "owner_name": "Нино",
+        "has_details": True,
     }
 
 
@@ -295,3 +297,34 @@ async def test_dump_saves_raw_html(monkeypatch: pytest.MonkeyPatch, tmp_path: Pa
 
     assert (tmp_path / "raw" / "myhome_list.html").read_text(encoding="utf-8") == LIST_HTML
     assert (tmp_path / "raw" / "myhome_detail.html").read_text(encoding="utf-8") == DETAIL_HTML
+
+
+def test_real_detail_page_extras(scraper: MyHomeScraper) -> None:
+    """Реальная страница объявления MyHome (сокращённая): этажи, удобства, адрес, даты."""
+    html = Path("tests/unit/infrastructure/scrapers/test_data/myhome_detail_full.html").read_text(
+        encoding="utf-8"
+    )
+    details = scraper._parse_detail(html)
+
+    assert details["has_details"] is True
+    assert (details["floor"], details["total_floors"]) == (4, 9)
+    assert details["condition"] == "newly_renovated"
+    assert details["owner_type"] == "agent"
+    assert details["address"] == "ცაგარელის ქუჩა 26"
+    assert details["latitude"] == pytest.approx(41.723501)
+    assert details["features"] == [
+        "furniture",
+        "kitchen_appliances",
+        "air_conditioning",
+        "heating",
+        "hot_water",
+        "washing_machine",
+        "fridge",
+        "tv",
+        "internet",
+        "gas",
+        "balcony",
+    ]
+    assert details["published_at"] == datetime(2026, 7, 6, 12, 18, 18, tzinfo=UTC)
+    assert details["updated_at"] == datetime(2026, 9, 27, 8, 8, 19, tzinfo=UTC)
+    assert "phone" not in details  # номер на странице скрыт звёздочками

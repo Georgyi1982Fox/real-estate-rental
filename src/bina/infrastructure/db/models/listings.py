@@ -120,6 +120,30 @@ class Listing(Base, SoftDeleteMixin):
         default=0,
         nullable=False,
     )
+    # TASK-018: подробности со страницы объявления (None — источник не дал)
+    floor: Mapped[int | None] = mapped_column(nullable=True)
+    total_floors: Mapped[int | None] = mapped_column(nullable=True)
+    bedrooms: Mapped[int | None] = mapped_column(nullable=True)
+    bathrooms: Mapped[int | None] = mapped_column(nullable=True)
+    # Коды из bina.application.listing_details
+    condition: Mapped[str | None] = mapped_column(String, nullable=True)
+    features: Mapped[list[str]] = mapped_column(
+        JSON, default=list, server_default=text("'[]'"), nullable=False
+    )
+    owner_type: Mapped[str | None] = mapped_column(String, nullable=True)
+    address: Mapped[str | None] = mapped_column(String, nullable=True)
+    latitude: Mapped[float | None] = mapped_column(nullable=True)
+    longitude: Mapped[float | None] = mapped_column(nullable=True)
+    source_published_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    source_updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    # Когда загружена страница объявления; None — только данные из списка
+    details_fetched_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     # TASK-011: коды причин (bina.application.ports.fraud.REASONS) и время проверки;
     # None — ещё не проверено (или текст/цена изменились и нужна новая проверка)
     fraud_reasons: Mapped[list[str]] = mapped_column(

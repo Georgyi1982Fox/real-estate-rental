@@ -42,6 +42,9 @@ class ListingDeduplicator:
                     new_price=listing.price,
                 )
                 unique_listings.append(listing)
+            elif details_changed(existing_listing, listing):
+                # Появились подробности со страницы объявления или сайт обновил объявление
+                unique_listings.append(listing)
             else:
                 # Дубликат с той же ценой - пропускаем
                 logger.debug(
@@ -59,3 +62,14 @@ class ListingDeduplicator:
             listing.source_id,
             listing.source_name,
         )
+
+
+def details_changed(existing: ListingModel, listing: RawListing) -> bool:
+    """Нужно ли пересохранить объявление, хотя цена та же (TASK-018).
+
+    Да, если впервые загружена страница объявления или дата обновления на сайте
+    изменилась (владелец поправил текст, фото, удобства).
+    """
+    if listing.has_details and existing.details_fetched_at is None:
+        return True
+    return listing.updated_at is not None and listing.updated_at != existing.source_updated_at

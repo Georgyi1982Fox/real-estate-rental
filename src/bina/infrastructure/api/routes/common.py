@@ -52,6 +52,15 @@ def parse_districts(values: list[str] | None) -> list[UUID]:
     return ids
 
 
+def parse_codes(value: str | None, allowed: tuple[str, ...], name: str) -> tuple[str, ...]:
+    """Коды через запятую (``furniture,elevator``); неизвестный код — 422."""
+    codes = tuple(dict.fromkeys(part.strip() for part in (value or "").split(",") if part.strip()))
+    unknown = [code for code in codes if code not in allowed]
+    if unknown:
+        raise bad_request(f"unknown {name}: {', '.join(unknown)}")
+    return codes
+
+
 def parse_decimal(value: str | None, name: str) -> Decimal | None:
     """Число из query-параметра; пустая строка означает «не задано»."""
     if not value:
