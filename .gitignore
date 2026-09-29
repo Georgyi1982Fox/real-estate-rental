@@ -8,3 +8,6 @@ build/
 .env
 .env.local
 *.db
+
+# Бэкапы базы (TASK-044): только на этом компьютере, не в Git
+backups/
