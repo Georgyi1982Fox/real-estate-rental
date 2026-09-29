@@ -14,8 +14,10 @@ from bina.application.dtos.listing_search import (
     search_filters,
 )
 from bina.application.listing_details import CONDITIONS, FEATURES
+from bina.application.subscriptions import is_premium
+from bina.application.use_cases.analyze_price import AnalyzePriceUseCase
 from bina.application.use_cases.search_listings import SearchListingsUseCase
-from bina.infrastructure.api.dependencies import SessionDep
+from bina.infrastructure.api.dependencies import CurrentUserDep, SessionDep
 from bina.infrastructure.api.routes.common import (
     MAX_PER_PAGE,
     bad_request,
@@ -31,6 +33,7 @@ from bina.infrastructure.api.schemas import (
     ListingsOut,
     ListingsPageOut,
     PhoneOut,
+    PriceAnalysisOut,
     SourceLinkOut,
 )
 from bina.infrastructure.api.validation import clean_text
@@ -142,6 +145,21 @@ async def get_listing(listing_id: str, session: SessionDep) -> ListingOut:
         SourceLinkOut(source=source, url=url) for source, url in links if url != listing.url
     ]
     return out
+
+
+@router.get("/{listing_id}/price", response_model=PriceAnalysisOut)
+async def price_analysis(
+    listing_id: str, user: CurrentUserDep, session: SessionDep
+) -> PriceAnalysisOut:
+    """Дешевле или дороже обычного для района (TASK-093).
+
+    Оценка — всем; проценты, обычная цена и выборка — только Premium.
+    """
+    listing = await get_listing_or_404(session, listing_id)
+    analysis = await AnalyzePriceUseCase(ListingsRepository(session)).execute(listing)
+    return PriceAnalysisOut.build(
+        analysis, listing.currency, premium=is_premium(user, datetime.now(UTC))
+    )
 
 
 @router.get("/{listing_id}/similar", response_model=ListingsOut)
