@@ -99,14 +99,7 @@ export default function ProfilePage() {
               </li>
             </ul>
           </section>
-          <SubscriptionCard
-            me={profile}
-            onUpgrade={() => {
-              // Оплат пока нет
-              haptic('light');
-              showToast(pt.upgrade_soon, 'info');
-            }}
-          />
+          <SubscriptionCard me={profile} />
         </>
       ) : (
         <ProfileSkeleton />

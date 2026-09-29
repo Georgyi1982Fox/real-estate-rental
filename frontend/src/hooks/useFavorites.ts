@@ -1,10 +1,11 @@
 import { useCallback, useSyncExternalStore } from 'react';
-import { apiDelete, apiGet, apiPost } from '../api/client';
+import { ApiError, apiDelete, apiGet, apiPost } from '../api/client';
 import type { ListingId } from '../api/types';
 import { isSignedOut } from '../lib/session';
 import { getInitData, haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 import { useToast } from '../providers/ToastProvider';
+import { showPremiumPrompt } from './usePremiumPrompt';
 
 // Единственное место работы с избранным; компоненты работают через useFavorites().
 //
@@ -80,7 +81,7 @@ async function syncWithServer(): Promise<void> {
       await apiPost('/api/favorites', { listing_id: id });
       uploaded.push(id);
     } catch {
-      // Объявление удалено (404) или сеть — пропускаем
+      // Объявление удалено (404), лимит тарифа (402) или сеть — пропускаем
     }
   }
   // Изменения, сделанные пока шла синхронизация, не теряем
@@ -148,16 +149,27 @@ export function useFavorites() {
     (id: ListingId) => {
       const key = String(id);
       if (ids.includes(key)) return;
-      // Сразу в интерфейсе, сервер — следом; при ошибке откатываем
+      // Сердечко — сразу, сервер — следом; при ошибке откатываем
       save([...ids, key]);
-      showToast(t.card.added, 'success');
       haptic('light');
-      if (!usesServer()) return;
-      apiPost('/api/favorites', { listing_id: key }).catch(() => {
-        save(ids.filter((item) => item !== key));
-        showToast(t.card.favorite_error, 'error');
-        haptic('error');
-      });
+      if (!usesServer()) {
+        showToast(t.card.added, 'success');
+        return;
+      }
+      // Toast «Добавлено» — только после ответа: на лимите тарифа вместо него будет окно Premium
+      apiPost('/api/favorites', { listing_id: key }).then(
+        () => showToast(t.card.added, 'success'),
+        (error: unknown) => {
+          save(ids.filter((item) => item !== key));
+          if (error instanceof ApiError && error.isPaymentRequired) {
+            haptic('warning');
+            showPremiumPrompt('favorites');
+            return;
+          }
+          showToast(t.card.favorite_error, 'error');
+          haptic('error');
+        },
+      );
     },
     [showToast, t],
   );

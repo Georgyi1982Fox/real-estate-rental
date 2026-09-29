@@ -13,6 +13,7 @@ export const FALLBACK_ME: Me = {
   language: 'ka',
   subscription_tier: 'free',
   subscription_expires_at: null,
+  is_premium: false,
   balance: 0,
   favorites_count: 0,
   created_at: '',

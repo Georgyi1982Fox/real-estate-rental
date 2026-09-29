@@ -193,6 +193,39 @@
     }
   }
 
+  /* ---------- Premium: полоска использования лимита (<progress>) ---------- */
+  .usage-meter__bar {
+    appearance: none;
+    display: block;
+    width: 100%;
+    height: 0.5rem;
+    overflow: hidden;
+    border: 0;
+    border-radius: 9999px;
+    background: var(--surface-hover);
+    color: var(--primary);
+  }
+  .usage-meter__bar::-webkit-progress-bar {
+    border-radius: 9999px;
+    background: var(--surface-hover);
+  }
+  .usage-meter__bar::-webkit-progress-value {
+    border-radius: 9999px;
+    background: var(--primary);
+    transition: width 300ms ease;
+  }
+  .usage-meter__bar::-moz-progress-bar {
+    border-radius: 9999px;
+    background: var(--primary);
+  }
+  /* Лимит исчерпан */
+  .usage-meter__bar--full::-webkit-progress-value {
+    background: var(--accent);
+  }
+  .usage-meter__bar--full::-moz-progress-bar {
+    background: var(--accent);
+  }
+
   /* ---------- Вход (AuthPage) ---------- */
   .telegram-button {
     display: flex;

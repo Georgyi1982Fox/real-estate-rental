@@ -93,11 +93,49 @@ export type SubscriptionTier = 'free' | 'nomad' | 'family' | 'realtor';
 export interface Me {
   telegram_id: number;
   language: Lang;
+  /** Тариф с учётом срока: истёкшая подписка — уже 'free' */
   subscription_tier: SubscriptionTier;
+  /** Только у действующей подписки */
   subscription_expires_at: string | null;
+  is_premium: boolean;
   balance: number;
   favorites_count: number;
   created_at: string;
+}
+
+/** Тарифный план для покупки звёздами Telegram */
+export interface Plan {
+  /** Например, "premium_month" */
+  id: string;
+  tier: SubscriptionTier;
+  days: number;
+  price_stars: number;
+}
+
+/** Лимиты тарифа; null — без ограничения */
+export interface SubscriptionLimits {
+  favorites: number | null;
+  searches: number;
+}
+
+/** GET /api/subscription (нужен X-Telegram-Init-Data, иначе 401) */
+export interface Subscription {
+  /** "nomad" = Premium */
+  tier: SubscriptionTier;
+  is_premium: boolean;
+  expires_at: string | null;
+  limits: SubscriptionLimits;
+  usage: { favorites: number; searches: number };
+  plans: Plan[];
+}
+
+export interface InvoiceRequest {
+  plan: string;
+}
+
+/** Ссылка на счёт для Telegram.WebApp.openInvoice */
+export interface InvoiceResponse {
+  url: string;
 }
 
 export interface UpdateMeRequest {
