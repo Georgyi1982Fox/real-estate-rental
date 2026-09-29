@@ -379,3 +379,11 @@ def test_duplicates_command(monkeypatch: pytest.MonkeyPatch) -> None:
     assert result.exit_code == 0, result.output
     find.assert_awaited_once_with(7)
     assert "дубликаты: проверено 7, склеено 3" in result.output
+
+
+def test_scrape_sources(monkeypatch: pytest.MonkeyPatch) -> None:
+    """TASK-091: Telegram-каналы — только если задан ключ AI."""
+    monkeypatch.delenv("LLM_API_KEY", raising=False)
+    assert scrape_cli.scrape_sources() == ["myhome", "ss"]
+    monkeypatch.setenv("LLM_API_KEY", "test-key")
+    assert scrape_cli.scrape_sources() == ["myhome", "ss", "telegram"]

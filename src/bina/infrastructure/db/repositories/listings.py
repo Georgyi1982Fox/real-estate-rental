@@ -16,6 +16,7 @@ from sqlalchemy import (
     update,
 )
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload
 
@@ -28,7 +29,14 @@ from bina.application.ports.scraper import RawListing
 from bina.application.ports.translator import LANGUAGES, ListingText
 from bina.application.repositories.listings import IListingsRepository
 from bina.application.repositories.notifications import PriceDrop
-from bina.infrastructure.db.models import District, Favorite, Listing, ListingStatus, User
+from bina.infrastructure.db.models import (
+    District,
+    Favorite,
+    Listing,
+    ListingStatus,
+    ScrapeSkip,
+    User,
+)
 from bina.infrastructure.db.repositories.users import premium_now
 
 if TYPE_CHECKING:
@@ -315,6 +323,39 @@ class ListingsRepository(IListingsRepository):
             .order_by(Listing.created_at)
         )
         return [(str(source), str(url)) for source, url in (await self._session.execute(query))]
+
+    async def recent_skips(self, source_name: str, since: datetime) -> set[str]:
+        """ID объявлений источника, пропущенных после ``since`` (TASK-091)."""
+        query = select(ScrapeSkip.source_id).where(
+            ScrapeSkip.source_name == source_name, ScrapeSkip.skipped_at >= since
+        )
+        return set((await self._session.execute(query)).scalars())
+
+    async def add_skips(self, source_name: str, source_ids: list[str]) -> None:
+        """Запомнить пропущенные объявления (повторно разбирать не нужно)."""
+        if not source_ids:
+            return
+        rows = [{"source_name": source_name, "source_id": item} for item in source_ids]
+        await self._session.execute(
+            pg_insert(ScrapeSkip)
+            .values(rows)
+            .on_conflict_do_update(
+                index_elements=["source_name", "source_id"], set_={"skipped_at": func.now()}
+            )
+        )
+
+    async def archive_published_before(self, source_name: str, before: datetime) -> int:
+        """Снять объявления источника, опубликованные раньше ``before`` (старые посты)."""
+        result = await self._session.execute(
+            update(Listing)
+            .where(
+                Listing.source_name == source_name,
+                Listing.status == ListingStatus.ACTIVE,
+                func.coalesce(Listing.source_published_at, Listing.created_at) < before,
+            )
+            .values(status=ListingStatus.ARCHIVED)
+        )
+        return int(result.rowcount or 0)  # type: ignore[attr-defined]
 
     async def mark_checked(self, source_name: str, source_ids: list[str]) -> None:
         """Объявления видели на сайте сейчас (в списке): откладывает их повторную проверку."""

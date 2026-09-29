@@ -100,3 +100,36 @@ class SSSettings:
     MAX_PAGES = int(os.getenv("SS_MAX_PAGES", "20"))
     # В выдачу попадают и другие города (Батуми); 95 — Тбилиси (address.cityId)
     CITY_ID = int(os.getenv("SS_CITY_ID", "95"))
+
+
+# Публичные каналы с арендой в Тбилиси (веб-версия t.me/s/...); группы так не читаются
+DEFAULT_TELEGRAM_CHANNELS = (
+    "Forrentge",
+    "m2tbilis",
+    "kvartiry_tbilisi_ge",
+    "nestydnye_kvartiry_tbilisi",
+    "tbilisi_kvartiry",
+    "kvartiry_tbilisi_arenda",
+    "kvartiry_tbili_city",
+    "ApartameniTbilisi",
+    "kvartiry_v_tbilisii",
+)
+
+
+class TelegramSettings:
+    """Telegram-каналы как источник объявлений (TASK-091)."""
+
+    BASE_URL = os.getenv("TELEGRAM_BASE_URL", "https://t.me")
+    # Через запятую; пусто — список по умолчанию, "-" — не читать каналы
+    CHANNELS: tuple[str, ...] = tuple(
+        name.strip().lstrip("@")
+        for name in (os.getenv("TELEGRAM_CHANNELS") or ",".join(DEFAULT_TELEGRAM_CHANNELS)).split(
+            ","
+        )
+        if name.strip() and name.strip() != "-"
+    )
+    # Страниц (по ~20 постов) с канала за запуск и возраст постов, которые берём
+    MAX_PAGES = int(os.getenv("TELEGRAM_MAX_PAGES", "5"))
+    MAX_AGE_DAYS = int(os.getenv("TELEGRAM_MAX_AGE_DAYS", "21"))
+    # Пока приложение только по одному городу (TASK-079)
+    CITY = os.getenv("TELEGRAM_CITY", "Tbilisi")
