@@ -7,6 +7,7 @@ from .favorites import Favorite
 from .listings import Listing, ListingStatus
 from .notifications import Notification, NotificationType, SavedSearch
 from .payments import Payment
+from .scrape_skips import ScrapeSkip
 from .users import User
 
 __all__ = [
@@ -20,6 +21,7 @@ __all__ = [
     "NotificationType",
     "Payment",
     "SavedSearch",
+    "ScrapeSkip",
     "SoftDeleteMixin",
     "TimestampMixin",
     "User",

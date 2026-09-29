@@ -30,21 +30,26 @@ from bina.infrastructure.db.repositories.notifications import (
 )
 from bina.infrastructure.db.session.manager import DatabaseManager
 from bina.infrastructure.llm.fraud_analyzer import LLMFraudAnalyzer
+from bina.infrastructure.llm.listing_extractor import LLMListingExtractor
 from bina.infrastructure.llm.llm_factory import LLMFactory
 from bina.infrastructure.llm.translator import LLMTranslator
 from bina.infrastructure.scrapers.backfill import BackfillStats, DetailsSource, backfill_details
 from bina.infrastructure.scrapers.myhome_scraper import MyHomeScraper
 from bina.infrastructure.scrapers.pipeline import ScrapeResult, run_scrape
 from bina.infrastructure.scrapers.scheduler import ScraperScheduler
-from bina.infrastructure.scrapers.settings import ScraperSettings
+from bina.infrastructure.scrapers.settings import ScraperSettings, TelegramSettings
 from bina.infrastructure.scrapers.ss_scraper import SSScraper
+from bina.infrastructure.scrapers.telegram_scraper import TelegramChannelScraper
 
 if TYPE_CHECKING:
     from aiogram.client.default import DefaultBotProperties
 
 logger = structlog.get_logger(__name__)
 
+# Сайты (у них есть страницы объявлений для дозагрузки и перепроверки)
 SOURCES = ("myhome", "ss")
+# TASK-091: публичные Telegram-каналы (нужен AI: LLM_API_KEY)
+TELEGRAM = "telegram"
 # Перевод коммитится пачками: сбой посередине не теряет уже сделанное
 TRANSLATE_BATCH = 20
 # Сколько объявлений AI переводит/проверяет одновременно (LLM_CONCURRENCY)
@@ -65,7 +70,19 @@ def make_scraper(source: str, *, details: bool, dump_dir: Path | None) -> BaseSc
         return MyHomeScraper(**common, fetch_details=details, dump_dir=dump_dir)  # type: ignore[arg-type]
     if source == "ss":
         return SSScraper(**common, fetch_details=details, dump_dir=dump_dir)  # type: ignore[arg-type]
+    if source == TELEGRAM:
+        # Без AI посты не разобрать: карточки без цены отбросит нормализатор
+        extractor = LLMListingExtractor(LLMFactory.create_provider()) if details else None
+        return TelegramChannelScraper(extractor, **common)  # type: ignore[arg-type]
     raise click.BadParameter(f"unknown source {source!r}")
+
+
+def scrape_sources() -> list[str]:
+    """Источники парсинга по расписанию: сайты и, если есть AI и каналы, Telegram."""
+    sources = list(SOURCES)
+    if llm_configured() and TelegramSettings.CHANNELS:
+        sources.append(TELEGRAM)
+    return sources
 
 
 async def scrape(
@@ -92,6 +109,8 @@ async def scrape(
                         LLMFactory() if embeddings else None,
                     )
                 )
+                if source == TELEGRAM:
+                    await _archive_old_posts(db)
             finally:
                 close = getattr(scraper, "close", None)
                 if close is not None:
@@ -104,7 +123,7 @@ async def scrape(
 @click.group(invoke_without_command=True)
 @click.option(
     "--source",
-    type=click.Choice([*SOURCES, "all"]),
+    type=click.Choice([*SOURCES, TELEGRAM, "all"]),
     help="Источник объявлений.",
 )
 @click.option(
@@ -147,9 +166,9 @@ def cli(
     if ctx.invoked_subcommand is not None:
         return
     if source is None:
-        raise click.UsageError("Укажите --source (myhome, ss или all)")
+        raise click.UsageError("Укажите --source (myhome, ss, telegram или all)")
 
-    sources = list(SOURCES) if source == "all" else [source]
+    sources = scrape_sources() if source == "all" else [source]
     results = asyncio.run(
         scrape(sources, limit, details=details, embeddings=embeddings, dump_dir=dump_dir)
     )
@@ -163,6 +182,16 @@ def llm_configured() -> bool:
 
 class TranslationBusyError(RuntimeError):
     """Перевод уже идёт в другом процессе (например, в сервисе ``scraper``)."""
+
+
+async def _archive_old_posts(db: DatabaseManager) -> None:
+    """Посты каналов живут в канале вечно: объявления старше срока снимаются (TASK-091)."""
+    before = datetime.now(UTC) - timedelta(days=TelegramSettings.MAX_AGE_DAYS)
+    async with db.session_factory() as session:
+        archived = await ListingsRepository(session).archive_published_before(TELEGRAM, before)
+        await session.commit()
+    if archived:
+        logger.info("Old Telegram posts archived", count=archived)
 
 
 async def translate(limit: int) -> TranslationStats:
@@ -524,7 +553,7 @@ def schedule(
 
     async def job() -> None:
         try:
-            results = await scrape(list(SOURCES), limit)
+            results = await scrape(scrape_sources(), limit)
             click.echo(
                 f"[{datetime.now():%Y-%m-%d %H:%M}] парсинг завершён, следующий через {interval} ч"
             )

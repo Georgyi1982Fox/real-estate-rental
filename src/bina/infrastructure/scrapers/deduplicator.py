@@ -102,6 +102,9 @@ def needs_details(known: KnownListing | None, card: RawListing, price: float) ->
     """
     if known is None or known.details_fetched_at is None:
         return True
-    if known.status != ListingStatus.ACTIVE or known.price != Decimal(str(price)):
+    if known.status != ListingStatus.ACTIVE:
+        return True
+    # Цена 0 — в списке её нет (пост Telegram-канала): сравнивать нечего
+    if price > 0 and known.price != Decimal(str(price)):
         return True
     return card.updated_at is not None and card.updated_at != known.source_updated_at
