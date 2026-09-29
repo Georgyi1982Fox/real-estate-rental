@@ -9,8 +9,12 @@ import structlog
 from bs4 import BeautifulSoup
 
 from bina.application.listing_details import clean_features
-from bina.application.ports.scraper import RawListing
-from bina.infrastructure.scrapers.base_scraper import BaseWebsiteScraper
+from bina.application.ports.scraper import NeedsDetails, RawListing
+from bina.infrastructure.scrapers.base_scraper import (
+    KNOWN_PAGES_TO_STOP,
+    BaseWebsiteScraper,
+    ListingGoneError,
+)
 from bina.infrastructure.scrapers.details import (
     condition_code,
     join_address,
@@ -58,12 +62,14 @@ class SSScraper(BaseWebsiteScraper):
         self.fetch_details = fetch_details
         self.dump_dir = dump_dir
 
-    async def scrape_listings(self, limit: int) -> list[RawListing]:
+    async def scrape_listings(
+        self, limit: int, needs_details: NeedsDetails | None = None
+    ) -> list[RawListing]:
         """Парсит до ``limit`` объявлений со страниц поиска."""
         logger.info("Starting SS scraping", limit=limit)
         listings: list[RawListing] = []
         seen: set[str] = set()
-        failures = 0
+        failures = known_pages = 0
 
         for page in range(1, self.max_pages + 1):
             if len(listings) >= limit:
@@ -88,8 +94,13 @@ class SSScraper(BaseWebsiteScraper):
                 logger.info("No more new listings on SS", page=page)
                 break
             seen |= page_ids
-            for card in page_listings[: limit - len(listings)]:
-                listings.append(await self.with_details(card, first=not listings))
+            fresh = await self._add_cards(page_listings, listings, limit, needs_details)
+            if page_listings:
+                # Страница только с другими городами ничего не говорит о новизне
+                known_pages = 0 if fresh or needs_details is None else known_pages + 1
+            if known_pages >= KNOWN_PAGES_TO_STOP:
+                logger.info("No new or changed listings on SS, stopping", page=page)
+                break
 
         logger.info("Finished SS scraping", total=len(listings))
         return listings
@@ -99,8 +110,8 @@ class SSScraper(BaseWebsiteScraper):
         if not self.fetch_details or not card.url:
             return card
         try:
-            html = await self._fetch_page(card.url)
-        except httpx.HTTPError as exc:
+            html = await self._fetch_page(card.url, expect=card.source_id)
+        except (httpx.HTTPError, ListingGoneError) as exc:
             logger.warning("SS detail page failed", url=card.url, error=str(exc))
             return card
         if first:
@@ -364,6 +375,8 @@ _SS_FEATURES: dict[str, str] = {
     "isPetFriendly": "pets_allowed",
     "securityAlarm": "security",
 }
+# ``applicationData.status`` снятого объявления (у активного — ``Active``)
+_INACTIVE_STATUSES = {"inactive", "deleted", "expired", "blocked", "closed"}
 # balcony_Loggia: «Нет в проекте», «Нет» — балкона нет; число или «Есть» — есть
 _NO_BALCONY_RE = re.compile(r"^\s*(нет|no|არ)", re.IGNORECASE)
 
@@ -379,6 +392,9 @@ def _application_data(data: dict[str, Any]) -> dict[str, Any] | None:
 def application_details(item: dict[str, Any]) -> dict[str, Any]:
     """Поля ``RawListing`` из ``applicationData`` (только найденные)."""
     details: dict[str, Any] = {"has_details": True}
+    status = str(item.get("status") or "")
+    if item.get("isInactiveApplication") is True or status.lower() in _INACTIVE_STATUSES:
+        details["active"] = False
     descriptions = item.get("description")
     if isinstance(descriptions, dict):
         texts = {

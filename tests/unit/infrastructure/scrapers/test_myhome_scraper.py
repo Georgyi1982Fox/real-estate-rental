@@ -7,6 +7,7 @@ from pathlib import Path
 import httpx
 import pytest
 
+from bina.application.ports.scraper import RawListing
 from bina.infrastructure.scrapers.myhome_scraper import MyHomeScraper
 
 DATA = Path(__file__).parent / "test_data"
@@ -25,7 +26,7 @@ class FakePages:
         self.default = default
         self.requested: list[str] = []
 
-    async def __call__(self, url: str) -> str:
+    async def __call__(self, url: str, expect: str | None = None) -> str:
         self.requested.append(url)
         for key, value in self.pages.items():
             if key in url:
@@ -328,3 +329,32 @@ def test_real_detail_page_extras(scraper: MyHomeScraper) -> None:
     assert details["published_at"] == datetime(2026, 7, 6, 12, 18, 18, tzinfo=UTC)
     assert details["updated_at"] == datetime(2026, 9, 27, 8, 8, 19, tzinfo=UTC)
     assert "phone" not in details  # номер на странице скрыт звёздочками
+
+
+def test_detail_page_of_inactive_listing(scraper: MyHomeScraper) -> None:
+    html = Path("tests/unit/infrastructure/scrapers/test_data/myhome_detail_full.html").read_text(
+        encoding="utf-8"
+    )
+    assert "active" not in scraper._parse_detail(html)
+
+    inactive = scraper._parse_detail(html.replace('"is_active": true', '"is_active": false'))
+    assert inactive["active"] is False
+
+
+async def test_stops_when_pages_bring_nothing_new(
+    scraper: MyHomeScraper, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Две страницы подряд только с известными объявлениями: дальше старые, стоп."""
+    pages = FakePages({"page=": LIST_HTML})
+    monkeypatch.setattr(scraper, "_fetch_page", pages)
+    checked: list[str] = []
+
+    async def known(card: RawListing) -> bool:
+        checked.append(card.source_id)
+        return False
+
+    listings = await scraper.scrape_listings(limit=100, needs_details=known)
+
+    assert len(listings) == 4
+    assert [url for url in pages.requested if "page=" not in url] == [], "страницы не открывались"
+    assert sum("page=" in url for url in pages.requested) == 2

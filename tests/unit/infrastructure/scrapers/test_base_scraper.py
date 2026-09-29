@@ -1,4 +1,4 @@
-"""Базовый парсер: HTTP, повторы, пауза между запросами (без сети)."""
+"""Базовый парсер: HTTP, повторы, пауза, снятые объявления (без сети)."""
 
 import asyncio
 from unittest.mock import AsyncMock
@@ -7,20 +7,22 @@ import httpx
 import pytest
 from tenacity import wait_none
 
-from bina.application.ports.scraper import RawListing
-from bina.infrastructure.scrapers.base_scraper import BaseWebsiteScraper
+from bina.application.ports.scraper import NeedsDetails, RawListing
+from bina.infrastructure.scrapers.base_scraper import BaseWebsiteScraper, ListingGoneError
 
 
 class _TestScraper(BaseWebsiteScraper):
     """Минимальная реализация для проверки базового класса."""
 
-    async def scrape_listings(self, limit: int) -> list[RawListing]:
+    async def scrape_listings(
+        self, limit: int, needs_details: NeedsDetails | None = None
+    ) -> list[RawListing]:
         return []
 
 
 def make_scraper(handler: httpx.MockTransport, delay: int = 0) -> _TestScraper:
     scraper = _TestScraper("https://example.com/", delay_seconds=delay, user_agents=["UA-test"])
-    scraper._client = httpx.AsyncClient(transport=handler)
+    scraper._client = httpx.AsyncClient(transport=handler, follow_redirects=True)
     return scraper
 
 
@@ -88,3 +90,43 @@ async def test_close_releases_client() -> None:
 
     assert client.is_closed
     assert scraper._client is None
+
+
+async def test_redirect_away_from_listing_means_gone() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/ru/flat-36583130":
+            return httpx.Response(302, headers={"Location": "/ru/search"})
+        return httpx.Response(200, text="search page")
+
+    scraper = make_scraper(httpx.MockTransport(handler))
+    with pytest.raises(ListingGoneError):
+        await scraper._fetch_page("https://example.com/ru/flat-36583130", expect="36583130")
+    # Без expect (страницы списка) перенаправление — обычный ответ
+    assert await scraper._fetch_page("https://example.com/ru/flat-36583130") == "search page"
+    await scraper.close()
+
+
+async def test_redirect_to_same_listing_is_fine() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/ru/old-slug-36583130":
+            return httpx.Response(301, headers={"Location": "/ru/new-slug-36583130"})
+        return httpx.Response(200, text="listing")
+
+    scraper = make_scraper(httpx.MockTransport(handler))
+    html = await scraper._fetch_page("https://example.com/ru/old-slug-36583130", expect="36583130")
+    assert html == "listing"
+    await scraper.close()
+
+
+async def test_not_found_is_not_retried() -> None:
+    calls: list[int] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(1)
+        return httpx.Response(404)
+
+    scraper = make_scraper(httpx.MockTransport(handler))
+    with pytest.raises(httpx.HTTPStatusError):
+        await scraper._fetch_page("https://example.com/ru/1", expect="1")
+    assert len(calls) == 1
+    await scraper.close()
