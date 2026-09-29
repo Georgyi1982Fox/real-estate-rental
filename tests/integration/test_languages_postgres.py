@@ -5,6 +5,7 @@
 языках, и каждое — буквами своего языка.
 """
 
+import asyncio
 import dataclasses
 from collections.abc import Sequence
 
@@ -116,3 +117,47 @@ async def test_every_field_in_every_language(
     await session.commit()
     assert (updated.description_ru, updated.description_en) == ("", "")
     assert updated.title_ru == RAW.title
+
+
+class SlowTranslator(ScriptTranslator):
+    """Как ScriptTranslator, но «думает» 50 мс и считает одновременные запросы."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.running = 0
+        self.max_running = 0
+
+    async def translate(
+        self, text: ListingText, source: str, targets: Sequence[str]
+    ) -> dict[str, ListingText]:
+        self.running += 1
+        self.max_running = max(self.max_running, self.running)
+        try:
+            await asyncio.sleep(0.05)
+            return await super().translate(text, source, targets)
+        finally:
+            self.running -= 1
+
+
+async def test_parallel_translation_saves_everything(
+    session: AsyncSession, session_factory: async_sessionmaker[AsyncSession]
+) -> None:
+    """Перевод по 5 объявлений одновременно: всё сохранено, ничего не потеряно."""
+    repository = ListingsRepository(session)
+    for n in range(12):
+        await repository.create_or_update_from_raw(
+            dataclasses.replace(RAW, source_id=f"p{n}", url=f"https://home.ss.ge/ru/p{n}")
+        )
+    await session.commit()
+    assert await repository.language_coverage() == (12, 12)
+
+    translator = SlowTranslator()
+    async with session_factory() as work:
+        stats = await TranslateListingsUseCase(
+            translator, ListingsRepository(work), after_save=work.commit, concurrency=5
+        ).execute(limit=20)
+
+    assert (stats.checked, stats.translated, stats.failed) == (12, 12, 0)
+    assert translator.max_running == 5
+    async with session_factory() as check:
+        assert await ListingsRepository(check).language_coverage() == (12, 0)

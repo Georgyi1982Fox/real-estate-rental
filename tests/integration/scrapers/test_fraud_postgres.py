@@ -78,7 +78,7 @@ async def test_fraud_check_flow(
     analyzer = KeywordAnalyzer()
     async with session_factory() as work:
         stats = await CheckFraudUseCase(
-            analyzer, ListingsRepository(work), after_save=work.commit
+            analyzer, ListingsRepository(work), after_save=work.commit, concurrency=3
         ).execute(limit=100)
     assert (stats.checked, stats.suspicious, stats.hidden, stats.failed) == (8, 1, 1, 0)
     # AI видел медиану района и число фото

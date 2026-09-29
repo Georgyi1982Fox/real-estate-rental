@@ -5,6 +5,7 @@
 Ошибка на одном объявлении не останавливает остальные.
 """
 
+import asyncio
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
@@ -82,15 +83,20 @@ class TranslateListingsUseCase:
         translator: ITranslator,
         repository: IListingTranslationsRepository,
         after_save: Callable[[], Awaitable[None]] | None = None,
+        concurrency: int = 1,
     ) -> None:
         """``after_save`` вызывается после каждого сохранённого перевода (обычно commit).
 
         Перевод одного объявления идёт секунды: без промежуточного commit строки
         остаются заблокированными на всё время пачки и мешают парсеру.
+
+        ``concurrency`` — сколько объявлений переводится одновременно (запросы к AI
+        идут параллельно, сохранение в БД — по одному).
         """
         self._translator = translator
         self._repository = repository
         self._after_save = after_save
+        self._concurrency = max(1, concurrency)
 
     async def execute(self, limit: int) -> TranslationStats:
         """Находит объявления без перевода и переводит их.
@@ -99,19 +105,33 @@ class TranslateListingsUseCase:
         """
         listings = await self._repository.list_untranslated(limit)
         translated = failed = 0
-        for listing in listings:
-            source = title_language(listing)
-            targets = missing_languages(listing)
-            if source is None or not targets:
-                continue
-            try:
-                texts = await self._translate(listing, source, targets)
-            except TranslationError as exc:
+        jobs = [
+            (listing, source, targets)
+            for listing in listings
+            if (source := title_language(listing)) is not None
+            and (targets := missing_languages(listing))
+        ]
+        semaphore = asyncio.Semaphore(self._concurrency)
+
+        async def run(
+            listing: Listing, source: str, targets: list[str]
+        ) -> tuple[Listing, str, list[str], dict[str, ListingText] | TranslationError]:
+            async with semaphore:
+                try:
+                    return listing, source, targets, await self._translate(listing, source, targets)
+                except TranslationError as exc:
+                    return listing, source, targets, exc
+
+        # Сохраняем по мере готовности, по одному: сессия БД не для параллельной работы
+        for finished in asyncio.as_completed([run(*job) for job in jobs]):
+            listing, source, targets, result = await finished
+            if isinstance(result, TranslationError):
                 failed += 1
                 logger.warning(
-                    "Listing translation failed", listing_id=str(listing.id), error=str(exc)
+                    "Listing translation failed", listing_id=str(listing.id), error=str(result)
                 )
                 continue
+            texts = result
             await self._repository.save_texts(listing.id, texts)
             if self._after_save is not None:
                 await self._after_save()

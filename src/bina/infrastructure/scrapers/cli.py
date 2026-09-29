@@ -45,7 +45,9 @@ logger = structlog.get_logger(__name__)
 
 SOURCES = ("myhome", "ss")
 # Перевод коммитится пачками: сбой посередине не теряет уже сделанное
-TRANSLATE_BATCH = 10
+TRANSLATE_BATCH = 20
+# Сколько объявлений AI переводит/проверяет одновременно (LLM_CONCURRENCY)
+LLM_CONCURRENCY = max(1, int(os.getenv("LLM_CONCURRENCY", "") or 5))
 # Отправка уведомлений пачками (коммит после каждой)
 DELIVERY_BATCH = 100
 
@@ -183,6 +185,7 @@ async def translate(limit: int) -> TranslationStats:
                             LLMTranslator(provider),
                             ListingsRepository(session),
                             after_save=session.commit,
+                            concurrency=LLM_CONCURRENCY,
                         )
                         stats = await use_case.execute(min(TRANSLATE_BATCH, limit - checked))
                         await session.commit()
@@ -238,6 +241,7 @@ async def check_fraud(limit: int) -> FraudStats:
                             LLMFraudAnalyzer(provider),
                             ListingsRepository(session),
                             after_save=session.commit,
+                            concurrency=LLM_CONCURRENCY,
                         )
                         stats = await use_case.execute(
                             min(TRANSLATE_BATCH, limit - checked - failed)
