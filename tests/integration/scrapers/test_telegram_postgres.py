@@ -101,3 +101,39 @@ async def test_old_posts_archived(session: AsyncSession, monkeypatch: pytest.Mon
     assert archived == 2
     flat = await repository.find_by_source("m2tbilis/73962", "telegram")
     assert flat is not None and flat.status == ListingStatus.ARCHIVED
+
+
+async def test_filter_by_source_and_stats(
+    session: AsyncSession,
+    session_factory: async_sessionmaker[AsyncSession],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Быстро найти квартиры из Telegram: ?source=telegram; сортировка — по дате поста."""
+    from httpx import ASGITransport, AsyncClient
+
+    from bina.infrastructure.api.server import create_app
+    from bina.infrastructure.api.settings import ApiSettings
+
+    await run_scrape(scraper(FakeExtractor(), monkeypatch), "telegram", 50, session_factory)
+    flat = await ListingsRepository(session).find_by_source("m2tbilis/73972", "telegram")
+    assert flat is not None
+    assert flat.source_updated_at == flat.source_published_at is not None
+
+    app = create_app(ApiSettings(), session_factory)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        only_tg = (await client.get("/api/listings", params={"source": "telegram"})).json()
+        none = (await client.get("/api/listings", params={"source": "ss,myhome"})).json()
+        bad = await client.get("/api/listings", params={"source": "avito"})
+    assert only_tg["total"] == 2
+    # Новые сверху — по дате поста
+    assert [item["source_url"] for item in only_tg["items"]] == [
+        "https://t.me/m2tbilis/73972",
+        "https://t.me/m2tbilis/73962",
+    ]
+    assert none["total"] == 0
+    assert bad.status_code == 422
+
+    flat.status = ListingStatus.ARCHIVED
+    await session.commit()
+    stats = await ListingsRepository(session).source_stats()
+    assert stats == [("telegram", "active", 1), ("telegram", "archived", 1)]

@@ -7,7 +7,12 @@ from typing import Annotated
 from fastapi import APIRouter, Query
 from pydantic import ValidationError
 
-from bina.application.dtos.listing_search import ListingSearchFilters, ListingSort, search_filters
+from bina.application.dtos.listing_search import (
+    SOURCES,
+    ListingSearchFilters,
+    ListingSort,
+    search_filters,
+)
 from bina.application.listing_details import CONDITIONS, FEATURES
 from bina.application.use_cases.search_listings import SearchListingsUseCase
 from bina.infrastructure.api.dependencies import SessionDep
@@ -76,6 +81,10 @@ async def list_listings(
     published_days: Annotated[
         int | None, Query(ge=1, le=365, description="Опубликовано за последние N дней")
     ] = None,
+    source: Annotated[
+        str | None,
+        Query(description="Источники через запятую, любой из: ss, myhome, telegram"),
+    ] = None,
     sort: Annotated[
         ListingSort | None,
         Query(
@@ -106,6 +115,7 @@ async def list_listings(
             published_since=(
                 datetime.now(UTC) - timedelta(days=published_days) if published_days else None
             ),
+            sources=parse_codes(source, SOURCES, "source"),
         )
     except ValidationError as exc:
         raise bad_request(

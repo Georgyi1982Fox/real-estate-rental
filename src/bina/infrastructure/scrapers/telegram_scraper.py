@@ -107,6 +107,8 @@ def post_card(post: ChannelPost) -> RawListing:
         photos=post.photos,
         owner_name=f"@{post.channel}",
         published_at=post.published_at,
+        # Дата поста — и «обновлено»: по ней сортировка «новые сверху»
+        updated_at=post.published_at,
     )
 
 

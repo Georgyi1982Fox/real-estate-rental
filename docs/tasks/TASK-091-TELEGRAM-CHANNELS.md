@@ -37,6 +37,11 @@ kvartiry_tbili_city, ApartameniTbilisi, kvartiry_v_tbilisii.
 
 Без `LLM_API_KEY` каналы не читаются (разбирать посты нечем).
 
+## Как найти квартиры из Telegram
+- API: `GET /api/listings?source=telegram` (фильтр для приложения — FRONTEND-019).
+- Сортировка «новые сверху» — по дате поста (`source_updated_at` = дата поста).
+- `bina-scrape stats` — сколько объявлений у каждого источника в поиске и снятых.
+
 ## Команды
 - `docker compose exec scraper bina-scrape --source telegram --limit 30` — прочитать каналы сейчас.
 - Результат: «telegram: найдено N, прошло проверку M, … сохранено K».
