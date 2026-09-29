@@ -7,9 +7,10 @@
 |---|---|---|
 | Избранное | без ограничений | без ограничений |
 | Сохранённые поиски (с уведомлениями) | 1 | до 20 |
-| Цена | — | 250 ⭐ за 30 дней |
+| Цена | — | 250 ⭐ за 30 дней или 100 ⭐ за 7 дней (TASK-084) |
 
-Цена и срок настраиваются в `.env`: `PREMIUM_PRICE_STARS`, `PREMIUM_DAYS`. В базе тариф Premium
+Цена и срок настраиваются в `.env`: `PREMIUM_PRICE_STARS`, `PREMIUM_DAYS` (месяц),
+`PREMIUM_WEEK_PRICE_STARS`, `PREMIUM_WEEK_DAYS` (неделя; `PREMIUM_WEEK_PRICE_STARS=0` — без неё). В базе тариф Premium
 хранится как `nomad` (`bina_users.subscription_tier`).
 
 - Истёкшая подписка автоматически считается бесплатной (API и бот смотрят на `subscription_expires_at`).
@@ -20,8 +21,9 @@
 ## Оплата
 Звёзды Telegram (валюта `XTR`), `provider_token` не нужен, настраивать в BotFather ничего не надо.
 
-1. Счёт: в боте `/premium` → «Купить за 250 ⭐»; в Mini App `POST /api/subscription/invoice` →
-   `Telegram.WebApp.openInvoice(url)`. Payload счёта: `sub:premium_month`.
+1. Счёт: в боте `/premium` → «Купить 7 дн. за 100 ⭐» / «Купить 30 дн. за 250 ⭐»; в Mini App
+   `POST /api/subscription/invoice` (`{"plan": "premium_week" | "premium_month"}`) →
+   `Telegram.WebApp.openInvoice(url)`. Payload счёта: `sub:premium_week` / `sub:premium_month`.
 2. `pre_checkout_query`: бот проверяет тариф, валюту и сумму и отвечает за ≤ 10 секунд.
 3. `successful_payment`: платёж пишется в `bina_payments` (`provider=telegram_stars`,
    `provider_payment_id` = `telegram_payment_charge_id`, `plan`), подписка продлевается.

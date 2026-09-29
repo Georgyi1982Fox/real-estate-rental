@@ -45,15 +45,17 @@ def render_premium(user: User, plans: dict[str, Plan], now: datetime) -> str:
         )
     else:
         status = t(language, "premium_free")
-    plan = next(iter(plans.values()))
+    prices = ", ".join(
+        t(language, "premium_price", price=plan.price_stars, days=plan.days)
+        for plan in sorted(plans.values(), key=lambda plan: plan.days)
+    )
     return t(
         language,
         "premium_info",
         status=status,
         free_searches=FREE_LIMITS.searches,
         premium_searches=PREMIUM_LIMITS.searches,
-        price=plan.price_stars,
-        days=plan.days,
+        prices=prices,
     )
 
 
@@ -61,7 +63,8 @@ def premium_keyboard(user: User, plans: dict[str, Plan], now: datetime) -> Inlin
     """Кнопка покупки (или продления) для каждого тарифа."""
     key = "premium_extend" if is_premium(user, now) else "premium_buy"
     builder = InlineKeyboardBuilder()
-    for plan in plans.values():
+    # Короткий срок первым: это самый частый выбор
+    for plan in sorted(plans.values(), key=lambda plan: plan.days):
         builder.button(
             text=t(user.language, key, price=plan.price_stars, days=plan.days),
             callback_data=PremiumBuyCallback(plan=plan.id),

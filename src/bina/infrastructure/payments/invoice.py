@@ -13,16 +13,14 @@ _TEXTS: dict[str, dict[str, str]] = {
     "ru": {
         "title": "Bina.ai Premium",
         "description": (
-            "Premium на {days} дн.: избранное без ограничений и до 20 сохранённых поисков "
-            "с уведомлениями о новых квартирах."
+            "Premium на {days} дн.: до 20 сохранённых поисков с уведомлениями о новых квартирах."
         ),
         "label": "Premium на {days} дн.",
     },
     "en": {
         "title": "Bina.ai Premium",
         "description": (
-            "Premium for {days} days: unlimited favorites and up to 20 saved searches "
-            "with alerts about new apartments."
+            "Premium for {days} days: up to 20 saved searches with alerts about new apartments."
         ),
         "label": "Premium for {days} days",
     },
