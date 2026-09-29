@@ -4,13 +4,14 @@ from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, func, literal_column, or_, select, update
-from sqlalchemy.dialects.postgresql import TSVECTOR
+from sqlalchemy import ColumnElement, case, cast, func, literal_column, or_, select, update
+from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from bina.application.dtos.listing_search import ListingSearchFilters, ListingSort
 from bina.application.fraud import HIDE_SCORE
+from bina.application.listing_details import clean_features
 from bina.application.ports.scraper import RawListing
 from bina.application.ports.translator import LANGUAGES, ListingText
 from bina.application.repositories.listings import IListingsRepository
@@ -96,7 +97,7 @@ class ListingsRepository(IListingsRepository):
         query = (
             select(Listing)
             .where(*self._search_conditions(filters))
-            .order_by(*_sort_order(sort, filters), Listing.created_at.desc(), Listing.id)
+            .order_by(*_sort_order(sort, filters), FRESHNESS.desc(), Listing.id)
             .limit(limit)
             .offset(offset)
         )
@@ -135,6 +136,7 @@ class ListingsRepository(IListingsRepository):
             conditions.append(Listing.area >= filters.area_min)
         if filters.area_max is not None:
             conditions.append(Listing.area <= filters.area_max)
+        conditions.extend(_detail_conditions(filters))
         # Запрос без слов (только знаки) не фильтрует — как пустая строка поиска
         ts_query = text_search_query(filters.query) if filters.query else None
         if ts_query is not None:
@@ -169,20 +171,42 @@ class ListingsRepository(IListingsRepository):
         }
 
         listing = await self.find_by_source(raw_listing.source_id, raw_listing.source_name)
+        if (
+            listing is not None
+            and listing.details_fetched_at is not None
+            and not raw_listing.has_details
+        ):
+            # Страница объявления не загрузилась: краткий текст из списка (у SS обрезан)
+            # не должен затирать полный, а удобства — пропадать
+            values.pop(f"description_{suffix}")
+            values.pop("images")
+            if not raw_listing.phone:
+                values.pop("phone")
+        else:
+            values.update(detail_values(raw_listing))
+        values.update(source_dates(raw_listing))
         if listing is not None:
-            values.update(
-                stale_translation_resets(
-                    listing, suffix, raw_listing.title, raw_listing.description
-                )
-            )
+            description = str(values.get(f"description_{suffix}", listing_text_of(listing, suffix)))
+            photos = values.get("images", listing.images)
+            values.update(stale_translation_resets(listing, suffix, raw_listing.title, description))
             new_price = values["price"]
             price_changed = listing.price is not None and Decimal(listing.price) != new_price
             if price_changed:
                 # Для уведомления «цена снижена» (TASK-028)
                 values["previous_price"] = listing.price
                 values["price_changed_at"] = datetime.now(UTC)
-            if fraud_recheck_needed(listing, suffix, raw_listing, price_changed=price_changed):
+            if fraud_recheck_needed(
+                listing,
+                suffix,
+                (raw_listing.title, description),
+                bool(photos),
+                price_changed=price_changed,
+            ):
                 values["fraud_checked_at"] = None
+        # Описания на других языках от самого сайта (SS.ge): переводить их не нужно
+        for code, text in raw_listing.descriptions.items():
+            if code in LANGUAGES and code != suffix and text:
+                values[f"description_{code}"] = text
         if listing is None:
             listing = Listing(
                 source_id=raw_listing.source_id,
@@ -261,12 +285,18 @@ class ListingsRepository(IListingsRepository):
         return list(result.scalars().all())
 
     async def save_texts(self, listing_id: UUID, texts: dict[str, ListingText]) -> None:
-        """Записать заголовок и описание для каждого языка из ``texts``."""
-        values: dict[str, str] = {}
+        """Записать заголовок и описание для каждого языка из ``texts``.
+
+        Описание, которое уже есть (сайт сам дал его на этом языке, TASK-018), не заменяется.
+        """
+        values: dict[str, Any] = {}
         for language, text in texts.items():
             if language in LANGUAGES:
                 values[f"title_{language}"] = text.title
-                values[f"description_{language}"] = text.description
+                column = getattr(Listing, f"description_{language}")
+                values[f"description_{language}"] = case(
+                    (func.coalesce(column, "") == "", text.description), else_=column
+                )
         if values:
             await self._session.execute(
                 update(Listing).where(Listing.id == listing_id).values(**values)
@@ -336,18 +366,62 @@ class ListingsRepository(IListingsRepository):
         return district
 
 
+def listing_text_of(listing: Listing, language: str) -> str:
+    """Текущее описание объявления на языке ``language``."""
+    return getattr(listing, f"description_{language}", "") or ""
+
+
+def detail_values(raw: RawListing) -> dict[str, object]:
+    """Подробности объявления для записи в БД.
+
+    Со страницы объявления — все поля (и отметка ``details_fetched_at``); из списка —
+    только то, что в нём есть.
+    """
+    fields: dict[str, object] = {
+        "floor": raw.floor,
+        "total_floors": raw.total_floors,
+        "bedrooms": raw.bedrooms,
+        "bathrooms": raw.bathrooms,
+        "condition": raw.condition,
+        "owner_type": raw.owner_type,
+        "address": raw.address,
+        "latitude": raw.latitude,
+        "longitude": raw.longitude,
+    }
+    if raw.has_details:
+        fields["features"] = clean_features(raw.features)
+        fields["details_fetched_at"] = datetime.now(UTC)
+        return fields
+    values = {key: value for key, value in fields.items() if value is not None}
+    if raw.features:
+        values["features"] = clean_features(raw.features)
+    return values
+
+
+def source_dates(raw: RawListing) -> dict[str, object]:
+    """Даты публикации и обновления на сайте (если источник их дал)."""
+    dates: dict[str, object] = {}
+    if raw.published_at is not None:
+        dates["source_published_at"] = raw.published_at
+    if raw.updated_at is not None:
+        dates["source_updated_at"] = raw.updated_at
+    return dates
+
+
 def fraud_recheck_needed(
-    listing: Listing, language: str, raw_listing: RawListing, *, price_changed: bool
+    listing: Listing,
+    language: str,
+    new_text: tuple[str, str],
+    has_photos: bool,
+    *,
+    price_changed: bool,
 ) -> bool:
-    """Проверку на мошенничество нужно повторить: изменились текст, цена или фото."""
+    """Проверку на мошенничество нужно повторить: изменились текст, цена или наличие фото."""
     old_text = (
         getattr(listing, f"title_{language}", "") or "",
         getattr(listing, f"description_{language}", "") or "",
     )
-    photos_changed = bool(listing.images) != bool(raw_listing.photos)
-    return (
-        price_changed or old_text != (raw_listing.title, raw_listing.description) or photos_changed
-    )
+    return price_changed or old_text != new_text or bool(listing.images) != has_photos
 
 
 def stale_translation_resets(
@@ -370,6 +444,41 @@ def stale_translation_resets(
             resets[f"title_{other}"] = ""
             resets[f"description_{other}"] = ""
     return resets
+
+
+# «Новые сверху»: дата обновления на сайте, для объявлений без неё — дата появления у нас
+FRESHNESS = func.coalesce(Listing.source_updated_at, Listing.created_at)
+
+
+def _detail_conditions(filters: ListingSearchFilters) -> list[ColumnElement[bool]]:
+    """Условия по подробностям объявления (TASK-018).
+
+    Объявления, у которых нужного поля нет (сайт не указал этаж), под такой
+    фильтр не попадают.
+    """
+    conditions: list[ColumnElement[bool]] = []
+    if filters.floor_min is not None:
+        conditions.append(Listing.floor >= filters.floor_min)
+    if filters.floor_max is not None:
+        conditions.append(Listing.floor <= filters.floor_max)
+    if filters.not_first_floor:
+        conditions.append(Listing.floor > 1)
+    if filters.not_last_floor:
+        conditions.append(Listing.floor < Listing.total_floors)
+    if filters.bedrooms_min is not None:
+        conditions.append(Listing.bedrooms >= filters.bedrooms_min)
+    if filters.bathrooms_min is not None:
+        conditions.append(Listing.bathrooms >= filters.bathrooms_min)
+    if filters.features:
+        conditions.append(cast(Listing.features, JSONB).contains(list(filters.features)))
+    if filters.conditions:
+        conditions.append(Listing.condition.in_(filters.conditions))
+    if filters.owner_only:
+        conditions.append(Listing.owner_type == "owner")
+    if filters.published_since is not None:
+        published = func.coalesce(Listing.source_published_at, Listing.created_at)
+        conditions.append(published >= filters.published_since)
+    return conditions
 
 
 def _sort_order(sort: ListingSort, filters: ListingSearchFilters) -> list[Any]:

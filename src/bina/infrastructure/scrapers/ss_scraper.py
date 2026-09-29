@@ -1,3 +1,4 @@
+import dataclasses
 import re
 from pathlib import Path
 from typing import Any
@@ -7,8 +8,16 @@ import httpx
 import structlog
 from bs4 import BeautifulSoup
 
+from bina.application.listing_details import clean_features
 from bina.application.ports.scraper import RawListing
 from bina.infrastructure.scrapers.base_scraper import BaseWebsiteScraper
+from bina.infrastructure.scrapers.details import (
+    condition_code,
+    join_address,
+    to_datetime,
+    to_float,
+    to_int,
+)
 from bina.infrastructure.scrapers.nextjs import next_data, walk
 from bina.infrastructure.scrapers.settings import SSSettings
 
@@ -24,9 +33,10 @@ class SSScraper(BaseWebsiteScraper):
     """Парсер объявлений с SS.ge (home.ss.ge).
 
     Сайт на Next.js: объявления лежат JSON-ом в ``__NEXT_DATA__``
-    (``props.pageProps.applicationList.realStateItemModel``) вместе с полным
-    описанием, поэтому страницы объявлений не загружаются. Разбор HTML по
-    селекторам остался запасным вариантом.
+    (``props.pageProps.applicationList.realStateItemModel``). В списке описание
+    обрезано и нет удобств, телефона, санузлов, поэтому затем загружается
+    страница каждого объявления (``props.pageProps.applicationData``, TASK-018).
+    Разбор HTML по селекторам остался запасным вариантом.
     """
 
     def __init__(
@@ -38,12 +48,14 @@ class SSScraper(BaseWebsiteScraper):
         search_path: str = SSSettings.SEARCH_PATH,
         max_pages: int = SSSettings.MAX_PAGES,
         city_id: int | None = SSSettings.CITY_ID,
+        fetch_details: bool = True,
         dump_dir: Path | None = None,
     ) -> None:
         super().__init__(base_url, delay_seconds, user_agents)
         self.search_path = search_path
         self.max_pages = max_pages
         self.city_id = city_id
+        self.fetch_details = fetch_details
         self.dump_dir = dump_dir
 
     async def scrape_listings(self, limit: int) -> list[RawListing]:
@@ -76,10 +88,34 @@ class SSScraper(BaseWebsiteScraper):
                 logger.info("No more new listings on SS", page=page)
                 break
             seen |= page_ids
-            listings.extend(page_listings[: limit - len(listings)])
+            for card in page_listings[: limit - len(listings)]:
+                listings.append(await self.with_details(card, first=not listings))
 
         logger.info("Finished SS scraping", total=len(listings))
         return listings
+
+    async def with_details(self, card: RawListing, *, first: bool = False) -> RawListing:
+        """Дополняет объявление данными его страницы (при ошибке оставляет как есть)."""
+        if not self.fetch_details or not card.url:
+            return card
+        try:
+            html = await self._fetch_page(card.url)
+        except httpx.HTTPError as exc:
+            logger.warning("SS detail page failed", url=card.url, error=str(exc))
+            return card
+        if first:
+            self._dump("ss_detail.html", html)
+        details = self.details_from_html(html)
+        if details is None:
+            logger.warning("SS detail page not parsed", url=card.url)
+            return card
+        return dataclasses.replace(card, **details)
+
+    def details_from_html(self, html: str) -> dict[str, Any] | None:
+        """Поля ``RawListing`` со страницы объявления; None — страница не разобрана."""
+        data = next_data(html)
+        application = _application_data(data) if data is not None else None
+        return application_details(application) if application is not None else None
 
     def _dump(self, filename: str, html: str) -> None:
         """Сохраняет сырой HTML для сверки разбора с реальным сайтом."""
@@ -118,6 +154,9 @@ class SSScraper(BaseWebsiteScraper):
         price = item.get("price") or {}
         title = str(item.get("title") or "").strip()
         detail = str(item.get("detailUrl") or "")
+        features = ["furniture"] if item.get("furniture") else []
+        if item.get("withBuiltInKitchen"):
+            features.append("kitchen_appliances")
         return RawListing(
             source_id=str(item["applicationId"]),
             source_name=SOURCE_NAME,
@@ -132,6 +171,13 @@ class SSScraper(BaseWebsiteScraper):
             ).strip(),
             url=f"{self.base_url}/ru/{quote('недвижимость/' + detail)}" if detail else "",
             photos=_photos(item.get("appImages")),
+            floor=to_int(item.get("floorNumber")),
+            total_floors=to_int(item.get("totalAmountOfFloor")),
+            bedrooms=to_int(item.get("numberOfBedrooms")),
+            features=features,
+            address=join_address(address.get("streetTitle"), address.get("streetNumber")),
+            published_at=to_datetime(item.get("createDate")),
+            updated_at=to_datetime(item.get("orderDate")),
         )
 
     def _parse_listings_html(self, html: str) -> list[RawListing]:
@@ -292,3 +338,103 @@ def _photos(images: Any) -> list[str]:
         if url and url not in photos:
             photos.append(url)
     return photos
+
+
+# ----------------------------------------------------------- страница объявления
+
+# Флаги удобств в applicationData → наши коды
+_SS_FEATURES: dict[str, str] = {
+    "furniture": "furniture",
+    "withBuiltInKitchen": "kitchen_appliances",
+    "airConditioning": "air_conditioning",
+    "heating": "heating",
+    "hotWater": "hot_water",
+    "washingMachine": "washing_machine",
+    "fridge": "fridge",
+    "tv": "tv",
+    "cableTelevision": "tv",
+    "internet": "internet",
+    "wiFi": "internet",
+    "naturalGas": "gas",
+    "elevator": "elevator",
+    "garage": "parking",
+    "balcony": "balcony",
+    "storage": "storage",
+    "withPool": "pool",
+    "isPetFriendly": "pets_allowed",
+    "securityAlarm": "security",
+}
+# balcony_Loggia: «Нет в проекте», «Нет» — балкона нет; число или «Есть» — есть
+_NO_BALCONY_RE = re.compile(r"^\s*(нет|no|არ)", re.IGNORECASE)
+
+
+def _application_data(data: dict[str, Any]) -> dict[str, Any] | None:
+    """``applicationData`` страницы объявления."""
+    for value in walk(data):
+        if isinstance(value, dict) and "applicationId" in value and "applicationPhones" in value:
+            return value
+    return None
+
+
+def application_details(item: dict[str, Any]) -> dict[str, Any]:
+    """Поля ``RawListing`` из ``applicationData`` (только найденные)."""
+    details: dict[str, Any] = {"has_details": True}
+    descriptions = item.get("description")
+    if isinstance(descriptions, dict):
+        texts = {
+            code: str(descriptions.get(code) or "").strip()
+            for code in ("ru", "ka", "en")
+            if str(descriptions.get(code) or "").strip()
+        }
+        if texts.get("ru"):
+            details["description"] = texts.pop("ru")
+        details["descriptions"] = texts
+    elif isinstance(descriptions, str) and descriptions.strip():
+        details["description"] = descriptions.strip()
+
+    phones = [p for p in item.get("applicationPhones") or [] if isinstance(p, dict)]
+    phones.sort(key=lambda phone: not phone.get("isMain"))
+    for phone in phones:
+        number = re.sub(r"\D", "", str(phone.get("phoneNumber") or ""))
+        if len(number) >= 6:
+            details["phone"] = number
+            break
+
+    agency = item.get("agencyName") or item.get("companyName")
+    if owner := str(agency or item.get("contactPerson") or "").strip():
+        details["owner_name"] = owner
+    entity = str(item.get("userEntityType") or "")
+    if agency or item.get("agencyId") or item.get("companyId"):
+        details["owner_type"] = "agent"
+    elif entity.lower() == "individual":
+        details["owner_type"] = "owner"
+    elif entity:
+        details["owner_type"] = "agent"
+
+    for key, value in (
+        ("floor", to_int(item.get("floor"))),
+        ("total_floors", to_int(item.get("floors"))),
+        ("bedrooms", to_int(item.get("bedrooms"))),
+        ("bathrooms", to_int(item.get("toilet"))),
+        ("rooms", to_int(item.get("rooms"))),
+        ("area", to_float(item.get("totalArea"))),
+        ("latitude", to_float(item.get("locationLatitude"))),
+        ("longitude", to_float(item.get("locationLongitude"))),
+        ("condition", condition_code(item.get("state"))),
+        ("updated_at", to_datetime(item.get("orderDate"))),
+    ):
+        if value is not None:
+            details[key] = value
+
+    features = [code for key, code in _SS_FEATURES.items() if item.get(key) is True]
+    balcony = item.get("balcony_Loggia")
+    if isinstance(balcony, str) and balcony.strip() and not _NO_BALCONY_RE.match(balcony):
+        features.append("balcony")
+    details["features"] = clean_features(features)
+
+    address = item.get("address") or {}
+    if street := join_address(address.get("streetTitle"), address.get("streetNumber")):
+        details["address"] = street
+    if photos := _photos(item.get("appImages")):
+        details["photos"] = photos
+    return details

@@ -82,6 +82,16 @@ class ListingNormalizer:
         text = text.strip(" \t\n\r\f\v.,;:!?")
         return text
 
+    @staticmethod
+    def clean_multiline(text: str) -> str:
+        """Как :meth:`clean_text`, но сохраняет переносы строк (абзацы описания)."""
+        if not text:
+            return ""
+        lines = [re.sub(r"[ \t\f\v\r]+", " ", line).strip() for line in text.split("\n")]
+        # Не больше одной пустой строки подряд
+        text = re.sub(r"\n{3,}", "\n\n", "\n".join(lines))
+        return text.strip()
+
     @classmethod
     def normalize_district(cls, district: str) -> str:
         """Нормализует название района."""
@@ -142,7 +152,7 @@ class ListingNormalizer:
 
         # Очистка текста
         normalized_title = self.clean_text(listing.title)
-        normalized_description = self.clean_text(listing.description)
+        normalized_description = self.clean_multiline(listing.description)
         normalized_district = self.normalize_district(listing.district)
 
         # Остальные поля (фото, телефон, имя, язык) сохраняются как есть
@@ -153,4 +163,9 @@ class ListingNormalizer:
             price=normalized_price,
             currency=normalized_currency,
             district=normalized_district,
+            descriptions={
+                code: text
+                for code, value in listing.descriptions.items()
+                if (text := self.clean_multiline(value))
+            },
         )

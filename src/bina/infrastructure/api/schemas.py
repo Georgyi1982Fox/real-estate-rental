@@ -48,6 +48,21 @@ class ListingOut(BaseModel):
     fraud_reasons: list[str] = Field(
         default_factory=list, description="Коды причин (переводит фронтенд)"
     )
+    # TASK-018: подробности со страницы объявления (null — сайт не указал)
+    floor: int | None = None
+    total_floors: int | None = None
+    bedrooms: int | None = None
+    bathrooms: int | None = None
+    condition: str | None = Field(default=None, description="Код состояния (переводит фронтенд)")
+    features: list[str] = Field(
+        default_factory=list, description="Коды удобств (переводит фронтенд)"
+    )
+    owner_type: Literal["owner", "agent"] | None = None
+    address: str | None = Field(default=None, description="Улица и дом, как на сайте")
+    latitude: float | None = None
+    longitude: float | None = None
+    published_at: datetime | None = Field(default=None, description="Опубликовано на сайте")
+    updated_at: datetime | None = Field(default=None, description="Обновлено на сайте")
 
     @classmethod
     def from_model(cls, listing: Listing) -> "ListingOut":
@@ -70,7 +85,27 @@ class ListingOut(BaseModel):
             owner_name=listing.owner_name or None,
             fraud_level=fraud_level(listing.fraud_score or 0).value,
             fraud_reasons=list(listing.fraud_reasons or []),
+            floor=listing.floor,
+            total_floors=listing.total_floors,
+            bedrooms=listing.bedrooms,
+            bathrooms=listing.bathrooms,
+            condition=listing.condition,
+            features=list(listing.features or []),
+            owner_type=_owner_type(listing.owner_type),
+            address=listing.address or None,
+            latitude=listing.latitude,
+            longitude=listing.longitude,
+            published_at=listing.source_published_at or listing.created_at,
+            updated_at=listing.source_updated_at,
         )
+
+
+def _owner_type(value: str | None) -> Literal["owner", "agent"] | None:
+    if value == "owner":
+        return "owner"
+    if value == "agent":
+        return "agent"
+    return None
 
 
 class ListingsPageOut(BaseModel):

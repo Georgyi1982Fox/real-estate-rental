@@ -1,8 +1,10 @@
 """DTO фильтров поиска объявлений."""
 
 from collections.abc import Sequence
+from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, model_validator
@@ -40,6 +42,21 @@ class ListingSearchFilters(BaseModel):
     area_max: Decimal | None = None
     # Текст поиска: заголовок и описание на ru/ka/en (TASK-022)
     query: str | None = None
+    # TASK-018: подробности со страницы объявления
+    floor_min: int | None = None
+    floor_max: int | None = None
+    not_first_floor: bool = False
+    not_last_floor: bool = False
+    bedrooms_min: int | None = None
+    bathrooms_min: int | None = None
+    # Есть все удобства из списка (коды listing_details.FEATURES)
+    features: tuple[str, ...] = ()
+    # Любое из состояний (коды listing_details.CONDITIONS)
+    conditions: tuple[str, ...] = ()
+    # Только собственники, без агентств
+    owner_only: bool = False
+    # Опубликовано на сайте не раньше
+    published_since: datetime | None = None
 
     @property
     def all_district_ids(self) -> list[UUID]:
@@ -68,6 +85,12 @@ class ListingSearchFilters(BaseModel):
             and self.area_min > self.area_max
         ):
             raise ValueError("area_min must be <= area_max")
+        if (
+            self.floor_min is not None
+            and self.floor_max is not None
+            and self.floor_min > self.floor_max
+        ):
+            raise ValueError("floor_min must be <= floor_max")
         return self
 
 
@@ -84,6 +107,7 @@ def search_filters(
     area_max: Decimal | None = None,
     query: str | None = None,
     district_ids: Sequence[UUID] = (),
+    **details: Any,
 ) -> ListingSearchFilters:
     """Фильтры из параметров Mini App: ``rooms`` — точное число, 4 — «4 и больше».
 
@@ -100,4 +124,5 @@ def search_filters(
         area_min=area_min,
         area_max=area_max,
         query=(query or "").strip() or None,
+        **details,
     )

@@ -34,6 +34,7 @@ MIGRATIONS = (
     "payments_plan",
     "listing_fraud",
     "saved_search_districts",
+    "listing_details",
 )
 
 

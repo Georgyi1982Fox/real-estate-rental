@@ -1,5 +1,6 @@
 """Объявления: список с фильтрами, карточка, похожие, телефон и контакт."""
 
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Annotated
 
@@ -7,6 +8,7 @@ from fastapi import APIRouter, Query
 from pydantic import ValidationError
 
 from bina.application.dtos.listing_search import ListingSearchFilters, ListingSort, search_filters
+from bina.application.listing_details import CONDITIONS, FEATURES
 from bina.application.use_cases.search_listings import SearchListingsUseCase
 from bina.infrastructure.api.dependencies import SessionDep
 from bina.infrastructure.api.routes.common import (
@@ -14,6 +16,7 @@ from bina.infrastructure.api.routes.common import (
     bad_request,
     get_listing_or_404,
     not_found,
+    parse_codes,
     parse_decimal,
     parse_districts,
 )
@@ -54,6 +57,24 @@ async def list_listings(
         str | None,
         Query(max_length=100, description="Текст поиска: заголовок и описание (ru, ka, en)"),
     ] = None,
+    floor_min: Annotated[int | None, Query(ge=0, le=100, description="Этаж от")] = None,
+    floor_max: Annotated[int | None, Query(ge=0, le=100, description="Этаж до")] = None,
+    not_first_floor: Annotated[bool, Query(description="Не первый этаж")] = False,
+    not_last_floor: Annotated[bool, Query(description="Не последний этаж")] = False,
+    bedrooms: Annotated[int | None, Query(ge=1, le=10, description="Спален от")] = None,
+    bathrooms: Annotated[int | None, Query(ge=1, le=10, description="Санузлов от")] = None,
+    features: Annotated[
+        str | None,
+        Query(description="Удобства через запятую, нужны все: furniture,air_conditioning,..."),
+    ] = None,
+    condition: Annotated[
+        str | None,
+        Query(description="Состояние через запятую, любое из: newly_renovated,renovated,..."),
+    ] = None,
+    owner_only: Annotated[bool, Query(description="Только собственники, без агентств")] = False,
+    published_days: Annotated[
+        int | None, Query(ge=1, le=365, description="Опубликовано за последние N дней")
+    ] = None,
     sort: Annotated[
         ListingSort | None,
         Query(
@@ -72,9 +93,23 @@ async def list_listings(
             area_min=parse_decimal(min_area, "min_area"),
             area_max=parse_decimal(max_area, "max_area"),
             query=clean_text(q) if q else None,
+            floor_min=floor_min,
+            floor_max=floor_max,
+            not_first_floor=not_first_floor,
+            not_last_floor=not_last_floor,
+            bedrooms_min=bedrooms,
+            bathrooms_min=bathrooms,
+            features=parse_codes(features, FEATURES, "features"),
+            conditions=parse_codes(condition, CONDITIONS, "condition"),
+            owner_only=owner_only,
+            published_since=(
+                datetime.now(UTC) - timedelta(days=published_days) if published_days else None
+            ),
         )
     except ValidationError as exc:
-        raise bad_request("min_price must be <= max_price and min_area <= max_area") from exc
+        raise bad_request(
+            "min_price must be <= max_price, min_area <= max_area, floor_min <= floor_max"
+        ) from exc
 
     result = await SearchListingsUseCase(ListingsRepository(session)).execute(
         filters,

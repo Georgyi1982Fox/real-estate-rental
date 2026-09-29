@@ -56,6 +56,19 @@ async def test_listing_shape(client: AsyncClient, seeded: Store) -> None:
         "owner_name": None,
         "fraud_level": "none",
         "fraud_reasons": [],
+        "floor": None,
+        "total_floors": None,
+        "bedrooms": None,
+        "bathrooms": None,
+        "condition": None,
+        "features": [],
+        "owner_type": None,
+        "address": None,
+        "latitude": None,
+        "longitude": None,
+        # Даты с сайта нет — дата появления у нас
+        "published_at": listing.created_at.isoformat().replace("+00:00", "Z"),
+        "updated_at": None,
     }
 
 
