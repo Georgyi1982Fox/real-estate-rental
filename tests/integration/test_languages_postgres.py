@@ -75,6 +75,8 @@ async def test_every_field_in_every_language(
     assert (listing.title_ru, listing.description_ka) == (RAW.title, RAW.description)
     assert (listing.description_ru, listing.title_ka) == ("", "")
 
+    assert await repository.language_coverage() == (1, 1)
+
     translator = ScriptTranslator()
     async with session_factory() as work:
         stats = await TranslateListingsUseCase(
@@ -106,6 +108,7 @@ async def test_every_field_in_every_language(
             ScriptTranslator(), ListingsRepository(work)
         ).execute(limit=10)
     assert again.checked == 0
+    assert await ListingsRepository(session).language_coverage() == (1, 0)
 
     # Хозяин изменил описание — переводы описания сброшены и сделаются заново
     changed = dataclasses.replace(RAW, description="ქირავდება ბინა, ახალი რემონტით.")

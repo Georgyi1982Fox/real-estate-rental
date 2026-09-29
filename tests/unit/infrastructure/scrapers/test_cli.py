@@ -160,6 +160,16 @@ def test_translate_command_when_busy(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "перевод уже идёт" in result.output
 
 
+def test_languages_command(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(scrape_cli, "language_status", AsyncMock(return_value=(120, 7)))
+
+    result = CliRunner().invoke(scrape_cli.cli, ["languages"])
+
+    assert result.exit_code == 0, result.output
+    assert "объявлений 120, на всех трёх языках 113, ждут перевода 7" in result.output
+    assert "translate --limit 5000" in result.output
+
+
 def test_details_command(monkeypatch: pytest.MonkeyPatch) -> None:
     fill = AsyncMock(return_value=BackfillStats(checked=5, updated=4, archived=1, failed=0))
     monkeypatch.setattr(scrape_cli, "fill_details", fill)
