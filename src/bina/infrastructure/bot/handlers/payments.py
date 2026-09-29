@@ -22,6 +22,7 @@ from bina.application.subscriptions import (
     plan_for_payload,
     validate_checkout,
 )
+from bina.application.use_cases.notifications import FREE_DELIVERY_DELAY
 from bina.application.use_cases.subscriptions import ActivateSubscriptionUseCase
 from bina.infrastructure.bot.keyboards.callbacks import PremiumBuyCallback
 from bina.infrastructure.bot.texts import t
@@ -55,6 +56,7 @@ def render_premium(user: User, plans: dict[str, Plan], now: datetime) -> str:
         status=status,
         free_searches=FREE_LIMITS.searches,
         premium_searches=PREMIUM_LIMITS.searches,
+        free_delay=int(FREE_DELIVERY_DELAY.total_seconds() // 3600),
         prices=prices,
     )
 

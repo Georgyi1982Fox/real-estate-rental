@@ -80,6 +80,7 @@ async def test_premium_shows_price_and_buy_button(harness: BotHarness) -> None:
     text = harness.last_text()
     assert "бесплатный тариф" in text
     assert "<b>100 ⭐</b> за 7 дн., <b>250 ⭐</b> за 30 дн." in text
+    assert "через 3 ч" in text, "разница тарифов в уведомлениях (TASK-085)"
     [[week], [month]] = harness.last_markup().inline_keyboard
     assert (week.text, month.text) == ("Купить 7 дн. за 100 ⭐", "Купить 30 дн. за 250 ⭐")
     assert week.callback_data == PremiumBuyCallback(plan=PREMIUM_WEEK).pack()

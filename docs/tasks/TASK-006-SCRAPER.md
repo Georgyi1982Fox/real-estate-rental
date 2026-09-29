@@ -43,7 +43,7 @@
 
 ### 6. Планировщик
 Создать src/bina/infrastructure/scrapers/scheduler.py:
-- APScheduler, интервал 6 часов
+- APScheduler, интервал 6 часов (с TASK-085 — каждый час)
 - Ручной запуск через CLI
 - Логирование
 

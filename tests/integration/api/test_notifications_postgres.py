@@ -7,10 +7,12 @@ Telegram (фейковый отправитель) → список, счётч�
 """
 
 from collections.abc import AsyncIterator
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bina.application.ports.notification_sender import DeliveryResult, INotificationSender
@@ -22,7 +24,8 @@ from bina.application.use_cases.notifications import (
 )
 from bina.infrastructure.api.server import create_app
 from bina.infrastructure.api.settings import ApiSettings
-from bina.infrastructure.db.models import District
+from bina.infrastructure.db.models import District, User
+from bina.infrastructure.db.models.users import SubscriptionTier
 from bina.infrastructure.db.repositories.listings import ListingsRepository
 from bina.infrastructure.db.repositories.notifications import (
     NotificationsRepository,
@@ -141,6 +144,44 @@ async def test_saved_search_crud(client: AsyncClient, vake: District) -> None:
     assert (await client.get("/api/searches", headers=headers(USER))).json() == {"items": []}
 
 
+async def make_premium(session: AsyncSession, telegram_id: int = 777) -> None:
+    await session.execute(
+        update(User)
+        .where(User.telegram_id == telegram_id)
+        .values(
+            subscription_tier=SubscriptionTier.NOMAD,
+            subscription_expires_at=datetime.now(UTC) + timedelta(days=1),
+        )
+    )
+    await session.commit()
+
+
+async def test_free_plan_alerts_are_delayed(
+    client: AsyncClient, session: AsyncSession, vake: District
+) -> None:
+    """TASK-085: бесплатному тарифу новая квартира приходит через 3 часа, Premium — сразу."""
+    await client.post(
+        "/api/searches", json={"filters": {"district": str(vake.id)}}, headers=headers(USER)
+    )
+    await ListingsRepository(session).create_or_update_from_raw(raw("1", 1500))
+    await session.commit()
+    assert await create_notifications(session) == (1, 0)
+
+    sender = RecordingSender()
+    now = datetime.now(UTC)
+    deliver = DeliverNotificationsUseCase(NotificationsRepository(session), sender)
+    assert (await deliver.execute(now=now)).sent == 0, "бесплатно: ещё рано"
+    assert (await deliver.execute(now=now + timedelta(hours=3, minutes=1))).sent == 1
+    await session.commit()
+
+    # С Premium — сразу
+    await make_premium(session)
+    await ListingsRepository(session).create_or_update_from_raw(raw("2", 1600))
+    await session.commit()
+    assert await create_notifications(session) == (1, 0)
+    assert (await deliver.execute(now=datetime.now(UTC))).sent == 1
+
+
 async def test_notifications_flow(
     client: AsyncClient, session: AsyncSession, vake: District
 ) -> None:
@@ -175,6 +216,8 @@ async def test_notifications_flow(
     assert favorite.status_code == 201
     await repository.create_or_update_from_raw(raw("1", 1200))
     await session.commit()
+    assert await create_notifications(session) == (0, 0), "«цена снижена» — только Premium"
+    await make_premium(session)
     assert await create_notifications(session) == (0, 1)
     assert await create_notifications(session) == (0, 0)
 
