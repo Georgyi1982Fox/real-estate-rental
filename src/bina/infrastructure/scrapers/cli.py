@@ -11,6 +11,7 @@ import structlog
 
 from bina.application.ports.scraper import BaseScraper
 from bina.application.use_cases.check_fraud import CheckFraudUseCase, FraudStats
+from bina.application.use_cases.find_duplicates import DuplicateStats, FindDuplicatesUseCase
 from bina.application.use_cases.notifications import (
     CreatedNotifications,
     CreateNotificationsUseCase,
@@ -50,6 +51,8 @@ TRANSLATE_BATCH = 20
 LLM_CONCURRENCY = max(1, int(os.getenv("LLM_CONCURRENCY", "") or 5))
 # Отправка уведомлений пачками (коммит после каждой)
 DELIVERY_BATCH = 100
+# Сколько объявлений проверять на дубликаты за запуск по расписанию
+DUPLICATES_BATCH = 2000
 
 
 def make_scraper(source: str, *, details: bool, dump_dir: Path | None) -> BaseScraper:
@@ -307,6 +310,22 @@ def _echo_translation(stats: TranslationStats) -> None:
     )
 
 
+async def find_duplicates(limit: int) -> DuplicateStats:
+    """Ищет ту же квартиру на разных сайтах среди ещё не проверенных объявлений (TASK-090)."""
+    db = DatabaseManager()
+    try:
+        async with db.session_factory() as session:
+            stats = await FindDuplicatesUseCase(ListingsRepository(session)).execute(limit)
+            await session.commit()
+        return stats
+    finally:
+        await db.dispose()
+
+
+def _echo_duplicates(stats: DuplicateStats) -> None:
+    click.echo(f"дубликаты: проверено {stats.checked}, склеено {stats.found}")
+
+
 async def notify() -> tuple[CreatedNotifications, DeliveryStats | None]:
     """Создаёт уведомления и отправляет их в Telegram (если задан ``BOT_TOKEN``)."""
     db = DatabaseManager()
@@ -430,6 +449,13 @@ def details_command(limit: int, recheck_days: int) -> None:
     _echo_details(asyncio.run(fill_details(limit, recheck_days)))
 
 
+@cli.command(name="duplicates")
+@click.option("--limit", default=5000, show_default=True, type=click.IntRange(1, 100000))
+def duplicates_command(limit: int) -> None:
+    """Найти одну и ту же квартиру на разных сайтах и показывать её один раз."""
+    _echo_duplicates(asyncio.run(find_duplicates(limit)))
+
+
 @cli.command(name="fraud")
 @click.option("--limit", default=50, show_default=True, type=click.IntRange(1, 5000))
 def fraud_command(limit: int) -> None:
@@ -510,6 +536,11 @@ def schedule(
                 _echo_details(await fill_details(details_limit, recheck_days))
             except Exception as exc:  # noqa: BLE001 - сбой дозагрузки не останавливает расписание
                 logger.error("Scheduled details backfill failed", error=str(exc))
+        # До перевода: скрытые дубликаты не переводятся (экономия AI)
+        try:
+            _echo_duplicates(await find_duplicates(DUPLICATES_BATCH))
+        except Exception as exc:  # noqa: BLE001 - сбой не останавливает расписание
+            logger.error("Scheduled duplicates search failed", error=str(exc))
         if with_translation:
             try:
                 _echo_translation(await translate(translate_limit))

@@ -53,6 +53,7 @@ async def test_listing_shape(client: AsyncClient, seeded: Store) -> None:
         "images": ["/img/900.jpg"],
         "has_phone": False,
         "source_url": None,
+        "also_on": [],
         "owner_name": None,
         "fraud_level": "none",
         "fraud_reasons": [],

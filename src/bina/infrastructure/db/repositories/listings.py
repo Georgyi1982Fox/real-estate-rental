@@ -17,9 +17,10 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import aliased, selectinload
 
 from bina.application.dtos.listing_search import ListingSearchFilters, ListingSort
+from bina.application.duplicates import candidate_bounds
 from bina.application.fraud import HIDE_SCORE
 from bina.application.listing_details import clean_features
 from bina.application.localization import district_names, script_of
@@ -130,6 +131,8 @@ class ListingsRepository(IListingsRepository):
             Listing.is_deleted.is_(False),
             # TASK-011: почти наверняка мошенники — не в поиске и не в уведомлениях
             Listing.fraud_score < HIDE_SCORE,
+            # TASK-090: та же квартира с другого сайта показывается один раз
+            not_hidden_duplicate(),
         ]
         district_ids = filters.all_district_ids
         if len(district_ids) == 1:
@@ -213,6 +216,8 @@ class ListingsRepository(IListingsRepository):
                 # Для уведомления «цена снижена» (TASK-028)
                 values["previous_price"] = listing.price
                 values["price_changed_at"] = datetime.now(UTC)
+                # С новой ценой дубликаты могут быть другими (TASK-090)
+                values["duplicates_checked_at"] = None
             if text_changed or price_changed or bool(listing.images) != bool(photos):
                 values["fraud_checked_at"] = None
         if listing is None:
@@ -244,6 +249,72 @@ class ListingsRepository(IListingsRepository):
             Listing.source_updated_at,
         ).where(Listing.source_name == source_name, Listing.is_deleted.is_(False))
         return list((await self._session.execute(query)).all())
+
+    async def list_duplicates_unchecked(self, limit: int) -> list[Listing]:
+        """Активные объявления, для которых ещё не искали дубликаты (старые первыми).
+
+        Старые первыми: основным становится объявление, появившееся раньше.
+        """
+        query = (
+            select(Listing)
+            .where(
+                Listing.status == ListingStatus.ACTIVE,
+                Listing.is_deleted.is_(False),
+                Listing.duplicates_checked_at.is_(None),
+            )
+            .order_by(Listing.created_at, Listing.id)
+            .limit(limit)
+        )
+        return list((await self._session.execute(query)).scalars().all())
+
+    async def duplicate_candidates(self, listing: Listing) -> list[Listing]:
+        """Активные объявления того же района с теми же комнатами, похожей площадью и ценой."""
+        bounds = candidate_bounds(listing)
+        query = (
+            select(Listing)
+            .where(
+                Listing.id != listing.id,
+                Listing.status == ListingStatus.ACTIVE,
+                Listing.is_deleted.is_(False),
+                Listing.district_id == listing.district_id,
+                Listing.rooms == listing.rooms,
+                Listing.currency == listing.currency,
+                Listing.area.between(bounds.area_min, bounds.area_max),
+                Listing.price.between(bounds.price_min, bounds.price_max),
+            )
+            .order_by(Listing.created_at, Listing.id)
+        )
+        return list((await self._session.execute(query)).scalars().all())
+
+    async def mark_duplicate(self, listing_id: UUID, primary_id: UUID) -> None:
+        """Объявление — дубликат ``primary_id``."""
+        await self._session.execute(
+            update(Listing).where(Listing.id == listing_id).values(duplicate_of=primary_id)
+        )
+
+    async def mark_duplicates_checked(self, listing_ids: list[UUID]) -> None:
+        """Дубликаты для этих объявлений искали."""
+        if listing_ids:
+            await self._session.execute(
+                update(Listing)
+                .where(Listing.id.in_(listing_ids))
+                .values(duplicates_checked_at=datetime.now(UTC))
+            )
+
+    async def same_apartment_links(self, listing: Listing) -> list[tuple[str, str]]:
+        """Сайты и ссылки той же квартиры: основное объявление и его дубликаты (активные)."""
+        primary_id = listing.duplicate_of or listing.id
+        query = (
+            select(Listing.source_name, Listing.url)
+            .where(
+                or_(Listing.id == primary_id, Listing.duplicate_of == primary_id),
+                Listing.status == ListingStatus.ACTIVE,
+                Listing.is_deleted.is_(False),
+                Listing.url.is_not(None),
+            )
+            .order_by(Listing.created_at)
+        )
+        return [(str(source), str(url)) for source, url in (await self._session.execute(query))]
 
     async def mark_checked(self, source_name: str, source_ids: list[str]) -> None:
         """Объявления видели на сайте сейчас (в списке): откладывает их повторную проверку."""
@@ -317,6 +388,8 @@ class ListingsRepository(IListingsRepository):
                 Listing.status == ListingStatus.ACTIVE,
                 Listing.is_deleted.is_(False),
                 _untranslated(),
+                # Скрытые дубликаты не показываются — переводить их незачем (TASK-090)
+                not_hidden_duplicate(),
             )
             .order_by(Listing.created_at.desc())
             .limit(limit)
@@ -326,7 +399,11 @@ class ListingsRepository(IListingsRepository):
 
     async def language_coverage(self) -> tuple[int, int]:
         """Активных объявлений всего и сколько из них ещё ждут перевода."""
-        active = and_(Listing.status == ListingStatus.ACTIVE, Listing.is_deleted.is_(False))
+        active = and_(
+            Listing.status == ListingStatus.ACTIVE,
+            Listing.is_deleted.is_(False),
+            not_hidden_duplicate(),
+        )
         query = select(
             func.count().filter(active),
             func.count().filter(and_(active, _untranslated())),
@@ -428,6 +505,25 @@ def _untranslated() -> ColumnElement[bool]:
         *(func.coalesce(getattr(Listing, f"title_{language}"), "") == "" for language in LANGUAGES),
         and_(has_description, or_(*(func.coalesce(column, "") == "" for column in descriptions))),
     )
+
+
+def not_hidden_duplicate() -> ColumnElement[bool]:
+    """Не дубликат, или его основное объявление уже не в поиске (TASK-090).
+
+    Основное снято с сайта или скрыто антифродом — тогда показывается дубликат.
+    """
+    primary = aliased(Listing)
+    visible_primary = (
+        select(primary.id)
+        .where(
+            primary.id == Listing.duplicate_of,
+            primary.status == ListingStatus.ACTIVE,
+            primary.is_deleted.is_(False),
+            primary.fraud_score < HIDE_SCORE,
+        )
+        .exists()
+    )
+    return or_(Listing.duplicate_of.is_(None), ~visible_primary)
 
 
 def source_texts(raw: RawListing) -> dict[str, str]:

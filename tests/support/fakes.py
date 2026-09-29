@@ -201,6 +201,9 @@ class FakeListingsRepository:
     async def count(self, filters: ListingSearchFilters) -> int:
         return len(self._matching(filters))
 
+    async def same_apartment_links(self, listing: Listing) -> list[tuple[str, str]]:
+        return [(listing.source_name, listing.url)] if listing.url else []
+
     async def get_by_id(self, listing_id: UUID) -> Listing | None:
         return self._store.listing(listing_id)
 

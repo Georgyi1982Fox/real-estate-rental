@@ -144,6 +144,15 @@ class Listing(Base, SoftDeleteMixin):
     details_fetched_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # TASK-090: та же квартира на другом сайте (или повторно на том же) — ссылка на
+    # основное объявление; пока основное в поиске, дубликат скрыт
+    duplicate_of: Mapped[UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("bina_listings.id", ondelete="SET NULL"), nullable=True
+    )
+    # Когда искали дубликаты; None — ещё не искали (или изменилась цена)
+    duplicates_checked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     # Когда объявление последний раз видели на сайте (в списке или на его странице);
     # старые проверяются заново, снятые уходят в архив. None — ещё не проверяли
     checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
