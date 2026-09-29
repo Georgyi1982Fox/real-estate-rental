@@ -1,0 +1,2 @@
+# Windows-скрипты: CRLF, иначе cmd неправильно читает метки goto
+*.bat text eol=crlf
