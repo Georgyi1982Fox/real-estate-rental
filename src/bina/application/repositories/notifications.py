@@ -47,8 +47,13 @@ class IListingMatchesRepository(Protocol):
         """Активные объявления под фильтры, появившиеся после ``since`` (новые сверху)."""
         ...
 
-    async def favorite_price_drops(self, since: datetime) -> list[PriceDrop]:
-        """Подешевевшие после ``since`` объявления из избранного пользователей."""
+    async def favorite_price_drops(
+        self, since: datetime, *, premium_only: bool = False
+    ) -> list[PriceDrop]:
+        """Подешевевшие после ``since`` объявления из избранного пользователей.
+
+        ``premium_only`` — только у пользователей с действующим Premium.
+        """
         ...
 
 
@@ -65,8 +70,14 @@ class INotificationsRepository(Protocol):
         """Уведомление о снижении цены; ``False``, если о снижении до этой цены уже сообщали."""
         ...
 
-    async def list_unsent(self, limit: int) -> list[PendingNotification]:
-        """Неотправленные в Telegram уведомления (старые первыми)."""
+    async def list_unsent(
+        self, limit: int, free_created_before: datetime | None = None
+    ) -> list[PendingNotification]:
+        """Неотправленные в Telegram уведомления (старые первыми).
+
+        ``free_created_before``: пользователям без Premium — только созданные
+        до этого момента (задержка бесплатного тарифа); Premium — все сразу.
+        """
         ...
 
     async def mark_sent(self, notification_ids: list[UUID]) -> None:

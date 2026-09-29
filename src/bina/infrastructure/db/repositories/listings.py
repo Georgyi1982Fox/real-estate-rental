@@ -28,6 +28,7 @@ from bina.application.ports.translator import LANGUAGES, ListingText
 from bina.application.repositories.listings import IListingsRepository
 from bina.application.repositories.notifications import PriceDrop
 from bina.infrastructure.db.models import District, Favorite, Listing, ListingStatus, User
+from bina.infrastructure.db.repositories.users import premium_now
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -275,8 +276,13 @@ class ListingsRepository(IListingsRepository):
         )
         return int((await self._session.execute(query)).scalar_one())
 
-    async def favorite_price_drops(self, since: datetime) -> list[PriceDrop]:
-        """Подешевевшие после ``since`` объявления из избранного пользователей."""
+    async def favorite_price_drops(
+        self, since: datetime, *, premium_only: bool = False
+    ) -> list[PriceDrop]:
+        """Подешевевшие после ``since`` объявления из избранного пользователей.
+
+        ``premium_only`` — только у пользователей с действующим Premium (TASK-085).
+        """
         query = (
             select(Favorite.user_id, Listing)
             .join(Listing, Listing.id == Favorite.listing_id)
@@ -289,6 +295,8 @@ class ListingsRepository(IListingsRepository):
                 Listing.previous_price > Listing.price,
             )
         )
+        if premium_only:
+            query = query.where(premium_now())
         rows = (await self._session.execute(query)).all()
         # previous_price не NULL (условие выше), проверка — для типов
         return [

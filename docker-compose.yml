@@ -74,7 +74,7 @@ services:
       - bina-scrape
       - schedule
       - --interval
-      - "${SCRAPE_INTERVAL_HOURS:-6}"
+      - "${SCRAPE_INTERVAL_HOURS:-1}"
       - --limit
       - "${SCRAPE_LIMIT:-500}"
     depends_on:

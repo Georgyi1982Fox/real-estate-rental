@@ -1,13 +1,21 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import ColumnElement, and_, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bina.application.repositories.users import IUsersRepository
 from bina.infrastructure.db.models import User
 from bina.infrastructure.db.models.users import SubscriptionTier
+
+
+def premium_now() -> ColumnElement[bool]:
+    """SQL-условие «Premium действует сейчас» (как ``application.subscriptions.is_premium``)."""
+    return and_(
+        User.subscription_tier != SubscriptionTier.FREE,
+        User.subscription_expires_at > func.now(),
+    )
 
 
 class UsersRepository(IUsersRepository):

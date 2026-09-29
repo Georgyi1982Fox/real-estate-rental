@@ -336,7 +336,9 @@ async def notify() -> tuple[CreatedNotifications, DeliveryStats | None]:
             while True:
                 async with db.session_factory() as session:
                     stats = await DeliverNotificationsUseCase(
-                        NotificationsRepository(session), sender
+                        NotificationsRepository(session),
+                        sender,
+                        free_delay=timedelta(hours=ScraperSettings.FREE_ALERT_DELAY_HOURS),
                     ).execute(limit=DELIVERY_BATCH)
                     await session.commit()
                 sent += stats.sent
@@ -467,7 +469,7 @@ def fraud_command(limit: int) -> None:
 )
 @click.option(
     "--details-limit",
-    default=200,
+    default=50,
     show_default=True,
     type=click.IntRange(0, 5000),
     help="Сколько старых объявлений дозагрузить и перепроверить за запуск (0 — не надо).",

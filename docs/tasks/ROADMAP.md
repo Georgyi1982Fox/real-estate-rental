@@ -25,7 +25,7 @@
 | # | Задача | Кто | Статус |
 |---|---|---|---|
 | 1 | TASK-084 Тариф на 7 дней (`TASK-084-WEEK-PLAN.md`; фронт — FRONTEND-016) | бэкенд + фронт | ✅ бэкенд |
-| 2 | TASK-085 Мгновенные уведомления для Premium, с задержкой — для бесплатных | бэкенд | 📋 |
+| 2 | TASK-085 Мгновенные уведомления для Premium, с задержкой — для бесплатных (`TASK-085-PREMIUM-ALERTS.md`) | бэкенд | ✅ |
 | 3 | TASK-086 Сохранённые поиски с новыми фильтрами (этаж, удобства, собственник) | бэкенд + фронт | 📋 |
 | 4 | TASK-087 Запуск одним кликом (`start-bina.bat`) | бэкенд | 📋 |
 | 5 | TASK-044 Бэкапы базы + TASK-045 Восстановление | бэкенд | 📋 |
@@ -62,7 +62,7 @@
 | 005 | Скрапер MyHome.ge | ✅ | `TASK-006-SCRAPER.md`, `TASK-009-MYHOME-SCRAPER.md` |
 | 006 | Скрапер SS.ge | ✅ | `TASK-010-SS-SCRAPER.md`, `TASK-018-LISTING-DETAILS.md` |
 | 007 | Дедупликация объявлений | ✅ | внутри одного сайта; между сайтами — TASK-090 |
-| 008 | Планировщик скрапинга | ✅ | `bina-scrape schedule`, каждые 6 ч; `TASK-020-SCRAPER-FRESHNESS.md` |
+| 008 | Планировщик скрапинга | ✅ | `bina-scrape schedule`, каждый час (TASK-085); `TASK-020-SCRAPER-FRESHNESS.md` |
 | 009 | REST API (FastAPI) | ✅ | `TASK-008-API.md`; вход через Telegram initData |
 | 010 | AI Перевод описаний | ✅ | `TASK-005-TRANSLATE.md`, `TASK-011-AI-TRANSLATION.md`, `TASK-019-LOCALIZATION.md` |
 | 011 | AI Детекция мошенничества | ✅ | `TASK-017-FRAUD.md` |

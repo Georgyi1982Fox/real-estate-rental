@@ -5,7 +5,7 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import delete, func, select, text, update
+from sqlalchemy import delete, func, or_, select, text, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -21,6 +21,7 @@ from bina.infrastructure.db.models import (
     SavedSearch,
     User,
 )
+from bina.infrastructure.db.repositories.users import premium_now
 
 
 class SavedSearchesRepository(ISavedSearchesRepository):
@@ -164,8 +165,13 @@ class NotificationsRepository(INotificationsRepository):
             .values(is_read=True)
         )
 
-    async def list_unsent(self, limit: int) -> list[PendingNotification]:
-        """Неотправленные в Telegram уведомления (старые первыми)."""
+    async def list_unsent(
+        self, limit: int, free_created_before: datetime | None = None
+    ) -> list[PendingNotification]:
+        """Неотправленные в Telegram уведомления (старые первыми).
+
+        ``free_created_before``: без Premium — только созданные до этого момента.
+        """
         query = (
             select(Notification, User.telegram_id, User.language)
             .join(User, User.id == Notification.user_id)
@@ -174,6 +180,8 @@ class NotificationsRepository(INotificationsRepository):
             .order_by(Notification.created_at)
             .limit(limit)
         )
+        if free_created_before is not None:
+            query = query.where(or_(premium_now(), Notification.created_at <= free_created_before))
         rows = (await self._session.execute(query)).all()
         return [
             PendingNotification(

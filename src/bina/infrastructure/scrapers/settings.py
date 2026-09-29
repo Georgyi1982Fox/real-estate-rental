@@ -14,8 +14,12 @@ DEFAULT_USER_AGENTS: list[str] = [
 class ScraperSettings:
     """Настройки для парсера объявлений."""
 
-    # Интервал между запусками парсинга (в часах)
-    SCRAPE_INTERVAL_HOURS = int(os.getenv("SCRAPE_INTERVAL_HOURS", "6"))
+    # Интервал между запусками парсинга (в часах). Каждый час: Premium получает новые
+    # квартиры быстро (TASK-085); известные объявления парсер не открывает, нагрузка мала
+    SCRAPE_INTERVAL_HOURS = int(os.getenv("SCRAPE_INTERVAL_HOURS", "1"))
+
+    # Задержка уведомлений бесплатного тарифа, часов (TASK-085)
+    FREE_ALERT_DELAY_HOURS = int(os.getenv("FREE_ALERT_DELAY_HOURS", "3"))
 
     # Через сколько дней объявление, которого не было в списке сайта, проверяется заново
     RECHECK_DAYS = int(os.getenv("RECHECK_DAYS", "3"))

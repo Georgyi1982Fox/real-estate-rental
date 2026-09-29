@@ -85,8 +85,8 @@ _RU: dict[str, str] = {
         "⭐ <b>Bina.ai Premium</b>\n\n"
         "{status}\n\n"
         "<b>Бесплатно:</b> избранное без ограничений, {free_searches} сохранённый поиск.\n"
-        "<b>Premium:</b> до {premium_searches} сохранённых поисков "
-        "с уведомлениями о новых квартирах.\n\n"
+        "<b>Premium:</b> до {premium_searches} сохранённых поисков, новые квартиры — "
+        "сразу (бесплатно — через {free_delay} ч), уведомления «цена снижена».\n\n"
         "Цена: {prices}. Оплата звёздами Telegram."
     ),
     "premium_free": "Сейчас у вас бесплатный тариф.",
@@ -191,8 +191,8 @@ _EN: dict[str, str] = {
         "⭐ <b>Bina.ai Premium</b>\n\n"
         "{status}\n\n"
         "<b>Free:</b> unlimited favorites, {free_searches} saved search.\n"
-        "<b>Premium:</b> up to {premium_searches} saved searches "
-        "with alerts about new apartments.\n\n"
+        "<b>Premium:</b> up to {premium_searches} saved searches, new apartments "
+        "right away (free plan: after {free_delay} h), price drop alerts.\n\n"
         "Price: {prices}. Paid with Telegram Stars."
     ),
     "premium_free": "You are on the free plan.",
