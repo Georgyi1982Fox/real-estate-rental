@@ -22,6 +22,10 @@ class ListingSort(StrEnum):
     PRICE_PER_M2_ASC = "price_per_m2_asc"
 
 
+# Источники объявлений (Listing.source_name)
+SOURCES: tuple[str, ...] = ("ss", "myhome", "telegram")
+
+
 class ListingSearchFilters(BaseModel):
     """Фильтры поиска активных объявлений.
 
@@ -57,6 +61,8 @@ class ListingSearchFilters(BaseModel):
     owner_only: bool = False
     # Опубликовано на сайте не раньше
     published_since: datetime | None = None
+    # Источники (любой из): ss, myhome, telegram (SOURCES)
+    sources: tuple[str, ...] = ()
 
     @property
     def all_district_ids(self) -> list[UUID]:

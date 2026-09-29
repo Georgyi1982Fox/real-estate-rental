@@ -324,6 +324,19 @@ class ListingsRepository(IListingsRepository):
         )
         return [(str(source), str(url)) for source, url in (await self._session.execute(query))]
 
+    async def source_stats(self) -> list[tuple[str, str, int]]:
+        """Сколько объявлений у каждого источника в каждом статусе."""
+        query = (
+            select(Listing.source_name, Listing.status, func.count())
+            .where(Listing.is_deleted.is_(False))
+            .group_by(Listing.source_name, Listing.status)
+            .order_by(Listing.source_name, Listing.status)
+        )
+        rows = (await self._session.execute(query)).all()
+        return [
+            (str(source), ListingStatus(status).value, int(count)) for source, status, count in rows
+        ]
+
     async def recent_skips(self, source_name: str, since: datetime) -> set[str]:
         """ID объявлений источника, пропущенных после ``since`` (TASK-091)."""
         query = select(ScrapeSkip.source_id).where(
@@ -670,6 +683,8 @@ def _detail_conditions(filters: ListingSearchFilters) -> list[ColumnElement[bool
     if filters.published_since is not None:
         published = func.coalesce(Listing.source_published_at, Listing.created_at)
         conditions.append(published >= filters.published_since)
+    if filters.sources:
+        conditions.append(Listing.source_name.in_(filters.sources))
     return conditions
 
 

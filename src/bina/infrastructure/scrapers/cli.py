@@ -478,6 +478,35 @@ def details_command(limit: int, recheck_days: int) -> None:
     _echo_details(asyncio.run(fill_details(limit, recheck_days)))
 
 
+async def source_stats() -> list[tuple[str, str, int]]:
+    """Сколько объявлений у каждого источника: в поиске и снятых."""
+    db = DatabaseManager()
+    try:
+        async with db.session_factory() as session:
+            return await ListingsRepository(session).source_stats()
+    finally:
+        await db.dispose()
+
+
+_STATUS_NAMES = {"active": "в поиске", "archived": "снято", "sold": "сдано"}
+
+
+@cli.command(name="stats")
+def stats_command() -> None:
+    """Сколько объявлений у каждого источника: в поиске и снятых (неактуальных)."""
+    rows = asyncio.run(source_stats())
+    if not rows:
+        click.echo("объявлений пока нет")
+        return
+    for source in dict.fromkeys(row[0] for row in rows):
+        parts = [
+            f"{_STATUS_NAMES.get(status, status)} {count}"
+            for name, status, count in rows
+            if name == source
+        ]
+        click.echo(f"{source}: " + ", ".join(parts))
+
+
 @cli.command(name="duplicates")
 @click.option("--limit", default=5000, show_default=True, type=click.IntRange(1, 100000))
 def duplicates_command(limit: int) -> None:

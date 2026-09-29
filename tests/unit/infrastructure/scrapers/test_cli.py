@@ -387,3 +387,14 @@ def test_scrape_sources(monkeypatch: pytest.MonkeyPatch) -> None:
     assert scrape_cli.scrape_sources() == ["myhome", "ss"]
     monkeypatch.setenv("LLM_API_KEY", "test-key")
     assert scrape_cli.scrape_sources() == ["myhome", "ss", "telegram"]
+
+
+def test_stats_command(monkeypatch: pytest.MonkeyPatch) -> None:
+    rows = [("myhome", "active", 900), ("myhome", "archived", 120), ("ss", "active", 700)]
+    monkeypatch.setattr(scrape_cli, "source_stats", AsyncMock(return_value=rows))
+
+    result = CliRunner().invoke(scrape_cli.cli, ["stats"])
+
+    assert result.exit_code == 0, result.output
+    assert "myhome: в поиске 900, снято 120" in result.output
+    assert "ss: в поиске 700" in result.output
