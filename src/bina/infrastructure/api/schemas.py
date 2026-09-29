@@ -11,6 +11,7 @@ from bina.application.dtos.pagination import Page
 from bina.application.fraud import fraud_level
 from bina.application.listing_details import CONDITIONS, FEATURES, clean_features
 from bina.application.localization import localize_address, localize_name
+from bina.application.price_analysis import PriceAnalysis, PriceLevel
 from bina.application.subscriptions import Limits, Plan, effective_tier
 from bina.infrastructure.api.validation import clean_text
 from bina.infrastructure.db.models import District, Listing, Notification, SavedSearch, User
@@ -120,6 +121,47 @@ class OwnerOut(BaseModel):
         """``None``, если сайт не указал имя."""
         names = localize_name(name)
         return cls(name=names) if names else None
+
+
+class PriceAnalysisOut(BaseModel):
+    """TASK-093: цена по сравнению с похожими квартирами района.
+
+    ``level`` — всем; подробности (проценты, обычная цена, выборка) — только Premium,
+    без него они ``null`` и ``premium_required: true``.
+    """
+
+    level: Literal["below", "fair", "above", "unknown"] = Field(
+        description="below — дешевле обычного, fair — обычная цена, above — дороже, "
+        "unknown — мало данных"
+    )
+    diff_percent: int | None = Field(
+        default=None, description="На сколько % отличается от обычной (минус — дешевле)"
+    )
+    typical_price: float | None = Field(
+        default=None, description="Обычная цена такой квартиры в районе (медиана)"
+    )
+    currency: str
+    sample: int | None = Field(default=None, description="Сколько объявлений в сравнении")
+    basis: Literal["district_rooms", "district_m2"] | None = Field(
+        default=None,
+        description="district_rooms — те же комнаты в районе, district_m2 — цена за м² района",
+    )
+    premium_required: bool = False
+
+    @classmethod
+    def build(cls, analysis: PriceAnalysis, currency: str, *, premium: bool) -> "PriceAnalysisOut":
+        """Ответ с учётом тарифа."""
+        known = analysis.level is not PriceLevel.UNKNOWN
+        if not premium:
+            return cls(level=analysis.level.value, currency=currency, premium_required=known)
+        return cls(
+            level=analysis.level.value,
+            diff_percent=analysis.diff_percent,
+            typical_price=float(analysis.typical_price) if analysis.typical_price else None,
+            currency=currency,
+            sample=analysis.sample,
+            basis=analysis.basis.value if analysis.basis else None,
+        )
 
 
 class SourceLinkOut(BaseModel):

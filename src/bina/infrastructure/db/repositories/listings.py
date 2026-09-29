@@ -27,6 +27,7 @@ from bina.application.listing_details import clean_features
 from bina.application.localization import district_names, script_of
 from bina.application.ports.scraper import RawListing
 from bina.application.ports.translator import LANGUAGES, ListingText
+from bina.application.price_analysis import ROOMS_GROUP_MAX
 from bina.application.repositories.listings import IListingsRepository
 from bina.application.repositories.notifications import PriceDrop
 from bina.infrastructure.db.models import (
@@ -523,6 +524,49 @@ class ListingsRepository(IListingsRepository):
         if count < MIN_MEDIAN_SAMPLES or median is None:
             return None
         return Decimal(str(median))
+
+    async def rooms_median_price(
+        self, district_id: UUID, rooms: int, currency: str
+    ) -> tuple[int, Decimal | None]:
+        """Сколько видимых объявлений района с этим числом комнат (4+ вместе) и медиана цены."""
+        rooms_condition = (
+            Listing.rooms >= ROOMS_GROUP_MAX if rooms >= ROOMS_GROUP_MAX else Listing.rooms == rooms
+        )
+        query = select(func.count(), func.percentile_cont(0.5).within_group(Listing.price)).where(
+            *self._visible(),
+            Listing.district_id == district_id,
+            Listing.currency == currency,
+            Listing.price > 0,
+            rooms_condition,
+        )
+        count, median = (await self._session.execute(query)).one()
+        return int(count), Decimal(str(median)) if median is not None else None
+
+    async def district_price_per_m2(
+        self, district_id: UUID, currency: str
+    ) -> tuple[int, Decimal | None]:
+        """Сколько видимых объявлений района с площадью и медиана цены за м²."""
+        query = select(
+            func.count(), func.percentile_cont(0.5).within_group(Listing.price / Listing.area)
+        ).where(
+            *self._visible(),
+            Listing.district_id == district_id,
+            Listing.currency == currency,
+            Listing.price > 0,
+            Listing.area > 0,
+        )
+        count, median = (await self._session.execute(query)).one()
+        return int(count), Decimal(str(median)) if median is not None else None
+
+    @staticmethod
+    def _visible() -> list[ColumnElement[bool]]:
+        """Объявления, которые видит пользователь (для статистики цен)."""
+        return [
+            Listing.status == ListingStatus.ACTIVE,
+            Listing.is_deleted.is_(False),
+            Listing.fraud_score < HIDE_SCORE,
+            not_hidden_duplicate(),
+        ]
 
     async def save_fraud(self, listing_id: UUID, score: int, reasons: list[str]) -> None:
         """Записать оценку и время проверки."""
