@@ -21,6 +21,8 @@ dependencies = [
     "click>=8.1.0",
     "fastapi>=0.110.0",
     "uvicorn[standard]>=0.29.0",
+    # PDF: договор аренды и акт приёмки (TASK-101, TASK-102)
+    "fpdf2>=2.7",
 ]
 
 [project.optional-dependencies]

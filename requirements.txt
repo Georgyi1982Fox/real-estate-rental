@@ -26,6 +26,7 @@ aiogram>=3.4
 
 # REST API
 fastapi>=0.110.0
+fpdf2>=2.7
 uvicorn[standard]>=0.29.0
 
 # Validation
