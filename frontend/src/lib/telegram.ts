@@ -5,6 +5,8 @@ type HapticImpact = 'light' | 'medium' | 'heavy' | 'rigid' | 'soft';
 type HapticNotification = 'success' | 'error' | 'warning';
 export type HapticType = HapticImpact | HapticNotification | 'selection';
 type ColorScheme = 'light' | 'dark';
+/** Итог окна оплаты openInvoice */
+export type InvoiceStatus = 'paid' | 'cancelled' | 'failed' | 'pending';
 
 /** Пользователь из initDataUnsafe — только для UI; доверять можно лишь проверенному бэкендом initData */
 export interface TelegramUser {
@@ -48,6 +50,7 @@ interface TelegramWebApp {
   onEvent(event: 'themeChanged', callback: () => void): void;
   openLink(url: string): void;
   openTelegramLink(url: string): void;
+  openInvoice?(url: string, callback?: (status: InvoiceStatus) => void): void;
   MainButton: TelegramMainButton;
   BackButton: {
     show(): void;
@@ -180,4 +183,25 @@ export function openLink(url: string, navigateInternal: (path: string) => void):
   // Браузер: новая вкладка; если её заблокировали — в этой же
   const opened = window.open(target.href, '_blank', 'noopener,noreferrer');
   if (!opened) window.location.assign(target.href);
+}
+
+/** Можно ли платить звёздами прямо в приложении (openInvoice есть с Bot API 6.1) */
+export function canPay(): boolean {
+  const webApp = getWebApp();
+  return webApp !== null && supports(webApp, '6.1') && typeof webApp.openInvoice === 'function';
+}
+
+/** Открыть окно оплаты Telegram; промис завершается, когда пользователь его закрыл */
+export function openInvoice(url: string): Promise<InvoiceStatus> {
+  const webApp = getWebApp();
+  if (!webApp?.openInvoice) return Promise.reject(new Error('openInvoice is not supported'));
+  const open = webApp.openInvoice.bind(webApp);
+  return new Promise((resolve, reject) => {
+    try {
+      open(url, resolve);
+    } catch (error) {
+      // Например, окно оплаты уже открыто
+      reject(error instanceof Error ? error : new Error(String(error)));
+    }
+  });
 }

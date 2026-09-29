@@ -12,6 +12,7 @@ import { haptic } from '../lib/telegram';
 import { useAuth } from '../providers/AuthProvider';
 import { useI18n } from '../providers/I18nProvider';
 import { useToast } from '../providers/ToastProvider';
+import { showPremiumPrompt } from './usePremiumPrompt';
 
 // Сохранённые поиски. Сначала — бэкенд /api/searches. Пока его нет (404) или нет сети,
 // работаем с mock-данными в localStorage: интерфейс полностью рабочий, а когда
@@ -171,8 +172,14 @@ export function useSavedSearches() {
           : await apiPost<SavedSearch>(API_PATH, body);
         update((list) => [created, ...list]);
         return created;
-      } catch {
-        fail();
+      } catch (error) {
+        // Лимит бесплатного тарифа — не ошибка, а предложение Premium
+        if (error instanceof ApiError && error.isPaymentRequired) {
+          haptic('warning');
+          showPremiumPrompt('searches');
+        } else {
+          fail();
+        }
         return null;
       }
     },

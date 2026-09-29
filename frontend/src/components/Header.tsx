@@ -45,7 +45,7 @@ export default function Header() {
             className="app-icon-button app-header__favorites relative"
             aria-label={count > 0 ? fill(t.header.favorites_count, count) : t.header.favorites}
           >
-            <span aria-hidden="true">♡</span>
+            <Icon name="heart" className="size-5" />
             <CountBadge count={count} max={99} />
           </Link>
           {/* Гостю уведомлений нет — колокольчик не показываем */}

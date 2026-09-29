@@ -5,11 +5,14 @@ import { getInitData } from '../lib/telegram';
 
 export class ApiError extends Error {
   readonly status: number;
+  /** Машинный код ошибки из тела ответа, например "payment_required" */
+  readonly code?: string;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, code?: string) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.code = code;
   }
 
   get isNotFound(): boolean {
@@ -20,6 +23,35 @@ export class ApiError extends Error {
   get isUnauthorized(): boolean {
     return this.status === 401;
   }
+
+  /** 402: исчерпан лимит бесплатного тарифа — нужно предложить Premium */
+  get isPaymentRequired(): boolean {
+    return this.status === 402 || this.code === 'payment_required';
+  }
+}
+
+/**
+ * Код ошибки из JSON-тела. Бэкенд может положить его в корень ({ code }),
+ * в { error: { code } } или в FastAPI-обёртку { detail: { code } }
+ */
+async function readErrorCode(response: Response): Promise<string | undefined> {
+  try {
+    const body: unknown = await response.json();
+    const candidates = [body, pick(body, 'error'), pick(body, 'detail')];
+    for (const candidate of candidates) {
+      const code = pick(candidate, 'code');
+      if (typeof code === 'string') return code;
+    }
+  } catch {
+    // Тело не JSON или пустое — кода нет
+  }
+  return undefined;
+}
+
+function pick(value: unknown, key: string): unknown {
+  return typeof value === 'object' && value !== null
+    ? (value as Record<string, unknown>)[key]
+    : undefined;
 }
 
 async function request<T>(
@@ -51,7 +83,8 @@ async function request<T>(
   }
 
   if (!response.ok) {
-    throw new ApiError(response.status, response.statusText || 'Request failed');
+    const code = await readErrorCode(response);
+    throw new ApiError(response.status, response.statusText || 'Request failed', code);
   }
   // 204 No Content (например, /api/auth/logout)
   if (response.status === 204) return undefined as T;

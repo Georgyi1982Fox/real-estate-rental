@@ -6,6 +6,7 @@ import HomePage from './pages/HomePage';
 import ListingPage from './pages/ListingPage';
 import NotFoundPage from './pages/NotFoundPage';
 import NotificationsPage from './pages/NotificationsPage';
+import PremiumPage from './pages/PremiumPage';
 import ProfilePage from './pages/ProfilePage';
 import SavedSearchesPage from './pages/SavedSearchesPage';
 import TestCardPage from './pages/TestCardPage';
@@ -22,6 +23,7 @@ const router = createBrowserRouter(
         { path: '/listing/:id', element: <ListingPage /> },
         { path: '/favorites', element: <FavoritesPage /> },
         { path: '/profile', element: <ProfilePage /> },
+        { path: '/premium', element: <PremiumPage /> },
         { path: '/searches', element: <SavedSearchesPage /> },
         { path: '/notifications', element: <NotificationsPage /> },
         { path: '/test_card', element: <TestCardPage /> },
