@@ -86,6 +86,8 @@ async def test_details_filters_and_sort(
     await repository.create_or_update_from_raw(
         detailed("c", floor=1, bathrooms=2, published_at=NOW - timedelta(days=40), updated_at=None)
     )
+    # created_at = начало транзакции: «d» в отдельной транзакции, чтобы быть позже «c»
+    await session.commit()
     await repository.create_or_update_from_raw(raw("d"))  # без подробностей, свежий у нас
     await session.commit()
 
