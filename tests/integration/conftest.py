@@ -42,6 +42,7 @@ MIGRATIONS = (
     "saved_search_details",
     "listing_duplicates",
     "scrape_skips",
+    "ai_usage",
 )
 
 

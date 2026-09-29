@@ -1,5 +1,6 @@
 """Модули для работы с моделями БД."""
 
+from .ai_usage import AIUsage
 from .base import Base, SoftDeleteMixin, TimestampMixin
 from .districts import District
 from .embeddings import Embedding
@@ -11,6 +12,7 @@ from .scrape_skips import ScrapeSkip
 from .users import User
 
 __all__ = [
+    "AIUsage",
     "Base",
     "District",
     "Embedding",

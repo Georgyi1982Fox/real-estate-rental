@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from uuid import UUID
 
 from sqlalchemy import ColumnElement, and_, func, select, update
@@ -6,7 +6,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bina.application.repositories.users import IUsersRepository
-from bina.infrastructure.db.models import User
+from bina.infrastructure.db.models import AIUsage, User
 from bina.infrastructure.db.models.users import SubscriptionTier
 
 
@@ -16,6 +16,24 @@ def premium_now() -> ColumnElement[bool]:
         User.subscription_tier != SubscriptionTier.FREE,
         User.subscription_expires_at > func.now(),
     )
+
+
+async def take_ai_request(
+    session: AsyncSession, user_id: UUID, day: date, limit: int
+) -> int | None:
+    """Засчитать запрос к AI: сколько уже за день; ``None`` — лимит исчерпан (TASK-095)."""
+    statement = (
+        insert(AIUsage)
+        .values(user_id=user_id, day=day, count=1)
+        .on_conflict_do_update(
+            index_elements=["user_id", "day"],
+            set_={"count": AIUsage.count + 1},
+            where=AIUsage.count < limit,
+        )
+        .returning(AIUsage.count)
+    )
+    used: int | None = (await session.execute(statement)).scalar_one_or_none()
+    return used
 
 
 class UsersRepository(IUsersRepository):
