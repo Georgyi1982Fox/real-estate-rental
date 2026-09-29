@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from bina.application.dtos.pagination import Page
 from bina.application.fraud import fraud_level
+from bina.application.localization import localize_address, localize_name
 from bina.application.subscriptions import Limits, Plan, effective_tier
 from bina.infrastructure.api.validation import clean_text
 from bina.infrastructure.db.models import District, Listing, Notification, SavedSearch, User
@@ -58,7 +59,10 @@ class ListingOut(BaseModel):
         default_factory=list, description="Коды удобств (переводит фронтенд)"
     )
     owner_type: Literal["owner", "agent"] | None = None
-    address: str | None = Field(default=None, description="Улица и дом, как на сайте")
+    address: Localized = Field(
+        default_factory=dict, description="Улица и дом на ka/ru/en (язык сайта — как на сайте)"
+    )
+    owner: "OwnerOut | None" = Field(default=None, description="Владелец: имя на ka/ru/en")
     latitude: float | None = None
     longitude: float | None = None
     published_at: datetime | None = Field(default=None, description="Опубликовано на сайте")
@@ -92,12 +96,25 @@ class ListingOut(BaseModel):
             condition=listing.condition,
             features=list(listing.features or []),
             owner_type=_owner_type(listing.owner_type),
-            address=listing.address or None,
+            address=localize_address(listing.address),
+            owner=OwnerOut.from_name(listing.owner_name),
             latitude=listing.latitude,
             longitude=listing.longitude,
             published_at=listing.source_published_at or listing.created_at,
             updated_at=listing.source_updated_at,
         )
+
+
+class OwnerOut(BaseModel):
+    """Владелец объявления; имя транслитерировано на три языка (TASK-019)."""
+
+    name: Localized
+
+    @classmethod
+    def from_name(cls, name: str | None) -> "OwnerOut | None":
+        """``None``, если сайт не указал имя."""
+        names = localize_name(name)
+        return cls(name=names) if names else None
 
 
 def _owner_type(value: str | None) -> Literal["owner", "agent"] | None:

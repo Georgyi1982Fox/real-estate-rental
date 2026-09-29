@@ -35,6 +35,7 @@ MIGRATIONS = (
     "listing_fraud",
     "saved_search_districts",
     "listing_details",
+    "district_names",
 )
 
 

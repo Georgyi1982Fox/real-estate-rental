@@ -83,7 +83,7 @@ async def test_fraud_check_flow(
     assert (stats.checked, stats.suspicious, stats.hidden, stats.failed) == (8, 1, 1, 0)
     # AI видел медиану района и число фото
     facts = dict(analyzer.seen)["Квартира cheap"]
-    assert (facts.district_median_per_m2, facts.photos, facts.district) == (Decimal(20), 0, "Ваке")
+    assert (facts.district_median_per_m2, facts.photos, facts.district) == (Decimal(20), 0, "Vake")
 
     session.expire_all()
     cheap_row = await repository.get_by_id(cheap_id)
