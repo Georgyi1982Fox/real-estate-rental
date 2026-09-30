@@ -23,6 +23,8 @@ COMMANDS: dict[str, dict[str, str]] = {
         "premium": "Premium-подписка",
         "invite": "Пригласить друга",
         "rent": "Напоминания об оплате аренды",
+        "terms": "Пользовательское соглашение",
+        "privacy": "Конфиденциальность",
         "help": "Справка",
     },
     "en": {
@@ -32,6 +34,8 @@ COMMANDS: dict[str, dict[str, str]] = {
         "premium": "Premium subscription",
         "invite": "Invite a friend",
         "rent": "Rent payment reminders",
+        "terms": "Terms of use",
+        "privacy": "Privacy policy",
         "help": "Help",
     },
     "ka": {
@@ -41,6 +45,8 @@ COMMANDS: dict[str, dict[str, str]] = {
         "premium": "Premium გამოწერა",
         "invite": "მეგობრის მოწვევა",
         "rent": "ქირის გადახდის შეხსენებები",
+        "terms": "სამომხმარებლო შეთანხმება",
+        "privacy": "კონფიდენციალურობა",
         "help": "დახმარება",
     },
 }

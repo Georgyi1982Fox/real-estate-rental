@@ -44,6 +44,8 @@ _RU: dict[str, str] = {
         "/premium: Premium-подписка\n"
         "/invite: пригласить друга\n"
         "/rent: напоминания об оплате аренды\n"
+        "/terms: пользовательское соглашение\n"
+        "/privacy: политика конфиденциальности\n"
         "/help: эта справка\n\n"
         "Добавляйте объявления в избранное кнопками ☆ под результатами поиска."
     ),
@@ -234,6 +236,8 @@ _EN: dict[str, str] = {
         "/premium: Premium subscription\n"
         "/invite: invite a friend\n"
         "/rent: rent payment reminders\n"
+        "/terms: terms of use\n"
+        "/privacy: privacy policy\n"
         "/help: this help\n\n"
         "Save listings with the ☆ buttons under search results."
     ),
@@ -421,6 +425,8 @@ _KA: dict[str, str] = {
         "/premium: Premium გამოწერა\n"
         "/invite: მეგობრის მოწვევა\n"
         "/rent: ქირის გადახდის შეხსენებები\n"
+        "/terms: სამომხმარებლო შეთანხმება\n"
+        "/privacy: კონფიდენციალურობის პოლიტიკა\n"
         "/help: ეს დახმარება\n\n"
         "შეინახეთ განცხადებები ☆ ღილაკებით ძებნის შედეგების ქვეშ."
     ),
