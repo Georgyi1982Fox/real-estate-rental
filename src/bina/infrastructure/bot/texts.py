@@ -8,6 +8,16 @@ from bina.application.use_cases.register_user import DEFAULT_LANGUAGE
 _RU: dict[str, str] = {
     "menu_home": "🏠 Главное меню",
     "too_fast": "⏳ Слишком много сообщений подряд. Подождите несколько секунд.",
+    # TASK-043: сообщения владельцу о сбоях
+    "alert_step_failed": "⚠️ Bina.ai: сломался шаг «{step}»: {error}",
+    "alert_step_ok": "✅ Bina.ai: шаг «{step}» снова работает.",
+    "alert_source_empty": (
+        "⚠️ Bina.ai: {source} уже {runs} запуска подряд не даёт объявлений — возможно, "
+        "сайт изменился или блокирует парсер."
+    ),
+    "alert_source_ok": "✅ Bina.ai: {source} снова даёт объявления ({count}).",
+    "alert_api_down": "🔴 Bina.ai: сервер мини-приложения не отвечает ({error}).",
+    "alert_api_ok": "✅ Bina.ai: сервер мини-приложения снова работает.",
     "menu_title": (
         "🏠 <b>Bina.ai — главное меню</b>\n\n"
         "Аренда жилья в Грузии: объявления с MyHome.ge и SS.ge, проверка на мошенничество, "
@@ -188,6 +198,16 @@ _RU: dict[str, str] = {
 _EN: dict[str, str] = {
     "menu_home": "🏠 Main menu",
     "too_fast": "⏳ Too many messages in a row. Please wait a few seconds.",
+    # TASK-043: owner alerts
+    "alert_step_failed": "⚠️ Bina.ai: the «{step}» step failed: {error}",
+    "alert_step_ok": "✅ Bina.ai: the «{step}» step works again.",
+    "alert_source_empty": (
+        "⚠️ Bina.ai: {source} returned no listings {runs} runs in a row — the site may have "
+        "changed or be blocking the scraper."
+    ),
+    "alert_source_ok": "✅ Bina.ai: {source} returns listings again ({count}).",
+    "alert_api_down": "🔴 Bina.ai: the Mini App server is not responding ({error}).",
+    "alert_api_ok": "✅ Bina.ai: the Mini App server works again.",
     "menu_title": (
         "🏠 <b>Bina.ai — main menu</b>\n\n"
         "Rentals in Georgia: listings from MyHome.ge and SS.ge, scam checks, documents "
@@ -365,6 +385,16 @@ _EN: dict[str, str] = {
 _KA: dict[str, str] = {
     "menu_home": "🏠 მთავარი მენიუ",
     "too_fast": "⏳ ზედიზედ ძალიან ბევრი შეტყობინებაა. დაელოდეთ რამდენიმე წამს.",
+    # TASK-043: შეტყობინებები მფლობელს
+    "alert_step_failed": "⚠️ Bina.ai: ნაბიჯი «{step}» გაფუჭდა: {error}",
+    "alert_step_ok": "✅ Bina.ai: ნაბიჯი «{step}» ისევ მუშაობს.",
+    "alert_source_empty": (
+        "⚠️ Bina.ai: {source} უკვე {runs} გაშვებაა ზედიზედ განცხადებებს არ იძლევა — "
+        "შესაძლოა, საიტი შეიცვალა ან ბლოკავს პარსერს."
+    ),
+    "alert_source_ok": "✅ Bina.ai: {source} ისევ იძლევა განცხადებებს ({count}).",
+    "alert_api_down": "🔴 Bina.ai: მინი-აპლიკაციის სერვერი არ პასუხობს ({error}).",
+    "alert_api_ok": "✅ Bina.ai: მინი-აპლიკაციის სერვერი ისევ მუშაობს.",
     "menu_title": (
         "🏠 <b>Bina.ai — მთავარი მენიუ</b>\n\n"
         "ქირავნობა საქართველოში: განცხადებები MyHome.ge-დან და SS.ge-დან, თაღლითობის "

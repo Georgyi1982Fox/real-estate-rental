@@ -2,13 +2,15 @@
 
 import asyncio
 import os
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import click
 import structlog
 
+from bina.application.health_monitor import Alert, HealthMonitor
 from bina.application.ports.scraper import BaseScraper
 from bina.application.use_cases.check_fraud import CheckFraudUseCase, FraudStats
 from bina.application.use_cases.find_duplicates import DuplicateStats, FindDuplicatesUseCase
@@ -37,6 +39,7 @@ from bina.infrastructure.db.repositories.notifications import (
     NotificationsRepository,
     SavedSearchesRepository,
 )
+from bina.infrastructure.db.repositories.users import UsersRepository
 from bina.infrastructure.db.session.manager import DatabaseManager
 from bina.infrastructure.llm.fraud_analyzer import LLMFraudAnalyzer
 from bina.infrastructure.llm.listing_extractor import LLMListingExtractor
@@ -687,55 +690,62 @@ def schedule(
         click.echo("LLM_API_KEY не задан: перевод отключён, только парсинг.")
         with_translation = False
 
+    monitor = HealthMonitor()
+
+    async def step(name: str, action: Callable[[], Awaitable[None]]) -> None:
+        """Шаг запуска: сбой не останавливает расписание, но о нём узнает владелец."""
+        try:
+            await action()
+        except (TranslationBusyError, FraudCheckBusyError):
+            raise
+        except Exception as exc:  # noqa: BLE001 - ошибка шага не останавливает расписание
+            logger.error("Scheduled step failed", step=name, error=str(exc))
+            monitor.step_failed(name, str(exc) or type(exc).__name__, datetime.now(UTC))
+        else:
+            monitor.step_ok(name)
+
+    async def scrape_step() -> None:
+        results = await scrape(scrape_sources(), limit)
+        click.echo(
+            f"[{datetime.now():%Y-%m-%d %H:%M}] парсинг завершён, следующий через {interval} ч"
+        )
+        _echo_results(results)
+        for result in results:
+            monitor.source_result(result.source, result.scraped, datetime.now(UTC))
+
+    async def translate_step() -> None:
+        try:
+            _echo_translation(await translate(translate_limit))
+        except TranslationBusyError:
+            click.echo(BUSY_MESSAGE)
+
+    async def fraud_step() -> None:
+        try:
+            _echo_fraud(await check_fraud(fraud_limit))
+        except FraudCheckBusyError:
+            click.echo(FRAUD_BUSY_MESSAGE)
+
     async def job() -> None:
-        try:
-            results = await scrape(scrape_sources(), limit)
-            click.echo(
-                f"[{datetime.now():%Y-%m-%d %H:%M}] парсинг завершён, следующий через {interval} ч"
-            )
-            _echo_results(results)
-        except Exception as exc:  # noqa: BLE001 - ошибка одного запуска не останавливает расписание
-            logger.error("Scheduled scrape failed", error=str(exc))
+        await step("scrape", scrape_step)
         if details_limit:
-            try:
-                _echo_details(await fill_details(details_limit, recheck_days))
-            except Exception as exc:  # noqa: BLE001 - сбой дозагрузки не останавливает расписание
-                logger.error("Scheduled details backfill failed", error=str(exc))
+            await step(
+                "details",
+                lambda: _echo_async(_echo_details, fill_details(details_limit, recheck_days)),
+            )
         # До перевода: скрытые дубликаты не переводятся (экономия AI)
-        try:
-            _echo_duplicates(await find_duplicates(DUPLICATES_BATCH))
-        except Exception as exc:  # noqa: BLE001 - сбой не останавливает расписание
-            logger.error("Scheduled duplicates search failed", error=str(exc))
-        try:
-            _echo_geocode(await geocode(GEOCODE_BATCH))
-        except Exception as exc:  # noqa: BLE001 - сбой не останавливает расписание
-            logger.error("Scheduled geocoding failed", error=str(exc))
+        await step(
+            "duplicates", lambda: _echo_async(_echo_duplicates, find_duplicates(DUPLICATES_BATCH))
+        )
+        await step("geocode", lambda: _echo_async(_echo_geocode, geocode(GEOCODE_BATCH)))
         if with_translation:
-            try:
-                _echo_translation(await translate(translate_limit))
-            except TranslationBusyError:
-                click.echo(BUSY_MESSAGE)
-            except Exception as exc:  # noqa: BLE001 - сбой перевода не останавливает расписание
-                logger.error("Scheduled translation failed", error=str(exc))
+            await step("translate", translate_step)
             # До уведомлений: подозрительные объявления не должны в них попасть
-            try:
-                _echo_fraud(await check_fraud(fraud_limit))
-            except FraudCheckBusyError:
-                click.echo(FRAUD_BUSY_MESSAGE)
-            except Exception as exc:  # noqa: BLE001 - сбой проверки не останавливает расписание
-                logger.error("Scheduled fraud check failed", error=str(exc))
-        try:
-            _echo_rent(await rent_reminders())
-        except Exception as exc:  # noqa: BLE001 - сбой не останавливает расписание
-            logger.error("Scheduled rent reminders failed", error=str(exc))
-        try:
-            _echo_premium(await premium_reminders())
-        except Exception as exc:  # noqa: BLE001 - сбой не останавливает расписание
-            logger.error("Scheduled premium reminders failed", error=str(exc))
-        try:
-            _echo_notifications(*await notify())
-        except Exception as exc:  # noqa: BLE001 - сбой уведомлений не останавливает расписание
-            logger.error("Scheduled notifications failed", error=str(exc))
+            await step("fraud", fraud_step)
+        await step("rent", lambda: _echo_async(_echo_rent, rent_reminders()))
+        await step("premium", lambda: _echo_async(_echo_premium, premium_reminders()))
+        await step("notify", notify_step)
+        monitor.api_health(await check_api_health(), datetime.now(UTC))
+        await send_owner_alerts(monitor.collect())
 
     async def run() -> None:
         scheduler = ScraperScheduler(job, interval_hours=interval)
@@ -746,6 +756,61 @@ def schedule(
             await scheduler.stop()
 
     asyncio.run(run())
+
+
+async def _echo_async(echo: Callable[[Any], None], result: Awaitable[Any]) -> None:
+    echo(await result)
+
+
+async def notify_step() -> None:
+    _echo_notifications(*await notify())
+
+
+async def check_api_health() -> str | None:
+    """Проверить сервер Mini App (``API_HEALTH_URL``); ``None`` — работает или не задано."""
+    url = os.getenv("API_HEALTH_URL", "").strip()
+    if not url:
+        return None
+    import httpx
+
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            response = await client.get(url)
+    except httpx.HTTPError as exc:
+        return str(exc) or type(exc).__name__
+    return None if response.status_code == 200 else f"HTTP {response.status_code}"
+
+
+async def send_owner_alerts(alerts: list[Alert]) -> None:
+    """Написать владельцу (``ADMIN_TELEGRAM_IDS``) в Telegram на его языке."""
+    token = os.getenv("BOT_TOKEN", "").strip()
+    admin_ids = _admin_ids()
+    if not alerts or not token or not admin_ids:
+        return
+    from aiogram import Bot
+
+    from bina.infrastructure.bot.texts import t
+
+    db = DatabaseManager()
+    bot = Bot(token=token, default=_bot_defaults())
+    try:
+        async with db.session_factory() as session:
+            languages = await UsersRepository(session).languages_by_telegram_ids(admin_ids)
+        for admin_id in admin_ids:
+            language = languages.get(admin_id, "ru")
+            text = "\n\n".join(t(language, alert.text, **alert.params) for alert in alerts)
+            try:
+                await bot.send_message(admin_id, text, parse_mode=None)
+            except Exception as exc:  # noqa: BLE001 - сообщение владельцу не должно ронять расписание
+                logger.warning("Owner alert not sent", admin_id=admin_id, error=str(exc))
+    finally:
+        await bot.session.close()
+        await db.dispose()
+
+
+def _admin_ids() -> list[int]:
+    raw = os.getenv("ADMIN_TELEGRAM_IDS", "").replace(" ", "")
+    return [int(part) for part in raw.split(",") if part.isdigit()]
 
 
 def _echo_results(results: list[ScrapeResult]) -> None:
