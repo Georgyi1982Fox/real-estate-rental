@@ -34,6 +34,7 @@ from bina.infrastructure.bot.handlers import favorites as favorites_handlers
 from bina.infrastructure.bot.handlers import invite as invite_handlers
 from bina.infrastructure.bot.handlers import payments as payments_handlers
 from bina.infrastructure.bot.handlers import profile as profile_handlers
+from bina.infrastructure.bot.handlers import rent as rent_handlers
 from bina.infrastructure.bot.handlers import search as search_handlers
 from bina.infrastructure.bot.handlers import start as start_handlers
 from bina.infrastructure.bot.middlewares import registration
@@ -45,6 +46,7 @@ from tests.support.fakes import (
     FakeListingsRepository,
     FakePaymentsRepository,
     FakeReferralsRepository,
+    FakeRentRemindersRepository,
     FakeUsersRepository,
     Store,
 )
@@ -167,6 +169,7 @@ def patch_repositories(monkeypatch: pytest.MonkeyPatch, store: Store) -> None:
     monkeypatch.setattr(payments_handlers, "ReferralsRepository", fake(FakeReferralsRepository))
     monkeypatch.setattr(start_handlers, "ReferralsRepository", fake(FakeReferralsRepository))
     monkeypatch.setattr(invite_handlers, "ReferralsRepository", fake(FakeReferralsRepository))
+    monkeypatch.setattr(rent_handlers, "RentRemindersRepository", fake(FakeRentRemindersRepository))
 
 
 @pytest.fixture

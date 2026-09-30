@@ -21,6 +21,7 @@ _RU: dict[str, str] = {
         "/profile: профиль, подписка и язык\n"
         "/premium: Premium-подписка\n"
         "/invite: пригласить друга\n"
+        "/rent: напоминания об оплате аренды\n"
         "/help: эта справка\n\n"
         "Добавляйте объявления в избранное кнопками ☆ под результатами поиска."
     ),
@@ -91,6 +92,34 @@ _RU: dict[str, str] = {
         "Цена: {prices}. Оплата звёздами Telegram."
     ),
     "premium_free": "Сейчас у вас бесплатный тариф.",
+    # TASK-109: напоминания об оплате аренды
+    "rent_info": (
+        "🗓 <b>Напоминания об оплате аренды</b>\n\n"
+        "Напомню за 3 дня, за 1 день и в день оплаты. Кнопка «Оплачено» — до следующего "
+        "месяца.\n\n{items}"
+    ),
+    "rent_empty": "Напоминаний пока нет.",
+    "rent_item": "• {day}-го числа — {amount}",
+    "rent_item_paid": "• {day}-го числа — {amount} (✅ оплачено за {date})",
+    "rent_add": "🆕 Добавить напоминание",
+    "rent_delete": "🗑 Удалить {day}-го",
+    "rent_limit": "Можно не больше {limit} напоминаний.",
+    "rent_choose_day": "Какого числа вы платите аренду?",
+    "rent_enter_amount": (
+        "Оплата {day}-го числа. Напишите сумму, например: <code>1500</code>, "
+        "<code>700 $</code> или <code>650 eur</code>."
+    ),
+    "rent_bad_amount": (
+        "Не понял сумму. Напишите число, например: <code>1500</code> или <code>700 $</code>."
+    ),
+    "rent_saved": "✅ Готово: напомню об оплате {amount} {day}-го числа каждого месяца.",
+    "rent_deleted": "Напоминание удалено.",
+    "rent_due_in": "🗓 Напоминание: {date} оплата аренды — {amount} (через {days} дн.).",
+    "rent_due_today": "🔔 Сегодня день оплаты аренды: {amount}.",
+    "rent_paid_button": "✅ Оплачено",
+    "rent_paid_done": (
+        "✅ Отмечено: аренда за {date} оплачена. Следующее напоминание — в следующем месяце."
+    ),
     # TASK-108: приглашения
     "premium_discount": "🎁 По приглашению друга вам скидка {percent}% на первую покупку.",
     "welcome_referred": (
@@ -140,6 +169,7 @@ _EN: dict[str, str] = {
         "/profile: profile, subscription and language\n"
         "/premium: Premium subscription\n"
         "/invite: invite a friend\n"
+        "/rent: rent payment reminders\n"
         "/help: this help\n\n"
         "Save listings with the ☆ buttons under search results."
     ),
@@ -210,6 +240,32 @@ _EN: dict[str, str] = {
         "Price: {prices}. Paid with Telegram Stars."
     ),
     "premium_free": "You are on the free plan.",
+    # TASK-109: rent payment reminders
+    "rent_info": (
+        "🗓 <b>Rent payment reminders</b>\n\n"
+        "I'll remind you 3 days before, 1 day before and on the payment day. The «Paid» "
+        "button stops reminders until next month.\n\n{items}"
+    ),
+    "rent_empty": "No reminders yet.",
+    "rent_item": "• on day {day} — {amount}",
+    "rent_item_paid": "• on day {day} — {amount} (✅ paid for {date})",
+    "rent_add": "🆕 Add a reminder",
+    "rent_delete": "🗑 Delete day {day}",
+    "rent_limit": "You can have up to {limit} reminders.",
+    "rent_choose_day": "On which day of the month do you pay rent?",
+    "rent_enter_amount": (
+        "Payment on day {day}. Send the amount, for example: <code>1500</code>, "
+        "<code>700 $</code> or <code>650 eur</code>."
+    ),
+    "rent_bad_amount": (
+        "I didn't get the amount. Send a number, e.g. <code>1500</code> or <code>700 $</code>."
+    ),
+    "rent_saved": "✅ Done: I'll remind you to pay {amount} on day {day} of every month.",
+    "rent_deleted": "Reminder deleted.",
+    "rent_due_in": "🗓 Reminder: rent of {amount} is due on {date} (in {days} days).",
+    "rent_due_today": "🔔 Rent is due today: {amount}.",
+    "rent_paid_button": "✅ Paid",
+    "rent_paid_done": "✅ Marked as paid for {date}. The next reminder will come next month.",
     # TASK-108: invitations
     "premium_discount": "🎁 You were invited by a friend: {percent}% off your first purchase.",
     "welcome_referred": (

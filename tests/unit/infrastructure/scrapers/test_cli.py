@@ -12,6 +12,7 @@ from bina.application.use_cases.find_duplicates import DuplicateStats
 from bina.application.use_cases.geocode_listings import GeocodeStats
 from bina.application.use_cases.notifications import CreatedNotifications, DeliveryStats
 from bina.application.use_cases.premium_reminders import PremiumReminderStats
+from bina.application.use_cases.rent_reminders import RentReminderStats
 from bina.application.use_cases.translate_listings import TranslationStats
 from bina.infrastructure.scrapers import cli as scrape_cli
 from bina.infrastructure.scrapers.backfill import BackfillStats
@@ -106,6 +107,8 @@ def run_schedule(monkeypatch: pytest.MonkeyPatch, args: list[str]) -> Any:
         monkeypatch.setattr(scrape_cli, "find_duplicates", AsyncMock(return_value=NO_DUPLICATES))
     if not isinstance(getattr(scrape_cli, "geocode"), AsyncMock):
         monkeypatch.setattr(scrape_cli, "geocode", AsyncMock(return_value=NO_GEOCODE))
+    if not isinstance(getattr(scrape_cli, "rent_reminders"), AsyncMock):
+        monkeypatch.setattr(scrape_cli, "rent_reminders", AsyncMock(return_value=None))
     if not isinstance(getattr(scrape_cli, "premium_reminders"), AsyncMock):
         monkeypatch.setattr(scrape_cli, "premium_reminders", AsyncMock(return_value=NO_PREMIUM))
     if not isinstance(getattr(scrape_cli, "check_fraud"), AsyncMock):
@@ -237,6 +240,10 @@ def test_schedule_translates_after_scraping(
         calls.append("geocode")
         return GeocodeStats(checked=4, found=3, failed=0)
 
+    async def fake_rent() -> RentReminderStats:
+        calls.append("rent")
+        return RentReminderStats(sent=3, failed=0)
+
     async def fake_premium() -> PremiumReminderStats:
         calls.append("premium")
         return PremiumReminderStats(reminded=2, expired=1)
@@ -251,6 +258,7 @@ def test_schedule_translates_after_scraping(
     monkeypatch.setattr(scrape_cli, "fill_details", AsyncMock(side_effect=fake_details))
     monkeypatch.setattr(scrape_cli, "find_duplicates", AsyncMock(side_effect=fake_duplicates))
     monkeypatch.setattr(scrape_cli, "geocode", AsyncMock(side_effect=fake_geocode))
+    monkeypatch.setattr(scrape_cli, "rent_reminders", AsyncMock(side_effect=fake_rent))
     monkeypatch.setattr(scrape_cli, "premium_reminders", AsyncMock(side_effect=fake_premium))
     monkeypatch.setattr(scrape_cli, "notify", AsyncMock(side_effect=fake_notify))
 
@@ -261,7 +269,17 @@ def test_schedule_translates_after_scraping(
     check.assert_awaited_once_with(40)
     # Дубликаты — до перевода (скрытые не переводятся), антифрод — до уведомлений
     # Напоминания о Premium — до отправки уведомлений (их отправит notify)
-    assert calls == ["details", "duplicates", "geocode", "translate", "fraud", "premium", "notify"]
+    assert calls == [
+        "details",
+        "duplicates",
+        "geocode",
+        "translate",
+        "fraud",
+        "rent",
+        "premium",
+        "notify",
+    ]
+    assert "аренда: напоминаний отправлено 3, ошибок 0" in result.output
     assert "premium: напоминаний 2, «закончился» 1" in result.output
     assert "карта: проверено адресов 4, на карте 3" in result.output
     assert "дубликаты: проверено 5, склеено 2" in result.output
