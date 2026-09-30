@@ -111,6 +111,10 @@ def run_schedule(monkeypatch: pytest.MonkeyPatch, args: list[str]) -> Any:
         monkeypatch.setattr(scrape_cli, "rent_reminders", AsyncMock(return_value=None))
     if not isinstance(getattr(scrape_cli, "premium_reminders"), AsyncMock):
         monkeypatch.setattr(scrape_cli, "premium_reminders", AsyncMock(return_value=NO_PREMIUM))
+    if not isinstance(getattr(scrape_cli, "check_api_health"), AsyncMock):
+        monkeypatch.setattr(scrape_cli, "check_api_health", AsyncMock(return_value=None))
+    if not isinstance(getattr(scrape_cli, "send_owner_alerts"), AsyncMock):
+        monkeypatch.setattr(scrape_cli, "send_owner_alerts", AsyncMock(return_value=None))
     if not isinstance(getattr(scrape_cli, "check_fraud"), AsyncMock):
         monkeypatch.setattr(scrape_cli, "check_fraud", AsyncMock(return_value=NO_FRAUD))
     return CliRunner().invoke(scrape_cli.cli, ["schedule", *args])
@@ -448,3 +452,41 @@ def test_stats_command(monkeypatch: pytest.MonkeyPatch) -> None:
     assert result.exit_code == 0, result.output
     assert "myhome: в поиске 900, снято 120" in result.output
     assert "ss: в поиске 700" in result.output
+
+
+def test_schedule_alerts_owner_about_failures(monkeypatch: pytest.MonkeyPatch) -> None:
+    """TASK-043: сбой шага и пустой источник попадают в сообщение владельцу."""
+    sent: list[list[str]] = []
+
+    async def fake_alerts(alerts: list[Any]) -> None:
+        sent.append([alert.text for alert in alerts])
+
+    async def broken_duplicates(limit: int) -> DuplicateStats:
+        raise RuntimeError("database is down")
+
+    monkeypatch.setattr(scrape_cli, "send_owner_alerts", AsyncMock(side_effect=fake_alerts))
+    monkeypatch.setattr(scrape_cli, "find_duplicates", AsyncMock(side_effect=broken_duplicates))
+    monkeypatch.setattr(scrape_cli, "check_api_health", AsyncMock(return_value="refused"))
+
+    result = run_schedule(monkeypatch, [])
+
+    assert result.exit_code == 0, result.output
+    [texts] = sent
+    assert "alert_step_failed" in texts
+    assert "alert_api_down" in texts
+
+
+async def test_check_api_health(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("API_HEALTH_URL", raising=False)
+    assert await scrape_cli.check_api_health() is None
+    monkeypatch.setenv("API_HEALTH_URL", "http://127.0.0.1:9/api/health")
+    assert await scrape_cli.check_api_health() is not None
+
+
+async def test_owner_alerts_need_token_and_admins(monkeypatch: pytest.MonkeyPatch) -> None:
+    from bina.application.health_monitor import Alert
+
+    monkeypatch.delenv("ADMIN_TELEGRAM_IDS", raising=False)
+    monkeypatch.setenv("BOT_TOKEN", "1:x")
+    # Без владельца — ничего не отправляется и база не нужна
+    await scrape_cli.send_owner_alerts([Alert("alert_api_ok", {})])

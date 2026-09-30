@@ -48,6 +48,13 @@ class UsersRepository(IUsersRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    async def languages_by_telegram_ids(self, telegram_ids: list[int]) -> dict[int, str]:
+        """Язык пользователей по Telegram ID (для сообщений владельцу, TASK-043)."""
+        rows = await self._session.execute(
+            select(User.telegram_id, User.language).where(User.telegram_id.in_(telegram_ids))
+        )
+        return {int(telegram_id): language for telegram_id, language in rows.all()}
+
     async def get_by_id(self, user_id: UUID) -> User | None:
         """Получить пользователя по ID."""
         query = select(User).where(User.id == user_id, User.is_deleted.is_(False))
