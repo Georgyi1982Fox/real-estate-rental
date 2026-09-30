@@ -58,7 +58,11 @@ def test_air_conditioning_and_people() -> None:
 
 def test_estimate_totals() -> None:
     estimate = estimate_costs(data(deposit_months=Decimal(1), agency_fee_percent=Decimal(50)))
-    assert (estimate.rent, estimate.deposit, estimate.agency_fee) == (Decimal(1500), Decimal(1500), Decimal(750))
+    assert (estimate.rent, estimate.deposit, estimate.agency_fee) == (
+        Decimal(1500),
+        Decimal(1500),
+        Decimal(750),
+    )
     assert len(estimate.months) == 12
     assert [m.month for m in estimate.months[:3]] == [
         date(2026, 11, 1),
