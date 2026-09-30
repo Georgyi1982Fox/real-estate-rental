@@ -17,6 +17,7 @@ from bina.infrastructure.bot.keyboards.callbacks import (
 )
 from bina.infrastructure.bot.keyboards.favorites import favorites_keyboard
 from bina.infrastructure.bot.keyboards.listings import flip_favorite_button
+from bina.infrastructure.bot.keyboards.menu import with_home
 from bina.infrastructure.bot.settings import BotSettings
 from bina.infrastructure.bot.texts import all_variants, t
 from bina.infrastructure.db.models import User
@@ -32,7 +33,7 @@ async def cmd_favorites(
 ) -> None:
     """/favorites: первая страница избранного."""
     text, markup = await _render_favorites(session, user, 0, settings)
-    await message.answer(text, reply_markup=markup)
+    await message.answer(text, reply_markup=with_home(markup, user.language))
 
 
 async def on_favorites_page(

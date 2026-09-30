@@ -91,3 +91,21 @@ class AdminAction(StrEnum):
 class AdminCallback(CallbackData, prefix="adm"):
     action: AdminAction
     listing: UUID | None = None
+
+
+class MenuSection(StrEnum):
+    """Кнопки главного меню бота."""
+
+    HOME = "home"
+    SEARCH = "search"
+    FAVORITES = "fav"
+    PREMIUM = "premium"
+    INVITE = "invite"
+    RENT = "rent"
+    PROFILE = "profile"
+    HELP = "help"
+    ADMIN = "admin"
+
+
+class MenuCallback(CallbackData, prefix="m"):
+    section: MenuSection

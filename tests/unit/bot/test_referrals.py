@@ -66,7 +66,7 @@ async def test_invite_discount_and_reward(harness: BotHarness) -> None:
     await friend_starts(harness, link)
     friend = harness.user
     assert friend.referred_by == referrer.id
-    assert "20% off" in harness.last_text()
+    assert any("20% off" in text for text in harness.sent_texts())
 
     # /premium и счёт — со скидкой 20%: 250 → 200 звёзд
     harness.reset()

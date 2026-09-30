@@ -2,13 +2,14 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
+from bina.infrastructure.bot.keyboards.menu import with_home
 from bina.infrastructure.bot.texts import t
 from bina.infrastructure.db.models import User
 
 
 async def cmd_help(message: Message, user: User) -> None:
     """/help: список команд."""
-    await message.answer(t(user.language, "help"))
+    await message.answer(t(user.language, "help"), reply_markup=with_home(None, user.language))
 
 
 def create_router() -> Router:

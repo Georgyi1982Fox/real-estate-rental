@@ -81,7 +81,8 @@ async def test_premium_shows_price_and_buy_button(harness: BotHarness) -> None:
     assert "бесплатный тариф" in text
     assert "<b>100 ⭐</b> за 7 дн., <b>250 ⭐</b> за 30 дн." in text
     assert "через 3 ч" in text, "разница тарифов в уведомлениях (TASK-085)"
-    [[week], [month]] = harness.last_markup().inline_keyboard
+    [[week], [month], [home]] = harness.last_markup().inline_keyboard
+    assert home.text == "🏠 Главное меню"
     assert (week.text, month.text) == ("Купить 7 дн. за 100 ⭐", "Купить 30 дн. за 250 ⭐")
     assert week.callback_data == PremiumBuyCallback(plan=PREMIUM_WEEK).pack()
     assert month.callback_data == PremiumBuyCallback(plan=PREMIUM_MONTH).pack()
@@ -205,7 +206,8 @@ async def test_premium_user_sees_expiry_and_extend(harness: BotHarness) -> None:
     await harness.send("/premium")
 
     assert "Premium действует до" in harness.last_text()
-    [[week], [month]] = harness.last_markup().inline_keyboard
+    [[week], [month], [home]] = harness.last_markup().inline_keyboard
+    assert home.text == "🏠 Главное меню"
     assert week.text == "Продлить на 7 дн. за 100 ⭐"
     assert month.text == "Продлить на 30 дн. за 250 ⭐"
 

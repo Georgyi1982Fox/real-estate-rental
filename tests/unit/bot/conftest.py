@@ -127,6 +127,10 @@ class BotHarness:
                 return call.text or ""
         raise AssertionError("no messages were sent")
 
+    def sent_texts(self) -> list[str]:
+        """Тексты всех отправленных сообщений по порядку."""
+        return [call.text or "" for call in self.telegram.calls if isinstance(call, SendMessage)]
+
     def last_markup(self) -> Any:
         """Клавиатура последнего отправленного или отредактированного сообщения."""
         for call in reversed(self.telegram.calls):

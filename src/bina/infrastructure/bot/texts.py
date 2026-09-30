@@ -6,6 +6,17 @@
 from bina.application.use_cases.register_user import DEFAULT_LANGUAGE
 
 _RU: dict[str, str] = {
+    "menu_home": "🏠 Главное меню",
+    "menu_title": (
+        "🏠 <b>Bina.ai — главное меню</b>\n\n"
+        "Аренда жилья в Грузии: объявления с MyHome.ge и SS.ge, проверка на мошенничество, "
+        "документы и напоминания.\n\nВыберите, что сделать:"
+    ),
+    "menu_premium": "⭐ Premium",
+    "menu_invite": "🎁 Пригласить друга",
+    "menu_rent": "🗓 Оплата аренды",
+    "menu_help": "❓ Помощь",
+    "menu_admin": "📊 Админка",
     "welcome_new": (
         "👋 Добро пожаловать в <b>Bina.ai</b>!\n\n"
         "Я помогу найти жильё в аренду в Грузии: объявления с MyHome.ge и SS.ge "
@@ -173,6 +184,17 @@ _RU: dict[str, str] = {
 }
 
 _EN: dict[str, str] = {
+    "menu_home": "🏠 Main menu",
+    "menu_title": (
+        "🏠 <b>Bina.ai — main menu</b>\n\n"
+        "Rentals in Georgia: listings from MyHome.ge and SS.ge, scam checks, documents "
+        "and reminders.\n\nChoose what to do:"
+    ),
+    "menu_premium": "⭐ Premium",
+    "menu_invite": "🎁 Invite a friend",
+    "menu_rent": "🗓 Rent payments",
+    "menu_help": "❓ Help",
+    "menu_admin": "📊 Admin",
     "welcome_new": (
         "👋 Welcome to <b>Bina.ai</b>!\n\n"
         "I'll help you find a rental home in Georgia: listings from MyHome.ge and SS.ge "
@@ -337,6 +359,17 @@ _EN: dict[str, str] = {
 }
 
 _KA: dict[str, str] = {
+    "menu_home": "🏠 მთავარი მენიუ",
+    "menu_title": (
+        "🏠 <b>Bina.ai — მთავარი მენიუ</b>\n\n"
+        "ქირავნობა საქართველოში: განცხადებები MyHome.ge-დან და SS.ge-დან, თაღლითობის "
+        "შემოწმება, დოკუმენტები და შეხსენებები.\n\nაირჩიეთ, რა გავაკეთოთ:"
+    ),
+    "menu_premium": "⭐ Premium",
+    "menu_invite": "🎁 მეგობრის მოწვევა",
+    "menu_rent": "🗓 ქირის გადახდა",
+    "menu_help": "❓ დახმარება",
+    "menu_admin": "📊 ადმინისტრირება",
     "welcome_new": (
         "👋 კეთილი იყოს თქვენი მობრძანება <b>Bina.ai</b>-ში!\n\n"
         "დაგეხმარებით საქართველოში ქირით საცხოვრებლის პოვნაში: განცხადებები MyHome.ge-დან "

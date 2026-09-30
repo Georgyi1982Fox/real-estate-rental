@@ -4,7 +4,12 @@ from uuid import uuid4
 
 import pytest
 
-from bina.infrastructure.bot.keyboards.callbacks import AdminAction, AdminCallback
+from bina.infrastructure.bot.keyboards.callbacks import (
+    AdminAction,
+    AdminCallback,
+    MenuCallback,
+    MenuSection,
+)
 from bina.infrastructure.bot.settings import BotConfigError, BotSettings
 from bina.infrastructure.db.repositories.admin import ComplaintCase
 from tests.support.telegram import CHAT_ID, TOKEN
@@ -72,3 +77,11 @@ def test_admin_ids_setting() -> None:
     )
     with pytest.raises(BotConfigError):
         BotSettings.from_env({**base, "ADMIN_TELEGRAM_IDS": "me"})
+
+
+async def test_owner_sees_admin_button_in_menu(harness: BotHarness) -> None:
+    await harness.send("/start")
+    labels = [button.text for row in harness.last_markup().inline_keyboard for button in row]
+    assert "📊 Админка" in labels
+    await harness.press(MenuCallback(section=MenuSection.ADMIN).pack())
+    assert "Статистика" in harness.last_text()

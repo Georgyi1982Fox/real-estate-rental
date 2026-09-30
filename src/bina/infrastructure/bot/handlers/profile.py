@@ -10,7 +10,7 @@ from bina.application.use_cases.register_user import SUPPORTED_LANGUAGES
 from bina.infrastructure.bot.formatters import format_number
 from bina.infrastructure.bot.handlers.common import edit_or_answer
 from bina.infrastructure.bot.keyboards.callbacks import LanguageCallback
-from bina.infrastructure.bot.keyboards.menu import main_menu
+from bina.infrastructure.bot.keyboards.menu import main_menu, with_home
 from bina.infrastructure.bot.keyboards.profile import language_keyboard
 from bina.infrastructure.bot.texts import LANGUAGE_NAMES, all_variants, t
 from bina.infrastructure.db.models import User
@@ -25,7 +25,7 @@ async def cmd_profile(message: Message, session: AsyncSession, user: User) -> No
     favorites = await FavoritesRepository(session).count_by_user(user.id)
     await message.answer(
         render_profile(user, favorites, user.language),
-        reply_markup=language_keyboard(user.language),
+        reply_markup=with_home(language_keyboard(user.language), user.language),
     )
 
 
@@ -51,7 +51,7 @@ async def on_language(
     await edit_or_answer(
         callback,
         render_profile(user, favorites, language),
-        language_keyboard(language),
+        with_home(language_keyboard(language), language),
         language,
     )
     if isinstance(callback.message, Message):

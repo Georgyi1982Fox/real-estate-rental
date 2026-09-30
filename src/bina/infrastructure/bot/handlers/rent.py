@@ -23,6 +23,7 @@ from bina.application.rent_reminders import (
     parse_amount,
 )
 from bina.infrastructure.bot.keyboards.callbacks import RentAction, RentCallback
+from bina.infrastructure.bot.keyboards.menu import with_home
 from bina.infrastructure.bot.texts import t
 from bina.infrastructure.db.models import RentReminder, User
 from bina.infrastructure.db.repositories.rent_reminders import RentRemindersRepository
@@ -67,7 +68,7 @@ def list_keyboard(language: str, reminders: list[RentReminder]) -> InlineKeyboar
             text=t(language, "rent_add"), callback_data=RentCallback(action=RentAction.ADD)
         )
     builder.adjust(1)
-    return builder.as_markup()
+    return with_home(builder.as_markup(), language)
 
 
 def days_keyboard() -> InlineKeyboardMarkup:
