@@ -1,8 +1,14 @@
+import type { ReactNode } from 'react';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 
+interface SearchBarProps {
+  /** Кнопки рядом с «Найти», например «Фильтры» */
+  children?: ReactNode;
+}
+
 /** Строка поиска по району, улице, комплексу */
-export default function SearchBar() {
+export default function SearchBar({ children }: SearchBarProps) {
   const { t } = useI18n();
   const ht = t.home;
 
@@ -26,13 +32,16 @@ export default function SearchBar() {
           className="w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] py-3 pl-10 pr-4 text-sm text-[var(--text-primary)] shadow-[var(--shadow-sm)]"
         />
       </div>
-      <button
-        type="button"
-        onClick={() => haptic('light')}
-        className="inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--primary)] px-5 py-3 text-sm font-semibold text-white shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--primary-hover)]"
-      >
-        {ht.search_button}
-      </button>
+      <div className="search-bar__actions flex gap-3">
+        <button
+          type="button"
+          onClick={() => haptic('light')}
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--primary)] px-5 py-3 text-sm font-semibold text-white shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--primary-hover)] sm:flex-none"
+        >
+          {ht.search_button}
+        </button>
+        {children}
+      </div>
     </search>
   );
 }

@@ -12,6 +12,9 @@ export interface Owner {
 /** ID квартиры: UUID-строка с бэкенда, число — только в mock_data.json */
 export type ListingId = string | number;
 
+/** Проверка на мошенничество: warning — предупредить; high — скрыто из поиска, открывается по ссылке */
+export type FraudLevel = 'none' | 'warning' | 'high';
+
 export interface Listing {
   id: ListingId;
   title: Localized;
@@ -37,6 +40,9 @@ export interface Listing {
   source_url?: string | null;
   /** Имя арендодателя с сайта-источника */
   owner_name?: string | null;
+  fraud_level: FraudLevel;
+  /** Коды причин (prepayment, off_platform, …); неизвестные коды не показываем */
+  fraud_reasons: string[];
 }
 
 export interface District {
@@ -144,8 +150,10 @@ export interface UpdateMeRequest {
 
 /** Фильтры поиска квартир: в адресе страницы, в /api/listings и в сохранённых поисках */
 export interface SearchFilters {
-  /** ID района (UUID на бэкенде) */
+  /** ID района (UUID на бэкенде). Старое поле: сервер отдаёт его, только если район ровно один */
   district?: string;
+  /** Несколько районов: квартиры в любом из них (до 20) */
+  districts?: string[];
   min_price?: number;
   max_price?: number;
   /** 4 = «4 и больше» */

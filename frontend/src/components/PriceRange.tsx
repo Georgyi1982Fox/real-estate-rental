@@ -21,6 +21,8 @@ interface PriceRangeProps {
   /** Вызывается только с корректной парой (min ≤ max ≤ PRICE_MAX) */
   onChange: (min: number | undefined, max: number | undefined) => void;
   inputClassName: string;
+  /** Подпись «Цена»: по умолчанию мелкая, в окне фильтров — как заголовки остальных полей */
+  labelClassName?: string;
 }
 
 const toText = (value?: number) => (value === undefined ? '' : String(value));
@@ -39,7 +41,13 @@ function validate(min: number | undefined, max: number | undefined, field: Field
  * минимум не больше максимума и наоборот. Неверный ввод — красная подсказка,
  * а при уходе из поля в нём возвращается последнее верное значение.
  */
-export default function PriceRange({ min, max, onChange, inputClassName }: PriceRangeProps) {
+export default function PriceRange({
+  min,
+  max,
+  onChange,
+  inputClassName,
+  labelClassName = 'text-xs font-medium text-[var(--text-secondary)]',
+}: PriceRangeProps) {
   const { t } = useI18n();
   const ht = t.home;
   const hintId = useId();
@@ -122,7 +130,7 @@ export default function PriceRange({ min, max, onChange, inputClassName }: Price
 
   return (
     <div className="price-range flex min-w-0 flex-col gap-1">
-      <span className="text-xs font-medium text-[var(--text-secondary)]" id="price-range-label">
+      <span className={labelClassName} id="price-range-label">
         {ht.price}
       </span>
       <div className="flex items-center gap-2" role="group" aria-labelledby="price-range-label">

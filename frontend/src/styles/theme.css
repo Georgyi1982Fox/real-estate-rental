@@ -25,6 +25,15 @@
   --brand-google-red: #ea4335;
   --brand-google-yellow: #fbbc05;
   --brand-google-green: #34a853;
+
+  /* Предупреждение о мошенничестве (FRONTEND-012) */
+  --warning-bg: #fffbeb;
+  --warning-border: #fcd34d;
+  --warning-text: #78350f;
+  --warning-ink: #451a03;
+  --danger-bg: #fef2f2;
+  --danger-border: #fca5a5;
+  --danger-text: #7f1d1d;
 }
 
 :root {
@@ -68,6 +77,12 @@
     --text-primary: #f8fafc;
     --text-secondary: #cbd5e1;
     --border: #334155;
+    --warning-bg: rgba(245, 158, 11, 0.12);
+    --warning-border: rgba(245, 158, 11, 0.45);
+    --warning-text: #fde68a;
+    --danger-bg: rgba(239, 68, 68, 0.12);
+    --danger-border: rgba(239, 68, 68, 0.5);
+    --danger-text: #fecaca;
   }
 }
 
@@ -79,4 +94,10 @@
   --text-primary: #f8fafc;
   --text-secondary: #cbd5e1;
   --border: #334155;
+  --warning-bg: rgba(245, 158, 11, 0.12);
+  --warning-border: rgba(245, 158, 11, 0.45);
+  --warning-text: #fde68a;
+  --danger-bg: rgba(239, 68, 68, 0.12);
+  --danger-border: rgba(239, 68, 68, 0.5);
+  --danger-text: #fecaca;
 }

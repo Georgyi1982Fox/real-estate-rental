@@ -3,6 +3,7 @@ import type { ListResponse, Listing } from '../api/types';
 import ContactButton from '../components/ContactButton';
 import ErrorState from '../components/ErrorState';
 import FavoriteButton from '../components/FavoriteButton';
+import FraudWarning from '../components/FraudWarning';
 import Gallery from '../components/Gallery';
 import ListingDescription from '../components/ListingDescription';
 import ListingSkeleton from '../components/ListingSkeleton';
@@ -16,6 +17,7 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
 import { useTelegramMainButton } from '../hooks/useTelegramMainButton';
 import { fill, formatPrice, tr } from '../lib/format';
+import { fraudLevel } from '../lib/fraud';
 import { isInTelegram, openLink } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 import NotFoundPage from './NotFoundPage';
@@ -130,6 +132,8 @@ export default function ListingPage() {
                     <span className="font-medium text-[var(--text-primary)]">{ownerName}</span>
                   </p>
                 )}
+
+                <FraudWarning level={fraudLevel(listing)} reasons={listing.fraud_reasons ?? []} />
 
                 <section
                   className={`listing-contact grid grid-cols-1 gap-3 lg:grid-cols-1 ${nativeContact ? 'sm:grid-cols-2' : 'sm:grid-cols-3'}`}

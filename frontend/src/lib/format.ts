@@ -87,3 +87,13 @@ export function fillVars(template: string, values: Record<string, number | strin
     key in values ? String(values[key]) : match,
   );
 }
+
+/** Формы слова для Intl.PluralRules: ru — one/few/many, ka и en — one/other */
+export type PluralForms = Record<'one' | 'few' | 'many' | 'other', string>;
+
+/** «Показать 1 квартиру / 3 квартиры / 5 квартир» — форма по правилам языка, {n} подставляется */
+export function plural(forms: PluralForms, n: number, lang: Lang): string {
+  const category = new Intl.PluralRules(DATE_LOCALES[lang]).select(n);
+  const form = category in forms ? forms[category as keyof PluralForms] : forms.other;
+  return fill(form, n);
+}

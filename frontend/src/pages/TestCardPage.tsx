@@ -2,7 +2,7 @@ import type { Listing } from '../api/types';
 import ListingCard from '../components/ListingCard';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
-// Dev-страница FRONTEND-002: два состояния карточки (с фото / без фото)
+// Dev-страница FRONTEND-002: два состояния карточки (с фото и ⚠️ / без фото)
 const TEST_LISTINGS: Listing[] = [
   {
     id: 1,
@@ -13,6 +13,8 @@ const TEST_LISTINGS: Listing[] = [
     area: 65,
     district: 'Сабуртало',
     images: ['https://static.ss.ge/20260921/19_97b5d109-2456-48e9-9669-88613204ad8c_Thumb.jpg'],
+    fraud_level: 'warning',
+    fraud_reasons: ['prepayment'],
   },
   {
     id: 2,
@@ -23,6 +25,8 @@ const TEST_LISTINGS: Listing[] = [
     area: 82,
     district: 'Ваке',
     images: [],
+    fraud_level: 'none',
+    fraud_reasons: [],
   },
 ];
 

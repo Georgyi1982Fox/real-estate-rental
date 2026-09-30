@@ -1,7 +1,10 @@
+import { useCallback, useState } from 'react';
 import type { ListingsPage } from '../api/types';
 import EmptyState from '../components/EmptyState';
 import ErrorState from '../components/ErrorState';
-import FilterPanel from '../components/FilterPanel';
+import FilterButton from '../components/FilterButton';
+import FilterChips from '../components/FilterChips';
+import FilterModal from '../components/FilterModal';
 import Icon from '../components/Icon';
 import ListingCard from '../components/ListingCard';
 import Pagination from '../components/Pagination';
@@ -13,7 +16,7 @@ import { useDistricts } from '../hooks/useDistricts';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useSearchFilters } from '../hooks/useSearchFilters';
 import { fill } from '../lib/format';
-import { filtersToQuery, hasFilters } from '../lib/searchFilters';
+import { countFilters, filtersToQuery, hasFilters } from '../lib/searchFilters';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 
@@ -24,7 +27,10 @@ const GRID_CLASS = 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid
 export default function HomePage() {
   const { t } = useI18n();
   const ht = t.home;
-  const { filters, page, setFilters, resetFilters, setPage } = useSearchFilters();
+  const { filters, page, setFilters, replaceFilters, resetFilters, setPage } = useSearchFilters();
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  // Стабильная ссылка: Modal перезапускает эффект (фокус) при смене onClose
+  const closeFilters = useCallback(() => setFiltersOpen(false), []);
   const filterQuery = filtersToQuery(filters);
   const { data, error, loading, reload } = useApi<ListingsPage>(
     `/api/listings?page=${page}&per_page=${LISTINGS_PER_PAGE}${filterQuery ? `&${filterQuery}` : ''}`,
@@ -51,10 +57,11 @@ export default function HomePage() {
         </p>
       </header>
 
-      <SearchBar />
-
       <section className="home__filters flex flex-col gap-4" aria-label={ht.filters}>
-        <FilterPanel districts={districts} filters={filters} onChange={setFilters} />
+        <SearchBar>
+          <FilterButton count={countFilters(filters)} onClick={() => setFiltersOpen(true)} />
+        </SearchBar>
+        <FilterChips filters={filters} districtNames={names} onRemove={setFilters} />
         <div className="home__filter-actions flex flex-wrap items-center gap-3">
           <SaveSearchButton filters={filters} />
           {filtered && (
@@ -71,6 +78,13 @@ export default function HomePage() {
             </button>
           )}
         </div>
+        <FilterModal
+          open={filtersOpen}
+          onClose={closeFilters}
+          filters={filters}
+          districts={districts}
+          onApply={replaceFilters}
+        />
       </section>
 
       <section
