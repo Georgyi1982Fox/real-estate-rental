@@ -23,6 +23,12 @@ from bina.infrastructure.db.models.users import SubscriptionTier
 Localized = dict[str, str]
 # Код города (bina.application.cities.CITIES)
 CityCode = Literal["tbilisi", "batumi"]
+# Вид аренды (bina.application.rent_period, TASK-092)
+RentPeriod = Literal["monthly", "daily"]
+
+
+def _rent_period(value: str | None) -> RentPeriod:
+    return "daily" if value == "daily" else "monthly"
 
 
 def localized(**texts: str | None) -> Localized:
@@ -38,6 +44,9 @@ class ListingOut(BaseModel):
     description: Localized
     price: float
     currency: str
+    rent_period: RentPeriod = Field(
+        default="monthly", description="TASK-092: monthly — цена за месяц, daily — за сутки"
+    )
     rooms: int
     area: float
     district: UUID = Field(description="ID района, название — в GET /api/districts")
@@ -89,6 +98,7 @@ class ListingOut(BaseModel):
             ),
             price=float(listing.price),
             currency=listing.currency,
+            rent_period=_rent_period(listing.rent_period),
             rooms=listing.rooms,
             area=float(listing.area),
             district=listing.district_id,
@@ -210,7 +220,7 @@ class RiskOut(BaseModel):
 class SourceLinkOut(BaseModel):
     """Та же квартира на другом сайте."""
 
-    source: str = Field(description="myhome или ss")
+    source: str = Field(description="ss, myhome, livo, korter или telegram")
     url: str
 
 
@@ -438,6 +448,9 @@ class SearchFiltersIn(BaseModel):
     """Фильтры сохранённого поиска (как параметры ``GET /api/listings``)."""
 
     city: CityCode | None = Field(default=None, description="Город; пусто — все (TASK-079)")
+    rent_period: RentPeriod = Field(
+        default="monthly", description="TASK-092: monthly или daily (посуточно)"
+    )
     district: UUID | None = None
     districts: list[UUID] = Field(
         default_factory=list, max_length=20, description="Несколько районов (любой из них)"
@@ -500,6 +513,8 @@ class SearchFiltersIn(BaseModel):
         """Фильтры для ``SavedSearch.details`` (только заданные; ключи ListingSearchFilters)."""
         values: dict[str, Any] = {
             "city": self.city,
+            # Помесячно — по умолчанию, не хранится
+            "rent_period": self.rent_period if self.rent_period != "monthly" else None,
             "area_min": float(self.min_area) if self.min_area is not None else None,
             "area_max": float(self.max_area) if self.max_area is not None else None,
             "query": self.q,
@@ -520,6 +535,7 @@ class SearchFiltersOut(BaseModel):
     """Фильтры сохранённого поиска; незаданные поля не возвращаются."""
 
     city: str | None = None
+    rent_period: RentPeriod = "monthly"
     # Ровно один район; при нескольких — None, а все районы в ``districts``
     district: UUID | None = None
     districts: list[UUID] = Field(default_factory=list)
@@ -547,6 +563,7 @@ class SearchFiltersOut(BaseModel):
         details = search.details or {}
         return cls(
             city=details.get("city"),
+            rent_period=_rent_period(details.get("rent_period")),
             district=districts[0] if len(districts) == 1 else None,
             districts=districts,
             min_price=float(search.price_min) if search.price_min is not None else None,

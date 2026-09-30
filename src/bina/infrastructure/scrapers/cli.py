@@ -48,6 +48,8 @@ from bina.infrastructure.llm.listing_extractor import LLMListingExtractor
 from bina.infrastructure.llm.llm_factory import LLMFactory, embeddings_configured
 from bina.infrastructure.llm.translator import LLMTranslator
 from bina.infrastructure.scrapers.backfill import BackfillStats, DetailsSource, backfill_details
+from bina.infrastructure.scrapers.korter_scraper import KorterScraper
+from bina.infrastructure.scrapers.livo_scraper import LivoScraper
 from bina.infrastructure.scrapers.myhome_scraper import MyHomeScraper
 from bina.infrastructure.scrapers.pipeline import ScrapeResult, run_scrape
 from bina.infrastructure.scrapers.scheduler import ScraperScheduler
@@ -61,7 +63,7 @@ if TYPE_CHECKING:
 logger = structlog.get_logger(__name__)
 
 # Сайты (у них есть страницы объявлений для дозагрузки и перепроверки)
-SOURCES = ("myhome", "ss")
+SOURCES = ("myhome", "ss", "livo", "korter")
 # TASK-091: публичные Telegram-каналы (нужен AI: LLM_API_KEY)
 TELEGRAM = "telegram"
 # Перевод коммитится пачками: сбой посередине не теряет уже сделанное
@@ -88,6 +90,10 @@ def make_scraper(source: str, *, details: bool, dump_dir: Path | None) -> BaseSc
         return MyHomeScraper(**common, fetch_details=details, dump_dir=dump_dir)  # type: ignore[arg-type]
     if source == "ss":
         return SSScraper(**common, fetch_details=details, dump_dir=dump_dir)  # type: ignore[arg-type]
+    if source == "livo":
+        return LivoScraper(**common, fetch_details=details, dump_dir=dump_dir)  # type: ignore[arg-type]
+    if source == "korter":
+        return KorterScraper(**common, fetch_details=details, dump_dir=dump_dir)  # type: ignore[arg-type]
     if source == TELEGRAM:
         # Без AI посты не разобрать: карточки без цены отбросит нормализатор
         extractor = LLMListingExtractor(LLMFactory.create_provider()) if details else None
@@ -168,7 +174,7 @@ def cli(
     if ctx.invoked_subcommand is not None:
         return
     if source is None:
-        raise click.UsageError("Укажите --source (myhome, ss, telegram или all)")
+        raise click.UsageError("Укажите --source (myhome, ss, livo, korter, telegram или all)")
 
     sources = scrape_sources() if source == "all" else [source]
     results = asyncio.run(scrape(sources, limit, details=details, dump_dir=dump_dir))

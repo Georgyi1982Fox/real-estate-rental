@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from bina.application.dtos.listing_search import ListingSearchFilters
+from bina.application.rent_period import DAILY, MONTHLY
 from bina.infrastructure.bot.formatters import format_number
 from bina.infrastructure.bot.keyboards.callbacks import SearchCallback
 from bina.infrastructure.bot.texts import t
@@ -26,6 +27,14 @@ PRICE_RANGES: tuple[Range, ...] = (
     Range(4000, None),
 )
 
+# Посуточная аренда (TASK-092): цена за сутки, тоже в лари
+DAILY_PRICE_RANGES: tuple[Range, ...] = (
+    Range(None, 80),
+    Range(80, 120),
+    Range(120, 200),
+    Range(200, None),
+)
+
 ROOM_OPTIONS: tuple[Range, ...] = (
     Range(1, 1),
     Range(2, 2),
@@ -41,9 +50,14 @@ def _preset(options: tuple[Range, ...], index: int | None) -> Range | None:
     return options[index]
 
 
-def price_label(index: int | None, language: str) -> str:
+def price_ranges(daily: bool = False) -> tuple[Range, ...]:
+    """Пресеты цен: за месяц или за сутки."""
+    return DAILY_PRICE_RANGES if daily else PRICE_RANGES
+
+
+def price_label(index: int | None, language: str, daily: bool = False) -> str:
     """Подпись диапазона цен."""
-    preset = _preset(PRICE_RANGES, index)
+    preset = _preset(price_ranges(daily), index)
     if preset is None:
         return t(language, "any_price")
     if preset.min is None and preset.max is not None:
@@ -76,10 +90,11 @@ def rooms_label(index: int | None, language: str) -> str:
 
 def filters_from_callback(callback_data: SearchCallback) -> ListingSearchFilters:
     """Строит фильтры поиска из callback data."""
-    price = _preset(PRICE_RANGES, callback_data.price)
+    price = _preset(price_ranges(callback_data.daily), callback_data.price)
     rooms = _preset(ROOM_OPTIONS, callback_data.rooms)
     return ListingSearchFilters(
         city=callback_data.city,
+        rent_period=DAILY if callback_data.daily else MONTHLY,
         district_id=callback_data.district,
         price_min=Decimal(price.min) if price and price.min is not None else None,
         price_max=Decimal(price.max) if price and price.max is not None else None,

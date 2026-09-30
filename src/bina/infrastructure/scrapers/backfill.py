@@ -71,6 +71,7 @@ def raw_from_listing(listing: Listing) -> RawListing:
         phone=listing.phone,
         owner_name=listing.owner_name,
         language=language,
+        rent_period=listing.rent_period,
     )
 
 

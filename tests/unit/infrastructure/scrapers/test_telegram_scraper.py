@@ -169,3 +169,18 @@ def test_batumi_post_in_tbilisi_channel() -> None:
     listing = apply_extracted(card, batumi, "Tbilisi", ("tbilisi", "batumi"))
     assert listing.city == "batumi"
     assert apply_extracted(card, RENTAL, "Tbilisi").city == "tbilisi"
+
+
+def test_daily_rent_posts_are_kept() -> None:
+    """TASK-092: посуточная аренда — тоже объявление, с пометкой daily."""
+    parsed = parse_extracted(
+        '{"is_rental_offer": true, "daily": true, "city": "Batumi", "district": "Центр",'
+        ' "price": 60, "currency": "GEL", "rooms": 1, "area": 35}'
+    )
+    assert parsed.daily is True
+    assert parse_extracted('{"is_rental_offer": true, "daily": null}').daily is False
+
+    card = post_card(parse_channel_page(CHANNEL_HTML, "m2tbilis")[0][0])
+    assert apply_extracted(card, RENTAL, "Tbilisi").rent_period == "monthly"
+    daily = apply_extracted(card, dataclasses.replace(RENTAL, daily=True), "Tbilisi")
+    assert (daily.rent_period, daily.price) == ("daily", 750)

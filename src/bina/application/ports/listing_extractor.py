@@ -12,11 +12,13 @@ class ListingExtractionError(Exception):
 class ExtractedListing:
     """Что AI нашёл в тексте поста.
 
-    ``is_rental_offer`` — долгосрочная аренда квартиры (не продажа, не посуточно,
-    не «ищу квартиру», не реклама). Остальные поля — ``None``, если в тексте их нет.
+    ``is_rental_offer`` — сдаётся квартира, помесячно или посуточно (не продажа,
+    не «ищу квартиру», не реклама); ``daily`` — посуточно (TASK-092). Остальные
+    поля — ``None``, если в тексте их нет.
     """
 
     is_rental_offer: bool
+    daily: bool = False
     city: str | None = None
     district: str | None = None
     price: float | None = None

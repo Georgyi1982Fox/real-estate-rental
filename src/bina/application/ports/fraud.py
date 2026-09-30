@@ -32,8 +32,10 @@ class ListingFacts:
     area: Decimal
     district: str
     photos: int
-    # Медиана цены за м² в районе (та же валюта); None — мало данных
+    # Медиана цены за м² в районе (та же валюта и вид аренды); None — мало данных
     district_median_per_m2: Decimal | None = None
+    # TASK-092: monthly — цена за месяц, daily — за сутки
+    rent_period: str = "monthly"
 
 
 @dataclass(frozen=True, slots=True)

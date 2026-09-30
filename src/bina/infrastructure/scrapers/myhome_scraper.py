@@ -1,6 +1,5 @@
 import dataclasses
 import re
-from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin
@@ -9,29 +8,31 @@ import httpx
 import structlog
 from bs4 import BeautifulSoup, Tag
 
-from bina.application.cities import DEFAULT_CITY, city_of
-from bina.application.listing_details import clean_features
+from bina.application.cities import DEFAULT_CITY
 from bina.application.ports.scraper import NeedsDetails, RawListing
 from bina.infrastructure.scrapers.base_scraper import (
     KNOWN_PAGES_TO_STOP,
     BaseWebsiteScraper,
     ListingGoneError,
 )
-from bina.infrastructure.scrapers.details import (
-    condition_code,
-    owner_type_code,
-    to_datetime,
-    to_float,
-    to_int,
-)
-from bina.infrastructure.scrapers.nextjs import next_data, walk
+from bina.infrastructure.scrapers.nextjs import next_data
 from bina.infrastructure.scrapers.settings import CITIES, MyHomeSelectors, MyHomeSettings
+from bina.infrastructure.scrapers.tnet import (
+    clean_phone,
+    find_statement,
+    parse_rooms,
+    statement_city,
+    statement_details,
+    statement_district,
+    statement_extras,
+    statement_lists,
+    statement_photos,
+    statement_price,
+)
 
 logger = structlog.get_logger(__name__)
 
 SOURCE_NAME = "myhome"
-# Ключи цен в JSON сайта: price["1"] в лари, "2" в долларах, "3" в евро
-CURRENCY_BY_ID = {"1": "GEL", "2": "USD", "3": "EUR"}
 # После стольких ошибок страниц списка подряд парсинг останавливается
 MAX_CONSECUTIVE_FAILURES = 3
 
@@ -56,6 +57,7 @@ class MyHomeScraper(BaseWebsiteScraper):
         selectors: MyHomeSelectors = MyHomeSettings.SELECTORS,
         search_path: str | None = None,
         search_paths: dict[str, str] | None = None,
+        daily_search_paths: dict[str, str] | None = None,
         cities: tuple[str, ...] = CITIES,
         max_pages: int = MyHomeSettings.MAX_PAGES,
         fetch_details: bool = True,
@@ -69,6 +71,13 @@ class MyHomeScraper(BaseWebsiteScraper):
             {DEFAULT_CITY: search_path} if search_path else MyHomeSettings.SEARCH_PATHS
         )
         self.search_paths = {city: paths[city] for city in cities if city in paths}
+        # Посуточная аренда (TASK-092); при своих адресах поиска — только если заданы явно,
+        # ``{}`` — не собирать
+        explicit = search_path is not None or search_paths is not None
+        daily = daily_search_paths
+        if daily is None:
+            daily = {} if explicit else MyHomeSettings.DAILY_SEARCH_PATHS
+        self.daily_search_paths = {city: daily[city] for city in cities if city in daily}
         self.max_pages = max_pages
         self.fetch_details = fetch_details
         self.dump_dir = dump_dir
@@ -79,7 +88,8 @@ class MyHomeScraper(BaseWebsiteScraper):
         """Парсит до ``limit`` объявлений каждого города (список + страницы объявлений)."""
         logger.info("Starting MyHome scraping", limit=limit, details=self.fetch_details)
         listings: list[RawListing] = []
-        for city, path in self.search_paths.items():
+        searches = [*self.search_paths.items(), *self.daily_search_paths.items()]
+        for city, path in searches:
             listings += await self._scrape_city(city, path, limit, needs_details)
         logger.info("Finished MyHome scraping", total=len(listings))
         return listings
@@ -155,7 +165,7 @@ class MyHomeScraper(BaseWebsiteScraper):
         """
         data = next_data(html)
         if data is not None:
-            statements = [item for items in _statement_lists(data) for item in items]
+            statements = [item for items in statement_lists(data) for item in items]
             if statements:
                 cards = [self._from_statement(item, city) for item in statements]
                 return [card for card in cards if card.city == city]
@@ -163,10 +173,11 @@ class MyHomeScraper(BaseWebsiteScraper):
 
     def _from_statement(self, item: dict[str, Any], city: str = DEFAULT_CITY) -> RawListing:
         """Объявление из JSON-объекта ``statement`` сайта."""
-        price, currency = _statement_price(item)
+        price, currency = statement_price(item)
         listing_id = str(item["id"])
         slug = str(item.get("dynamic_slug") or "")
         path = f"/ru/nedvizhimost/{slug}-{listing_id}/" if slug else f"/ru/pr/{listing_id}/"
+        code = statement_city(item, city)
         return RawListing(
             source_id=listing_id,
             source_name=SOURCE_NAME,
@@ -174,14 +185,14 @@ class MyHomeScraper(BaseWebsiteScraper):
             description=str(item.get("comment") or "").strip(),
             price=price,
             currency=currency,
-            rooms=_parse_rooms(str(item.get("room") or "")),
+            rooms=parse_rooms(str(item.get("room") or "")),
             area=float(item.get("area") or 0),
-            district=str(item.get("urban_name") or item.get("district_name") or "Unknown"),
-            city=_statement_city(item, city),
+            district=statement_district(item, code),
+            city=code,
             url=self.base_url + path,
-            photos=_statement_photos(item),
+            photos=statement_photos(item),
             owner_name=str(item.get("user_title") or "").strip() or None,
-            **_statement_extras(item),
+            **statement_extras(item),
         )
 
     def _parse_listings_html(self, html: str) -> list[RawListing]:
@@ -209,7 +220,7 @@ class MyHomeScraper(BaseWebsiteScraper):
                     description=description,
                     price=price,
                     currency=currency,
-                    rooms=_parse_rooms(_text(element, s.card_rooms)),
+                    rooms=parse_rooms(_text(element, s.card_rooms)),
                     area=_parse_area(_text(element, s.card_area)),
                     district=_text(element, s.card_district) or "Unknown",
                     url=urljoin(self.base_url + "/", href) if href else "",
@@ -232,9 +243,9 @@ class MyHomeScraper(BaseWebsiteScraper):
         """Поля со страницы объявления; отсутствующие на странице не возвращаются."""
         data = next_data(html)
         if data is not None:
-            statement = _find_statement(data)
+            statement = find_statement(data)
             if statement is not None:
-                return _statement_details(statement)
+                return statement_details(statement)
         return self._parse_detail_html(html)
 
     def _parse_detail_html(self, html: str) -> dict[str, Any]:
@@ -251,7 +262,7 @@ class MyHomeScraper(BaseWebsiteScraper):
                 details["price"], details["currency"] = price, currency
         if district := _text(soup, s.detail_district):
             details["district"] = district
-        if rooms := _parse_rooms(_text(soup, s.detail_rooms)):
+        if rooms := parse_rooms(_text(soup, s.detail_rooms)):
             details["rooms"] = rooms
         if area := _parse_area(_text(soup, s.detail_area)):
             details["area"] = area
@@ -270,7 +281,7 @@ class MyHomeScraper(BaseWebsiteScraper):
         phone_element = soup.select_one(s.detail_phone)
         if phone_element is not None:
             raw_phone = str(phone_element.get("data-phone") or phone_element.get_text(strip=True))
-            if phone := _clean_phone(raw_phone):
+            if phone := clean_phone(raw_phone):
                 details["phone"] = phone
         if owner := _text(soup, s.detail_owner):
             details["owner_name"] = owner
@@ -294,193 +305,7 @@ def _text(root: BeautifulSoup | Tag, selector: str, separator: str = " ") -> str
     return element.get_text(separator, strip=True) if element else ""
 
 
-def _parse_rooms(text: str) -> int:
-    """Количество комнат: ``2 комнаты``, ``3 room``, ``2 ოთახი``."""
-    match = re.search(r"(\d+)", text)
-    return int(match.group(1)) if match else 0
-
-
 def _parse_area(text: str) -> float:
     """Площадь в м²: ``50 м²``, ``72.5 m²``."""
     match = re.search(r"(\d+(?:[.,]\d+)?)", text)
     return float(match.group(1).replace(",", ".")) if match else 0.0
-
-
-def _clean_phone(text: str) -> str:
-    """Телефон без лишних символов: ``+995 555 12-34-56`` → ``+995555123456``."""
-    digits = re.sub(r"[^\d+]", "", text)
-    return digits if len(re.sub(r"\D", "", digits)) >= 6 else ""
-
-
-# ------------------------------------------------------------------ JSON Next.js
-
-
-def _statement_city(item: dict[str, Any], default: str) -> str:
-    """Город объявления по ``city_name``; другой, не наш город — пустая строка."""
-    name = str(item.get("city_name") or "").strip()
-    if not name:
-        return default
-    return city_of(name) or ""
-
-
-def _is_statement(value: Any) -> bool:
-    """Похоже ли значение на объявление сайта."""
-    return (
-        isinstance(value, dict)
-        and "id" in value
-        and "price" in value
-        and ("dynamic_title" in value or "room" in value)
-    )
-
-
-def _statement_lists(data: dict[str, Any]) -> Iterator[list[dict[str, Any]]]:
-    """Списки объявлений в JSON страницы поиска."""
-    for value in walk(data):
-        if isinstance(value, list) and value and all(_is_statement(item) for item in value):
-            yield value
-
-
-def _find_statement(data: dict[str, Any]) -> dict[str, Any] | None:
-    """Первое объявление в JSON страницы объявления."""
-    for value in walk(data):
-        if _is_statement(value):
-            return dict(value)
-    return None
-
-
-def _statement_price(item: dict[str, Any]) -> tuple[float, str]:
-    """Цена в лари, если она есть, иначе в валюте объявления."""
-    prices = item.get("price")
-    if not isinstance(prices, dict):
-        return 0.0, "GEL"
-    currency_id = str(item.get("statement_currency_id") or item.get("currency_id") or "1")
-    for key in ("1", currency_id):
-        entry = prices.get(key)
-        if isinstance(entry, dict) and entry.get("price_total"):
-            return float(entry["price_total"]), CURRENCY_BY_ID.get(key, "GEL")
-    return 0.0, "GEL"
-
-
-def _statement_photos(item: dict[str, Any]) -> list[str]:
-    """Ссылки на фото в большом размере, главное первым."""
-    images = item.get("images")
-    if not isinstance(images, list):
-        return []
-    ordered = sorted(
-        (image for image in images if isinstance(image, dict)),
-        key=lambda image: not image.get("is_main"),
-    )
-    photos: list[str] = []
-    for image in ordered:
-        url = str(image.get("large") or image.get("thumb") or "")
-        if url and url not in photos:
-            photos.append(url)
-    return photos
-
-
-def _statement_details(item: dict[str, Any]) -> dict[str, Any]:
-    """Поля объявления со страницы объявления (только найденные)."""
-    details: dict[str, Any] = {}
-    if title := str(item.get("dynamic_title") or "").strip():
-        details["title"] = title
-    price, currency = _statement_price(item)
-    if price > 0:
-        details["price"], details["currency"] = price, currency
-    if district := str(item.get("urban_name") or item.get("district_name") or ""):
-        details["district"] = district
-    if rooms := _parse_rooms(str(item.get("room") or "")):
-        details["rooms"] = rooms
-    if area := float(item.get("area") or 0):
-        details["area"] = area
-    description = item.get("description") or item.get("comment")
-    if isinstance(description, str) and description.strip():
-        details["description"] = description.strip()
-    if photos := _statement_photos(item):
-        details["photos"] = photos
-    # Сайт отдаёт номер замаскированным (``591589***``), полный только по кнопке: такие пропускаем
-    for key in ("phone", "phone_number", "user_phone_number"):
-        raw = item.get(key)
-        if isinstance(raw, str | int) and "*" not in str(raw) and (phone := _clean_phone(str(raw))):
-            details["phone"] = phone
-            break
-    if owner := str(item.get("user_title") or item.get("owner_name") or "").strip():
-        details["owner_name"] = owner
-    details.update(_statement_extras(item))
-    details["has_details"] = True
-    if item.get("is_active") is False:
-        # Снято владельцем или истёк срок
-        details["active"] = False
-    return details
-
-
-# Параметры (``parameters[].key``) страницы объявления → наши коды удобств
-_MYHOME_FEATURES: dict[str, str] = {
-    "furniture": "furniture",
-    "kitchen": "kitchen_appliances",
-    "conditioner": "air_conditioning",
-    "air_conditioner": "air_conditioning",
-    "heating": "heating",
-    "hot_water": "hot_water",
-    "washing_machine": "washing_machine",
-    "dishwasher": "dishwasher",
-    "refrigerator": "fridge",
-    "tv": "tv",
-    "internet": "internet",
-    "wifi": "internet",
-    "gas": "gas",
-    "elevator": "elevator",
-    "lift": "elevator",
-    "parking": "parking",
-    "garage": "parking",
-    "balcony": "balcony",
-    "loggia": "balcony",
-    "storeroom": "storage",
-    "pool": "pool",
-    "swimming_pool": "pool",
-    "pets": "pets_allowed",
-    "pets_allowed": "pets_allowed",
-    "alarm": "security",
-    "security": "security",
-}
-
-
-def _statement_extras(item: dict[str, Any]) -> dict[str, Any]:
-    """Этажи, спальни, удобства, состояние, адрес, даты (из списка и страницы объявления)."""
-    extras: dict[str, Any] = {}
-    user_type = item.get("user_type")
-    for key, value in (
-        ("floor", to_int(item.get("floor"))),
-        ("total_floors", to_int(item.get("total_floors"))),
-        ("bedrooms", to_int(item.get("bedroom"))),
-        ("condition", condition_code(item.get("condition"))),
-        (
-            "owner_type",
-            owner_type_code(user_type.get("type") if isinstance(user_type, dict) else None),
-        ),
-        ("address", str(item.get("address") or "").strip() or None),
-        ("latitude", to_float(item.get("lat"))),
-        ("longitude", to_float(item.get("lng"))),
-        ("published_at", to_datetime(item.get("created_at"))),
-        ("updated_at", to_datetime(item.get("last_updated"))),
-    ):
-        if value is not None:
-            extras[key] = value
-
-    parameters = item.get("parameters")
-    if isinstance(parameters, list) and parameters:
-        codes = [
-            _MYHOME_FEATURES[str(parameter.get("key"))]
-            for parameter in parameters
-            if isinstance(parameter, dict) and str(parameter.get("key")) in _MYHOME_FEATURES
-        ]
-        if to_int(item.get("balconies")):
-            codes.append("balcony")
-        for key, code in (
-            ("heating_type_id", "heating"),
-            ("hot_water_type_id", "hot_water"),
-            ("parking_type_id", "parking"),
-        ):
-            if item.get(key):
-                codes.append(code)
-        extras["features"] = clean_features(codes)
-    return extras

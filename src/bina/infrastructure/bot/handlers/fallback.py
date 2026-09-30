@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bina.application.dtos.listing_search import ListingSearchFilters
 from bina.application.ports.embeddings import EmbeddingsError, IEmbedder
+from bina.application.rent_period import period_from_text
 from bina.application.semantic_search import is_smart_query
 from bina.application.use_cases.smart_search import SmartSearchUseCase
 from bina.infrastructure.api.validation import clean_text
@@ -39,7 +40,9 @@ async def on_unknown_message(
     if embedder is not None and is_smart_query(query) and not query.startswith("/"):
         try:
             page = await SmartSearchUseCase(ListingsRepository(session), embedder).execute(
-                ListingSearchFilters(query=query), page=0, page_size=settings.page_size
+                ListingSearchFilters(query=query, rent_period=period_from_text(query)),
+                page=0,
+                page_size=settings.page_size,
             )
         except EmbeddingsError:
             page = None

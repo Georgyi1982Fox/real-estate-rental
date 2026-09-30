@@ -20,12 +20,17 @@ class SearchStep(StrEnum):
     RESULTS = "res"
 
 
+# ``SearchCallback.period`` посуточной аренды (коротко: лимит callback data 64 байта)
+DAILY_PERIOD = "d"
+
+
 class SearchCallback(CallbackData, prefix="s"):
     """Навигация по мастеру поиска и страницам результатов.
 
     ``price`` и ``rooms``: индексы пресетов из :mod:`.filters`, ``None``: «любые».
     ``page``: страница списка районов на шаге DISTRICT и страница результатов на RESULTS.
     ``city``: код города (TASK-079); ``None`` — все города.
+    ``period``: ``d`` — посуточная аренда (TASK-092), ``None`` — помесячная.
     """
 
     step: SearchStep
@@ -34,6 +39,11 @@ class SearchCallback(CallbackData, prefix="s"):
     rooms: int | None = None
     page: int = 0
     city: str | None = None
+    period: str | None = None
+
+    @property
+    def daily(self) -> bool:
+        return self.period == DAILY_PERIOD
 
 
 class FavoriteToggleCallback(CallbackData, prefix="fav"):

@@ -20,7 +20,8 @@ _RU: dict[str, str] = {
     "alert_api_ok": "✅ Bina.ai: сервер мини-приложения снова работает.",
     "menu_title": (
         "🏠 <b>Bina.ai — главное меню</b>\n\n"
-        "Аренда жилья в Грузии: объявления с MyHome.ge и SS.ge, проверка на мошенничество, "
+        "Аренда жилья в Грузии, помесячно и посуточно: объявления с MyHome.ge, SS.ge, "
+        "Livo.ge, Korter.ge и Telegram-каналов, проверка на мошенничество, "
         "документы и напоминания.\n\n"
         "🧠 Можно просто написать мне, какую квартиру ищете, — своими словами.\n\n"
         "Выберите, что сделать:"
@@ -36,8 +37,9 @@ _RU: dict[str, str] = {
     "menu_lab": "🧪 Проверка функций",
     "welcome_new": (
         "👋 Добро пожаловать в <b>Bina.ai</b>!\n\n"
-        "Я помогу найти жильё в аренду в Грузии: объявления с MyHome.ge и SS.ge "
-        "в одном месте, с переводом и проверкой на мошенничество.\n\n"
+        "Я помогу найти жильё в аренду в Грузии: объявления с MyHome.ge, SS.ge, Livo.ge, "
+        "Korter.ge и Telegram-каналов в одном месте, с переводом и проверкой на "
+        "мошенничество.\n\n"
         "Нажмите «🔍 Поиск», чтобы начать, или /help, чтобы узнать больше."
     ),
     "welcome_back": "👋 С возвращением! Выберите действие в меню ниже.",
@@ -85,6 +87,12 @@ _RU: dict[str, str] = {
     "choose_district": "📍 <b>Шаг 1/3.</b> Выберите район:",
     "no_districts": "Районы ещё не загружены. Показываю все объявления.",
     "choose_price": "📍 {district}\n\n💰 <b>Шаг 2/3.</b> Бюджет в месяц:",
+    # TASK-092: посуточная аренда
+    "choose_price_daily": "📍 {district}\n\n💰 <b>Шаг 2/3.</b> 🛏 Посуточно. Бюджет за сутки:",
+    "period_to_daily": "🛏 Посуточно",
+    "period_to_monthly": "📅 Помесячно",
+    "period_daily_label": "🛏 посуточно",
+    "per_day": "/ сутки",
     "choose_rooms": "📍 {district} · 💰 {price}\n\n🚪 <b>Шаг 3/3.</b> Количество комнат:",
     "any_district": "Любой район",
     "choose_city": "🏙 <b>Выберите город:</b>",
@@ -239,8 +247,8 @@ _EN: dict[str, str] = {
     "alert_api_ok": "✅ Bina.ai: the Mini App server works again.",
     "menu_title": (
         "🏠 <b>Bina.ai — main menu</b>\n\n"
-        "Rentals in Georgia: listings from MyHome.ge and SS.ge, scam checks, documents "
-        "and reminders.\n\n"
+        "Monthly and daily rentals in Georgia: listings from MyHome.ge, SS.ge, Livo.ge, "
+        "Korter.ge and Telegram channels, scam checks, documents and reminders.\n\n"
         "🧠 You can also just write to me what apartment you need, in your own words.\n\n"
         "Choose what to do:"
     ),
@@ -255,8 +263,9 @@ _EN: dict[str, str] = {
     "menu_lab": "🧪 Feature check",
     "welcome_new": (
         "👋 Welcome to <b>Bina.ai</b>!\n\n"
-        "I'll help you find a rental home in Georgia: listings from MyHome.ge and SS.ge "
-        "in one place, translated and checked for fraud.\n\n"
+        "I'll help you find a rental home in Georgia: listings from MyHome.ge, SS.ge, "
+        "Livo.ge, Korter.ge and Telegram channels in one place, translated and checked "
+        "for fraud.\n\n"
         "Tap “🔍 Search” to start, or /help to learn more."
     ),
     "welcome_back": "👋 Welcome back! Pick an option from the menu below.",
@@ -307,6 +316,12 @@ _EN: dict[str, str] = {
     "choose_district": "📍 <b>Step 1/3.</b> Choose a district:",
     "no_districts": "Districts are not loaded yet. Showing all listings.",
     "choose_price": "📍 {district}\n\n💰 <b>Step 2/3.</b> Monthly budget:",
+    # TASK-092: daily rent
+    "choose_price_daily": "📍 {district}\n\n💰 <b>Step 2/3.</b> 🛏 Daily rent. Budget per day:",
+    "period_to_daily": "🛏 Daily",
+    "period_to_monthly": "📅 Monthly",
+    "period_daily_label": "🛏 daily",
+    "per_day": "/ day",
     "choose_rooms": "📍 {district} · 💰 {price}\n\n🚪 <b>Step 3/3.</b> Number of rooms:",
     "any_district": "Any district",
     "choose_city": "🏙 <b>Choose a city:</b>",
@@ -458,7 +473,8 @@ _KA: dict[str, str] = {
     "alert_api_ok": "✅ Bina.ai: მინი-აპლიკაციის სერვერი ისევ მუშაობს.",
     "menu_title": (
         "🏠 <b>Bina.ai — მთავარი მენიუ</b>\n\n"
-        "ქირავნობა საქართველოში: განცხადებები MyHome.ge-დან და SS.ge-დან, თაღლითობის "
+        "ქირავნობა საქართველოში, თვიურად და დღიურად: განცხადებები MyHome.ge-დან, "
+        "SS.ge-დან, Livo.ge-დან, Korter.ge-დან და Telegram-არხებიდან, თაღლითობის "
         "შემოწმება, დოკუმენტები და შეხსენებები.\n\n"
         "🧠 შეგიძლიათ უბრალოდ მომწეროთ, როგორ ბინას ეძებთ — საკუთარი სიტყვებით.\n\n"
         "აირჩიეთ, რა გავაკეთოთ:"
@@ -474,8 +490,9 @@ _KA: dict[str, str] = {
     "menu_lab": "🧪 ფუნქციების შემოწმება",
     "welcome_new": (
         "👋 კეთილი იყოს თქვენი მობრძანება <b>Bina.ai</b>-ში!\n\n"
-        "დაგეხმარებით საქართველოში ქირით საცხოვრებლის პოვნაში: განცხადებები MyHome.ge-დან "
-        "და SS.ge-დან ერთ ადგილას, თარგმანით და თაღლითობაზე შემოწმებით.\n\n"
+        "დაგეხმარებით საქართველოში ქირით საცხოვრებლის პოვნაში: განცხადებები MyHome.ge-დან, "
+        "SS.ge-დან, Livo.ge-დან, Korter.ge-დან და Telegram-არხებიდან ერთ ადგილას, "
+        "თარგმანით და თაღლითობაზე შემოწმებით.\n\n"
         "დააჭირეთ „🔍 ძებნა“, რომ დაიწყოთ, ან /help დამატებითი ინფორმაციისთვის."
     ),
     "welcome_back": "👋 კეთილი იყოს თქვენი დაბრუნება! აირჩიეთ მოქმედება ქვემოთ მენიუში.",
@@ -523,6 +540,12 @@ _KA: dict[str, str] = {
     "choose_district": "📍 <b>ნაბიჯი 1/3.</b> აირჩიეთ უბანი:",
     "no_districts": "უბნები ჯერ არ არის ჩატვირთული. ვაჩვენებ ყველა განცხადებას.",
     "choose_price": "📍 {district}\n\n💰 <b>ნაბიჯი 2/3.</b> თვიური ბიუჯეტი:",
+    # TASK-092: დღიური ქირა
+    "choose_price_daily": ("📍 {district}\n\n💰 <b>ნაბიჯი 2/3.</b> 🛏 დღიურად. ბიუჯეტი დღეში:"),
+    "period_to_daily": "🛏 დღიურად",
+    "period_to_monthly": "📅 თვიურად",
+    "period_daily_label": "🛏 დღიურად",
+    "per_day": "/ დღე",
     "choose_rooms": "📍 {district} · 💰 {price}\n\n🚪 <b>ნაბიჯი 3/3.</b> ოთახების რაოდენობა:",
     "any_district": "ნებისმიერი უბანი",
     "choose_city": "🏙 <b>აირჩიეთ ქალაქი:</b>",

@@ -2,6 +2,7 @@
 
 from bina.application.ports.fraud import AI_REASONS, ListingFacts
 from bina.application.ports.translator import ListingText
+from bina.application.rent_period import DAILY
 
 # Длинные описания обрезаем: признаки мошенничества видны в начале (и дешевле)
 MAX_DESCRIPTION_CHARS = 3000
@@ -26,7 +27,9 @@ def build_fraud_prompt(text: ListingText, facts: ListingFacts) -> str:
         else "unknown"
     )
     description = text.description[:MAX_DESCRIPTION_CHARS]
-    return f"""You check long-term apartment rental listings in Georgia (Tbilisi, Batumi) for scams.
+    # TASK-092: у посуточной аренды цена за сутки — это не «подозрительно дёшево»
+    period = "per day (daily rent)" if facts.rent_period == DAILY else "per month"
+    return f"""You check apartment rental listings in Georgia (Tbilisi, Batumi) for scams.
 Most listings are honest. Agencies, "no agencies" notes, commission, a deposit paid at
 signing, utilities, and asking to call or WhatsApp are NORMAL and not red flags.
 Flag only clear scam patterns.
@@ -41,7 +44,7 @@ Reply with ONLY a JSON object, no markdown:
 {{"score": 0, "reasons": []}}
 
 Facts:
-- Price: {facts.price} {facts.currency} per month, {per_m2} {facts.currency}/m²
+- Price: {facts.price} {facts.currency} {period}, {per_m2} {facts.currency}/m²
 - District median price: {median}
 - Rooms: {facts.rooms}, area: {facts.area} m², district: {facts.district or "unknown"}
 - Photos: {facts.photos}

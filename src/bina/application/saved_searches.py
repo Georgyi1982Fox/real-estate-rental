@@ -14,6 +14,8 @@ from bina.infrastructure.db.models import SavedSearch
 # Какие поля ListingSearchFilters сохраняются в details
 DETAIL_FIELDS: tuple[str, ...] = (
     "city",
+    # TASK-092: нет ключа — помесячно
+    "rent_period",
     "area_min",
     "area_max",
     "query",

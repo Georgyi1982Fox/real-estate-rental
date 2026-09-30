@@ -1,5 +1,6 @@
 """LLMFraudAnalyzer: промпт, разбор ответа, повтор и ошибки (без сети)."""
 
+import dataclasses
 from decimal import Decimal
 from typing import Any
 
@@ -99,3 +100,10 @@ async def test_errors() -> None:
     failure = httpx.HTTPStatusError("400", request=request, response=httpx.Response(400))
     with pytest.raises(FraudAnalysisError, match="LLM request failed"):
         await LLMFraudAnalyzer(FakeProvider([failure])).analyze(TEXT, FACTS)
+
+
+def test_prompt_daily_rent_price_is_per_day() -> None:
+    """TASK-092: 50 лари за сутки — не подозрительно дёшево."""
+    daily = dataclasses.replace(FraudFactsNoMedian, price=Decimal(50), rent_period="daily")
+    assert "50 GEL per day (daily rent)" in build_fraud_prompt(TEXT, daily)
+    assert "1000 GEL per month" in build_fraud_prompt(TEXT, FraudFactsNoMedian)

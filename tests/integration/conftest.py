@@ -51,6 +51,7 @@ MIGRATIONS = (
     "rent_reminders",
     "district_city",
     "embeddings_unique",
+    "listing_rent_period",
 )
 
 

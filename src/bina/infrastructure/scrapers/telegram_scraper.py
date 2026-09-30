@@ -3,7 +3,7 @@
 Веб-версия канала ``https://t.me/s/<канал>`` открывается без аккаунта: посты
 лежат в HTML (текст, фото, дата). Пост — свободный текст, поэтому цену, район,
 комнаты и площадь достаёт AI (:class:`IListingExtractor`). Разбираются только
-новые посты: известные и уже отброшенные (продажа, «ищу», посуточно) AI не
+новые посты: известные и уже отброшенные (продажа, «ищу») AI не
 отправляются повторно (``needs_details``, ``bina_scrape_skips``).
 
 Группы (не каналы) веб-версии не имеют — их так не прочитать.
@@ -26,6 +26,7 @@ from bina.application.ports.listing_extractor import (
     ListingExtractionError,
 )
 from bina.application.ports.scraper import NeedsDetails, RawListing
+from bina.application.rent_period import DAILY, MONTHLY
 from bina.application.text import html_to_text
 from bina.infrastructure.scrapers.base_scraper import KNOWN_PAGES_TO_STOP, BaseWebsiteScraper
 from bina.infrastructure.scrapers.details import to_datetime
@@ -147,6 +148,7 @@ def apply_extracted(
         "phone": data.phone,
         "has_details": True,
         "city": code,
+        "rent_period": DAILY if data.daily else MONTHLY,
     }
     return dataclasses.replace(card, **values)
 

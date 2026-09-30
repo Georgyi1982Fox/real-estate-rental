@@ -40,6 +40,7 @@ from bina.infrastructure.api.schemas import (
     ListingsPageOut,
     PhoneOut,
     PriceAnalysisOut,
+    RentPeriod,
     RiskOut,
     SourceLinkOut,
 )
@@ -64,6 +65,10 @@ async def list_listings(
     city: Annotated[
         CityCode | None, Query(description="Город: tbilisi, batumi; пусто — все (TASK-079)")
     ] = None,
+    rent_period: Annotated[
+        RentPeriod,
+        Query(description="TASK-092: monthly (по умолчанию) или daily — посуточно, цена за сутки"),
+    ] = "monthly",
     district: Annotated[
         list[str] | None,
         Query(
@@ -99,7 +104,7 @@ async def list_listings(
     ] = None,
     source: Annotated[
         str | None,
-        Query(description="Источники через запятую, любой из: ss, myhome, telegram"),
+        Query(description="Источники через запятую, любой из: ss, myhome, livo, korter, telegram"),
     ] = None,
     sort: Annotated[
         ListingSort | None,
@@ -114,6 +119,7 @@ async def list_listings(
     try:
         filters = search_filters(
             city=city,
+            rent_period=rent_period,
             district_ids=parse_districts(district),
             price_min=parse_decimal(min_price, "min_price"),
             price_max=parse_decimal(max_price, "max_price"),
@@ -220,12 +226,17 @@ async def similar_listings(listing_id: str, session: SessionDep) -> ListingsOut:
     listing = await get_listing_or_404(session, listing_id)
     price_min = listing.price * (1 - SIMILAR_PRICE_SPREAD)
     price_max = listing.price * (1 + SIMILAR_PRICE_SPREAD)
+    # Похожие — того же вида аренды (посуточные к посуточным, TASK-092)
+    period = listing.rent_period
     tiers = (
         ListingSearchFilters(
-            district_id=listing.district_id, price_min=price_min, price_max=price_max
+            district_id=listing.district_id,
+            price_min=price_min,
+            price_max=price_max,
+            rent_period=period,
         ),
-        ListingSearchFilters(district_id=listing.district_id),
-        ListingSearchFilters(price_min=price_min, price_max=price_max),
+        ListingSearchFilters(district_id=listing.district_id, rent_period=period),
+        ListingSearchFilters(price_min=price_min, price_max=price_max, rent_period=period),
     )
 
     repository = ListingsRepository(session)

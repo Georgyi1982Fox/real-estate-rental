@@ -4,6 +4,7 @@ from decimal import Decimal
 from html import escape
 
 from bina.application.fraud import FraudLevel, fraud_level
+from bina.application.rent_period import DAILY
 from bina.infrastructure.bot.texts import t
 from bina.infrastructure.db.models import District, Listing
 
@@ -28,6 +29,14 @@ def format_price(price: Decimal | float | int, currency: str) -> str:
     if symbol == "$":
         return f"${amount}"
     return f"{amount} {symbol}"
+
+
+def listing_price(listing: Listing, language: str) -> str:
+    """Цена объявления; у посуточной аренды — «50 ₾ / сутки» (TASK-092)."""
+    price = format_price(listing.price, listing.currency)
+    if listing.rent_period == DAILY:
+        return f"{price} {t(language, 'per_day')}"
+    return price
 
 
 def truncate(text: str, limit: int) -> str:
@@ -66,7 +75,7 @@ def format_listing(listing: Listing, index: int, language: str) -> str:
     """
     title = escape(truncate(listing_title(listing, language), MAX_TITLE_LENGTH))
     details = [
-        f"💰 {format_price(listing.price, listing.currency)}",
+        f"💰 {listing_price(listing, language)}",
         f"🚪 {t(language, 'listing_rooms', n=listing.rooms)}",
         f"📐 {t(language, 'listing_area', area=format_number(listing.area))}",
     ]

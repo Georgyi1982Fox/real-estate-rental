@@ -8,6 +8,7 @@
 """
 
 from bina.application.cities import city_name
+from bina.application.rent_period import DAILY
 from bina.infrastructure.db.models import Listing
 
 # Размер вектора в bina_embeddings (Vector(1536))
@@ -33,10 +34,11 @@ def listing_text(listing: Listing) -> str:
         )
         if part
     )
+    daily = listing.rent_period == DAILY
     facts = [
-        f"{listing.rooms}-room apartment for rent",
+        f"{listing.rooms}-room apartment for {'daily rent' if daily else 'rent'}",
         f"{float(listing.area):g} m²" if listing.area else "",
-        f"{float(listing.price):g} {listing.currency} per month",
+        f"{float(listing.price):g} {listing.currency} per {'day' if daily else 'month'}",
         place,
         f"floor {listing.floor}" if listing.floor is not None else "",
         (listing.condition or "").replace("_", " "),
