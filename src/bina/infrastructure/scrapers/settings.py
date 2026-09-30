@@ -89,8 +89,8 @@ class MyHomeSettings:
         "/ru/nedvizhimost/arenda/kvartira/tbilisi/"
         "?deal_types=2&real_estate_types=1&currency_id=1&cities=1&page={page}",
     )
-    # Батуми (TASK-079). Номер города на сайте не проверен вживую: если объявлений
-    # Батуми с myhome нет, откройте на myhome.ge аренду квартир в Батуми и скопируйте
+    # Батуми (TASK-079): номер города 15 проверен через API TNET (TASK-092); если адрес
+    # страницы изменится, откройте на myhome.ge аренду квартир в Батуми и скопируйте
     # адрес (с {page} вместо номера страницы) в MYHOME_SEARCH_PATH_BATUMI.
     SEARCH_PATH_BATUMI = (
         os.getenv("MYHOME_SEARCH_PATH_BATUMI")
@@ -98,6 +98,21 @@ class MyHomeSettings:
         "?deal_types=2&real_estate_types=1&currency_id=1&cities=15&page={page}"
     )
     SEARCH_PATHS: ClassVar[dict[str, str]] = {"tbilisi": SEARCH_PATH, "batumi": SEARCH_PATH_BATUMI}
+    # Посуточная аренда (TASK-092): deal_types=7. Номер Батуми (cities=15) проверен через
+    # API TNET в сентябре 2026; адрес страницы — как у помесячной аренды, с другим deal_types.
+    # «-» в переменной — не собирать посуточную аренду с myhome.ge
+    DAILY_SEARCH_PATHS: ClassVar[dict[str, str]] = {
+        city: path
+        for city, path in {
+            "tbilisi": os.getenv("MYHOME_DAILY_SEARCH_PATH")
+            or "/ru/nedvizhimost/arenda/kvartira/tbilisi/"
+            "?deal_types=7&real_estate_types=1&currency_id=1&cities=1&page={page}",
+            "batumi": os.getenv("MYHOME_DAILY_SEARCH_PATH_BATUMI")
+            or "/ru/nedvizhimost/arenda/kvartira/batumi/"
+            "?deal_types=7&real_estate_types=1&currency_id=1&cities=15&page={page}",
+        }.items()
+        if path != "-"
+    }
     MAX_PAGES = int(os.getenv("MYHOME_MAX_PAGES", "20"))
     SELECTORS = MyHomeSelectors()
 
@@ -114,7 +129,55 @@ class SSSettings:
         "/%D0%9A%D0%B2%D0%B0%D1%80%D1%82%D0%B8%D1%80%D0%B0/%D0%90%D1%80%D0%B5%D0%BD%D0%B4%D0%B0"
         "?currencyId=1&page={page}",
     )
+    # Посуточная аренда (TASK-092): /ru/недвижимость/l/Квартира/Аренда--за-день;
+    # «-» — не собирать
+    DAILY_SEARCH_PATH = os.getenv(
+        "SS_DAILY_SEARCH_PATH",
+        "/ru/%D0%BD%D0%B5%D0%B4%D0%B2%D0%B8%D0%B6%D0%B8%D0%BC%D0%BE%D1%81%D1%82%D1%8C/l"
+        "/%D0%9A%D0%B2%D0%B0%D1%80%D1%82%D0%B8%D1%80%D0%B0/%D0%90%D1%80%D0%B5%D0%BD%D0%B4%D0%B0"
+        "--%D0%B7%D0%B0-%D0%B4%D0%B5%D0%BD%D1%8C?currencyId=1&page={page}",
+    )
     MAX_PAGES = int(os.getenv("SS_MAX_PAGES", "20"))
+
+
+class LivoSettings:
+    """Livo.ge (TASK-092): сайт TNET, объявления берутся из его API (как на самом сайте)."""
+
+    BASE_URL = os.getenv("LIVO_BASE_URL", "https://livo.ge")
+    API_URL = os.getenv("LIVO_API_URL", "https://api-statements.tnet.ge")
+    # Ключ сайта в заголовке X-Website-Key: без него API отвечает 403 (виден в коде сайта)
+    WEBSITE_KEY = os.getenv("LIVO_WEBSITE_KEY", "livo")
+    # Квартиры (real_estate_types=1), аренда помесячно и посуточно (deal_types=2,7);
+    # города — cities=1,15 (Тбилиси, Батуми) из SCRAPE_CITIES; {page}: номер страницы
+    SEARCH_QUERY = os.getenv(
+        "LIVO_SEARCH_QUERY", "deal_types=2,7&real_estate_types=1&cities={cities}&page={page}"
+    )
+    MAX_PAGES = int(os.getenv("LIVO_MAX_PAGES", "20"))
+
+
+class KorterSettings:
+    """Korter.ge (TASK-092): данные объявлений лежат в странице (``window.INITIAL_STATE``)."""
+
+    BASE_URL = os.getenv("KORTER_BASE_URL", "https://korter.ge")
+    # Город → адрес раздела аренды квартир (из sitemap сайта, сентябрь 2026); {page}: страница
+    SEARCH_PATHS: ClassVar[dict[str, str]] = {
+        "tbilisi": os.getenv("KORTER_SEARCH_PATH")
+        or "/ru/%D0%B0%D1%80%D0%B5%D0%BD%D0%B4%D0%B0-%D0%BA%D0%B2%D0%B0%D1%80%D1%82%D0%B8%D1%80-"
+        "%D1%82%D0%B1%D0%B8%D0%BB%D0%B8%D1%81%D0%B8?page={page}",
+        "batumi": os.getenv("KORTER_SEARCH_PATH_BATUMI")
+        or "/ru/%D0%B0%D1%80%D0%B5%D0%BD%D0%B4%D0%B0-%D0%BA%D0%B2%D0%B0%D1%80%D1%82%D0%B8%D1%80-"
+        "%D0%B1%D0%B0%D1%82%D1%83%D0%BC%D0%B8?page={page}",
+    }
+    # Посуточная аренда: «аренда-квартир-посуточно-<город>»
+    DAILY_SEARCH_PATHS: ClassVar[dict[str, str]] = {
+        "tbilisi": os.getenv("KORTER_DAILY_SEARCH_PATH")
+        or "/ru/%D0%B0%D1%80%D0%B5%D0%BD%D0%B4%D0%B0-%D0%BA%D0%B2%D0%B0%D1%80%"
+        "D1%82%D0%B8%D1%80-%D0%BF%D0%BE%D1%81%D1%83%D1%82%D0%BE%D1%87%D0%BD%D0%BE-%D1%82%D0%B1%D0%B8%D0%BB%D0%B8%D1%81%D0%B8?page={page}",
+        "batumi": os.getenv("KORTER_DAILY_SEARCH_PATH_BATUMI")
+        or "/ru/%D0%B0%D1%80%D0%B5%D0%BD%D0%B4%D0%B0-%D0%BA%D0%B2%D0%B0%D1%80%"
+        "D1%82%D0%B8%D1%80-%D0%BF%D0%BE%D1%81%D1%83%D1%82%D0%BE%D1%87%D0%BD%D0%BE-%D0%B1%D0%B0%D1%82%D1%83%D0%BC%D0%B8?page={page}",
+    }
+    MAX_PAGES = int(os.getenv("KORTER_MAX_PAGES", "20"))
 
 
 # Публичные каналы с арендой в Тбилиси (веб-версия t.me/s/...); группы так не читаются

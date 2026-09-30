@@ -120,6 +120,14 @@ class Listing(Base, SoftDeleteMixin):
         default=0,
         nullable=False,
     )
+    # TASK-092: monthly — цена за месяц, daily — за сутки (bina.application.rent_period)
+    rent_period: Mapped[str] = mapped_column(
+        String(10),
+        default="monthly",
+        server_default="monthly",
+        nullable=False,
+        index=True,
+    )
     # TASK-018: подробности со страницы объявления (None — источник не дал)
     floor: Mapped[int | None] = mapped_column(nullable=True)
     total_floors: Mapped[int | None] = mapped_column(nullable=True)

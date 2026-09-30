@@ -9,6 +9,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
+from bina.application.rent_period import MONTHLY
+
 
 class ListingSort(StrEnum):
     """Порядок выдачи объявлений (параметр ``sort`` API)."""
@@ -25,7 +27,7 @@ class ListingSort(StrEnum):
 
 
 # Источники объявлений (Listing.source_name)
-SOURCES: tuple[str, ...] = ("ss", "myhome", "telegram")
+SOURCES: tuple[str, ...] = ("ss", "myhome", "livo", "korter", "telegram")
 
 
 class ListingSearchFilters(BaseModel):
@@ -39,6 +41,9 @@ class ListingSearchFilters(BaseModel):
 
     # Город (``bina.application.cities``); None — все города (TASK-079)
     city: str | None = None
+    # Вид аренды (TASK-092): по умолчанию помесячно — цены посуточной аренды за сутки
+    # и в одном списке с помесячными сбивают с толку; None — любой
+    rent_period: str | None = MONTHLY
     district_id: UUID | None = None
     # Несколько районов (любой из них); вместе с district_id — объединение
     district_ids: tuple[UUID, ...] = ()
@@ -65,7 +70,7 @@ class ListingSearchFilters(BaseModel):
     owner_only: bool = False
     # Опубликовано на сайте не раньше
     published_since: datetime | None = None
-    # Источники (любой из): ss, myhome, telegram (SOURCES)
+    # Источники (любой из): ss, myhome, livo, korter, telegram (SOURCES)
     sources: tuple[str, ...] = ()
 
     @property

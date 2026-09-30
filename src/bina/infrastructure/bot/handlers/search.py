@@ -103,10 +103,13 @@ async def on_price_step(
     district = await _district_label(
         session, callback_data.district, user.language, callback_data.city
     )
+    key = "choose_price_daily" if callback_data.daily else "choose_price"
     await edit_or_answer(
         callback,
-        t(user.language, "choose_price", district=district),
-        price_keyboard(callback_data.district, user.language, callback_data.city),
+        t(user.language, key, district=district),
+        price_keyboard(
+            callback_data.district, user.language, callback_data.city, callback_data.period
+        ),
         user.language,
     )
 
@@ -119,7 +122,7 @@ async def on_rooms_step(
 ) -> None:
     """Шаг 3: бюджет выбран, выбор количества комнат."""
     district = await _district_label(
-        session, callback_data.district, user.language, callback_data.city
+        session, callback_data.district, user.language, callback_data.city, callback_data.daily
     )
     await edit_or_answer(
         callback,
@@ -127,10 +130,14 @@ async def on_rooms_step(
             user.language,
             "choose_rooms",
             district=district,
-            price=price_label(callback_data.price, user.language),
+            price=price_label(callback_data.price, user.language, callback_data.daily),
         ),
         rooms_keyboard(
-            callback_data.district, callback_data.price, user.language, callback_data.city
+            callback_data.district,
+            callback_data.price,
+            user.language,
+            callback_data.city,
+            callback_data.period,
         ),
         user.language,
     )
@@ -165,8 +172,10 @@ async def _render_results(
         page = await use_case.execute(filters, page=page.pages - 1, page_size=settings.page_size)
 
     summary = {
-        "district": await _district_label(session, query.district, language, query.city),
-        "price": price_label(query.price, language),
+        "district": await _district_label(
+            session, query.district, language, query.city, query.daily
+        ),
+        "price": price_label(query.price, language, query.daily),
         "rooms": rooms_label(query.rooms, language),
     }
     if not page.items:
@@ -189,9 +198,23 @@ async def _render_results(
 
 
 async def _district_label(
-    session: AsyncSession, district_id: UUID | None, language: str, city: str | None = None
+    session: AsyncSession,
+    district_id: UUID | None,
+    language: str,
+    city: str | None = None,
+    daily: bool = False,
 ) -> str:
-    """Название района для заголовков; «Батуми, любой район» или «Любой район»."""
+    """Название района для заголовков; «Батуми, любой район» или «Любой район».
+
+    Для посуточной аренды (TASK-092) — с пометкой «🛏 посуточно».
+    """
+    label = await _place_label(session, district_id, language, city)
+    return f"{label} · {t(language, 'period_daily_label')}" if daily else label
+
+
+async def _place_label(
+    session: AsyncSession, district_id: UUID | None, language: str, city: str | None
+) -> str:
     if district_id is not None:
         district = await DistrictsRepository(session).get_by_id(district_id)
         if district is not None:

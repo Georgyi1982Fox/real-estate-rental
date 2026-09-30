@@ -56,7 +56,7 @@ class CheckFraudUseCase:
         self._repository = repository
         self._after_save = after_save
         self._concurrency = max(1, concurrency)
-        self._medians: dict[tuple[UUID, str], Decimal | None] = {}
+        self._medians: dict[tuple[UUID, str, str], Decimal | None] = {}
 
     async def execute(self, limit: int) -> FraudStats:
         """Сам не коммитит: транзакцией управляет вызывающий код (см. ``after_save``)."""
@@ -114,7 +114,7 @@ class CheckFraudUseCase:
         return stats
 
     async def _facts(self, listing: Listing) -> ListingFacts:
-        key = (listing.district_id, listing.currency)
+        key = (listing.district_id, listing.currency, listing.rent_period)
         if key not in self._medians:
             self._medians[key] = await self._repository.district_median_per_m2(*key)
         district = listing.district
@@ -126,4 +126,5 @@ class CheckFraudUseCase:
             district=(district.name_en or district.name_ru) if district is not None else "",
             photos=len(listing.images or []),
             district_median_per_m2=self._medians[key],
+            rent_period=listing.rent_period,
         )

@@ -11,7 +11,9 @@ from bina.infrastructure.scrapers.ss_scraper import SSScraper
 @pytest.fixture
 def ss_scraper() -> SSScraper:
     """Фикстура для SS парсера (только страницы списка)."""
-    return SSScraper(delay_seconds=0, fetch_details=False, cities=("tbilisi",))
+    return SSScraper(
+        delay_seconds=0, daily_search_path="", fetch_details=False, cities=("tbilisi",)
+    )
 
 
 @pytest.mark.asyncio
@@ -179,7 +181,7 @@ DETAIL_HTML = Path("tests/unit/infrastructure/scrapers/test_data/ss_detail.html"
 @pytest.mark.asyncio
 async def test_ss_detail_page_adds_everything() -> None:
     """Страница объявления (реальная, сокращённая): полное описание, удобства, этажи."""
-    scraper = SSScraper(delay_seconds=0)
+    scraper = SSScraper(delay_seconds=0, daily_search_path="")
     card = RawListing(
         source_id="36583130",
         source_name="ss",
@@ -236,7 +238,7 @@ async def test_ss_detail_page_adds_everything() -> None:
 
 @pytest.mark.asyncio
 async def test_ss_detail_page_failure_keeps_card() -> None:
-    scraper = SSScraper(delay_seconds=0)
+    scraper = SSScraper(delay_seconds=0, daily_search_path="")
     card = RawListing("1", "ss", "t", "d", 1000, "GEL", 2, 50, "Ваке", "https://x/1")
 
     async def fail(url: str, expect: str | None = None) -> str:
@@ -254,7 +256,7 @@ async def test_ss_detail_page_failure_keeps_card() -> None:
 
 def test_ss_detail_inactive_listing() -> None:
     html = DETAIL_HTML.read_text(encoding="utf-8")
-    scraper = SSScraper(delay_seconds=0)
+    scraper = SSScraper(delay_seconds=0, daily_search_path="")
 
     active = scraper.details_from_html(html)
     inactive = scraper.details_from_html(
@@ -263,3 +265,26 @@ def test_ss_detail_inactive_listing() -> None:
 
     assert active is not None and "active" not in active
     assert inactive is not None and inactive["active"] is False
+
+
+def test_daily_rent_section(ss_scraper: SSScraper) -> None:
+    """TASK-092: посуточная аренда (dealType 3) — со своим видом аренды."""
+    monthly = ss_scraper._parse_listings(NEXT_LIST_HTML)
+    assert {item.rent_period for item in monthly} == {"monthly"}
+    daily = ss_scraper._parse_listings(NEXT_LIST_HTML.replace('"dealType": 1', '"dealType": 3'))
+    assert {item.rent_period for item in daily} == {"daily"}
+
+    details = ss_scraper.details_from_html(DETAIL_HTML.read_text(encoding="utf-8"))
+    assert details is not None and details["rent_period"] == "monthly"
+
+
+def test_default_search_includes_daily_rent() -> None:
+    default = SSScraper(delay_seconds=0)
+    assert len(default.search_paths) == 2
+    assert "%D0%B7%D0%B0-%D0%B4%D0%B5%D0%BD%D1%8C" in default.search_paths[1]  # «за-день»
+    assert SSScraper(delay_seconds=0, daily_search_path="").search_paths == [
+        default.search_paths[0]
+    ]
+    assert SSScraper(delay_seconds=0, search_path="/x?page={page}").search_paths == [
+        "/x?page={page}"
+    ]

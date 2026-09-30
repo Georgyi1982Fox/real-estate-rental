@@ -35,6 +35,7 @@ DASH = "\u2013"
 _NAME_PARTS: dict[str, dict[str, str]] = {
     "ru": {
         "all": "Все квартиры",
+        "daily": "посуточно",
         "rooms": "{n} комн.",
         "from": "от {n} ₾",
         "to": "до {n} ₾",
@@ -42,6 +43,7 @@ _NAME_PARTS: dict[str, dict[str, str]] = {
     },
     "en": {
         "all": "All apartments",
+        "daily": "daily",
         "rooms": "{n} rooms",
         "from": "from {n} ₾",
         "to": "up to {n} ₾",
@@ -49,6 +51,7 @@ _NAME_PARTS: dict[str, dict[str, str]] = {
     },
     "ka": {
         "all": "ყველა ბინა",
+        "daily": "დღიურად",
         "rooms": "{n} ოთახი",
         "from": "{n} ₾-დან",
         "to": "{n} ₾-მდე",
@@ -82,6 +85,9 @@ def default_search_name(filters: SearchFiltersIn, districts: list[District], lan
     elif filters.city:
         # TASK-079: город без районов — «Батуми, 2 комн.»
         result.append(city_name(filters.city, language))
+    if filters.rent_period == "daily":
+        # TASK-092: посуточная аренда видна в названии, а не в «+ ещё N фильтров»
+        result.append(parts["daily"])
     if filters.rooms is not None:
         rooms = f"{ROOMS_OR_MORE}+" if filters.rooms >= ROOMS_OR_MORE else str(filters.rooms)
         result.append(parts["rooms"].format(n=rooms))
@@ -91,8 +97,9 @@ def default_search_name(filters: SearchFiltersIn, districts: list[District], lan
         result.append(parts["from"].format(n=_amount(filters.min_price)))
     elif filters.max_price is not None:
         result.append(parts["to"].format(n=_amount(filters.max_price)))
-    # Город уже в названии, а не в «+ ещё N фильтров»
-    if details := {key: value for key, value in filters.details().items() if key != "city"}:
+    # Город и вид аренды уже в названии, а не в «+ ещё N фильтров»
+    named = ("city", "rent_period")
+    if details := {key: value for key, value in filters.details().items() if key not in named}:
         result.append(parts["more"].format(n=len(details)))
     return ", ".join(result) or parts["all"]
 

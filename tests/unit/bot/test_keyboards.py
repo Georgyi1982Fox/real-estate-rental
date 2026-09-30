@@ -6,6 +6,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from bina.application.dtos.pagination import Page
 from bina.infrastructure.bot.keyboards.callbacks import (
+    DAILY_PERIOD,
     FavoritesPageCallback,
     FavoriteToggleCallback,
     SearchCallback,
@@ -26,6 +27,7 @@ from bina.infrastructure.bot.keyboards.search import (
     district_keyboard,
     price_keyboard,
     results_keyboard,
+    rooms_keyboard,
 )
 from bina.infrastructure.db.models import District, Listing
 
@@ -34,6 +36,10 @@ MAX_CALLBACK_BYTES = 64
 
 def texts(markup: InlineKeyboardMarkup) -> list[list[str]]:
     return [[button.text for button in row] for row in markup.inline_keyboard]
+
+
+def labels_of(markup: InlineKeyboardMarkup) -> list[str]:
+    return [button.text for row in markup.inline_keyboard for button in row]
 
 
 def callbacks(markup: InlineKeyboardMarkup) -> list[str]:
@@ -54,6 +60,8 @@ def test_largest_search_callback_fits_telegram_limit() -> None:
         price=len(PRICE_RANGES) - 1,
         rooms=len(ROOM_OPTIONS) - 1,
         page=99999,
+        city="tbilisi",
+        period=DAILY_PERIOD,
     ).pack()
     assert len(packed.encode()) <= MAX_CALLBACK_BYTES
 
@@ -195,3 +203,41 @@ def test_flip_favorite_button_changes_only_target() -> None:
 
 def test_language_keyboard_marks_current() -> None:
     assert texts(language_keyboard("ka")) == [["Русский", "English", "✅ ქართული"]]
+
+
+# --------------------------------------------------------------------------- TASK-092
+
+
+def test_price_keyboard_switches_to_daily_rent() -> None:
+    district = uuid4()
+    monthly = price_keyboard(district, "ru", "tbilisi")
+    assert "🛏 Посуточно" in labels_of(monthly)
+    toggle = next(b for row in monthly.inline_keyboard for b in row if b.text == "🛏 Посуточно")
+    to_daily = SearchCallback.unpack(toggle.callback_data or "")
+    assert (to_daily.step, to_daily.period, to_daily.district) == (
+        SearchStep.PRICE,
+        DAILY_PERIOD,
+        district,
+    )
+
+    daily = price_keyboard(district, "ru", "tbilisi", DAILY_PERIOD)
+    labels = labels_of(daily)
+    assert "до 80 ₾" in labels and "от 200 ₾" in labels and "📅 Помесячно" in labels
+    for data in callbacks(daily)[: len(labels) - 2]:  # кроме «Помесячно» и «Назад»
+        assert SearchCallback.unpack(data).period == DAILY_PERIOD
+
+
+def test_rooms_keyboard_keeps_daily_rent() -> None:
+    markup = rooms_keyboard(None, 1, "en", "batumi", DAILY_PERIOD)
+    assert {SearchCallback.unpack(data).period for data in callbacks(markup)} == {DAILY_PERIOD}
+
+
+def test_filters_for_daily_rent() -> None:
+    daily = filters_from_callback(
+        SearchCallback(step=SearchStep.RESULTS, price=1, period=DAILY_PERIOD)
+    )
+    assert daily.rent_period == "daily"
+    assert (daily.price_min, daily.price_max) == (Decimal(80), Decimal(120))
+    monthly = filters_from_callback(SearchCallback(step=SearchStep.RESULTS, price=1))
+    assert monthly.rent_period == "monthly"
+    assert price_label(0, "en", daily=True) == "up to 80 ₾"

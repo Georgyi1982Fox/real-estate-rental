@@ -30,6 +30,7 @@ from bina.application.localization import district_names, script_of
 from bina.application.ports.scraper import RawListing
 from bina.application.ports.translator import LANGUAGES, ListingText
 from bina.application.price_analysis import ROOMS_GROUP_MAX
+from bina.application.rent_period import MONTHLY, rent_period_code
 from bina.application.repositories.listings import IListingsRepository
 from bina.application.repositories.notifications import PriceDrop
 from bina.infrastructure.db.models import (
@@ -191,6 +192,8 @@ class ListingsRepository(IListingsRepository):
             conditions.append(
                 Listing.district_id.in_(select(District.id).where(District.city == filters.city))
             )
+        if filters.rent_period is not None:
+            conditions.append(Listing.rent_period == filters.rent_period)
         district_ids = filters.all_district_ids
         if len(district_ids) == 1:
             conditions.append(Listing.district_id == district_ids[0])
@@ -239,6 +242,7 @@ class ListingsRepository(IListingsRepository):
             "url": raw_listing.url or None,
             "phone": raw_listing.phone,
             "owner_name": raw_listing.owner_name,
+            "rent_period": rent_period_code(raw_listing.rent_period),
             # Страница объявления может сказать, что оно уже снято
             "status": ListingStatus.ACTIVE if raw_listing.active else ListingStatus.ARCHIVED,
             "is_deleted": False,
@@ -336,6 +340,7 @@ class ListingsRepository(IListingsRepository):
                 Listing.district_id == listing.district_id,
                 Listing.rooms == listing.rooms,
                 Listing.currency == listing.currency,
+                Listing.rent_period == listing.rent_period,
                 Listing.area.between(bounds.area_min, bounds.area_max),
                 Listing.price.between(bounds.price_min, bounds.price_max),
             )
@@ -551,8 +556,10 @@ class ListingsRepository(IListingsRepository):
         )
         return list((await self._session.execute(query)).scalars().all())
 
-    async def district_median_per_m2(self, district_id: UUID, currency: str) -> Decimal | None:
-        """Медиана цены за м² активных объявлений района в той же валюте.
+    async def district_median_per_m2(
+        self, district_id: UUID, currency: str, rent_period: str = MONTHLY
+    ) -> Decimal | None:
+        """Медиана цены за м² активных объявлений района в той же валюте и того же вида аренды.
 
         None, если объявлений меньше :data:`MIN_MEDIAN_SAMPLES`: сравнивать не с чем.
         """
@@ -563,6 +570,7 @@ class ListingsRepository(IListingsRepository):
         ).where(
             Listing.district_id == district_id,
             Listing.currency == currency,
+            Listing.rent_period == rent_period,
             Listing.status == ListingStatus.ACTIVE,
             Listing.is_deleted.is_(False),
             Listing.area > 0,
@@ -574,14 +582,14 @@ class ListingsRepository(IListingsRepository):
         return Decimal(str(median))
 
     async def rooms_median_price(
-        self, district_id: UUID, rooms: int, currency: str
+        self, district_id: UUID, rooms: int, currency: str, rent_period: str = MONTHLY
     ) -> tuple[int, Decimal | None]:
         """Сколько видимых объявлений района с этим числом комнат (4+ вместе) и медиана цены."""
         rooms_condition = (
             Listing.rooms >= ROOMS_GROUP_MAX if rooms >= ROOMS_GROUP_MAX else Listing.rooms == rooms
         )
         query = select(func.count(), func.percentile_cont(0.5).within_group(Listing.price)).where(
-            *self._visible(),
+            *self._visible(rent_period),
             Listing.district_id == district_id,
             Listing.currency == currency,
             Listing.price > 0,
@@ -591,13 +599,13 @@ class ListingsRepository(IListingsRepository):
         return int(count), Decimal(str(median)) if median is not None else None
 
     async def district_price_per_m2(
-        self, district_id: UUID, currency: str
+        self, district_id: UUID, currency: str, rent_period: str = MONTHLY
     ) -> tuple[int, Decimal | None]:
         """Сколько видимых объявлений района с площадью и медиана цены за м²."""
         query = select(
             func.count(), func.percentile_cont(0.5).within_group(Listing.price / Listing.area)
         ).where(
-            *self._visible(),
+            *self._visible(rent_period),
             Listing.district_id == district_id,
             Listing.currency == currency,
             Listing.price > 0,
@@ -618,7 +626,7 @@ class ListingsRepository(IListingsRepository):
             select(Listing)
             .options(selectinload(Listing.district))
             .where(
-                *self._visible(),
+                *self._visible(listing.rent_period),
                 Listing.id != listing.id,
                 Listing.district_id == listing.district_id,
                 Listing.currency == listing.currency,
@@ -694,9 +702,10 @@ class ListingsRepository(IListingsRepository):
         )
 
     @staticmethod
-    def _visible() -> list[ColumnElement[bool]]:
-        """Объявления, которые видит пользователь (для статистики цен)."""
+    def _visible(rent_period: str = MONTHLY) -> list[ColumnElement[bool]]:
+        """Объявления, которые видит пользователь (для статистики цен), одного вида аренды."""
         return [
+            Listing.rent_period == rent_period,
             Listing.status == ListingStatus.ACTIVE,
             Listing.is_deleted.is_(False),
             Listing.fraud_score < HIDE_SCORE,

@@ -42,6 +42,7 @@ def parse_number(text: str) -> float | None:
 
 class _Extracted(BaseModel):
     is_rental_offer: bool
+    daily: bool | None = None
     city: str | None = None
     district: str | None = None
     price: float | None = None
@@ -79,6 +80,7 @@ def parse_extracted(raw: str) -> ExtractedListing:
     currency = (item.currency or "").strip().upper() or None
     return ExtractedListing(
         is_rental_offer=item.is_rental_offer,
+        daily=bool(item.daily),
         city=(item.city or "").strip() or None,
         district=(item.district or "").strip() or None,
         price=item.price if item.price and item.price > 0 else None,

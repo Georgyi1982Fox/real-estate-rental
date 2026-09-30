@@ -33,6 +33,7 @@ def listing(**overrides: Any) -> Listing:
         "title_en": "Flat in Vake",
         "price": Decimal(1500),
         "currency": "GEL",
+        "rent_period": "monthly",
         "rooms": 2,
         "area": Decimal("60.5"),
         "url": "https://home.ss.ge/ru/1",

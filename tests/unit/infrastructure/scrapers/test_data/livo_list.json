@@ -1,0 +1,630 @@
+{
+ "result": true,
+ "data": {
+  "data": [
+   {
+    "id": 26209012,
+    "metro_station_id": null,
+    "deal_type_id": 2,
+    "real_estate_type_id": 1,
+    "status_id": 2,
+    "uuid": "1e2cc6c0-f1ec-4640-bbf0-e1b49ffc3437",
+    "price": {
+     "1": {
+      "price_total": 750,
+      "price_square": 30
+     },
+     "2": {
+      "price_total": 288,
+      "price_square": 12
+     },
+     "3": {
+      "price_total": 254,
+      "price_square": 10
+     }
+    },
+    "price_negotiable": false,
+    "price_from": false,
+    "lat": null,
+    "lng": null,
+    "images": [
+     {
+      "large": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/NpSJfat6abd24c7918a1.webp",
+      "blur": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/NpSJfat6abd24c7918a1_blur.webp",
+      "thumb": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/NpSJfat6abd24c7918a1_thumb.webp",
+      "is_main": true
+     },
+     {
+      "large": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/w3MHglt6abd249acd3bb.webp",
+      "blur": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/w3MHglt6abd249acd3bb_blur.webp",
+      "thumb": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/w3MHglt6abd249acd3bb_thumb.webp",
+      "is_main": false
+     },
+     {
+      "large": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/ZN9lutt6abd24c76921f.webp",
+      "blur": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/ZN9lutt6abd24c76921f_blur.webp",
+      "thumb": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/ZN9lutt6abd24c76921f_thumb.webp",
+      "is_main": false
+     }
+    ],
+    "address": "ვეფხისტყაოსნის ქ. 33",
+    "area": 25,
+    "yard_area": null,
+    "area_type_id": 1,
+    "bedroom": null,
+    "room": "1",
+    "gifts": [],
+    "favorite": false,
+    "is_old": false,
+    "has_3d": false,
+    "3d_url": null,
+    "dynamic_title": "Сдается 1 комнатная квартира в диди дигоми",
+    "project_id": null,
+    "dynamic_slug": "sdaetsia-1-komnatnaia-kvartira-v-didi-digomi",
+    "href_lang": {
+     "ka": "qiravdeba-1-otaxiani-bina-did-dighomshi",
+     "en": "1-room-apartment-for-rent-in-didi-digomi",
+     "ru": "sdaetsia-1-komnatnaia-kvartira-v-didi-digomi"
+    },
+    "last_updated": "2026-09-30 19:07:22",
+    "floor": 2,
+    "total_floors": 3,
+    "street_id": 3171,
+    "urban_id": 29,
+    "urban_name": "Диди Дигоми",
+    "district_id": 4,
+    "district_name": "Ваке-Сабуртало",
+    "city_id": 1,
+    "city_name": "Тбилиси",
+    "quantity_of_day": 0,
+    "hidden": false,
+    "viewed": false,
+    "user_id": 1,
+    "price_type_id": 3,
+    "statement_currency_id": 1,
+    "currency_id": 1,
+    "user_title": "Нино",
+    "grouped_street_id": 346,
+    "parameters": [],
+    "comment": "Читайте до конца!!!! Я не сотрудничаю с агентствами!!! Сдается в аренду квартира-студия площадью 25 квадратных метров в районе Диди Дигоми, недалеко от Центрального парка, за фитнес-центром Vortex. Квартира отремонтирована. Собственное парковочное место, центральное отопление, ухоженный подъезд. Ква",
+    "has_color": false,
+    "is_vip": false,
+    "is_vip_plus": false,
+    "is_super_vip": true,
+    "user_statements_count": 0,
+    "is_promoted": false,
+    "is_exclusive": false,
+    "middle_slug": "sdaetsia-kvartira",
+    "paid_stickers": [],
+    "user_type": {
+     "type": "physical",
+     "logo": null,
+     "is_premier_agent": null
+    }
+   },
+   {
+    "id": 353894,
+    "metro_station_id": null,
+    "deal_type_id": 7,
+    "real_estate_type_id": 1,
+    "status_id": 2,
+    "uuid": "05c9a8d7-7d56-4b28-8f7c-09aafe39c074",
+    "price": {
+     "1": {
+      "price_total": 50,
+      "price_square": 1
+     },
+     "2": {
+      "price_total": 19,
+      "price_square": 0
+     },
+     "3": {
+      "price_total": 17,
+      "price_square": 0
+     }
+    },
+    "price_negotiable": false,
+    "price_from": false,
+    "lat": null,
+    "lng": null,
+    "images": [
+     {
+      "large": "https://static-api-statements.tnet.ge/uploads/202608/20260813/statements/1PaeiIV6a7da9d323999.webp",
+      "blur": "https://static-api-statements.tnet.ge/uploads/202608/20260813/statements/1PaeiIV6a7da9d323999_blur.webp",
+      "thumb": "https://static-api-statements.tnet.ge/uploads/202608/20260813/statements/1PaeiIV6a7da9d323999_thumb.webp",
+      "is_main": true
+     },
+     {
+      "large": "https://static-api-statements.tnet.ge/uploads/202608/20260813/statements/1tNx25Y6a7da9d324743.webp",
+      "blur": "https://static-api-statements.tnet.ge/uploads/202608/20260813/statements/1tNx25Y6a7da9d324743_blur.webp",
+      "thumb": "https://static-api-statements.tnet.ge/uploads/202608/20260813/statements/1tNx25Y6a7da9d324743_thumb.webp",
+      "is_main": false
+     },
+     {
+      "large": "https://static-api-statements.tnet.ge/uploads/202608/20260813/statements/PJBE50c6a7da9d32ac19.webp",
+      "blur": "https://static-api-statements.tnet.ge/uploads/202608/20260813/statements/PJBE50c6a7da9d32ac19_blur.webp",
+      "thumb": "https://static-api-statements.tnet.ge/uploads/202608/20260813/statements/PJBE50c6a7da9d32ac19_thumb.webp",
+      "is_main": false
+     }
+    ],
+    "address": "კუპრაძე ვ. ქ. 74",
+    "area": 51,
+    "yard_area": null,
+    "area_type_id": 1,
+    "bedroom": "1",
+    "room": "2",
+    "gifts": [],
+    "favorite": false,
+    "is_old": true,
+    "has_3d": false,
+    "3d_url": null,
+    "dynamic_title": "Сдается на день 2 комнатная квартира в варкетили",
+    "project_id": null,
+    "dynamic_slug": "sdaetsia-na-den-2-komnatnaia-kvartira-v-varketili",
+    "href_lang": {
+     "ka": "qiravdeba-dghiurad-2-otaxiani-bina-varketilshi",
+     "en": "2-room-apartment-daily-rent-in-varketili",
+     "ru": "sdaetsia-na-den-2-komnatnaia-kvartira-v-varketili"
+    },
+    "last_updated": "2026-09-30 16:11:42",
+    "floor": 6,
+    "total_floors": 9,
+    "street_id": 2661,
+    "urban_id": 52,
+    "urban_name": "Варкетили",
+    "district_id": 5,
+    "district_name": "Исани-Самгори",
+    "city_id": 1,
+    "city_name": "Тбилиси",
+    "quantity_of_day": 2183,
+    "hidden": false,
+    "viewed": false,
+    "user_id": 1,
+    "price_type_id": 3,
+    "statement_currency_id": 1,
+    "currency_id": 1,
+    "user_title": "Нино",
+    "grouped_street_id": 322,
+    "parameters": [],
+    "comment": "ბინა არის იდეალურად სუფთა, ვ. კუპრაძის 74-ში, კორპუსი 11, ახალი ჰუალინგი, 100 მეტრში მდებარეობს 7/24 სუპერმარკეტი ნიკორა, დახურული საცურაო აუზი.",
+    "has_color": true,
+    "is_vip": false,
+    "is_vip_plus": false,
+    "is_super_vip": true,
+    "user_statements_count": 0,
+    "is_promoted": false,
+    "is_exclusive": false,
+    "middle_slug": "sdaetsia-na-den-kvartira",
+    "paid_stickers": [],
+    "user_type": {
+     "type": "physical",
+     "logo": null,
+     "is_premier_agent": null
+    }
+   },
+   {
+    "id": 26209293,
+    "metro_station_id": null,
+    "deal_type_id": 2,
+    "real_estate_type_id": 1,
+    "status_id": 2,
+    "uuid": "aeb2c762-54bf-40cd-b4e1-06e104179262",
+    "price": {
+     "1": {
+      "price_total": 2084,
+      "price_square": 19
+     },
+     "2": {
+      "price_total": 800,
+      "price_square": 7
+     },
+     "3": {
+      "price_total": 705,
+      "price_square": 6
+     }
+    },
+    "price_negotiable": false,
+    "price_from": false,
+    "lat": null,
+    "lng": null,
+    "images": [
+     {
+      "large": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/XguoPhj6abd2cc652ee7.webp",
+      "blur": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/XguoPhj6abd2cc652ee7_blur.webp",
+      "thumb": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/XguoPhj6abd2cc652ee7_thumb.webp",
+      "is_main": true
+     },
+     {
+      "large": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/ATZCmNM6abd2cc651922.webp",
+      "blur": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/ATZCmNM6abd2cc651922_blur.webp",
+      "thumb": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/ATZCmNM6abd2cc651922_thumb.webp",
+      "is_main": false
+     },
+     {
+      "large": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/56chz5x6abd2cc6445bc.webp",
+      "blur": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/56chz5x6abd2cc6445bc_blur.webp",
+      "thumb": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/56chz5x6abd2cc6445bc_thumb.webp",
+      "is_main": false
+     }
+    ],
+    "address": "ბახტრიონის ქ. ",
+    "area": 110,
+    "yard_area": null,
+    "area_type_id": 1,
+    "bedroom": "2",
+    "room": "3",
+    "gifts": [],
+    "favorite": false,
+    "is_old": false,
+    "has_3d": false,
+    "3d_url": null,
+    "dynamic_title": "Сдается 3 комнатная квартира в сабуртало",
+    "project_id": null,
+    "dynamic_slug": "sdaetsia-3-komnatnaia-kvartira-v-saburtalo",
+    "href_lang": {
+     "ka": "qiravdeba-3-otaxiani-bina-saburtaloze",
+     "en": "3-room-apartment-for-rent-in-saburtalo",
+     "ru": "sdaetsia-3-komnatnaia-kvartira-v-saburtalo"
+    },
+    "last_updated": "2026-09-30 19:38:03",
+    "floor": 1,
+    "total_floors": 9,
+    "street_id": 3291,
+    "urban_id": 47,
+    "urban_name": "Сабуртало",
+    "district_id": 4,
+    "district_name": "Ваке-Сабуртало",
+    "city_id": 1,
+    "city_name": "Тбилиси",
+    "quantity_of_day": 0,
+    "hidden": false,
+    "viewed": false,
+    "user_id": 1,
+    "price_type_id": 3,
+    "statement_currency_id": 2,
+    "currency_id": 2,
+    "user_title": "Нино",
+    "grouped_street_id": 140,
+    "parameters": [],
+    "comment": "",
+    "has_color": false,
+    "is_vip": false,
+    "is_vip_plus": false,
+    "is_super_vip": false,
+    "user_statements_count": 0,
+    "is_promoted": false,
+    "is_exclusive": false,
+    "middle_slug": "sdaetsia-kvartira",
+    "paid_stickers": [],
+    "user_type": {
+     "type": "agent",
+     "logo": null,
+     "is_premier_agent": false
+    }
+   },
+   {
+    "id": 26209291,
+    "metro_station_id": null,
+    "deal_type_id": 2,
+    "real_estate_type_id": 1,
+    "status_id": 2,
+    "uuid": "bb7acdd8-e80a-40b7-98ff-9422742db2fd",
+    "price": {
+     "1": {
+      "price_total": 1100,
+      "price_square": 44
+     },
+     "2": {
+      "price_total": 422,
+      "price_square": 17
+     },
+     "3": {
+      "price_total": 372,
+      "price_square": 15
+     }
+    },
+    "price_negotiable": false,
+    "price_from": false,
+    "lat": null,
+    "lng": null,
+    "images": [
+     {
+      "large": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/E8IERth6abd2c8d3d0fb.webp",
+      "blur": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/E8IERth6abd2c8d3d0fb_blur.webp",
+      "thumb": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/E8IERth6abd2c8d3d0fb_thumb.webp",
+      "is_main": true
+     },
+     {
+      "large": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/DhytaF36abd2c8d3e585.webp",
+      "blur": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/DhytaF36abd2c8d3e585_blur.webp",
+      "thumb": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/DhytaF36abd2c8d3e585_thumb.webp",
+      "is_main": false
+     },
+     {
+      "large": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/WiSIgNA6abd2c8d3b8cf.webp",
+      "blur": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/WiSIgNA6abd2c8d3b8cf_blur.webp",
+      "thumb": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/WiSIgNA6abd2c8d3b8cf_thumb.webp",
+      "is_main": false
+     }
+    ],
+    "address": "უზნაძე დ. ქ. 0",
+    "area": 25,
+    "yard_area": null,
+    "area_type_id": 1,
+    "bedroom": "1",
+    "room": "1",
+    "gifts": [],
+    "favorite": false,
+    "is_old": false,
+    "has_3d": false,
+    "3d_url": null,
+    "dynamic_title": "Сдается 1 комнатная квартира в чугурети",
+    "project_id": null,
+    "dynamic_slug": "sdaetsia-1-komnatnaia-kvartira-v-cugureti",
+    "href_lang": {
+     "ka": "qiravdeba-1-otaxiani-bina-chughuretshi",
+     "en": "1-room-apartment-for-rent-in-chugureti",
+     "ru": "sdaetsia-1-komnatnaia-kvartira-v-cugureti"
+    },
+    "last_updated": "2026-09-30 19:37:42",
+    "floor": 2,
+    "total_floors": 2,
+    "street_id": 1414,
+    "urban_id": 27,
+    "urban_name": "Чугурети",
+    "district_id": 3,
+    "district_name": "Дидубе-Чугурети",
+    "city_id": 1,
+    "city_name": "Тбилиси",
+    "quantity_of_day": 0,
+    "hidden": false,
+    "viewed": false,
+    "user_id": 1,
+    "price_type_id": 3,
+    "statement_currency_id": 1,
+    "currency_id": 1,
+    "user_title": "Нино",
+    "grouped_street_id": 2224,
+    "parameters": [],
+    "comment": "Сдается: 25 м² квартира на улице Димитри Узнадзе. Это новостройка. В случае заинтересованности, пожалуйста, свяжитесь со мной по номеру, указанному в объявлении.",
+    "has_color": false,
+    "is_vip": false,
+    "is_vip_plus": false,
+    "is_super_vip": false,
+    "user_statements_count": 0,
+    "is_promoted": false,
+    "is_exclusive": false,
+    "middle_slug": "sdaetsia-kvartira",
+    "paid_stickers": [],
+    "user_type": {
+     "type": "agent",
+     "logo": "https://static-api-statements.tnet.ge/uploads/202507/20250724/TYPYIzz6882138de9781.webp",
+     "is_premier_agent": false
+    }
+   },
+   {
+    "id": 26203309,
+    "metro_station_id": null,
+    "deal_type_id": 7,
+    "real_estate_type_id": 1,
+    "status_id": 2,
+    "uuid": "86f72d4e-30d0-4cb8-b2a9-36f1bc316caa",
+    "price": {
+     "1": {
+      "price_total": 100,
+      "price_square": 2
+     },
+     "2": {
+      "price_total": 38,
+      "price_square": 1
+     },
+     "3": {
+      "price_total": 34,
+      "price_square": 1
+     }
+    },
+    "price_negotiable": false,
+    "price_from": false,
+    "lat": null,
+    "lng": null,
+    "images": [
+     {
+      "large": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/EGcH5ev6abcdbfbc6823.webp",
+      "blur": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/EGcH5ev6abcdbfbc6823_blur.webp",
+      "thumb": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/EGcH5ev6abcdbfbc6823_thumb.webp",
+      "is_main": true
+     },
+     {
+      "large": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/ACwbsIw6abcdbfbc79b6.webp",
+      "blur": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/ACwbsIw6abcdbfbc79b6_blur.webp",
+      "thumb": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/ACwbsIw6abcdbfbc79b6_thumb.webp",
+      "is_main": false
+     },
+     {
+      "large": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/Onjp9ow6abcdbfbc1486.webp",
+      "blur": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/Onjp9ow6abcdbfbc1486_blur.webp",
+      "thumb": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/Onjp9ow6abcdbfbc1486_thumb.webp",
+      "is_main": false
+     }
+    ],
+    "address": "აბუსერიძე ტ. ქ. 14",
+    "area": 45,
+    "yard_area": null,
+    "area_type_id": 1,
+    "bedroom": "1",
+    "room": "2",
+    "gifts": [],
+    "favorite": false,
+    "is_old": false,
+    "has_3d": false,
+    "3d_url": null,
+    "dynamic_title": "Сдается на день 2 комнатная квартира ხიმშიაშვილის უბანი, в батуми",
+    "project_id": null,
+    "dynamic_slug": "sdaetsia-na-den-2-komnatnaia-kvartira-ximshiashvilis-ubani-v-batumi",
+    "href_lang": {
+     "ka": "qiravdeba-dghiurad-2-otaxiani-bina-ximshiashvilis-ubanshi-batumshi",
+     "en": "2-room-apartment-daily-rent-ximshiashvilis-ubani-in-batumi",
+     "ru": "sdaetsia-na-den-2-komnatnaia-kvartira-ximshiashvilis-ubani-v-batumi"
+    },
+    "last_updated": "2026-09-30 13:53:14",
+    "floor": 4,
+    "total_floors": 5,
+    "street_id": 4275,
+    "urban_id": 76,
+    "urban_name": "",
+    "district_id": 13,
+    "district_name": "",
+    "city_id": 15,
+    "city_name": "Батуми",
+    "quantity_of_day": 0,
+    "hidden": false,
+    "viewed": false,
+    "user_id": 1,
+    "price_type_id": 3,
+    "statement_currency_id": 1,
+    "currency_id": 1,
+    "user_title": "Нино",
+    "grouped_street_id": 1196,
+    "parameters": [],
+    "comment": "",
+    "has_color": false,
+    "is_vip": false,
+    "is_vip_plus": false,
+    "is_super_vip": false,
+    "user_statements_count": 0,
+    "is_promoted": false,
+    "is_exclusive": false,
+    "middle_slug": "sdaetsia-na-den-kvartira",
+    "paid_stickers": [],
+    "user_type": {
+     "type": "agent",
+     "logo": null,
+     "is_premier_agent": false
+    }
+   },
+   {
+    "id": 26209260,
+    "metro_station_id": null,
+    "deal_type_id": 2,
+    "real_estate_type_id": 1,
+    "status_id": 2,
+    "uuid": "062e290e-3d96-426e-a0a6-43ddf7d9502c",
+    "price": {
+     "1": {
+      "price_total": 3907,
+      "price_square": 42
+     },
+     "2": {
+      "price_total": 1500,
+      "price_square": 16
+     },
+     "3": {
+      "price_total": 1321,
+      "price_square": 14
+     }
+    },
+    "price_negotiable": false,
+    "price_from": false,
+    "lat": null,
+    "lng": null,
+    "images": [
+     {
+      "large": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/ILTPQK56abd2b7a79fee.webp",
+      "blur": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/ILTPQK56abd2b7a79fee_blur.webp",
+      "thumb": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/ILTPQK56abd2b7a79fee_thumb.webp",
+      "is_main": true
+     },
+     {
+      "large": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/4sMhDWk6abd2b7a7d959.webp",
+      "blur": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/4sMhDWk6abd2b7a7d959_blur.webp",
+      "thumb": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/4sMhDWk6abd2b7a7d959_thumb.webp",
+      "is_main": false
+     },
+     {
+      "large": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/qyuMK566abd2b7a7112c.webp",
+      "blur": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/qyuMK566abd2b7a7112c_blur.webp",
+      "thumb": "https://static-api-statements.tnet.ge/uploads/202609/20260930/statements/qyuMK566abd2b7a7112c_thumb.webp",
+      "is_main": false
+     }
+    ],
+    "address": "კაჩინსკი ლ. და მ. ქ. ",
+    "area": 92,
+    "yard_area": null,
+    "area_type_id": 1,
+    "bedroom": "2",
+    "room": "3",
+    "gifts": [],
+    "favorite": false,
+    "is_old": false,
+    "has_3d": false,
+    "3d_url": null,
+    "dynamic_title": "Сдается 3 комнатная квартира აეროპორტის უბანი, в батуми",
+    "project_id": null,
+    "dynamic_slug": "sdaetsia-3-komnatnaia-kvartira-aeroportis-ubani-v-batumi",
+    "href_lang": {
+     "ka": "qiravdeba-3-otaxiani-bina-aeroportis-ubanshi-batumshi",
+     "en": "3-room-apartment-for-rent-aeroportis-ubani-in-batumi",
+     "ru": "sdaetsia-3-komnatnaia-kvartira-aeroportis-ubani-v-batumi"
+    },
+    "last_updated": "2026-09-30 19:32:22",
+    "floor": 10,
+    "total_floors": 25,
+    "street_id": 3648,
+    "urban_id": 77,
+    "urban_name": "",
+    "district_id": 15,
+    "district_name": "",
+    "city_id": 15,
+    "city_name": "Батуми",
+    "quantity_of_day": 0,
+    "hidden": false,
+    "viewed": false,
+    "user_id": 1,
+    "price_type_id": 3,
+    "statement_currency_id": 2,
+    "currency_id": 2,
+    "user_title": "Нино",
+    "grouped_street_id": 1919,
+    "parameters": [],
+    "comment": "",
+    "has_color": false,
+    "is_vip": false,
+    "is_vip_plus": false,
+    "is_super_vip": false,
+    "user_statements_count": 0,
+    "is_promoted": false,
+    "is_exclusive": false,
+    "middle_slug": "sdaetsia-kvartira",
+    "paid_stickers": [],
+    "user_type": {
+     "type": "physical",
+     "logo": null,
+     "is_premier_agent": null
+    }
+   }
+  ],
+  "search_report_uuid": null,
+  "map_settings": [],
+  "seo": {
+   "filters": {
+    "cities": [
+     1,
+     15
+    ],
+    "districts": [],
+    "urbans": [],
+    "deal_types": [
+     2,
+     7
+    ],
+    "streets": [],
+    "grouped_streets": [],
+    "real_estate_types": [
+     1
+    ],
+    "statuses": [],
+    "room_types": []
+   }
+  }
+ }
+}

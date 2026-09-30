@@ -42,7 +42,7 @@ def list_url(page: int) -> str:
 
 @pytest.fixture
 def scraper() -> MyHomeScraper:
-    return MyHomeScraper(delay_seconds=0, cities=("tbilisi",))
+    return MyHomeScraper(delay_seconds=0, daily_search_paths={}, cities=("tbilisi",))
 
 
 def test_parse_list_page(scraper: MyHomeScraper) -> None:
@@ -242,7 +242,9 @@ async def test_limit_stops_early(scraper: MyHomeScraper, monkeypatch: pytest.Mon
 
 
 async def test_no_details_mode(monkeypatch: pytest.MonkeyPatch) -> None:
-    scraper = MyHomeScraper(delay_seconds=0, cities=("tbilisi",), fetch_details=False)
+    scraper = MyHomeScraper(
+        delay_seconds=0, daily_search_paths={}, cities=("tbilisi",), fetch_details=False
+    )
     pages = FakePages({list_url(1): LIST_HTML})
     monkeypatch.setattr(scraper, "_fetch_page", pages)
 
@@ -277,7 +279,9 @@ async def test_failed_list_page_is_skipped(
 
 
 async def test_stops_after_consecutive_failures(monkeypatch: pytest.MonkeyPatch) -> None:
-    scraper = MyHomeScraper(delay_seconds=0, cities=("tbilisi",), max_pages=20)
+    scraper = MyHomeScraper(
+        delay_seconds=0, daily_search_paths={}, cities=("tbilisi",), max_pages=20
+    )
     pages = FakePages({}, default="")
     pages.pages = {"page=": httpx.ConnectError("down")}
     monkeypatch.setattr(scraper, "_fetch_page", pages)
@@ -289,7 +293,9 @@ async def test_stops_after_consecutive_failures(monkeypatch: pytest.MonkeyPatch)
 
 
 async def test_dump_saves_raw_html(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    scraper = MyHomeScraper(delay_seconds=0, cities=("tbilisi",), dump_dir=tmp_path / "raw")
+    scraper = MyHomeScraper(
+        delay_seconds=0, daily_search_paths={}, cities=("tbilisi",), dump_dir=tmp_path / "raw"
+    )
     monkeypatch.setattr(
         scraper, "_fetch_page", FakePages({list_url(1): LIST_HTML, "/ru/12345/": DETAIL_HTML})
     )
@@ -388,5 +394,18 @@ def test_other_city_in_statement_is_dropped(scraper: MyHomeScraper) -> None:
 
 
 def test_disabled_city_is_not_scraped() -> None:
-    scraper = MyHomeScraper(delay_seconds=0, cities=("batumi",))
+    scraper = MyHomeScraper(delay_seconds=0, daily_search_paths={}, cities=("batumi",))
     assert list(scraper.search_paths) == ["batumi"]
+
+
+def test_daily_rent_statements() -> None:
+    """TASK-092: deal_type_id 7 — посуточная аренда (ищется отдельным адресом)."""
+    scraper = MyHomeScraper(delay_seconds=0, cities=("tbilisi",))
+    assert list(scraper.daily_search_paths) == ["tbilisi"]
+    assert "deal_types=7" in scraper.daily_search_paths["tbilisi"]
+    assert MyHomeScraper(delay_seconds=0, search_path="/x").daily_search_paths == {}
+
+    monthly = scraper._parse_listings(NEXT_LIST_HTML)
+    assert {item.rent_period for item in monthly} == {"monthly"}
+    html = NEXT_LIST_HTML.replace('"deal_type_id": 2', '"deal_type_id": 7')
+    assert {item.rent_period for item in scraper._parse_listings(html)} == {"daily"}

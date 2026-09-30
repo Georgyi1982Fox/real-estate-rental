@@ -53,6 +53,8 @@ class RawListing:
     active: bool = True
     # Город (``bina.application.cities``), TASK-079
     city: str = "tbilisi"
+    # Вид аренды (``bina.application.rent_period``): monthly или daily, TASK-092
+    rent_period: str = "monthly"
 
 
 # Нужно ли открывать страницу объявления (False — оно уже есть в базе и не менялось)

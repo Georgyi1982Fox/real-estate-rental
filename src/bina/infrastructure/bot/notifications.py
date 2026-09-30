@@ -25,6 +25,7 @@ from bina.infrastructure.bot.formatters import (
     MAX_TITLE_LENGTH,
     format_number,
     format_price,
+    listing_price,
     listing_title,
     truncate,
 )
@@ -75,7 +76,7 @@ def _listing_card(listing: Listing, language: str) -> str:
     details = t(
         language,
         "notify_details",
-        price=format_price(listing.price, listing.currency),
+        price=listing_price(listing, language),
         rooms=listing.rooms,
         area=format_number(listing.area),
     )

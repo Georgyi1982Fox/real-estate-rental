@@ -30,6 +30,7 @@ def listing(**fields: Any) -> Listing:
         "area": Decimal("60.0"),
         "price": Decimal("1200"),
         "currency": "GEL",
+        "rent_period": "monthly",
         "floor": 5,
         "condition": "newly_renovated",
         "features": ["balcony", "air_conditioning"],

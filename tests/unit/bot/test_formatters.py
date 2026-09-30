@@ -105,3 +105,13 @@ def test_fraud_warning(score: int | None, warned: bool) -> None:
     assert ("⚠️" in text) is warned
     if warned:
         assert "не платите до просмотра" in text
+
+
+@pytest.mark.parametrize(
+    ("language", "expected"), [("ru", "50 ₾ / сутки"), ("en", "50 ₾ / day"), ("ka", "50 ₾ / დღე")]
+)
+def test_daily_rent_price_is_per_day(language: str, expected: str) -> None:
+    """TASK-092: у посуточной аренды цена за сутки."""
+    listing = make_listing(price=Decimal(50), rent_period="daily")
+    assert f"💰 {expected} · " in format_listing(listing, 1, language)
+    assert "/ сутки" not in format_listing(make_listing(rent_period="monthly"), 1, "ru")

@@ -9,11 +9,11 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from bina.application.cities import city_name
 from bina.application.dtos.pagination import Page
 from bina.infrastructure.bot.formatters import district_name
-from bina.infrastructure.bot.keyboards.callbacks import SearchCallback, SearchStep
+from bina.infrastructure.bot.keyboards.callbacks import DAILY_PERIOD, SearchCallback, SearchStep
 from bina.infrastructure.bot.keyboards.filters import (
-    PRICE_RANGES,
     ROOM_OPTIONS,
     price_label,
+    price_ranges,
     rooms_button_label,
 )
 from bina.infrastructure.bot.keyboards.listings import favorite_buttons, pagination_row
@@ -86,20 +86,32 @@ def _district_page_button(text: str, page: int, city: str | None) -> InlineKeybo
 
 
 def price_keyboard(
-    district: UUID | None, language: str, city: str | None = None
+    district: UUID | None, language: str, city: str | None = None, period: str | None = None
 ) -> InlineKeyboardMarkup:
-    """Шаг 2: выбор бюджета."""
+    """Шаг 2: выбор бюджета; кнопка переключает помесячную и посуточную аренду (TASK-092)."""
+    daily = period == DAILY_PERIOD
     builder = InlineKeyboardBuilder()
-    for index in range(len(PRICE_RANGES)):
+    for index in range(len(price_ranges(daily))):
         builder.button(
-            text=price_label(index, language),
+            text=price_label(index, language, daily),
             callback_data=SearchCallback(
-                step=SearchStep.ROOMS, district=district, price=index, city=city
+                step=SearchStep.ROOMS, district=district, price=index, city=city, period=period
             ),
         )
     builder.button(
         text=t(language, "any_price"),
-        callback_data=SearchCallback(step=SearchStep.ROOMS, district=district, city=city),
+        callback_data=SearchCallback(
+            step=SearchStep.ROOMS, district=district, city=city, period=period
+        ),
+    )
+    builder.button(
+        text=t(language, "period_to_monthly" if daily else "period_to_daily"),
+        callback_data=SearchCallback(
+            step=SearchStep.PRICE,
+            district=district,
+            city=city,
+            period=None if daily else DAILY_PERIOD,
+        ),
     )
     builder.button(
         text=t(language, "back"),
@@ -114,6 +126,7 @@ def rooms_keyboard(
     price: int | None,
     language: str,
     city: str | None = None,
+    period: str | None = None,
 ) -> InlineKeyboardMarkup:
     """Шаг 3: выбор количества комнат."""
     builder = InlineKeyboardBuilder()
@@ -121,18 +134,25 @@ def rooms_keyboard(
         builder.button(
             text=rooms_button_label(index, language),
             callback_data=SearchCallback(
-                step=SearchStep.RESULTS, district=district, price=price, rooms=index, city=city
+                step=SearchStep.RESULTS,
+                district=district,
+                price=price,
+                rooms=index,
+                city=city,
+                period=period,
             ),
         )
     builder.button(
         text=t(language, "any_rooms"),
         callback_data=SearchCallback(
-            step=SearchStep.RESULTS, district=district, price=price, city=city
+            step=SearchStep.RESULTS, district=district, price=price, city=city, period=period
         ),
     )
     builder.button(
         text=t(language, "back"),
-        callback_data=SearchCallback(step=SearchStep.PRICE, district=district, city=city),
+        callback_data=SearchCallback(
+            step=SearchStep.PRICE, district=district, city=city, period=period
+        ),
     )
     builder.adjust(len(ROOM_OPTIONS), 1, 1)
     return builder.as_markup()

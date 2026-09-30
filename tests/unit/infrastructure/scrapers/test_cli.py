@@ -53,7 +53,7 @@ def test_all_sources(scrape: AsyncMock) -> None:
 
     assert result.exit_code == 0, result.output
     assert scrape.await_args is not None
-    assert scrape.await_args.args[0] == ["myhome", "ss"]
+    assert scrape.await_args.args[0] == ["myhome", "ss", "livo", "korter"]
 
 
 @pytest.mark.parametrize("limit", ["0", "1001"])
@@ -137,7 +137,7 @@ def test_schedule_runs_all_sources_and_prints_results(
     assert scheduler.interval_hours == 3
     assert scheduler.stopped
     args: Any = scrape.await_args
-    assert args.args == (["myhome", "ss"], 20)
+    assert args.args == (["myhome", "ss", "livo", "korter"], 20)
     assert "следующий через 3 ч" in result.output
     assert "myhome: найдено 3" in result.output
 
@@ -445,9 +445,9 @@ def test_geocode_command(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_scrape_sources(monkeypatch: pytest.MonkeyPatch) -> None:
     """TASK-091: Telegram-каналы — только если задан ключ AI."""
     monkeypatch.delenv("LLM_API_KEY", raising=False)
-    assert scrape_cli.scrape_sources() == ["myhome", "ss"]
+    assert scrape_cli.scrape_sources() == ["myhome", "ss", "livo", "korter"]
     monkeypatch.setenv("LLM_API_KEY", "test-key")
-    assert scrape_cli.scrape_sources() == ["myhome", "ss", "telegram"]
+    assert scrape_cli.scrape_sources() == ["myhome", "ss", "livo", "korter", "telegram"]
 
 
 def test_stats_command(monkeypatch: pytest.MonkeyPatch) -> None:

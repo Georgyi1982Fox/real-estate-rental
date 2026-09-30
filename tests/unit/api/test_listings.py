@@ -46,6 +46,7 @@ async def test_listing_shape(client: AsyncClient, seeded: Store) -> None:
         "description": {},
         "price": 900.0,
         "currency": "GEL",
+        "rent_period": "monthly",
         "rooms": 1,
         "area": 50.0,
         "district": str(listing.district_id),
@@ -244,3 +245,20 @@ async def test_text_search(client: AsyncClient, store: Store) -> None:
     assert len(await titles(q="!!!")) == 2  # без слов — как пустой поиск
     long = await client.get("/api/listings", params={"q": "x" * 101})
     assert long.status_code == 422
+
+
+async def test_daily_rent_only_on_request(client: AsyncClient, store: Store) -> None:
+    """TASK-092: по умолчанию — помесячная аренда; посуточная — с rent_period=daily."""
+    vake = store.add_district("Ваке")
+    store.add_listing(vake, price=1500, title_ru="Помесячно")
+    store.add_listing(vake, price=60, title_ru="Посуточно", rent_period="daily")
+
+    default = (await client.get("/api/listings")).json()
+    daily = (await client.get("/api/listings", params={"rent_period": "daily"})).json()
+    wrong = await client.get("/api/listings", params={"rent_period": "weekly"})
+
+    assert [item["title"]["ru"] for item in default["items"]] == ["Помесячно"]
+    assert [(item["title"]["ru"], item["rent_period"]) for item in daily["items"]] == [
+        ("Посуточно", "daily")
+    ]
+    assert wrong.status_code in (400, 422)

@@ -1,0 +1,178 @@
+{
+ "result": true,
+ "data": {
+  "statement": {
+   "id": 26187474,
+   "uuid": "4cbd3bd0-35f5-45c9-8043-0641ba11cfd8",
+   "metro_station_id": 1,
+   "price": {
+    "1": {
+     "price_total": 1302,
+     "price_square": 48
+    },
+    "2": {
+     "price_total": 500,
+     "price_square": 19
+    },
+    "3": {
+     "price_total": 440,
+     "price_square": 16
+    }
+   },
+   "condition_id": 1,
+   "deal_type_id": 2,
+   "real_estate_type_id": 1,
+   "city_id": 1,
+   "total_price": 500,
+   "city_name": "Тбилиси",
+   "district_id": 4,
+   "district_name": "Ваке-Сабуртало",
+   "urban_id": 40,
+   "urban_name": "Ведзиси",
+   "status_id": 1,
+   "room_type_id": 2,
+   "published": true,
+   "bedroom_type_id": 1,
+   "bathroom_type_id": 1,
+   "project_type_id": 8,
+   "project_id": null,
+   "project_uuid": null,
+   "project_slug": null,
+   "hot_water_type_id": null,
+   "door_window_type_id": null,
+   "heating_type_id": null,
+   "parking_type_id": null,
+   "height": 0,
+   "balconies": null,
+   "balcony_area": null,
+   "lat": 41.732425,
+   "lng": 44.760325,
+   "storeroom_type_id": null,
+   "material_type_id": null,
+   "3d_url": null,
+   "youtube_link": null,
+   "address": "ცხინვალის ქ. 19",
+   "comment": "Сдается в аренду в Ведзиси - на первом этаже частного дома, недавно отремонтированные, необитаемые, изолированные комнаты, студия, с отдельной спальней и ванной комнатой. Метро - 5 минут пешком от Медицинского университета. В стоимость включены коммунальные услуги (кроме интернета и электричества). Домашних животных нет.",
+   "last_updated": "2026-09-30 00:00:09",
+   "created_at": "2026-09-28 20:45:28",
+   "area": 27,
+   "area_type_id": 1,
+   "floor": 1,
+   "total_floors": 2,
+   "views": 1517,
+   "rating": null,
+   "owner_name": "Саба",
+   "user_phone_number": "555000***",
+   "additional_phone_number": null,
+   "gifts": [],
+   "favorite": false,
+   "hidden": false,
+   "is_old": false,
+   "price_negotiable": false,
+   "price_from": false,
+   "yard_area": null,
+   "is_owner": false,
+   "dynamic_title": "Сдается 2 комнатная квартира в ведзиси",
+   "dynamic_slug": "sdaetsia-2-komnatnaia-kvartira-v-vedzisi",
+   "href_lang": {
+    "ka": "qiravdeba-2-otaxiani-bina-vedzisshi",
+    "en": "2-room-apartment-for-rent-in-vedzisi",
+    "ru": "sdaetsia-2-komnatnaia-kvartira-v-vedzisi"
+   },
+   "is_active": true,
+   "website_status_id": 1,
+   "rs_code": null,
+   "appear_rs_code": true,
+   "can_exchanged": false,
+   "can_exchanged_comment": null,
+   "for_special_people": false,
+   "lease_period": null,
+   "lease_type_id": null,
+   "lease_contract_type_id": null,
+   "rent_period": 12,
+   "rent_type_id": 1,
+   "daily_rent_type_id": null,
+   "daily_rent_type": null,
+   "storeroom_area": null,
+   "swimming_pool_type": null,
+   "hot_water_type": null,
+   "door_window_type": null,
+   "condition": "Недавно отремонтированный",
+   "living_room_type": null,
+   "build_year": null,
+   "living_room_area": null,
+   "loggia_area": null,
+   "porch_area": null,
+   "waiting_space_area": null,
+   "street_id": 3631,
+   "point": {
+    "type": "Point",
+    "coordinates": [
+     44.760325,
+     41.732425
+    ]
+   },
+   "currency_id": 2,
+   "price_type_id": 3,
+   "user_statements_count": 1,
+   "user_id": 1,
+   "has_color": false,
+   "is_vip": false,
+   "is_vip_plus": false,
+   "is_super_vip": true,
+   "grouped_street_id": 1924,
+   "price_label": {
+    "range_label": "high_price_3",
+    "display_label": "high_price"
+   },
+   "parameters": [],
+   "images": [
+    {
+     "large": "https://static-api-statements.tnet.ge/uploads/202609/20260928/statements/2kqepXj6aba989647773.webp",
+     "blur": "https://static-api-statements.tnet.ge/uploads/202609/20260928/statements/2kqepXj6aba989647773_blur.webp",
+     "thumb": "https://static-api-statements.tnet.ge/uploads/202609/20260928/statements/2kqepXj6aba989647773_thumb.webp",
+     "is_main": true
+    },
+    {
+     "large": "https://static-api-statements.tnet.ge/uploads/202609/20260928/statements/CMjboDP6aba98958346c.webp",
+     "blur": "https://static-api-statements.tnet.ge/uploads/202609/20260928/statements/CMjboDP6aba98958346c_blur.webp",
+     "thumb": "https://static-api-statements.tnet.ge/uploads/202609/20260928/statements/CMjboDP6aba98958346c_thumb.webp",
+     "is_main": false
+    },
+    {
+     "large": "https://static-api-statements.tnet.ge/uploads/202609/20260928/statements/Jjxh4mx6aba989591eeb.webp",
+     "blur": "https://static-api-statements.tnet.ge/uploads/202609/20260928/statements/Jjxh4mx6aba989591eeb_blur.webp",
+     "thumb": "https://static-api-statements.tnet.ge/uploads/202609/20260928/statements/Jjxh4mx6aba989591eeb_thumb.webp",
+     "is_main": false
+    },
+    {
+     "large": "https://static-api-statements.tnet.ge/uploads/202609/20260928/statements/w6tv6l66aba9895d03d8.webp",
+     "blur": "https://static-api-statements.tnet.ge/uploads/202609/20260928/statements/w6tv6l66aba9895d03d8_blur.webp",
+     "thumb": "https://static-api-statements.tnet.ge/uploads/202609/20260928/statements/w6tv6l66aba9895d03d8_thumb.webp",
+     "is_main": false
+    }
+   ],
+   "airbnb_link": null,
+   "booking_link": null,
+   "is_promoted": false,
+   "is_exclusive": false,
+   "exclusive_contract_status": "none",
+   "promotion_message": null,
+   "paid_stickers": [],
+   "seo": {
+    "meta_title": "Сдается 2 комнатная квартира в ведзиси, 500 $, 27 м², 26187474 | Livo",
+    "meta_description": "Сдается 2 комнатная квартира в ведзиси, ცხინვალის ქ. 19, 27 м². Смотрите фотографии объявления и контактную информацию.",
+    "h1": "Сдается 2 комнатная квартира в ведзиси"
+   },
+   "user_type": {
+    "type": "physical",
+    "logo": null,
+    "is_premier_agent": null
+   },
+   "additional_information": [
+    "published",
+    "appear_rs_code"
+   ]
+  }
+ }
+}

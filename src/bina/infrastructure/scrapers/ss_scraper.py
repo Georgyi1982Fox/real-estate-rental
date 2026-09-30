@@ -11,6 +11,7 @@ from bs4 import BeautifulSoup
 from bina.application.cities import DEFAULT_CITY, city_name, city_of
 from bina.application.listing_details import clean_features
 from bina.application.ports.scraper import NeedsDetails, RawListing
+from bina.application.rent_period import DAILY, MONTHLY
 from bina.infrastructure.scrapers.base_scraper import (
     KNOWN_PAGES_TO_STOP,
     BaseWebsiteScraper,
@@ -31,6 +32,8 @@ logger = structlog.get_logger(__name__)
 # После стольких ошибок страниц списка подряд парсинг останавливается
 MAX_CONSECUTIVE_FAILURES = 3
 SOURCE_NAME = "ss"
+# dealType посуточной аренды (RealEstateDealType-3 на сайте)
+SS_DAILY_DEAL_TYPE = 3
 ROOMS_RE = re.compile(r"(\d+)\s*-?\s*(?:комнат|ოთახ|room)", re.IGNORECASE)
 
 
@@ -50,14 +53,23 @@ class SSScraper(BaseWebsiteScraper):
         delay_seconds: int = 2,
         user_agents: list[str] | None = None,
         *,
-        search_path: str = SSSettings.SEARCH_PATH,
+        search_path: str | None = None,
+        daily_search_path: str | None = None,
         max_pages: int = SSSettings.MAX_PAGES,
         cities: tuple[str, ...] | None = CITIES,
         fetch_details: bool = True,
         dump_dir: Path | None = None,
     ) -> None:
         super().__init__(base_url, delay_seconds, user_agents)
-        self.search_path = search_path
+        # Помесячная и посуточная аренда (TASK-092); свой адрес — без посуточной, если
+        # её адрес не задан явно; пустой адрес посуточной — не собирать её
+        if search_path is None:
+            search_path = SSSettings.SEARCH_PATH
+            if daily_search_path is None:
+                daily_search_path = SSSettings.DAILY_SEARCH_PATH
+        self.search_paths = [
+            path for path in (search_path, daily_search_path) if path and path != "-"
+        ]
         self.max_pages = max_pages
         # None — все города (без проверки)
         self.cities = cities
@@ -70,13 +82,23 @@ class SSScraper(BaseWebsiteScraper):
         """Парсит до ``limit`` объявлений со страниц поиска."""
         logger.info("Starting SS scraping", limit=limit)
         listings: list[RawListing] = []
+        for path in self.search_paths:
+            listings += await self._scrape_path(path, limit, needs_details)
+        logger.info("Finished SS scraping", total=len(listings))
+        return listings
+
+    async def _scrape_path(
+        self, search_path: str, limit: int, needs_details: NeedsDetails | None
+    ) -> list[RawListing]:
+        """Объявления одного раздела поиска (аренда или посуточная аренда)."""
+        listings: list[RawListing] = []
         seen: set[str] = set()
         failures = known_pages = 0
 
         for page in range(1, self.max_pages + 1):
             if len(listings) >= limit:
                 break
-            url = self.base_url + self.search_path.format(page=page)
+            url = self.base_url + search_path.format(page=page)
             try:
                 html = await self._fetch_page(url)
             except httpx.HTTPError as exc:
@@ -87,7 +109,7 @@ class SSScraper(BaseWebsiteScraper):
                     break
                 continue
             failures = 0
-            if page == 1:
+            if page == 1 and search_path == self.search_paths[0]:
                 self._dump("ss_list.html", html)
 
             page_ids, page_listings = self._parse_page(html)
@@ -103,8 +125,6 @@ class SSScraper(BaseWebsiteScraper):
             if known_pages >= KNOWN_PAGES_TO_STOP:
                 logger.info("No new or changed listings on SS, stopping", page=page)
                 break
-
-        logger.info("Finished SS scraping", total=len(listings))
         return listings
 
     async def with_details(self, card: RawListing, *, first: bool = False) -> RawListing:
@@ -196,6 +216,7 @@ class SSScraper(BaseWebsiteScraper):
             address=join_address(address.get("streetTitle"), address.get("streetNumber")),
             published_at=to_datetime(item.get("createDate")),
             updated_at=to_datetime(item.get("orderDate")),
+            rent_period=_rent_period(item.get("dealType")),
         )
 
     def _parse_listings_html(self, html: str) -> list[RawListing]:
@@ -332,6 +353,11 @@ def _applications(data: dict[str, Any]) -> list[dict[str, Any]]:
     return []
 
 
+def _rent_period(deal_type: Any) -> str:
+    """Вид аренды по ``dealType`` (``realEstateDealTypeId``): 3 — посуточная."""
+    return DAILY if to_int(deal_type) == SS_DAILY_DEAL_TYPE else MONTHLY
+
+
 def _rooms(title: str, bedrooms: Any) -> int:
     """Комнаты из заголовка (``2-комнатная``), иначе спальни + гостиная."""
     match = ROOMS_RE.search(title)
@@ -399,6 +425,8 @@ def _application_data(data: dict[str, Any]) -> dict[str, Any] | None:
 def application_details(item: dict[str, Any]) -> dict[str, Any]:
     """Поля ``RawListing`` из ``applicationData`` (только найденные)."""
     details: dict[str, Any] = {"has_details": True}
+    if item.get("realEstateDealTypeId") is not None:
+        details["rent_period"] = _rent_period(item.get("realEstateDealTypeId"))
     status = str(item.get("status") or "")
     if item.get("isInactiveApplication") is True or status.lower() in _INACTIVE_STATUSES:
         details["active"] = False

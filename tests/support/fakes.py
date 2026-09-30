@@ -81,6 +81,7 @@ class Store:
             fraud_reasons=kwargs.pop("fraud_reasons", []),
             status=kwargs.pop("status", ListingStatus.ACTIVE),
             is_deleted=kwargs.pop("is_deleted", False),
+            rent_period=kwargs.pop("rent_period", "monthly"),
             created_at=datetime(2026, 1, 1, tzinfo=UTC) + timedelta(minutes=len(self.listings)),
         )
         assert not kwargs, f"unexpected kwargs: {kwargs}"
@@ -209,6 +210,7 @@ class FakeListingsRepository:
             and item.fraud_score < HIDE_SCORE
             and (not f.all_district_ids or item.district_id in f.all_district_ids)
             and (f.city is None or self._city(item) == f.city)
+            and (f.rent_period is None or (item.rent_period or "monthly") == f.rent_period)
             and (f.price_min is None or item.price >= f.price_min)
             and (f.price_max is None or item.price <= f.price_max)
             and (f.rooms_min is None or item.rooms >= f.rooms_min)

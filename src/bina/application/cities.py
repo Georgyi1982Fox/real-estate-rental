@@ -26,6 +26,8 @@ class City:
     aliases: tuple[str, ...] = ()
     # address.cityId на ss.ge
     ss_city_id: int | None = None
+    # city_id на сайтах TNET: myhome.ge, livo.ge (TASK-092)
+    tnet_city_id: int | None = None
 
 
 CITIES: dict[str, City] = {
@@ -36,6 +38,7 @@ CITIES: dict[str, City] = {
         bounds=(41.60, 44.60, 41.87, 45.05),
         aliases=("Tiflis", "Тифлис"),
         ss_city_id=95,
+        tnet_city_id=1,
     ),
     BATUMI: City(
         code=BATUMI,
@@ -44,6 +47,7 @@ CITIES: dict[str, City] = {
         bounds=(41.54, 41.55, 41.72, 41.80),
         aliases=("Батум",),
         ss_city_id=96,
+        tnet_city_id=15,
     ),
 }
 
@@ -55,12 +59,19 @@ _BY_NAME: dict[str, str] = {
 _BY_SS_ID: dict[int, str] = {
     city.ss_city_id: city.code for city in CITIES.values() if city.ss_city_id is not None
 }
+_BY_TNET_ID: dict[int, str] = {
+    city.tnet_city_id: city.code for city in CITIES.values() if city.tnet_city_id is not None
+}
 
 
-def city_of(name: str | None = None, *, ss_city_id: object = None) -> str | None:
-    """Код города по названию на любом языке или по номеру ss.ge; ``None`` — не наш город."""
+def city_of(
+    name: str | None = None, *, ss_city_id: object = None, tnet_city_id: object = None
+) -> str | None:
+    """Код города по названию на любом языке или по номеру ss.ge / TNET; ``None`` — не наш."""
     if isinstance(ss_city_id, int) and ss_city_id in _BY_SS_ID:
         return _BY_SS_ID[ss_city_id]
+    if isinstance(tnet_city_id, int) and tnet_city_id in _BY_TNET_ID:
+        return _BY_TNET_ID[tnet_city_id]
     if not name:
         return None
     return _BY_NAME.get(name.strip().lower())

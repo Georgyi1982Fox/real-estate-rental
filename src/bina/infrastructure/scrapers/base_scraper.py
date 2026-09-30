@@ -46,6 +46,8 @@ class BaseWebsiteScraper(BaseScraper, ABC):
         self.user_agents = user_agents or list(DEFAULT_USER_AGENTS)
         self._client: httpx.AsyncClient | None = None
         self._detail_dumped = False
+        # Заголовки каждого запроса, кроме User-Agent (API Livo.ge — ключ сайта и язык)
+        self.headers: dict[str, str] = {}
 
     @property
     def client(self) -> httpx.AsyncClient:
@@ -76,7 +78,7 @@ class BaseWebsiteScraper(BaseScraper, ABC):
         (например, на поиск), объявления больше нет — :class:`ListingGoneError`.
         """
         # Выбираем случайный User-Agent
-        headers = {"User-Agent": random.choice(self.user_agents)}
+        headers = {**self.headers, "User-Agent": random.choice(self.user_agents)}
 
         logger.debug("Fetching page", url=url)
         try:
