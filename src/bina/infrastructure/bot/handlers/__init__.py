@@ -2,7 +2,7 @@
 
 from aiogram import Router
 
-from . import errors, fallback, favorites, help, payments, profile, search, start
+from . import errors, fallback, favorites, help, invite, payments, profile, search, start
 
 
 def build_router() -> Router:
@@ -20,6 +20,7 @@ def build_router() -> Router:
         favorites.create_router(),
         profile.create_router(),
         payments.create_router(),
+        invite.create_router(),
         fallback.create_router(),
     )
     return router

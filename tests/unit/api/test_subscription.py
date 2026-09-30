@@ -62,10 +62,10 @@ async def test_subscription_and_me(client: AsyncClient, store: Store, auth: dict
 async def test_invoice_link(
     client: AsyncClient, auth: dict[str, str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    calls: list[tuple[str, str]] = []
+    calls: list[tuple[str, str, int | None]] = []
 
-    async def fake_link(bot: Bot, plan: Plan, language: str) -> str:
-        calls.append((plan.invoice_payload, language))
+    async def fake_link(bot: Bot, plan: Plan, language: str, price: int | None = None) -> str:
+        calls.append((plan.invoice_payload, language, price))
         return "https://t.me/$invoice"
 
     monkeypatch.setattr(invoice, "create_invoice_link", fake_link)
@@ -75,7 +75,7 @@ async def test_invoice_link(
     )
     assert response.status_code == 200
     assert response.json() == {"url": "https://t.me/$invoice"}
-    assert calls == [("sub:premium_month", "en")]
+    assert calls == [("sub:premium_month", "en", 250)]
 
     missing = await client.post("/api/subscription/invoice", json={"plan": "x"}, headers=auth)
     assert missing.status_code == 404

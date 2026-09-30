@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 
 from bina.application.dtos.listing_search import ListingSearchFilters, ListingSort
 from bina.application.fraud import HIDE_SCORE
+from bina.application.referrals import CODE_ALPHABET
 from bina.infrastructure.db.models import District, Listing, ListingStatus, User
 from bina.infrastructure.db.models.users import SubscriptionTier, UserRole
 
@@ -23,6 +24,8 @@ class Store:
     favorites: list[tuple[UUID, UUID]] = field(default_factory=list)
     # (user_id, charge_id, amount, plan)
     payments: list[tuple[UUID, str, Decimal, str]] = field(default_factory=list)
+    # Служебные уведомления: (user_id, тексты по языкам)
+    notifications: list[tuple[UUID, dict[str, str]]] = field(default_factory=list)
 
     def add_district(self, name_ru: str, name_en: str = "", name_ka: str = "") -> District:
         """Добавить район."""
@@ -262,3 +265,68 @@ def _matches_text(listing: Listing, query: str) -> bool:
     return all(
         any(word.startswith(part) for word in words) for part in re.findall(r"\w+", query.lower())
     )
+
+
+class FakeReferralsRepository:
+    """In-memory приглашения (TASK-108): коды и связи хранятся в моделях :class:`User`."""
+
+    def __init__(self, store: Store) -> None:
+        self._store = store
+
+    def _users(self) -> list[User]:
+        return list(self._store.users.values())
+
+    async def code_for(self, user: User) -> str:
+        if not user.referral_code:
+            # Код из допустимых символов: «frndxy» + 2 знака по номеру пользователя
+            index = len([u for u in self._users() if u.referral_code])
+            user.referral_code = "frndxy" + CODE_ALPHABET[index] * 2
+        return user.referral_code
+
+    async def by_code(self, code: str) -> User | None:
+        return next((u for u in self._users() if u.referral_code == code), None)
+
+    async def set_referrer(self, user: User, referrer: User) -> bool:
+        if referrer.id == user.id or user.referred_by is not None or await self.paid_count(user.id):
+            return False
+        user.referred_by = referrer.id
+        return True
+
+    async def discount_eligible(self, user: User) -> bool:
+        return user.referred_by is not None and await self.paid_count(user.id) == 0
+
+    async def stats(self, user_id: UUID, since: datetime) -> tuple[int, int, int]:
+        friends = [u for u in self._users() if u.referred_by == user_id]
+        rewarded = [u for u in friends if u.referral_rewarded_at is not None]
+        recent = [u for u in rewarded if u.referral_rewarded_at and u.referral_rewarded_at >= since]
+        return len(friends), len(rewarded), len(recent)
+
+    async def friend(self, user_id: UUID) -> Any:
+        from bina.application.use_cases.referrals import Friend
+
+        user = next(u for u in self._users() if u.id == user_id)
+        return Friend(
+            user_id=user_id,
+            referred_by=user.referred_by,
+            rewarded=user.referral_rewarded_at is not None,
+        )
+
+    async def paid_count(self, user_id: UUID) -> int:
+        return sum(1 for item in self._store.payments if item[0] == user_id)
+
+    async def rewards_since(self, referrer_id: UUID, since: datetime) -> int:
+        return (await self.stats(referrer_id, since))[2]
+
+    async def extend_premium(self, user_id: UUID, days: int, now: datetime) -> datetime:
+        user = next(u for u in self._users() if u.id == user_id)
+        expires = user.subscription_expires_at
+        start = expires if expires is not None and expires > now else now
+        user.subscription_tier = SubscriptionTier.NOMAD
+        user.subscription_expires_at = start + timedelta(days=days)
+        return user.subscription_expires_at
+
+    async def mark_rewarded(self, friend_id: UUID, now: datetime) -> None:
+        next(u for u in self._users() if u.id == friend_id).referral_rewarded_at = now
+
+    async def notify(self, user_id: UUID, texts: dict[str, str]) -> None:
+        self._store.notifications.append((user_id, texts))

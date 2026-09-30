@@ -9,12 +9,13 @@ from datetime import UTC, datetime
 from aiogram import Bot
 from fastapi import APIRouter, HTTPException, Request, status
 
-from bina.application.subscriptions import Plan, is_premium, limits_for
+from bina.application.subscriptions import Plan, is_premium, limits_for, price_for
 from bina.infrastructure.api.dependencies import CurrentUserDep, SessionDep, SettingsDep
 from bina.infrastructure.api.routes.common import not_found
 from bina.infrastructure.api.schemas import InvoiceIn, InvoiceOut, SubscriptionOut
 from bina.infrastructure.db.repositories.favorites import FavoritesRepository
 from bina.infrastructure.db.repositories.notifications import SavedSearchesRepository
+from bina.infrastructure.db.repositories.referrals import ReferralsRepository
 from bina.infrastructure.payments import invoice
 
 router = APIRouter(prefix="/api/subscription", tags=["subscription"])
@@ -39,12 +40,17 @@ async def get_subscription(
         favorites=await FavoritesRepository(session).count_by_user(user.id),
         searches=await SavedSearchesRepository(session).count_by_user(user.id),
         plans=list(get_plans(request).values()),
+        discounted=await ReferralsRepository(session).discount_eligible(user),
     )
 
 
 @router.post("/invoice", response_model=InvoiceOut)
 async def create_invoice(
-    body: InvoiceIn, request: Request, user: CurrentUserDep, settings: SettingsDep
+    body: InvoiceIn,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+    settings: SettingsDep,
 ) -> InvoiceOut:
     """Ссылка на счёт в звёздах для ``Telegram.WebApp.openInvoice``."""
     plan = get_plans(request).get(body.plan)
@@ -54,9 +60,12 @@ async def create_invoice(
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Payments are not configured"
         )
+    discounted = await ReferralsRepository(session).discount_eligible(user)
     bot = Bot(token=settings.bot_token)
     try:
-        url = await invoice.create_invoice_link(bot, plan, user.language)
+        url = await invoice.create_invoice_link(
+            bot, plan, user.language, price_for(plan, discounted)
+        )
     finally:
         await bot.session.close()
     return InvoiceOut(url=url)

@@ -10,6 +10,14 @@ from aiogram.types import LabeledPrice
 from bina.application.subscriptions import STARS_CURRENCY, Plan
 
 _TEXTS: dict[str, dict[str, str]] = {
+    "ka": {
+        "title": "Bina.ai Premium",
+        "description": (
+            "Premium {days} დღით: 20-მდე შენახული ძებნა, ახალი ბინები მაშინვე, "
+            "შეტყობინებები ფასის შემცირებისას."
+        ),
+        "label": "Premium {days} დღით",
+    },
     "ru": {
         "title": "Bina.ai Premium",
         "description": (
@@ -43,21 +51,22 @@ def invoice_description(plan: Plan, language: str) -> str:
     return _texts(language)["description"].format(days=plan.days)
 
 
-def invoice_prices(plan: Plan, language: str) -> list[LabeledPrice]:
-    """Цена в звёздах: для XTR ровно одна позиция."""
+def invoice_prices(plan: Plan, language: str, price: int | None = None) -> list[LabeledPrice]:
+    """Цена в звёздах: для XTR ровно одна позиция; ``price`` — со скидкой (TASK-108)."""
     return [
         LabeledPrice(
-            label=_texts(language)["label"].format(days=plan.days), amount=plan.price_stars
+            label=_texts(language)["label"].format(days=plan.days),
+            amount=plan.price_stars if price is None else price,
         )
     ]
 
 
-async def create_invoice_link(bot: Bot, plan: Plan, language: str) -> str:
+async def create_invoice_link(bot: Bot, plan: Plan, language: str, price: int | None = None) -> str:
     """Ссылка на счёт для ``Telegram.WebApp.openInvoice``."""
     return await bot.create_invoice_link(
         title=invoice_title(language),
         description=invoice_description(plan, language),
         payload=plan.invoice_payload,
         currency=STARS_CURRENCY,
-        prices=invoice_prices(plan, language),
+        prices=invoice_prices(plan, language, price),
     )

@@ -9,6 +9,7 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
+from bina.application.referrals import discounted_price
 from bina.infrastructure.db.models import User
 from bina.infrastructure.db.models.users import SubscriptionTier
 
@@ -67,14 +68,28 @@ def plan_for_payload(plans: dict[str, Plan], payload: str) -> Plan | None:
     return plans.get(payload.removeprefix(INVOICE_PREFIX))
 
 
+def price_for(plan: Plan, discounted: bool) -> int:
+    """Цена в звёздах; ``discounted`` — скидка приглашённому другу (TASK-108)."""
+    return discounted_price(plan.price_stars) if discounted else plan.price_stars
+
+
 def validate_checkout(
-    plans: dict[str, Plan], payload: str, currency: str, total_amount: int
+    plans: dict[str, Plan],
+    payload: str,
+    currency: str,
+    total_amount: int,
+    discounted: bool = False,
 ) -> Plan | None:
-    """Проверка перед оплатой: тариф существует, валюта и сумма совпадают."""
+    """Проверка перед оплатой: тариф существует, валюта и сумма совпадают.
+
+    ``discounted``: пользователю положена скидка — принимается и цена со скидкой.
+    Полная цена принимается всегда.
+    """
     plan = plan_for_payload(plans, payload)
-    if plan is None or currency != STARS_CURRENCY or total_amount != plan.price_stars:
+    if plan is None or currency != STARS_CURRENCY:
         return None
-    return plan
+    allowed = {plan.price_stars, price_for(plan, discounted)}
+    return plan if total_amount in allowed else None
 
 
 def extended_until(user: User, plan: Plan, now: datetime) -> datetime:

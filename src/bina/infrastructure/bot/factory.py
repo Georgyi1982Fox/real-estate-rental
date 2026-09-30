@@ -18,6 +18,7 @@ COMMANDS: dict[str, dict[str, str]] = {
         "favorites": "Избранное",
         "profile": "Профиль и язык",
         "premium": "Premium-подписка",
+        "invite": "Пригласить друга",
         "help": "Справка",
     },
     "en": {
@@ -25,6 +26,7 @@ COMMANDS: dict[str, dict[str, str]] = {
         "favorites": "Favorites",
         "profile": "Profile and language",
         "premium": "Premium subscription",
+        "invite": "Invite a friend",
         "help": "Help",
     },
 }

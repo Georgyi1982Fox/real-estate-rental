@@ -28,6 +28,7 @@ from bina.infrastructure.api.routes import (
     location,
     me,
     notifications,
+    referral,
     searches,
     subscription,
 )
@@ -93,6 +94,7 @@ def create_app(
     app.include_router(searches.router)
     app.include_router(notifications.router)
     app.include_router(subscription.router)
+    app.include_router(referral.router)
     return app
 
 
