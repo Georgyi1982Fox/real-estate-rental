@@ -30,6 +30,7 @@ class BotSettings:
     - ``BOT_MINI_APP_URL``: URL Telegram Mini App (кнопка меню)
     - ``BOT_PAGE_SIZE``: объявлений на страницу (1-10, по умолчанию 5)
     - ``BOT_DROP_PENDING_UPDATES``: ``1``/``true``, пропустить накопившиеся апдейты
+    - ``BOT_RATE_LIMIT``: сообщений и нажатий за 10 секунд от одного человека (20)
     - ``ADMIN_TELEGRAM_IDS``: Telegram ID владельца (через запятую) — команда ``/admin``
     """
 
@@ -45,6 +46,8 @@ class BotSettings:
     drop_pending_updates: bool = False
     # TASK-110: кому доступна команда /admin
     admin_ids: tuple[int, ...] = ()
+    # TASK-019: сообщений и нажатий за 10 секунд от одного человека (0 — без ограничения)
+    rate_limit: int = 20
 
     def __post_init__(self) -> None:
         """Проверяет согласованность настроек."""
@@ -118,6 +121,7 @@ class BotSettings:
             drop_pending_updates=(get("BOT_DROP_PENDING_UPDATES") or "").lower()
             in {"1", "true", "yes"},
             admin_ids=_parse_ids(get("ADMIN_TELEGRAM_IDS")),
+            rate_limit=get_int("BOT_RATE_LIMIT", 20),
         )
 
 

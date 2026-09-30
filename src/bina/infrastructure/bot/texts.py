@@ -7,6 +7,7 @@ from bina.application.use_cases.register_user import DEFAULT_LANGUAGE
 
 _RU: dict[str, str] = {
     "menu_home": "🏠 Главное меню",
+    "too_fast": "⏳ Слишком много сообщений подряд. Подождите несколько секунд.",
     "menu_title": (
         "🏠 <b>Bina.ai — главное меню</b>\n\n"
         "Аренда жилья в Грузии: объявления с MyHome.ge и SS.ge, проверка на мошенничество, "
@@ -186,6 +187,7 @@ _RU: dict[str, str] = {
 
 _EN: dict[str, str] = {
     "menu_home": "🏠 Main menu",
+    "too_fast": "⏳ Too many messages in a row. Please wait a few seconds.",
     "menu_title": (
         "🏠 <b>Bina.ai — main menu</b>\n\n"
         "Rentals in Georgia: listings from MyHome.ge and SS.ge, scam checks, documents "
@@ -362,6 +364,7 @@ _EN: dict[str, str] = {
 
 _KA: dict[str, str] = {
     "menu_home": "🏠 მთავარი მენიუ",
+    "too_fast": "⏳ ზედიზედ ძალიან ბევრი შეტყობინებაა. დაელოდეთ რამდენიმე წამს.",
     "menu_title": (
         "🏠 <b>Bina.ai — მთავარი მენიუ</b>\n\n"
         "ქირავნობა საქართველოში: განცხადებები MyHome.ge-დან და SS.ge-დან, თაღლითობის "
