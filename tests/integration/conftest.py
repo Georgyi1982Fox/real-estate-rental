@@ -44,6 +44,7 @@ MIGRATIONS = (
     "scrape_skips",
     "ai_usage",
     "listing_geocoded",
+    "complaints",
 )
 
 

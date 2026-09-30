@@ -153,6 +153,8 @@ class Listing(Base, SoftDeleteMixin):
     duplicates_checked_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # Скрыто из поиска жалобами или модератором (TASK-106); None — показывается
+    hidden_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # Когда искали точку на карте по адресу (TASK-080); None — ещё не искали
     geocoded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # Когда объявление последний раз видели на сайте (в списке или на его странице);
