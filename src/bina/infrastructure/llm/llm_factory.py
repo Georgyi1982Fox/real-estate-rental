@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any
 from bina.application.ports.llm_provider import LLMProvider
 from bina.infrastructure.llm.providers.anthropic_provider import AnthropicProvider
 from bina.infrastructure.llm.providers.openai_provider import OpenAIProvider
-from bina.infrastructure.llm.providers.qwen_provider import QwenProvider
+from bina.infrastructure.llm.providers.qwen_provider import AITUNNEL_BASE_URL, QwenProvider
 
 if TYPE_CHECKING:
     from bina.infrastructure.llm.providers.openai_embeddings_provider import (
@@ -74,7 +74,8 @@ class LLMFactory:
         """Провайдер embeddings (TASK-012): OpenAI-совместимый API.
 
         Ключ и адрес — ``EMBEDDINGS_API_KEY`` / ``EMBEDDINGS_BASE_URL``, по умолчанию те же,
-        что для перевода (``LLM_API_KEY`` / ``LLM_BASE_URL``, например AITUNNEL).
+        что для перевода: ``LLM_API_KEY`` и ``LLM_BASE_URL``, а без него — адрес провайдера
+        по умолчанию (qwen → AITUNNEL, openai → OpenAI).
         Модель — ``EMBEDDINGS_MODEL`` (по умолчанию text-embedding-3-small).
         """
         from bina.infrastructure.llm.providers.openai_embeddings_provider import (
@@ -82,12 +83,21 @@ class LLMFactory:
             OpenAIEmbeddingsProvider,
         )
 
-        base_url = os.getenv("EMBEDDINGS_BASE_URL") or os.getenv("LLM_BASE_URL") or ""
+        base_url = (
+            os.getenv("EMBEDDINGS_BASE_URL")
+            or os.getenv("LLM_BASE_URL")
+            or _DEFAULT_EMBEDDINGS_URLS.get(os.getenv("LLM_PROVIDER", "qwen").lower())
+            or AITUNNEL_BASE_URL
+        )
         return OpenAIEmbeddingsProvider(
             api_key=embeddings_api_key(),
             model=os.getenv("EMBEDDINGS_MODEL") or DEFAULT_MODEL,
-            base_url=base_url or "https://api.openai.com/v1",
+            base_url=base_url,
         )
+
+
+# Куда идут embeddings, если адрес не задан: туда же, куда перевод этого провайдера
+_DEFAULT_EMBEDDINGS_URLS = {"qwen": AITUNNEL_BASE_URL, "openai": "https://api.openai.com/v1"}
 
 
 def embeddings_api_key() -> str:

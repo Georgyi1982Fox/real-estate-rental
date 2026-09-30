@@ -101,9 +101,22 @@ async def test_other_models_get_no_dimensions() -> None:
 def test_factory_uses_translation_key(monkeypatch: pytest.MonkeyPatch) -> None:
     from bina.infrastructure.llm.llm_factory import LLMFactory, embeddings_configured
 
-    for name in ("EMBEDDINGS_API_KEY", "EMBEDDINGS_BASE_URL", "EMBEDDINGS_MODEL", "LLM_API_KEY"):
+    for name in (
+        "EMBEDDINGS_API_KEY",
+        "EMBEDDINGS_BASE_URL",
+        "EMBEDDINGS_MODEL",
+        "LLM_API_KEY",
+        "LLM_BASE_URL",
+        "LLM_PROVIDER",
+    ):
         monkeypatch.delenv(name, raising=False)
     assert not embeddings_configured()
+    # Как у владельца: только ключ AITUNNEL, адрес не задан — туда же, куда перевод
+    monkeypatch.setenv("LLM_API_KEY", "k")
+    assert LLMFactory.create_embeddings_provider().base_url == "https://api.aitunnel.ru/v1"
+    monkeypatch.setenv("LLM_PROVIDER", "openai")
+    assert LLMFactory.create_embeddings_provider().base_url == "https://api.openai.com/v1"
+    monkeypatch.delenv("LLM_PROVIDER")
     monkeypatch.setenv("LLM_API_KEY", "k")
     monkeypatch.setenv("LLM_BASE_URL", "https://api.aitunnel.ru/v1")
     assert embeddings_configured()
