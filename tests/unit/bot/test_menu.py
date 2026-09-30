@@ -3,7 +3,9 @@
 import pytest
 from aiogram.types import InlineKeyboardMarkup
 
+from bina.infrastructure.bot.factory import COMMANDS
 from bina.infrastructure.bot.keyboards.callbacks import MenuCallback, MenuSection
+from bina.infrastructure.bot.keyboards.menu import home_menu
 
 from .conftest import BotHarness
 
@@ -24,6 +26,9 @@ async def test_start_shows_menu(harness: BotHarness) -> None:
         "🗓 Оплата аренды",
         "👤 Профиль",
         "❓ Помощь",
+        "💬 Поддержка",
+        "📄 Соглашение",
+        "🔒 Конфиденциальность",
     ):
         assert label in buttons
     assert "📊 Админка" not in buttons, "админка — только владельцу"
@@ -39,6 +44,9 @@ async def test_start_shows_menu(harness: BotHarness) -> None:
         (MenuSection.RENT, "Напоминания об оплате аренды"),
         (MenuSection.PROFILE, "Профиль"),
         (MenuSection.HELP, "/rent"),
+        (MenuSection.SUPPORT, "Вопросы по оплате"),
+        (MenuSection.TERMS, "Пользовательское соглашение"),
+        (MenuSection.PRIVACY, "Политика конфиденциальности"),
     ],
 )
 async def test_menu_buttons_open_sections(
@@ -61,3 +69,31 @@ async def test_home_button_everywhere(harness: BotHarness) -> None:
     harness.reset()
     await harness.send("🏠 Главное меню")
     assert "главное меню" in harness.last_text()
+
+
+# Команда → кнопка главного меню. Новая команда без кнопки — тест упадёт:
+# владелец хочет видеть все функции кнопками, а не только в списке команд.
+COMMAND_BUTTONS = {
+    "search": MenuSection.SEARCH,
+    "favorites": MenuSection.FAVORITES,
+    "profile": MenuSection.PROFILE,
+    "premium": MenuSection.PREMIUM,
+    "invite": MenuSection.INVITE,
+    "rent": MenuSection.RENT,
+    "terms": MenuSection.TERMS,
+    "privacy": MenuSection.PRIVACY,
+    "paysupport": MenuSection.SUPPORT,
+    "help": MenuSection.HELP,
+}
+
+
+@pytest.mark.parametrize("language", ["ru", "en", "ka"])
+def test_every_command_has_a_menu_button(language: str) -> None:
+    assert set(COMMANDS[language]) == set(COMMAND_BUTTONS)
+    sections = {
+        MenuCallback.unpack(button.callback_data).section
+        for row in home_menu(language, None).inline_keyboard
+        for button in row
+        if button.callback_data
+    }
+    assert set(COMMAND_BUTTONS.values()) <= sections

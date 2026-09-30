@@ -13,6 +13,7 @@ from bina.infrastructure.bot.handlers import (
     favorites,
     help,
     invite,
+    legal,
     payments,
     profile,
     rent,
@@ -78,6 +79,12 @@ async def on_menu(
         await profile.cmd_profile(message, session, user)
     elif section == MenuSection.HELP:
         await help.cmd_help(message, user)
+    elif section == MenuSection.SUPPORT:
+        await payments.cmd_paysupport(message, user)
+    elif section == MenuSection.TERMS:
+        await legal.cmd_terms(message, user)
+    elif section == MenuSection.PRIVACY:
+        await legal.cmd_privacy(message, user)
     elif section == MenuSection.ADMIN:
         await admin.cmd_admin(message, user, session, settings)
 

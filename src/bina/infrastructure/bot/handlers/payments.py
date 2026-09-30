@@ -184,7 +184,9 @@ async def on_successful_payment(
 
 async def cmd_paysupport(message: Message, user: User) -> None:
     """/paysupport: обязательна для ботов, принимающих звёзды."""
-    await message.answer(t(user.language, "paysupport"))
+    await message.answer(
+        t(user.language, "paysupport"), reply_markup=with_home(None, user.language)
+    )
 
 
 def create_router() -> Router:

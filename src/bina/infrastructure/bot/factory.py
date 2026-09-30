@@ -25,6 +25,7 @@ COMMANDS: dict[str, dict[str, str]] = {
         "rent": "Напоминания об оплате аренды",
         "terms": "Пользовательское соглашение",
         "privacy": "Конфиденциальность",
+        "paysupport": "Поддержка и вопросы по оплате",
         "help": "Справка",
     },
     "en": {
@@ -36,6 +37,7 @@ COMMANDS: dict[str, dict[str, str]] = {
         "rent": "Rent payment reminders",
         "terms": "Terms of use",
         "privacy": "Privacy policy",
+        "paysupport": "Support and payment questions",
         "help": "Help",
     },
     "ka": {
@@ -47,6 +49,7 @@ COMMANDS: dict[str, dict[str, str]] = {
         "rent": "ქირის გადახდის შეხსენებები",
         "terms": "სამომხმარებლო შეთანხმება",
         "privacy": "კონფიდენციალურობა",
+        "paysupport": "მხარდაჭერა და გადახდის კითხვები",
         "help": "დახმარება",
     },
 }
