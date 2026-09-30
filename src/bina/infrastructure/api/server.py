@@ -23,6 +23,7 @@ from bina.infrastructure.api.routes import (
     districts,
     favorites,
     listings,
+    location,
     me,
     notifications,
     searches,
@@ -80,6 +81,7 @@ def create_app(
     app.include_router(contract.router)
     app.include_router(acceptance.router)
     app.include_router(costs.router)
+    app.include_router(location.router)
     app.include_router(districts.router)
     app.include_router(favorites.router)
     app.include_router(me.router)

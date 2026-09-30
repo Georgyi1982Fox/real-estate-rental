@@ -12,6 +12,7 @@ import structlog
 from bina.application.ports.scraper import BaseScraper
 from bina.application.use_cases.check_fraud import CheckFraudUseCase, FraudStats
 from bina.application.use_cases.find_duplicates import DuplicateStats, FindDuplicatesUseCase
+from bina.application.use_cases.geocode_listings import GeocodeListingsUseCase, GeocodeStats
 from bina.application.use_cases.notifications import (
     CreatedNotifications,
     CreateNotificationsUseCase,
@@ -58,6 +59,8 @@ LLM_CONCURRENCY = max(1, int(os.getenv("LLM_CONCURRENCY", "") or 5))
 DELIVERY_BATCH = 100
 # Сколько объявлений проверять на дубликаты за запуск по расписанию
 DUPLICATES_BATCH = 2000
+# Адресов на карте за запуск: геокодер — не чаще 1 запроса в секунду
+GEOCODE_BATCH = 30
 
 
 def make_scraper(source: str, *, details: bool, dump_dir: Path | None) -> BaseScraper:
@@ -355,6 +358,30 @@ def _echo_duplicates(stats: DuplicateStats) -> None:
     click.echo(f"дубликаты: проверено {stats.checked}, склеено {stats.found}")
 
 
+async def geocode(limit: int) -> GeocodeStats:
+    """Ищет на карте адреса объявлений без координат (Telegram-каналы, TASK-080)."""
+    from bina.infrastructure.geo.nominatim import NominatimGeocoder
+
+    db = DatabaseManager()
+    geocoder = NominatimGeocoder()
+    try:
+        async with db.session_factory() as session:
+            stats = await GeocodeListingsUseCase(ListingsRepository(session), geocoder).execute(
+                limit
+            )
+            await session.commit()
+        return stats
+    finally:
+        await geocoder.close()
+        await db.dispose()
+
+
+def _echo_geocode(stats: GeocodeStats) -> None:
+    click.echo(
+        f"карта: проверено адресов {stats.checked}, на карте {stats.found}, ошибок {stats.failed}"
+    )
+
+
 async def notify() -> tuple[CreatedNotifications, DeliveryStats | None]:
     """Создаёт уведомления и отправляет их в Telegram (если задан ``BOT_TOKEN``)."""
     db = DatabaseManager()
@@ -514,6 +541,13 @@ def duplicates_command(limit: int) -> None:
     _echo_duplicates(asyncio.run(find_duplicates(limit)))
 
 
+@cli.command(name="geocode")
+@click.option("--limit", default=GEOCODE_BATCH, show_default=True, type=click.IntRange(1, 1000))
+def geocode_command(limit: int) -> None:
+    """Найти на карте объявления без координат по адресу (OpenStreetMap)."""
+    _echo_geocode(asyncio.run(geocode(limit)))
+
+
 @cli.command(name="fraud")
 @click.option("--limit", default=50, show_default=True, type=click.IntRange(1, 5000))
 def fraud_command(limit: int) -> None:
@@ -599,6 +633,10 @@ def schedule(
             _echo_duplicates(await find_duplicates(DUPLICATES_BATCH))
         except Exception as exc:  # noqa: BLE001 - сбой не останавливает расписание
             logger.error("Scheduled duplicates search failed", error=str(exc))
+        try:
+            _echo_geocode(await geocode(GEOCODE_BATCH))
+        except Exception as exc:  # noqa: BLE001 - сбой не останавливает расписание
+            logger.error("Scheduled geocoding failed", error=str(exc))
         if with_translation:
             try:
                 _echo_translation(await translate(translate_limit))
