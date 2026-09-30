@@ -21,8 +21,9 @@ COPY src ./src
 COPY alembic.ini ./
 RUN pip install --no-deps .
 
-# Не от root
-RUN useradd --create-home --uid 1000 bina
+# Не от root; папка фото собственников (том media, TASK-096) принадлежит bina
+RUN useradd --create-home --uid 1000 bina \
+    && mkdir -p /app/media && chown bina:bina /app/media
 USER bina
 
 EXPOSE 8000

@@ -11,6 +11,7 @@ import click
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bina.infrastructure.api.auth import INIT_DATA_HEADER
@@ -30,6 +31,7 @@ from bina.infrastructure.api.routes import (
     listings,
     location,
     me,
+    my_listings,
     notifications,
     referral,
     searches,
@@ -39,6 +41,7 @@ from bina.infrastructure.api.settings import ApiConfigError, ApiSettings
 from bina.infrastructure.api.validation import install_body_limit
 from bina.infrastructure.db.session.manager import DatabaseManager
 from bina.infrastructure.payments.settings import load_plans
+from bina.infrastructure.storage.photos import media_dir
 
 
 def create_app(
@@ -101,6 +104,9 @@ def create_app(
     app.include_router(subscription.router)
     app.include_router(referral.router)
     app.include_router(legal.router)
+    app.include_router(my_listings.router)
+    # TASK-096: фото собственников (папка MEDIA_DIR); отдаются как обычные файлы
+    app.mount("/api/media", StaticFiles(directory=media_dir(), check_dir=False), name="media")
     return app
 
 

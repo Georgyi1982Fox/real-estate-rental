@@ -17,6 +17,10 @@ x-app: &app
     PREMIUM_FOR_ALL: ${PREMIUM_FOR_ALL:-1}
     # TASK-043: парсер раз в час проверяет сервер Mini App и пишет владельцу, если он не отвечает
     API_HEALTH_URL: http://api:8000/api/health
+    # TASK-096: фото собственников — общий том media (бот сохраняет, API отдаёт)
+    MEDIA_DIR: /app/media
+  volumes:
+    - media:/app/media
 
 services:
   db:
@@ -102,9 +106,11 @@ services:
     volumes:
       - ./scripts/backup.sh:/backup.sh:ro
       - ./backups:/backups
+      - media:/media:ro
     depends_on:
       db:
         condition: service_healthy
 
 volumes:
   db-data:
+  media:

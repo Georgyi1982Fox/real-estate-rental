@@ -23,6 +23,8 @@ dependencies = [
     "uvicorn[standard]>=0.29.0",
     # PDF: договор аренды и акт приёмки (TASK-101, TASK-102)
     "fpdf2>=2.7",
+    # Фото собственников: проверка и уменьшение (TASK-096)
+    "pillow>=10.0",
 ]
 
 [project.optional-dependencies]

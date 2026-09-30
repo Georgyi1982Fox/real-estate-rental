@@ -55,3 +55,15 @@ async def get_current_user(
 
 
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
+
+
+def get_telegram_username(
+    settings: SettingsDep,
+    init_data: Annotated[str | None, Header(alias=INIT_DATA_HEADER)] = None,
+    user_id: Annotated[int | None, Query()] = None,
+) -> str | None:
+    """Имя пользователя Telegram из подписанных данных Mini App (TASK-096)."""
+    return resolve_identity(settings, init_data, user_id).username
+
+
+TelegramUsernameDep = Annotated[str | None, Depends(get_telegram_username)]

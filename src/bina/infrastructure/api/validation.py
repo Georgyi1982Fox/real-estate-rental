@@ -16,6 +16,8 @@ from bina.infrastructure.api.errors import error_response
 
 # Больше API не принимает (самое большое тело — сохранённый поиск, это сотни байт)
 MAX_BODY_BYTES = 64 * 1024
+# Загрузка фото объявления (POST /api/my/listings/{id}/photos)
+MAX_PHOTO_BODY_BYTES = 15 * 1024 * 1024
 
 _TAG_RE = re.compile(r"<[^>]*>")
 _SPACES_RE = re.compile(r"\s+")
@@ -38,11 +40,13 @@ async def _limit_body_size(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
     length = request.headers.get("content-length")
-    if length is not None and (not length.isdigit() or int(length) > MAX_BODY_BYTES):
+    # TASK-096: фото собственника — большое тело, но только на этот адрес
+    limit = MAX_PHOTO_BODY_BYTES if request.url.path.endswith("/photos") else MAX_BODY_BYTES
+    if length is not None and (not length.isdigit() or int(length) > limit):
         return error_response(
             request,
             status.HTTP_413_CONTENT_TOO_LARGE,
-            f"Request body is larger than {MAX_BODY_BYTES} bytes",
+            f"Request body is larger than {limit} bytes",
         )
     return await call_next(request)
 

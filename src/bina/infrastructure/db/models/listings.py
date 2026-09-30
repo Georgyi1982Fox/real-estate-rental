@@ -120,6 +120,13 @@ class Listing(Base, SoftDeleteMixin):
         default=0,
         nullable=False,
     )
+    # TASK-096: кто разместил объявление сам (собственник); у объявлений с сайтов — None
+    owner_user_id: Mapped[UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("bina_users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     # TASK-092: monthly — цена за месяц, daily — за сутки (bina.application.rent_period)
     rent_period: Mapped[str] = mapped_column(
         String(10),
