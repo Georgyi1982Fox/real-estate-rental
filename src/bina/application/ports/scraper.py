@@ -51,6 +51,8 @@ class RawListing:
     has_details: bool = False
     # False — страница объявления говорит, что оно снято (сдано, удалено)
     active: bool = True
+    # Город (``bina.application.cities``), TASK-079
+    city: str = "tbilisi"
 
 
 # Нужно ли открывать страницу объявления (False — оно уже есть в базе и не менялось)

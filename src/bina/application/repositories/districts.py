@@ -2,6 +2,7 @@ from abc import abstractmethod
 from typing import Protocol
 from uuid import UUID
 
+from bina.application.cities import DEFAULT_CITY
 from bina.infrastructure.db.models import District
 
 
@@ -9,8 +10,8 @@ class IDistrictsRepository(Protocol):
     """Порт репозитория районов."""
 
     @abstractmethod
-    async def get_by_name(self, name: str) -> District | None:
-        """Получить район по названию."""
+    async def get_by_name(self, name: str, city: str = DEFAULT_CITY) -> District | None:
+        """Получить район города по названию."""
         ...
 
     @abstractmethod
@@ -19,11 +20,16 @@ class IDistrictsRepository(Protocol):
         ...
 
     @abstractmethod
-    async def list_all(self) -> list[District]:
-        """Получить все (не удалённые) районы, отсортированные по названию."""
+    async def list_all(self, city: str | None = None) -> list[District]:
+        """Все (не удалённые) районы города (``None`` — всех городов) по названию."""
         ...
 
     @abstractmethod
-    async def create_district(self, name: str) -> District:
+    async def cities(self) -> list[str]:
+        """Коды городов, в которых есть районы."""
+        ...
+
+    @abstractmethod
+    async def create_district(self, name: str, city: str = DEFAULT_CITY) -> District:
         """Создать новый район."""
         ...

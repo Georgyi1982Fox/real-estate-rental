@@ -42,7 +42,7 @@ def list_url(page: int) -> str:
 
 @pytest.fixture
 def scraper() -> MyHomeScraper:
-    return MyHomeScraper(delay_seconds=0)
+    return MyHomeScraper(delay_seconds=0, cities=("tbilisi",))
 
 
 def test_parse_list_page(scraper: MyHomeScraper) -> None:
@@ -242,7 +242,7 @@ async def test_limit_stops_early(scraper: MyHomeScraper, monkeypatch: pytest.Mon
 
 
 async def test_no_details_mode(monkeypatch: pytest.MonkeyPatch) -> None:
-    scraper = MyHomeScraper(delay_seconds=0, fetch_details=False)
+    scraper = MyHomeScraper(delay_seconds=0, cities=("tbilisi",), fetch_details=False)
     pages = FakePages({list_url(1): LIST_HTML})
     monkeypatch.setattr(scraper, "_fetch_page", pages)
 
@@ -277,7 +277,7 @@ async def test_failed_list_page_is_skipped(
 
 
 async def test_stops_after_consecutive_failures(monkeypatch: pytest.MonkeyPatch) -> None:
-    scraper = MyHomeScraper(delay_seconds=0, max_pages=20)
+    scraper = MyHomeScraper(delay_seconds=0, cities=("tbilisi",), max_pages=20)
     pages = FakePages({}, default="")
     pages.pages = {"page=": httpx.ConnectError("down")}
     monkeypatch.setattr(scraper, "_fetch_page", pages)
@@ -289,7 +289,7 @@ async def test_stops_after_consecutive_failures(monkeypatch: pytest.MonkeyPatch)
 
 
 async def test_dump_saves_raw_html(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    scraper = MyHomeScraper(delay_seconds=0, dump_dir=tmp_path / "raw")
+    scraper = MyHomeScraper(delay_seconds=0, cities=("tbilisi",), dump_dir=tmp_path / "raw")
     monkeypatch.setattr(
         scraper, "_fetch_page", FakePages({list_url(1): LIST_HTML, "/ru/12345/": DETAIL_HTML})
     )
@@ -358,3 +358,35 @@ async def test_stops_when_pages_bring_nothing_new(
     assert len(listings) == 4
     assert [url for url in pages.requested if "page=" not in url] == [], "страницы не открывались"
     assert sum("page=" in url for url in pages.requested) == 2
+
+
+async def test_each_city_has_its_own_search(monkeypatch: pytest.MonkeyPatch) -> None:
+    """TASK-079: у myhome.ge у каждого города свой адрес поиска; город — у объявления."""
+    scraper = MyHomeScraper(
+        delay_seconds=0,
+        fetch_details=False,
+        search_paths={"tbilisi": "/tbilisi/?page={page}", "batumi": "/batumi/?page={page}"},
+        cities=("tbilisi", "batumi"),
+    )
+    tbilisi = LIST_HTML
+    pages = FakePages({"/tbilisi/?page=1": tbilisi, "/batumi/?page=1": tbilisi})
+    monkeypatch.setattr(scraper, "_fetch_page", pages)
+
+    listings = await scraper.scrape_listings(limit=10)
+
+    assert sorted(item.city for item in listings) == ["batumi", "batumi", "tbilisi", "tbilisi"]
+
+
+def test_other_city_in_statement_is_dropped(scraper: MyHomeScraper) -> None:
+    html = NEXT_LIST_HTML
+    assert {item.city for item in scraper._parse_listings(html, "tbilisi")} == {"tbilisi"}
+    kutaisi = html.replace('"city_name": "Тбилиси"', '"city_name": "Кутаиси"')
+    assert scraper._parse_listings(kutaisi, "tbilisi") == []
+    batumi = html.replace('"city_name": "Тбилиси"', '"city_name": "Батуми"')
+    assert scraper._parse_listings(batumi, "tbilisi") == []
+    assert {item.city for item in scraper._parse_listings(batumi, "batumi")} == {"batumi"}
+
+
+def test_disabled_city_is_not_scraped() -> None:
+    scraper = MyHomeScraper(delay_seconds=0, cities=("batumi",))
+    assert list(scraper.search_paths) == ["batumi"]

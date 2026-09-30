@@ -21,6 +21,8 @@ from bina.infrastructure.db.models.users import SubscriptionTier
 
 # Текст на нескольких языках: {"ka": ..., "ru": ..., "en": ...}; пустые языки опускаются
 Localized = dict[str, str]
+# Код города (bina.application.cities.CITIES)
+CityCode = Literal["tbilisi", "batumi"]
 
 
 def localized(**texts: str | None) -> Localized:
@@ -250,12 +252,14 @@ class DistrictOut(BaseModel):
 
     id: UUID
     name: Localized
+    city: str = Field(default="tbilisi", description="Код города (GET /api/cities)")
 
     @classmethod
     def from_model(cls, district: District) -> "DistrictOut":
         """Преобразует ORM-модель."""
         return cls(
             id=district.id,
+            city=district.city,
             name=localized(ka=district.name_ka, ru=district.name_ru, en=district.name_en),
         )
 
@@ -433,6 +437,7 @@ class InvoiceOut(BaseModel):
 class SearchFiltersIn(BaseModel):
     """Фильтры сохранённого поиска (как параметры ``GET /api/listings``)."""
 
+    city: CityCode | None = Field(default=None, description="Город; пусто — все (TASK-079)")
     district: UUID | None = None
     districts: list[UUID] = Field(
         default_factory=list, max_length=20, description="Несколько районов (любой из них)"
@@ -494,6 +499,7 @@ class SearchFiltersIn(BaseModel):
     def details(self) -> dict[str, Any]:
         """Фильтры для ``SavedSearch.details`` (только заданные; ключи ListingSearchFilters)."""
         values: dict[str, Any] = {
+            "city": self.city,
             "area_min": float(self.min_area) if self.min_area is not None else None,
             "area_max": float(self.max_area) if self.max_area is not None else None,
             "query": self.q,
@@ -513,6 +519,7 @@ class SearchFiltersIn(BaseModel):
 class SearchFiltersOut(BaseModel):
     """Фильтры сохранённого поиска; незаданные поля не возвращаются."""
 
+    city: str | None = None
     # Ровно один район; при нескольких — None, а все районы в ``districts``
     district: UUID | None = None
     districts: list[UUID] = Field(default_factory=list)
@@ -539,6 +546,7 @@ class SearchFiltersOut(BaseModel):
         districts = search.all_district_ids
         details = search.details or {}
         return cls(
+            city=details.get("city"),
             district=districts[0] if len(districts) == 1 else None,
             districts=districts,
             min_price=float(search.price_min) if search.price_min is not None else None,

@@ -15,6 +15,7 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field, field_validator
 
+from bina.application.cities import city
 from bina.application.contract import ContractData, Utilities
 from bina.application.subscriptions import has_premium_access
 from bina.infrastructure.api.delivery import (
@@ -69,9 +70,10 @@ class ContractIn(BaseModel):
         return clean_text(value)
 
 
-def contract_data(body: ContractIn, listing: Listing) -> ContractData:
+def contract_data(body: ContractIn, listing: Listing, city_code: str = "tbilisi") -> ContractData:
     """Данные договора: анкета + объявление."""
     return ContractData(
+        city=city(city_code).names["en"],
         landlord_name=body.landlord_name,
         tenant_name=body.tenant_name,
         landlord_id=body.landlord_id,
@@ -108,6 +110,8 @@ async def make_contract(
     if not has_premium_access(user, datetime.now(UTC)):
         raise payment_required("contract", 0)
     listing = await get_listing_or_404(session, listing_id)
+    await session.refresh(listing, attribute_names=["district"])
+    city_code = listing.district.city if listing.district else "tbilisi"
     if not (body.address or listing.address):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="address is required"
@@ -118,7 +122,7 @@ async def make_contract(
         request,
         settings,
         user,
-        pdf=render_contract(contract_data(body, listing), second),
+        pdf=render_contract(contract_data(body, listing, city_code), second),
         filename=f"bina-contract-{body.start_date:%Y-%m-%d}.pdf",
         caption=CAPTIONS[language].format(lang=LANGUAGE_NAMES[language][second]),
         delivery=body.delivery,

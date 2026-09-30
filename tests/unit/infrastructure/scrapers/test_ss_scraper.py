@@ -11,7 +11,7 @@ from bina.infrastructure.scrapers.ss_scraper import SSScraper
 @pytest.fixture
 def ss_scraper() -> SSScraper:
     """Фикстура для SS парсера (только страницы списка)."""
-    return SSScraper(delay_seconds=0, fetch_details=False)
+    return SSScraper(delay_seconds=0, fetch_details=False, cities=("tbilisi",))
 
 
 @pytest.mark.asyncio
@@ -145,13 +145,24 @@ def test_parse_next_data_page(ss_scraper: SSScraper) -> None:
 
 
 def test_other_cities_do_not_stop_paging(ss_scraper: SSScraper) -> None:
-    """Страница только с Батуми — не конец выдачи; без фильтра города берутся все."""
+    """Страница только с другими городами — не конец выдачи."""
+    ss_scraper.cities = ("tbilisi",)
     ids, listings = ss_scraper._parse_page(NEXT_LIST_HTML)
     assert ids == {"36583130", "36627728", "36773935"}
     assert len(listings) == 2
 
-    ss_scraper.city_id = None
+    ss_scraper.cities = None
     assert len(ss_scraper._parse_listings(NEXT_LIST_HTML)) == 3
+
+
+def test_batumi_listings_get_their_city(ss_scraper: SSScraper) -> None:
+    """TASK-079: объявления Батуми собираются с городом batumi."""
+    ss_scraper.cities = ("tbilisi", "batumi")
+    listings = ss_scraper._parse_listings(NEXT_LIST_HTML)
+    by_city = {item.source_id: item.city for item in listings}
+    assert by_city == {"36583130": "tbilisi", "36627728": "tbilisi", "36773935": "batumi"}
+    batumi = next(item for item in listings if item.city == "batumi")
+    assert batumi.district == "Район Химшиашвили"
 
 
 def test_rooms_fallback_to_bedrooms() -> None:

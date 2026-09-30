@@ -29,10 +29,11 @@ def _note_block(note: str) -> str:
 def build_owner_message_prompt(listing: ListingBrief, language: str, note: str) -> str:
     """Сообщение хозяину: JSON с грузинским текстом и переводом."""
     target = LANGUAGE_NAMES.get(language, "English")
-    return f"""You help a tenant in Tbilisi write the first message to a landlord about an
-apartment for long-term rent. Write a short, polite, natural message IN GEORGIAN (Georgian
-script), 3-6 sentences: greeting, interest in this apartment (mention district and price),
-the tenant details below if given, a request to arrange a viewing and 1-2 key questions
+    return f"""You help a tenant in Georgia (Tbilisi, Batumi) write the first message to a
+landlord about an apartment for long-term rent. Write a short, polite, natural message
+IN GEORGIAN (Georgian script), 3-6 sentences: greeting, interest in this apartment
+(mention district and price), the tenant details below if given, a request to arrange a
+viewing and 1-2 key questions
 (is it still available, what is included in the price). No emojis, no made-up facts.
 
 Then translate that message into {target} for the tenant.
@@ -50,9 +51,9 @@ def build_viewing_questions_prompt(listing: ListingBrief, language: str, note: s
     """Вопросы для просмотра: JSON со списком строк."""
     target = LANGUAGE_NAMES.get(language, "English")
     return f"""You help a tenant prepare for viewing an apartment for long-term rent in
-Tbilisi, Georgia. Write 5 to 8 short, practical questions to ask the landlord or things to
-check during the viewing, specific to THIS listing (use its details; ask about what the
-listing leaves unclear). Consider typical Tbilisi issues: heating in winter (central/gas),
+Georgia (Tbilisi or Batumi). Write 5 to 8 short, practical questions to ask the landlord or
+things to check during the viewing, specific to THIS listing (use its details; ask about what the
+listing leaves unclear). Consider typical Georgian rental issues: heating in winter (central/gas),
 utilities and who pays them, deposit and contract, hot water, noise, internet, neighbours,
 pets. Use {target}. No numbering, no emojis.
 

@@ -65,6 +65,7 @@ def raw_from_listing(listing: Listing) -> RawListing:
         rooms=listing.rooms,
         area=float(listing.area),
         district=(district.name_ru or district.name_ka) if district is not None else "Unknown",
+        city=district.city if district is not None else "tbilisi",
         url=listing.url or "",
         photos=list(listing.images or []),
         phone=listing.phone,

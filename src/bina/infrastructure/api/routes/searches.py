@@ -9,6 +9,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Response, status
 
+from bina.application.cities import city_name
 from bina.application.dtos.listing_search import ROOMS_OR_MORE
 from bina.application.saved_searches import saved_search_filters
 from bina.application.subscriptions import limits_for
@@ -78,6 +79,9 @@ def default_search_name(filters: SearchFiltersIn, districts: list[District], lan
         shown = ", ".join(names[:NAMED_DISTRICTS])
         rest = len(names) - NAMED_DISTRICTS
         result.append(f"{shown} +{rest}" if rest > 0 else shown)
+    elif filters.city:
+        # TASK-079: город без районов — «Батуми, 2 комн.»
+        result.append(city_name(filters.city, language))
     if filters.rooms is not None:
         rooms = f"{ROOMS_OR_MORE}+" if filters.rooms >= ROOMS_OR_MORE else str(filters.rooms)
         result.append(parts["rooms"].format(n=rooms))
@@ -87,7 +91,8 @@ def default_search_name(filters: SearchFiltersIn, districts: list[District], lan
         result.append(parts["from"].format(n=_amount(filters.min_price)))
     elif filters.max_price is not None:
         result.append(parts["to"].format(n=_amount(filters.max_price)))
-    if details := filters.details():
+    # Город уже в названии, а не в «+ ещё N фильтров»
+    if details := {key: value for key, value in filters.details().items() if key != "city"}:
         result.append(parts["more"].format(n=len(details)))
     return ", ".join(result) or parts["all"]
 

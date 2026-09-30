@@ -157,6 +157,10 @@ class ListingsRepository(IListingsRepository):
             # TASK-090: та же квартира с другого сайта показывается один раз
             not_hidden_duplicate(),
         ]
+        if filters.city is not None:
+            conditions.append(
+                Listing.district_id.in_(select(District.id).where(District.city == filters.city))
+            )
         district_ids = filters.all_district_ids
         if len(district_ids) == 1:
             conditions.append(Listing.district_id == district_ids[0])
@@ -192,7 +196,7 @@ class ListingsRepository(IListingsRepository):
         грузинском. Переводы на другие языки при обновлении сохраняются, если
         исходный текст не изменился.
         """
-        district = await self._get_or_create_district(raw_listing.district)
+        district = await self._get_or_create_district(raw_listing.district, raw_listing.city)
         texts = source_texts(raw_listing)
         values: dict[str, object] = {
             **texts,
@@ -644,6 +648,7 @@ class ListingsRepository(IListingsRepository):
                 Listing.address != "",
                 Listing.geocoded_at.is_(None),
             )
+            .options(selectinload(Listing.district))
             .order_by(Listing.created_at.desc())
             .limit(limit)
         )
@@ -681,19 +686,17 @@ class ListingsRepository(IListingsRepository):
             )
         )
 
-    async def _get_or_create_district(self, district_name: str) -> District:
-        """Получает или создает район."""
-        # В реальной реализации нужно добавить репозиторий районов
-        # Пока вернем первый найденный район или создадим заглушку
+    async def _get_or_create_district(self, district_name: str, city: str) -> District:
+        """Район города по названию; нового района ещё нет — создаётся."""
         from bina.infrastructure.db.repositories.districts import DistrictsRepository
 
         districts_repo = DistrictsRepository(self._session)
         # Сайты пишут по-разному («Старий Тбилиси»): ищем и по словарным названиям (TASK-019)
         for candidate in dict.fromkeys([district_name, *district_names(district_name).values()]):
-            district = await districts_repo.get_by_name(candidate)
+            district = await districts_repo.get_by_name(candidate, city)
             if district is not None:
                 return district
-        return await districts_repo.create_district(district_name)
+        return await districts_repo.create_district(district_name, city)
 
 
 def _untranslated() -> ColumnElement[bool]:

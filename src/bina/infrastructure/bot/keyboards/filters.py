@@ -79,6 +79,7 @@ def filters_from_callback(callback_data: SearchCallback) -> ListingSearchFilters
     price = _preset(PRICE_RANGES, callback_data.price)
     rooms = _preset(ROOM_OPTIONS, callback_data.rooms)
     return ListingSearchFilters(
+        city=callback_data.city,
         district_id=callback_data.district,
         price_min=Decimal(price.min) if price and price.min is not None else None,
         price_max=Decimal(price.max) if price and price.max is not None else None,

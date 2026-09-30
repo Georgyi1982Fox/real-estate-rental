@@ -1,12 +1,14 @@
 """Районы: список (для фильтра) и справка по району (TASK-104)."""
 
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from pydantic import BaseModel, Field
 
+from bina.application.cities import city as city_info
+from bina.application.cities import city_name
 from bina.application.district_guide import (
-    CITY_CENTER,
     TAG_LABELS,
     distance_km,
     guide_for,
@@ -15,7 +17,13 @@ from bina.application.district_guide import (
 from bina.infrastructure.api.delivery import ui_language
 from bina.infrastructure.api.dependencies import CurrentUserDep, SessionDep
 from bina.infrastructure.api.routes.common import not_found
-from bina.infrastructure.api.schemas import DistrictOut, DistrictsOut, Localized, localized
+from bina.infrastructure.api.schemas import (
+    CityCode,
+    DistrictOut,
+    DistrictsOut,
+    Localized,
+    localized,
+)
 from bina.infrastructure.db.repositories.districts import DistrictsRepository
 from bina.infrastructure.db.repositories.listings import ListingsRepository
 
@@ -47,9 +55,14 @@ class DistrictInfoOut(BaseModel):
     id: UUID
     name: str
     names: Localized
+    city: str = Field(default="tbilisi", description="Код города")
+    city_name: str = ""
     latitude: float | None = None
     longitude: float | None = None
-    distance_km: float | None = Field(default=None, description="По прямой до площади Свободы")
+    distance_km: float | None = Field(
+        default=None,
+        description="По прямой до центра: Тбилиси — площадь Свободы, Батуми — площадь Европы",
+    )
     minutes_to_center: int | None = None
     metro: bool | None = None
     tags: list[TagOut]
@@ -62,9 +75,14 @@ class DistrictInfoOut(BaseModel):
 
 
 @router.get("", response_model=DistrictsOut)
-async def list_districts(session: SessionDep) -> DistrictsOut:
-    """Все районы (для фильтра и названий в карточках)."""
-    districts = await DistrictsRepository(session).list_all()
+async def list_districts(
+    session: SessionDep,
+    city: Annotated[
+        CityCode | None, Query(description="Только районы города; пусто — все (TASK-079)")
+    ] = None,
+) -> DistrictsOut:
+    """Районы (для фильтра и названий в карточках)."""
+    districts = await DistrictsRepository(session).list_all(city)
     return DistrictsOut(items=[DistrictOut.from_model(district) for district in districts])
 
 
@@ -83,11 +101,13 @@ async def district_info(
     language = ui_language(user)
     names = {"ka": district.name_ka, "ru": district.name_ru, "en": district.name_en}
     stats = await ListingsRepository(session).district_stats(district.id)
-    guide = guide_for(district.name_en)
+    guide = guide_for(district.name_en, district.city)
     info = DistrictInfoOut(
         id=district.id,
         name=names[language],
         names=localized(**names),
+        city=district.city,
+        city_name=city_name(district.city, language),
         tags=[],
         listings=stats.listings,
         median_rent=[
@@ -103,8 +123,10 @@ async def district_info(
         update={
             "latitude": guide.latitude,
             "longitude": guide.longitude,
-            "distance_km": round(distance_km(guide.latitude, guide.longitude, *CITY_CENTER), 1),
-            "minutes_to_center": minutes_to_center(guide.latitude, guide.longitude),
+            "distance_km": round(
+                distance_km(guide.latitude, guide.longitude, *city_info(district.city).center), 1
+            ),
+            "minutes_to_center": minutes_to_center(guide.latitude, guide.longitude, district.city),
             "metro": guide.metro,
             "tags": [TagOut(code=tag.value, title=TAG_LABELS[tag][language]) for tag in guide.tags],
             "about": guide.about[language] if guide.about else None,

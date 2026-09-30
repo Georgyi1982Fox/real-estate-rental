@@ -22,6 +22,7 @@ from bina.application.acceptance import (
     CheckedItem,
     ItemStatus,
 )
+from bina.application.cities import city
 from bina.application.subscriptions import has_premium_access
 from bina.infrastructure.api.delivery import (
     LANGUAGE_NAMES,
@@ -158,8 +159,12 @@ async def make_acceptance(
     if not has_premium_access(user, datetime.now(UTC)):
         raise payment_required("acceptance", 0)
     address = body.address
-    if not address and body.listing_id:
-        address = (await get_listing_or_404(session, body.listing_id)).address or ""
+    city_code = "tbilisi"
+    if body.listing_id:
+        listing = await get_listing_or_404(session, body.listing_id)
+        await session.refresh(listing, attribute_names=["district"])
+        city_code = listing.district.city if listing.district else city_code
+        address = address or listing.address or ""
     if not address:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="address is required"
@@ -170,6 +175,7 @@ async def make_acceptance(
         tenant_name=body.tenant_name,
         address=address,
         handover_date=handover,
+        city=city(city_code).names["en"],
         items=tuple(CheckedItem(item.code, item.status, item.comment) for item in body.items),
         keys=body.keys,
         electricity=body.electricity,

@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
 
+from bina.application.cities import city_name, city_of
+
 Labels = dict[str, str]
 
 
@@ -172,12 +174,10 @@ class AcceptanceData:
     city: str = "Tbilisi"
 
 
-_CITY: Labels = {"ka": "თბილისი", "ru": "Тбилиси", "en": "Tbilisi"}
-
-
 def _intro(data: AcceptanceData, lang: str) -> list[str]:
     day = f"{data.handover_date:%d.%m.%Y}"
-    city = _CITY[lang] if data.city == "Tbilisi" else data.city
+    code = city_of(data.city)
+    city = city_name(code, lang) if code else data.city
     if lang == "ka":
         return [
             f"გამქირავებელი: {data.landlord_name}. დამქირავებელი: {data.tenant_name}.",

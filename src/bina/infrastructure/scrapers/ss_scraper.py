@@ -8,6 +8,7 @@ import httpx
 import structlog
 from bs4 import BeautifulSoup
 
+from bina.application.cities import DEFAULT_CITY, city_name, city_of
 from bina.application.listing_details import clean_features
 from bina.application.ports.scraper import NeedsDetails, RawListing
 from bina.infrastructure.scrapers.base_scraper import (
@@ -23,7 +24,7 @@ from bina.infrastructure.scrapers.details import (
     to_int,
 )
 from bina.infrastructure.scrapers.nextjs import next_data, walk
-from bina.infrastructure.scrapers.settings import SSSettings
+from bina.infrastructure.scrapers.settings import CITIES, SSSettings
 
 logger = structlog.get_logger(__name__)
 
@@ -51,14 +52,15 @@ class SSScraper(BaseWebsiteScraper):
         *,
         search_path: str = SSSettings.SEARCH_PATH,
         max_pages: int = SSSettings.MAX_PAGES,
-        city_id: int | None = SSSettings.CITY_ID,
+        cities: tuple[str, ...] | None = CITIES,
         fetch_details: bool = True,
         dump_dir: Path | None = None,
     ) -> None:
         super().__init__(base_url, delay_seconds, user_agents)
         self.search_path = search_path
         self.max_pages = max_pages
-        self.city_id = city_id
+        # None — все города (без проверки)
+        self.cities = cities
         self.fetch_details = fetch_details
         self.dump_dir = dump_dir
 
@@ -152,14 +154,15 @@ class SSScraper(BaseWebsiteScraper):
             listings = self._parse_listings_html(html)
             return {item.source_id for item in listings}, listings
         ids = {str(item["applicationId"]) for item in items}
-        listings = [
-            self._from_application(item)
-            for item in items
-            if self.city_id is None or (item.get("address") or {}).get("cityId") == self.city_id
-        ]
+        listings = []
+        for item in items:
+            address = item.get("address") or {}
+            city = city_of(address.get("cityTitle"), ss_city_id=address.get("cityId"))
+            if self.cities is None or city in self.cities:
+                listings.append(self._from_application(item, city or DEFAULT_CITY))
         return ids, listings
 
-    def _from_application(self, item: dict[str, Any]) -> RawListing:
+    def _from_application(self, item: dict[str, Any], city: str = DEFAULT_CITY) -> RawListing:
         """Объявление из JSON-объекта сайта."""
         address = item.get("address") or {}
         price = item.get("price") or {}
@@ -177,9 +180,13 @@ class SSScraper(BaseWebsiteScraper):
             currency="GEL",
             rooms=_rooms(title, item.get("numberOfBedrooms")),
             area=float(item.get("totalArea") or 0),
+            # Район не указан — объявление относится к городу в целом
             district=str(
-                address.get("subdistrictTitle") or address.get("districtTitle") or "Unknown"
+                address.get("subdistrictTitle")
+                or address.get("districtTitle")
+                or city_name(city, "ru")
             ).strip(),
+            city=city,
             url=f"{self.base_url}/ru/{quote('недвижимость/' + detail)}" if detail else "",
             photos=_photos(item.get("appImages")),
             floor=to_int(item.get("floorNumber")),

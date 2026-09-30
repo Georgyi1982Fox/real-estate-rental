@@ -171,7 +171,26 @@ async def test_districts(client: AsyncClient, seeded: Store) -> None:
     assert response.json()["items"][0] == {
         "id": str(seeded.districts[0].id),
         "name": {"ka": "ვაკე", "ru": "Ваке", "en": "Vake"},
+        "city": "tbilisi",
     }
+
+
+async def test_city_filter(client: AsyncClient, seeded: Store) -> None:
+    """TASK-079: районы и объявления одного города; список городов."""
+    batumi = seeded.add_district("Старый Батуми", "Old Batumi", "ძველი ბათუმი", city="batumi")
+    seeded.add_listing(batumi, price=900)
+
+    districts = (await client.get("/api/districts", params={"city": "batumi"})).json()["items"]
+    assert [item["id"] for item in districts] == [str(batumi.id)]
+    listings = (await client.get("/api/listings", params={"city": "batumi"})).json()["items"]
+    assert [item["district"] for item in listings] == [str(batumi.id)]
+    tbilisi = (await client.get("/api/listings", params={"city": "tbilisi"})).json()["items"]
+    assert tbilisi and all(item["district"] != str(batumi.id) for item in tbilisi)
+    assert (await client.get("/api/listings", params={"city": "kutaisi"})).status_code == 422
+
+    cities = (await client.get("/api/cities")).json()["items"]
+    assert [city["code"] for city in cities] == ["tbilisi", "batumi"]
+    assert cities[1]["name"] == {"ka": "ბათუმი", "ru": "Батуми", "en": "Batumi"}
 
 
 @pytest.mark.parametrize(

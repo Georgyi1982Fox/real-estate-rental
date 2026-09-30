@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from bina.application.cities import CITIES, DEFAULT_CITY
 from bina.application.localization import district_names
 from bina.application.repositories.districts import IDistrictsRepository
 from bina.infrastructure.db.models import District
@@ -18,13 +19,15 @@ class DistrictsRepository(IDistrictsRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def get_by_name(self, name: str) -> District | None:
-        """Получить район по названию."""
-        # Пытаемся найти по грузинскому или русскому названию
+    async def get_by_name(self, name: str, city: str = DEFAULT_CITY) -> District | None:
+        """Получить район города по названию на любом языке."""
         query = (
             select(District)
             .where(
-                (District.name_ka == name) | (District.name_ru == name) | (District.name_en == name)
+                District.city == city,
+                (District.name_ka == name)
+                | (District.name_ru == name)
+                | (District.name_en == name),
             )
             .order_by(District.created_at)
         )
@@ -37,18 +40,27 @@ class DistrictsRepository(IDistrictsRepository):
         result = await self._session.execute(query)
         return result.scalar_one_or_none()
 
-    async def list_all(self) -> list[District]:
-        """Получить все (не удалённые) районы, отсортированные по названию."""
+    async def list_all(self, city: str | None = None) -> list[District]:
+        """Все (не удалённые) районы города (``None`` — всех городов) по названию."""
         query = select(District).where(District.is_deleted.is_(False)).order_by(District.name_ru)
+        if city is not None:
+            query = query.where(District.city == city)
         result = await self._session.execute(query)
         return list(result.scalars().all())
 
-    async def create_district(self, name: str) -> District:
+    async def cities(self) -> list[str]:
+        """Коды городов, в которых есть районы (TASK-079)."""
+        query = select(District.city).where(District.is_deleted.is_(False)).distinct()
+        found = set((await self._session.execute(query)).scalars().all())
+        return [code for code in CITIES if code in found]
+
+    async def create_district(self, name: str, city: str = DEFAULT_CITY) -> District:
         """Создать новый район."""
         # Названия на трёх языках: словарь районов Тбилиси, иначе транслитерация (TASK-019);
         # статистика района пока неизвестна
         names = district_names(name) or {"ka": name, "ru": name, "en": name}
         new_district = District(
+            city=city,
             name_ka=names["ka"],
             name_ru=names["ru"],
             name_en=names["en"],

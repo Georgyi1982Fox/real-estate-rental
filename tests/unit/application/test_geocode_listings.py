@@ -9,8 +9,11 @@ from bina.infrastructure.db.models import Listing
 
 
 class FakeRepository:
-    def __init__(self, addresses: list[str]) -> None:
-        self.listings = [SimpleNamespace(id=uuid4(), address=address) for address in addresses]
+    def __init__(self, addresses: list[str], city: str = "tbilisi") -> None:
+        district = SimpleNamespace(city=city)
+        self.listings = [
+            SimpleNamespace(id=uuid4(), address=address, district=district) for address in addresses
+        ]
         self.saved: dict[str, tuple[float, float] | None] = {}
 
     async def to_geocode(self, limit: int) -> list[Listing]:
@@ -51,4 +54,16 @@ async def test_geocode() -> None:
         "Nowhere 5": None,
         "Batumi Ave 1": None,
     }, "ошибка сервиса не отмечается — попробуем в следующий раз"
-    assert set(geocoder.cities) == {"Tbilisi"}
+    assert set(geocoder.cities) == {"tbilisi"}
+
+
+async def test_batumi_listing_is_searched_in_batumi() -> None:
+    """TASK-079: объявление Батуми ищется в Батуми, точка в Тбилиси — ошибка."""
+    repository = FakeRepository(["Batumi Ave 1", "Paliashvili 1"], city="batumi")
+    geocoder = FakeGeocoder()
+
+    stats = await GeocodeListingsUseCase(repository, geocoder).execute(10)
+
+    assert stats.found == 1
+    assert repository.saved == {"Batumi Ave 1": (41.6168, 41.6367), "Paliashvili 1": None}
+    assert set(geocoder.cities) == {"batumi"}

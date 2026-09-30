@@ -1,7 +1,7 @@
 """Геокодер OpenStreetMap Nominatim (TASK-080).
 
 Бесплатно и без ключа, но по правилам сервиса: не чаще 1 запроса в секунду и
-с понятным ``User-Agent``. Ищем только в Грузии, в пределах Тбилиси.
+с понятным ``User-Agent``. Ищем только в Грузии, в пределах города объявления.
 https://operations.osmfoundation.org/policies/nominatim/
 """
 
@@ -10,11 +10,12 @@ import time
 
 import httpx
 
-from bina.application.district_guide import TBILISI_BOUNDS
+from bina.application.cities import city as city_info
+from bina.application.cities import city_of
 from bina.application.ports.geocoder import GeocoderError
 
 URL = "https://nominatim.openstreetmap.org/search"
-USER_AGENT = "Bina.ai/0.1 (rental search for Tbilisi; https://bina.test-realtybot.ru)"
+USER_AGENT = "Bina.ai/0.1 (rental search in Georgia; https://bina.test-realtybot.ru)"
 MIN_INTERVAL = 1.1  # секунд между запросами
 
 
@@ -28,12 +29,14 @@ class NominatimGeocoder:
         self._last_request = 0.0
 
     async def locate(self, address: str, city: str) -> tuple[float, float] | None:
+        """``city`` — код (``batumi``) или название города."""
         wait = self._last_request + MIN_INTERVAL - time.monotonic()
         if wait > 0:
             await asyncio.sleep(wait)
-        south, west, north, east = TBILISI_BOUNDS
+        info = city_info(city_of(city))
+        south, west, north, east = info.bounds
         params = {
-            "q": f"{address}, {city}",
+            "q": f"{address}, {info.names['en']}",
             "format": "jsonv2",
             "limit": "1",
             "countrycodes": "ge",

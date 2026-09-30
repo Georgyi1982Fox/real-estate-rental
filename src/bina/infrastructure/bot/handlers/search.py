@@ -6,6 +6,7 @@ from aiogram.filters.callback_data import CallbackQueryFilter
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from bina.application.cities import city_name
 from bina.application.use_cases.search_listings import SearchListingsUseCase
 from bina.infrastructure.bot.formatters import district_name, format_listings
 from bina.infrastructure.bot.handlers.common import edit_or_answer
@@ -16,6 +17,7 @@ from bina.infrastructure.bot.keyboards.filters import (
     rooms_label,
 )
 from bina.infrastructure.bot.keyboards.search import (
+    city_keyboard,
     district_keyboard,
     price_keyboard,
     results_keyboard,
@@ -35,20 +37,46 @@ async def cmd_search(
     user: User,
     settings: BotSettings,
 ) -> None:
-    """/search: шаг 1, выбор района.
+    """/search: выбор города (если их несколько, TASK-079), затем района.
 
     Если районов в БД нет, сразу показывает все объявления.
     """
-    districts = await DistrictsRepository(session).list_all()
-    if not districts:
+    cities = await DistrictsRepository(session).cities()
+    if not cities:
         query = SearchCallback(step=SearchStep.RESULTS)
         text, markup = await _render_results(session, user, query, settings)
         await message.answer(t(user.language, "no_districts") + "\n\n" + text, reply_markup=markup)
         return
-    await message.answer(
-        t(user.language, "choose_district"),
-        reply_markup=district_keyboard(districts, 0, user.language),
-    )
+    text, markup = await _first_step(session, user.language, cities)
+    await message.answer(text, reply_markup=markup)
+
+
+async def _first_step(
+    session: AsyncSession, language: str, cities: list[str]
+) -> tuple[str, InlineKeyboardMarkup]:
+    """Город — если районы есть в нескольких городах, иначе сразу районы."""
+    if len(cities) > 1:
+        return t(language, "choose_city"), city_keyboard(cities, language)
+    return await _district_step(session, language, cities[0] if cities else None, 0, cities)
+
+
+async def _district_step(
+    session: AsyncSession, language: str, city: str | None, page: int, cities: list[str]
+) -> tuple[str, InlineKeyboardMarkup]:
+    districts = await DistrictsRepository(session).list_all(city)
+    markup = district_keyboard(districts, page, language, city, back_to_cities=len(cities) > 1)
+    return t(language, "choose_district"), markup
+
+
+async def on_city_step(
+    callback: CallbackQuery,
+    session: AsyncSession,
+    user: User,
+) -> None:
+    """Выбор города (кнопки «Назад» и «Новый поиск»)."""
+    cities = await DistrictsRepository(session).cities()
+    text, markup = await _first_step(session, user.language, cities)
+    await edit_or_answer(callback, text, markup, user.language)
 
 
 async def on_district_step(
@@ -57,14 +85,12 @@ async def on_district_step(
     session: AsyncSession,
     user: User,
 ) -> None:
-    """Шаг 1: (пере)показ списка районов на нужной странице."""
-    districts = await DistrictsRepository(session).list_all()
-    await edit_or_answer(
-        callback,
-        t(user.language, "choose_district"),
-        district_keyboard(districts, callback_data.page, user.language),
-        user.language,
+    """Шаг 1: (пере)показ списка районов города на нужной странице."""
+    cities = await DistrictsRepository(session).cities()
+    text, markup = await _district_step(
+        session, user.language, callback_data.city, callback_data.page, cities
     )
+    await edit_or_answer(callback, text, markup, user.language)
 
 
 async def on_price_step(
@@ -74,11 +100,13 @@ async def on_price_step(
     user: User,
 ) -> None:
     """Шаг 2: район выбран, выбор бюджета."""
-    district = await _district_label(session, callback_data.district, user.language)
+    district = await _district_label(
+        session, callback_data.district, user.language, callback_data.city
+    )
     await edit_or_answer(
         callback,
         t(user.language, "choose_price", district=district),
-        price_keyboard(callback_data.district, user.language),
+        price_keyboard(callback_data.district, user.language, callback_data.city),
         user.language,
     )
 
@@ -90,7 +118,9 @@ async def on_rooms_step(
     user: User,
 ) -> None:
     """Шаг 3: бюджет выбран, выбор количества комнат."""
-    district = await _district_label(session, callback_data.district, user.language)
+    district = await _district_label(
+        session, callback_data.district, user.language, callback_data.city
+    )
     await edit_or_answer(
         callback,
         t(
@@ -99,7 +129,9 @@ async def on_rooms_step(
             district=district,
             price=price_label(callback_data.price, user.language),
         ),
-        rooms_keyboard(callback_data.district, callback_data.price, user.language),
+        rooms_keyboard(
+            callback_data.district, callback_data.price, user.language, callback_data.city
+        ),
         user.language,
     )
 
@@ -133,7 +165,7 @@ async def _render_results(
         page = await use_case.execute(filters, page=page.pages - 1, page_size=settings.page_size)
 
     summary = {
-        "district": await _district_label(session, query.district, language),
+        "district": await _district_label(session, query.district, language, query.city),
         "price": price_label(query.price, language),
         "rooms": rooms_label(query.rooms, language),
     }
@@ -156,12 +188,16 @@ async def _render_results(
     return "\n\n".join(parts), markup
 
 
-async def _district_label(session: AsyncSession, district_id: UUID | None, language: str) -> str:
-    """Название района для заголовков; «Любой район», если не выбран или не найден."""
+async def _district_label(
+    session: AsyncSession, district_id: UUID | None, language: str, city: str | None = None
+) -> str:
+    """Название района для заголовков; «Батуми, любой район» или «Любой район»."""
     if district_id is not None:
         district = await DistrictsRepository(session).get_by_id(district_id)
         if district is not None:
             return district_name(district, language)
+    if city is not None:
+        return t(language, "any_district_in", city=city_name(city, language))
     return t(language, "any_district")
 
 
@@ -175,6 +211,7 @@ def create_router() -> Router:
     router = Router(name="search")
     router.message.register(cmd_search, Command("search"))
     router.message.register(cmd_search, F.text.in_(all_variants("menu_search")))
+    router.callback_query.register(on_city_step, _step_filter(SearchStep.CITY))
     router.callback_query.register(on_district_step, _step_filter(SearchStep.DISTRICT))
     router.callback_query.register(on_price_step, _step_filter(SearchStep.PRICE))
     router.callback_query.register(on_rooms_step, _step_filter(SearchStep.ROOMS))

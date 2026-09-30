@@ -74,7 +74,7 @@ async def listing_location(
             address=listing.address,
             links=map_links(listing.latitude, listing.longitude, exact=True),
         )
-    guide = guide_for(district.name_en) if district else None
+    guide = guide_for(district.name_en, district.city) if district else None
     if guide is None:
         return LocationOut(precision="none", district=district_name, address=listing.address)
     return LocationOut(

@@ -19,6 +19,7 @@ import httpx
 import structlog
 from bs4 import BeautifulSoup, Tag
 
+from bina.application.cities import DEFAULT_CITY, city_of
 from bina.application.ports.listing_extractor import (
     ExtractedListing,
     IListingExtractor,
@@ -28,7 +29,7 @@ from bina.application.ports.scraper import NeedsDetails, RawListing
 from bina.application.text import html_to_text
 from bina.infrastructure.scrapers.base_scraper import KNOWN_PAGES_TO_STOP, BaseWebsiteScraper
 from bina.infrastructure.scrapers.details import to_datetime
-from bina.infrastructure.scrapers.settings import TelegramSettings
+from bina.infrastructure.scrapers.settings import CITIES, TelegramSettings
 
 logger = structlog.get_logger(__name__)
 
@@ -112,15 +113,21 @@ def post_card(post: ChannelPost) -> RawListing:
     )
 
 
-def apply_extracted(card: RawListing, data: ExtractedListing, city: str) -> RawListing:
-    """Карточка с полями от AI; не аренда или другой город — карточка без изменений.
+def apply_extracted(
+    card: RawListing, data: ExtractedListing, city: str, cities: tuple[str, ...] = ()
+) -> RawListing:
+    """Карточка с полями от AI; не аренда или не наш город — карточка без изменений.
 
+    ``city`` — город канала (если AI город не назвал), ``cities`` — какие ещё города
+    собираем (TASK-079: пост про Батуми в тбилисском канале).
     Без цены, комнат, площади или района объявление не сохранится (нормализатор
     его отбросит) и попадёт в пропущенные.
     """
     if not data.is_rental_offer:
         return card
-    if data.city is not None and data.city.strip().lower() != city.lower():
+    home = city_of(city) or DEFAULT_CITY
+    code = city_of(data.city) if data.city is not None else home
+    if code is None or (code != home and code not in cities):
         return card
     if None in (data.price, data.rooms, data.area) or not data.district:
         return card
@@ -139,6 +146,7 @@ def apply_extracted(card: RawListing, data: ExtractedListing, city: str) -> RawL
         "address": data.address,
         "phone": data.phone,
         "has_details": True,
+        "city": code,
     }
     return dataclasses.replace(card, **values)
 
@@ -231,4 +239,4 @@ class TelegramChannelScraper(BaseWebsiteScraper):
         except ListingExtractionError as exc:
             logger.warning("Telegram post not parsed", post=card.source_id, error=str(exc))
             return card
-        return apply_extracted(card, data, self.city)
+        return apply_extracted(card, data, self.city, CITIES)
