@@ -7,9 +7,11 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from bina.application.ports.embeddings import IEmbedder
 from bina.application.subscriptions import Plan
 from bina.infrastructure.bot.handlers import (
     admin,
+    fallback,
     favorites,
     help,
     invite,
@@ -53,6 +55,7 @@ async def on_menu(
     plans: dict[str, Plan],
     bot: Bot,
     state: FSMContext,
+    embedder: IEmbedder | None = None,
     **_: Any,
 ) -> None:
     """Нажатие кнопки главного меню: открывает раздел, как соответствующая команда."""
@@ -67,6 +70,8 @@ async def on_menu(
         await send_home(message, user, settings)
     elif section == MenuSection.SEARCH:
         await search.cmd_search(message, session, user, settings)
+    elif section == MenuSection.SMART:
+        await fallback.cmd_smart(message, user, embedder)
     elif section == MenuSection.FAVORITES:
         await favorites.cmd_favorites(message, session, user, settings)
     elif section == MenuSection.PREMIUM:
