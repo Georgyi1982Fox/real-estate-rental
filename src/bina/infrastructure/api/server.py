@@ -18,6 +18,7 @@ from bina.infrastructure.api.errors import REQUEST_ID_HEADER, install_error_hand
 from bina.infrastructure.api.routes import (
     acceptance,
     assistant,
+    compare,
     contract,
     costs,
     districts,
@@ -76,6 +77,8 @@ def create_app(
         """Проверка, что сервер жив (без обращения к БД)."""
         return {"status": "ok"}
 
+    # До listings: иначе «compare» примется за ID объявления
+    app.include_router(compare.router)
     app.include_router(listings.router)
     app.include_router(assistant.router)
     app.include_router(contract.router)
