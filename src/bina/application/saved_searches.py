@@ -13,6 +13,7 @@ from bina.infrastructure.db.models import SavedSearch
 
 # Какие поля ListingSearchFilters сохраняются в details
 DETAIL_FIELDS: tuple[str, ...] = (
+    "city",
     "area_min",
     "area_max",
     "query",

@@ -111,6 +111,7 @@ async def test_saved_search_crud(client: AsyncClient, vake: District) -> None:
     search = response.json()
     assert search["name"] == "Ваке, 2 комн., до 2 000 ₾"
     assert search["filters"] == {
+        "city": None,
         "district": str(vake.id),
         "districts": [str(vake.id)],
         "min_price": None,

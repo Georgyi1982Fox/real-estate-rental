@@ -38,7 +38,7 @@ def build_prompt(text: ListingText, source: str, targets: Sequence[str]) -> str:
     target_list = ", ".join(f'"{code}" ({LANGUAGE_NAMES[code]})' for code in targets)
     example = ", ".join(f'"{code}": {{"title": "...", "description": "..."}}' for code in targets)
     description = text.description[:MAX_DESCRIPTION_CHARS]
-    return f"""You translate apartment rental listings from Tbilisi, Georgia.
+    return f"""You translate apartment rental listings from Georgia (Tbilisi, Batumi).
 Translate the listing below from {LANGUAGE_NAMES[source]} to: {target_list}.
 
 Rules:

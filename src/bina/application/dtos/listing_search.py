@@ -35,6 +35,8 @@ class ListingSearchFilters(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
+    # Город (``bina.application.cities``); None — все города (TASK-079)
+    city: str | None = None
     district_id: UUID | None = None
     # Несколько районов (любой из них); вместе с district_id — объединение
     district_ids: tuple[UUID, ...] = ()

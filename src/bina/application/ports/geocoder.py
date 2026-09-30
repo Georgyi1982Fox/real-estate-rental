@@ -9,5 +9,5 @@ class GeocoderError(Exception):
 
 class IGeocoder(Protocol):
     async def locate(self, address: str, city: str) -> tuple[float, float] | None:
-        """(широта, долгота) или ``None``, если адрес не найден."""
+        """(широта, долгота) или ``None``, если адрес не найден. ``city`` — код города."""
         ...

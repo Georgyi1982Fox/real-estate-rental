@@ -10,6 +10,8 @@ from datetime import date
 from decimal import Decimal
 from enum import StrEnum
 
+from bina.application.cities import city_name, city_of
+
 
 class Utilities(StrEnum):
     """Кто платит коммунальные."""
@@ -45,7 +47,6 @@ class ContractData:
 # Второй язык договора (первый — всегда грузинский)
 SECOND_LANGUAGES = ("ru", "en")
 
-_CITY = {"ka": "თბილისი", "ru": "Тбилиси", "en": "Tbilisi"}
 _CURRENCY = {
     "GEL": {"ka": "ლარი", "ru": "лари", "en": "GEL"},
     "USD": {"ka": "აშშ დოლარი", "ru": "долларов США", "en": "USD"},
@@ -113,7 +114,8 @@ def _clauses(data: ContractData, lang: str) -> list[str]:
     tenant = _person(data.tenant_name, data.tenant_id, lang)
     rent = _money(data.rent, data.currency, lang)
     deposit = _money(data.deposit, data.currency, lang)
-    city = _CITY.get(lang, data.city) if data.city == "Tbilisi" else data.city
+    code = city_of(data.city)
+    city = city_name(code, lang) if code else data.city
     area = f"{data.area:g}"
     if lang == "ka":
         clauses = [

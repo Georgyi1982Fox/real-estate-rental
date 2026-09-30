@@ -26,7 +26,7 @@ def build_fraud_prompt(text: ListingText, facts: ListingFacts) -> str:
         else "unknown"
     )
     description = text.description[:MAX_DESCRIPTION_CHARS]
-    return f"""You check long-term apartment rental listings in Tbilisi, Georgia, for scams.
+    return f"""You check long-term apartment rental listings in Georgia (Tbilisi, Batumi) for scams.
 Most listings are honest. Agencies, "no agencies" notes, commission, a deposit paid at
 signing, utilities, and asking to call or WhatsApp are NORMAL and not red flags.
 Flag only clear scam patterns.

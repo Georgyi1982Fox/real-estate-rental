@@ -13,6 +13,7 @@ from aiogram.filters.callback_data import CallbackData
 class SearchStep(StrEnum):
     """Шаг мастера поиска."""
 
+    CITY = "c"
     DISTRICT = "d"
     PRICE = "p"
     ROOMS = "r"
@@ -24,6 +25,7 @@ class SearchCallback(CallbackData, prefix="s"):
 
     ``price`` и ``rooms``: индексы пресетов из :mod:`.filters`, ``None``: «любые».
     ``page``: страница списка районов на шаге DISTRICT и страница результатов на RESULTS.
+    ``city``: код города (TASK-079); ``None`` — все города.
     """
 
     step: SearchStep
@@ -31,6 +33,7 @@ class SearchCallback(CallbackData, prefix="s"):
     price: int | None = None
     rooms: int | None = None
     page: int = 0
+    city: str | None = None
 
 
 class FavoriteToggleCallback(CallbackData, prefix="fav"):

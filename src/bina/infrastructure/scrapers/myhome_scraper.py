@@ -9,6 +9,7 @@ import httpx
 import structlog
 from bs4 import BeautifulSoup, Tag
 
+from bina.application.cities import DEFAULT_CITY, city_of
 from bina.application.listing_details import clean_features
 from bina.application.ports.scraper import NeedsDetails, RawListing
 from bina.infrastructure.scrapers.base_scraper import (
@@ -24,7 +25,7 @@ from bina.infrastructure.scrapers.details import (
     to_int,
 )
 from bina.infrastructure.scrapers.nextjs import next_data, walk
-from bina.infrastructure.scrapers.settings import MyHomeSelectors, MyHomeSettings
+from bina.infrastructure.scrapers.settings import CITIES, MyHomeSelectors, MyHomeSettings
 
 logger = structlog.get_logger(__name__)
 
@@ -53,14 +54,21 @@ class MyHomeScraper(BaseWebsiteScraper):
         user_agents: list[str] | None = None,
         *,
         selectors: MyHomeSelectors = MyHomeSettings.SELECTORS,
-        search_path: str = MyHomeSettings.SEARCH_PATH,
+        search_path: str | None = None,
+        search_paths: dict[str, str] | None = None,
+        cities: tuple[str, ...] = CITIES,
         max_pages: int = MyHomeSettings.MAX_PAGES,
         fetch_details: bool = True,
         dump_dir: Path | None = None,
     ) -> None:
         super().__init__(base_url, delay_seconds, user_agents)
         self.selectors = selectors
-        self.search_path = search_path
+        # Город → адрес поиска (у myhome.ge у каждого города свой); ``search_path`` —
+        # один адрес для Тбилиси (тесты, ручной запуск)
+        paths = search_paths or (
+            {DEFAULT_CITY: search_path} if search_path else MyHomeSettings.SEARCH_PATHS
+        )
+        self.search_paths = {city: paths[city] for city in cities if city in paths}
         self.max_pages = max_pages
         self.fetch_details = fetch_details
         self.dump_dir = dump_dir
@@ -68,15 +76,24 @@ class MyHomeScraper(BaseWebsiteScraper):
     async def scrape_listings(
         self, limit: int, needs_details: NeedsDetails | None = None
     ) -> list[RawListing]:
-        """Парсит до ``limit`` объявлений (список + страницы объявлений)."""
+        """Парсит до ``limit`` объявлений каждого города (список + страницы объявлений)."""
         logger.info("Starting MyHome scraping", limit=limit, details=self.fetch_details)
+        listings: list[RawListing] = []
+        for city, path in self.search_paths.items():
+            listings += await self._scrape_city(city, path, limit, needs_details)
+        logger.info("Finished MyHome scraping", total=len(listings))
+        return listings
+
+    async def _scrape_city(
+        self, city: str, search_path: str, limit: int, needs_details: NeedsDetails | None
+    ) -> list[RawListing]:
         listings: list[RawListing] = []
         failures = known_pages = 0
 
         for page in range(1, self.max_pages + 1):
             if len(listings) >= limit:
                 break
-            url = self.base_url + self.search_path.format(page=page)
+            url = self.base_url + search_path.format(page=page)
             try:
                 html = await self._fetch_page(url)
             except httpx.HTTPError as exc:
@@ -88,19 +105,18 @@ class MyHomeScraper(BaseWebsiteScraper):
                 continue
             failures = 0
             if page == 1:
-                self._dump("myhome_list.html", html)
+                suffix = "" if city == DEFAULT_CITY else f"_{city}"
+                self._dump(f"myhome_list{suffix}.html", html)
 
-            cards = self._parse_listings(html)
+            cards = self._parse_listings(html, city)
             if not cards:
-                logger.info("No more listings on MyHome", page=page)
+                logger.info("No more listings on MyHome", page=page, city=city)
                 break
             fresh = await self._add_cards(cards, listings, limit, needs_details)
             known_pages = 0 if fresh or needs_details is None else known_pages + 1
             if known_pages >= KNOWN_PAGES_TO_STOP:
-                logger.info("No new or changed listings on MyHome, stopping", page=page)
+                logger.info("No new or changed listings on MyHome, stopping", page=page, city=city)
                 break
-
-        logger.info("Finished MyHome scraping", total=len(listings))
         return listings
 
     async def with_details(self, card: RawListing, *, first: bool = False) -> RawListing:
@@ -132,16 +148,20 @@ class MyHomeScraper(BaseWebsiteScraper):
 
     # ------------------------------------------------------------------ list page
 
-    def _parse_listings(self, html: str) -> list[RawListing]:
-        """Карточки со страницы списка: из JSON Next.js, иначе из HTML."""
+    def _parse_listings(self, html: str, city: str = DEFAULT_CITY) -> list[RawListing]:
+        """Карточки со страницы списка города: из JSON Next.js, иначе из HTML.
+
+        Объявления другого города (сайт иногда подмешивает) отбрасываются.
+        """
         data = next_data(html)
         if data is not None:
             statements = [item for items in _statement_lists(data) for item in items]
             if statements:
-                return [self._from_statement(item) for item in statements]
-        return self._parse_listings_html(html)
+                cards = [self._from_statement(item, city) for item in statements]
+                return [card for card in cards if card.city == city]
+        return [dataclasses.replace(card, city=city) for card in self._parse_listings_html(html)]
 
-    def _from_statement(self, item: dict[str, Any]) -> RawListing:
+    def _from_statement(self, item: dict[str, Any], city: str = DEFAULT_CITY) -> RawListing:
         """Объявление из JSON-объекта ``statement`` сайта."""
         price, currency = _statement_price(item)
         listing_id = str(item["id"])
@@ -157,6 +177,7 @@ class MyHomeScraper(BaseWebsiteScraper):
             rooms=_parse_rooms(str(item.get("room") or "")),
             area=float(item.get("area") or 0),
             district=str(item.get("urban_name") or item.get("district_name") or "Unknown"),
+            city=_statement_city(item, city),
             url=self.base_url + path,
             photos=_statement_photos(item),
             owner_name=str(item.get("user_title") or "").strip() or None,
@@ -292,6 +313,14 @@ def _clean_phone(text: str) -> str:
 
 
 # ------------------------------------------------------------------ JSON Next.js
+
+
+def _statement_city(item: dict[str, Any], default: str) -> str:
+    """Город объявления по ``city_name``; другой, не наш город — пустая строка."""
+    name = str(item.get("city_name") or "").strip()
+    if not name:
+        return default
+    return city_of(name) or ""
 
 
 def _is_statement(value: Any) -> bool:

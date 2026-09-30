@@ -49,6 +49,7 @@ MIGRATIONS = (
     "timestamp_columns",
     "referrals",
     "rent_reminders",
+    "district_city",
 )
 
 

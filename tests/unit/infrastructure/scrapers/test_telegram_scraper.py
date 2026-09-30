@@ -159,3 +159,13 @@ def test_parse_extracted() -> None:
 )
 def test_parse_number(text: str, expected: float | None) -> None:
     assert parse_number(text) == expected
+
+
+def test_batumi_post_in_tbilisi_channel() -> None:
+    """TASK-079: пост про Батуми берётся, если Батуми собираем, и получает свой город."""
+    card = post_card(parse_channel_page(CHANNEL_HTML, "m2tbilis")[0][0])
+    batumi = dataclasses.replace(RENTAL, city="Батуми")
+    assert apply_extracted(card, batumi, "Tbilisi") is card
+    listing = apply_extracted(card, batumi, "Tbilisi", ("tbilisi", "batumi"))
+    assert listing.city == "batumi"
+    assert apply_extracted(card, RENTAL, "Tbilisi").city == "tbilisi"

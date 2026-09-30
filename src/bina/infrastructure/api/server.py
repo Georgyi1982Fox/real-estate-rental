@@ -19,6 +19,7 @@ from bina.infrastructure.api.rate_limit import install_rate_limit
 from bina.infrastructure.api.routes import (
     acceptance,
     assistant,
+    cities,
     compare,
     complaints,
     contract,
@@ -92,6 +93,7 @@ def create_app(
     app.include_router(complaints.router)
     app.include_router(location.router)
     app.include_router(districts.router)
+    app.include_router(cities.router)
     app.include_router(favorites.router)
     app.include_router(me.router)
     app.include_router(searches.router)

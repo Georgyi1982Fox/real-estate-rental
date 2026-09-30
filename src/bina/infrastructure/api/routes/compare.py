@@ -92,8 +92,12 @@ async def compare_listings(
             raise bad_request(f"unsupported currency: {listing.currency}")
         await session.refresh(listing, attribute_names=["district"])
         district = listing.district
-        guide = guide_for(district.name_en) if district else None
-        minutes = minutes_to_center(guide.latitude, guide.longitude) if guide else None
+        guide = guide_for(district.name_en, district.city) if district else None
+        minutes = (
+            minutes_to_center(guide.latitude, guide.longitude, district.city)
+            if guide and district
+            else None
+        )
         costs = estimate_costs(
             CostInput(
                 rent=listing.price,

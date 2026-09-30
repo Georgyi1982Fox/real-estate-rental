@@ -22,6 +22,13 @@ class District(Base, SoftDeleteMixin):
         primary_key=True,
         server_default="gen_random_uuid()",
     )
+    # Город района (``bina.application.cities``): tbilisi, batumi (TASK-079)
+    city: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        server_default="tbilisi",
+        index=True,
+    )
     name_ru: Mapped[str] = mapped_column(
         String,
         nullable=False,

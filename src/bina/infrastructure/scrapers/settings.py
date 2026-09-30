@@ -1,5 +1,8 @@
 import os
 from dataclasses import dataclass
+from typing import ClassVar
+
+from bina.application.cities import parse_cities
 
 DEFAULT_USER_AGENTS: list[str] = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -70,6 +73,11 @@ class MyHomeSelectors:
     detail_owner: str = ".owner-name"
 
 
+# Города, объявления которых собираем (TASK-079): коды из bina.application.cities
+# (пустая переменная в .env — как не заданная)
+CITIES: tuple[str, ...] = parse_cities(os.getenv("SCRAPE_CITIES") or "tbilisi,batumi")
+
+
 class MyHomeSettings:
     """URL и селекторы MyHome.ge (переопределяются переменными окружения)."""
 
@@ -81,6 +89,15 @@ class MyHomeSettings:
         "/ru/nedvizhimost/arenda/kvartira/tbilisi/"
         "?deal_types=2&real_estate_types=1&currency_id=1&cities=1&page={page}",
     )
+    # Батуми (TASK-079). Номер города на сайте не проверен вживую: если объявлений
+    # Батуми с myhome нет, откройте на myhome.ge аренду квартир в Батуми и скопируйте
+    # адрес (с {page} вместо номера страницы) в MYHOME_SEARCH_PATH_BATUMI.
+    SEARCH_PATH_BATUMI = (
+        os.getenv("MYHOME_SEARCH_PATH_BATUMI")
+        or "/ru/nedvizhimost/arenda/kvartira/batumi/"
+        "?deal_types=2&real_estate_types=1&currency_id=1&cities=15&page={page}"
+    )
+    SEARCH_PATHS: ClassVar[dict[str, str]] = {"tbilisi": SEARCH_PATH, "batumi": SEARCH_PATH_BATUMI}
     MAX_PAGES = int(os.getenv("MYHOME_MAX_PAGES", "20"))
     SELECTORS = MyHomeSelectors()
 
@@ -98,8 +115,6 @@ class SSSettings:
         "?currencyId=1&page={page}",
     )
     MAX_PAGES = int(os.getenv("SS_MAX_PAGES", "20"))
-    # В выдачу попадают и другие города (Батуми); 95 — Тбилиси (address.cityId)
-    CITY_ID = int(os.getenv("SS_CITY_ID", "95"))
 
 
 # Публичные каналы с арендой в Тбилиси (веб-версия t.me/s/...); группы так не читаются
@@ -131,5 +146,5 @@ class TelegramSettings:
     # Страниц (по ~20 постов) с канала за запуск и возраст постов, которые берём
     MAX_PAGES = int(os.getenv("TELEGRAM_MAX_PAGES", "5"))
     MAX_AGE_DAYS = int(os.getenv("TELEGRAM_MAX_AGE_DAYS", "21"))
-    # Пока приложение только по одному городу (TASK-079)
+    # Город каналов по умолчанию; посты про другие города из SCRAPE_CITIES тоже берутся
     CITY = os.getenv("TELEGRAM_CITY", "Tbilisi")

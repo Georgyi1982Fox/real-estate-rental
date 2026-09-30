@@ -1,18 +1,21 @@
-"""Справка по районам Тбилиси (TASK-104) и центр района для карты (TASK-080).
+"""Справка по районам Тбилиси и Батуми (TASK-104, TASK-079) и центр района для карты (TASK-080).
 
 Статичные данные: примерный центр района, есть ли метро, характер района и короткое
 описание на ka / ru / en. Цены и число объявлений считаются по базе отдельно.
-Время до центра — оценка по расстоянию до площади Свободы, а не маршрут.
+Время до центра — оценка по расстоянию до площади Свободы (в Батуми — площади
+Европы), а не маршрут.
 """
 
 import math
 from dataclasses import dataclass
 from enum import StrEnum
 
+from bina.application.cities import BATUMI, TBILISI, city, in_city
+
 Labels = dict[str, str]
 
-# Площадь Свободы — «центр города»
-CITY_CENTER = (41.6938, 44.8015)
+# Площадь Свободы — «центр» Тбилиси (центры городов — в ``cities.CITIES``)
+CITY_CENTER = city(TBILISI).center
 # Средняя скорость по городу на машине, км/ч (с пробками)
 CITY_SPEED_KMH = 20
 
@@ -267,13 +270,67 @@ GUIDE: dict[str, DistrictGuide] = {
     "Tbilisi": DistrictGuide(CITY_CENTER[0], CITY_CENTER[1], True),
 }
 
+_BATUMI_CENTER = city(BATUMI).center
 
-def guide_for(name_en: str) -> DistrictGuide | None:
-    """Справка по английскому названию; «Дигоми 3» → «Дигоми»."""
-    guide = GUIDE.get(name_en)
+# Батуми (TASK-079): метро нет
+BATUMI_GUIDE: dict[str, DistrictGuide] = {
+    "Old Batumi": DistrictGuide(
+        41.6485,
+        41.6380,
+        False,
+        (T.CENTRAL, T.OLD_TOWN, T.LIVELY),
+        _about(
+            "ისტორიული ცენტრი: პიაცა, ევროპის მოედანი, ბულვარი და ზღვა ფეხით.",
+            "Исторический центр: Пьяцца, площадь Европы, бульвар и море пешком.",
+            "Historic centre: Piazza, Europe Square, the boulevard and the sea on foot.",
+        ),
+    ),
+    "New Boulevard": DistrictGuide(
+        41.6250,
+        41.6030,
+        False,
+        (T.NEW_BUILDINGS, T.PREMIUM),
+        _about(
+            "ახალი მაღალსართულიანი სახლები ზღვის სანაპიროზე.",
+            "Новые высотки на берегу моря.",
+            "New high-rises on the seafront.",
+        ),
+    ),
+    "Makhinjauri": DistrictGuide(
+        41.6740,
+        41.6980,
+        False,
+        (T.GREEN, T.QUIET),
+        _about(
+            "მშვიდი დასახლება ქალაქის ჩრდილოეთით, ზღვასთან.",
+            "Тихий посёлок к северу от города, у моря.",
+            "A quiet settlement north of the city, by the sea.",
+        ),
+    ),
+    "Gonio": DistrictGuide(
+        41.5600,
+        41.5720,
+        False,
+        (T.QUIET, T.AFFORDABLE),
+        _about(
+            "მშვიდი ადგილი ციხესიმაგრით და პლაჟით, ქალაქის სამხრეთით.",
+            "Спокойное место с крепостью и пляжем к югу от города.",
+            "A calm place with a fortress and a beach south of the city.",
+        ),
+    ),
+    "Batumi": DistrictGuide(_BATUMI_CENTER[0], _BATUMI_CENTER[1], False),
+}
+
+GUIDES: dict[str, dict[str, DistrictGuide]] = {TBILISI: GUIDE, BATUMI: BATUMI_GUIDE}
+
+
+def guide_for(name_en: str, city_code: str = TBILISI) -> DistrictGuide | None:
+    """Справка по английскому названию района города; «Дигоми 3» → «Дигоми»."""
+    guides = GUIDES.get(city_code, {})
+    guide = guides.get(name_en)
     if guide is None:
         base = name_en.rstrip("0123456789 ").strip()
-        guide = GUIDE.get(base)
+        guide = guides.get(base)
     return guide
 
 
@@ -287,16 +344,15 @@ def distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return 2 * radius * math.asin(math.sqrt(a))
 
 
-def minutes_to_center(latitude: float, longitude: float) -> int:
-    """Примерно минут на машине до площади Свободы (по прямой, плюс 30% на изгибы дорог)."""
-    km = distance_km(latitude, longitude, *CITY_CENTER) * 1.3
+def minutes_to_center(latitude: float, longitude: float, city_code: str = TBILISI) -> int:
+    """Примерно минут на машине до центра города (по прямой, плюс 30% на изгибы дорог)."""
+    km = distance_km(latitude, longitude, *city(city_code).center) * 1.3
     return max(5, round(km / CITY_SPEED_KMH * 60 / 5) * 5)
 
 
 # Прямоугольник вокруг Тбилиси: точки вне него считаем ошибкой геокодера
-TBILISI_BOUNDS = (41.60, 44.60, 41.87, 45.05)  # юг, запад, север, восток
+TBILISI_BOUNDS = city(TBILISI).bounds  # юг, запад, север, восток
 
 
 def in_tbilisi(latitude: float, longitude: float) -> bool:
-    south, west, north, east = TBILISI_BOUNDS
-    return south <= latitude <= north and west <= longitude <= east
+    return in_city(latitude, longitude, TBILISI)

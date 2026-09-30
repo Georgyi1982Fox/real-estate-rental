@@ -31,10 +31,13 @@ class Store:
     cases: list[Any] = field(default_factory=list)
     admin_actions: list[tuple[str, UUID]] = field(default_factory=list)
 
-    def add_district(self, name_ru: str, name_en: str = "", name_ka: str = "") -> District:
+    def add_district(
+        self, name_ru: str, name_en: str = "", name_ka: str = "", city: str = "tbilisi"
+    ) -> District:
         """Добавить район."""
         district = District(
             id=uuid4(),
+            city=city,
             name_ru=name_ru,
             name_en=name_en or name_ru,
             name_ka=name_ka or name_ru,
@@ -159,8 +162,13 @@ class FakeDistrictsRepository:
     async def get_by_id(self, district_id: UUID) -> District | None:
         return next((d for d in self._store.districts if d.id == district_id), None)
 
-    async def list_all(self) -> list[District]:
-        return sorted(self._store.districts, key=lambda d: d.name_ru)
+    async def cities(self) -> list[str]:
+        found = {d.city for d in self._store.districts}
+        return [code for code in ("tbilisi", "batumi") if code in found]
+
+    async def list_all(self, city: str | None = None) -> list[District]:
+        districts = [d for d in self._store.districts if city is None or d.city == city]
+        return sorted(districts, key=lambda d: d.name_ru)
 
 
 class FakeListingsRepository:
@@ -168,6 +176,10 @@ class FakeListingsRepository:
 
     def __init__(self, store: Store) -> None:
         self._store = store
+
+    def _city(self, item: Listing) -> str | None:
+        district = next((d for d in self._store.districts if d.id == item.district_id), None)
+        return district.city if district else None
 
     def _matching(self, f: ListingSearchFilters) -> list[Listing]:
         result = [
@@ -177,6 +189,7 @@ class FakeListingsRepository:
             and not item.is_deleted
             and item.fraud_score < HIDE_SCORE
             and (not f.all_district_ids or item.district_id in f.all_district_ids)
+            and (f.city is None or self._city(item) == f.city)
             and (f.price_min is None or item.price >= f.price_min)
             and (f.price_max is None or item.price <= f.price_max)
             and (f.rooms_min is None or item.rooms >= f.rooms_min)

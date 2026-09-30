@@ -10,7 +10,7 @@ SS.ge переехал на `home.ss.ge`, старый адрес `ss.ge/ru/le/.
 - `SSSettings.SEARCH_PATH`: `/ru/недвижимость/l/Квартира/Аренда?currencyId=1&page={page}`
   (переопределяется `SS_SEARCH_PATH`), `SS_MAX_PAGES` (по умолчанию 20).
 - Город в адресе не задаётся: в выдаче есть Батуми и другие города. Парсер оставляет
-  только `address.cityId == SS_CITY_ID` (95 = Тбилиси).
+  только города из `SCRAPE_CITIES` (`address.cityId`: 95 — Тбилиси, 96 — Батуми; TASK-079).
 
 ### 2. Разбор страницы
 Сайт на Next.js: 16 объявлений на странице лежат JSON-ом в `__NEXT_DATA__`
