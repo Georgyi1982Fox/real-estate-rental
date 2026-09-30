@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from bina.infrastructure.api.auth import INIT_DATA_HEADER
 from bina.infrastructure.api.errors import REQUEST_ID_HEADER, install_error_handling
 from bina.infrastructure.api.routes import (
+    acceptance,
     assistant,
     contract,
     districts,
@@ -76,6 +77,7 @@ def create_app(
     app.include_router(listings.router)
     app.include_router(assistant.router)
     app.include_router(contract.router)
+    app.include_router(acceptance.router)
     app.include_router(districts.router)
     app.include_router(favorites.router)
     app.include_router(me.router)
