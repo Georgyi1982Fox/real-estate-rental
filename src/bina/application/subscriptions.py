@@ -6,6 +6,7 @@
 текущей, если она ещё действует.
 """
 
+import os
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
@@ -51,6 +52,23 @@ def is_premium(user: User, now: datetime) -> bool:
     return user.subscription_tier != SubscriptionTier.FREE and expires is not None and expires > now
 
 
+# Режим тестирования: все платные функции открыты всем (переменная окружения PREMIUM_FOR_ALL)
+PREMIUM_FOR_ALL_ENV = "PREMIUM_FOR_ALL"
+
+
+def premium_for_all() -> bool:
+    """Все платные функции бесплатно для всех (пока владелец тестирует)."""
+    return os.getenv(PREMIUM_FOR_ALL_ENV, "").strip().lower() in {"1", "true", "yes"}
+
+
+def has_premium_access(user: User, now: datetime) -> bool:
+    """Можно ли пользоваться платными функциями: оплачен Premium или включён режим для всех.
+
+    Для оплаты, срока и надписей «Premium до …» — :func:`is_premium`.
+    """
+    return premium_for_all() or is_premium(user, now)
+
+
 def effective_tier(user: User, now: datetime) -> SubscriptionTier:
     """Тариф с учётом срока: истёкшая подписка — бесплатный тариф."""
     return user.subscription_tier if is_premium(user, now) else SubscriptionTier.FREE
@@ -58,7 +76,7 @@ def effective_tier(user: User, now: datetime) -> SubscriptionTier:
 
 def limits_for(user: User, now: datetime) -> Limits:
     """Ограничения пользователя сейчас."""
-    return PREMIUM_LIMITS if is_premium(user, now) else FREE_LIMITS
+    return PREMIUM_LIMITS if has_premium_access(user, now) else FREE_LIMITS
 
 
 def plan_for_payload(plans: dict[str, Plan], payload: str) -> Plan | None:

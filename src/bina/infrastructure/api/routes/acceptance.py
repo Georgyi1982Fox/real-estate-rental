@@ -22,7 +22,7 @@ from bina.application.acceptance import (
     CheckedItem,
     ItemStatus,
 )
-from bina.application.subscriptions import is_premium
+from bina.application.subscriptions import has_premium_access
 from bina.infrastructure.api.delivery import (
     LANGUAGE_NAMES,
     Delivery,
@@ -155,7 +155,7 @@ async def make_acceptance(
     settings: SettingsDep,
 ) -> DocumentSentOut | Response:
     """Акт приёмки в PDF (Premium): в чат с ботом или файлом в ответе."""
-    if not is_premium(user, datetime.now(UTC)):
+    if not has_premium_access(user, datetime.now(UTC)):
         raise payment_required("acceptance", 0)
     address = body.address
     if not address and body.listing_id:
