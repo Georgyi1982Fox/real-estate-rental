@@ -30,6 +30,7 @@ class BotSettings:
     - ``BOT_MINI_APP_URL``: URL Telegram Mini App (кнопка меню)
     - ``BOT_PAGE_SIZE``: объявлений на страницу (1-10, по умолчанию 5)
     - ``BOT_DROP_PENDING_UPDATES``: ``1``/``true``, пропустить накопившиеся апдейты
+    - ``ADMIN_TELEGRAM_IDS``: Telegram ID владельца (через запятую) — команда ``/admin``
     """
 
     token: str
@@ -42,6 +43,8 @@ class BotSettings:
     mini_app_url: str | None = None
     page_size: int = 5
     drop_pending_updates: bool = False
+    # TASK-110: кому доступна команда /admin
+    admin_ids: tuple[int, ...] = ()
 
     def __post_init__(self) -> None:
         """Проверяет согласованность настроек."""
@@ -114,4 +117,17 @@ class BotSettings:
             page_size=page_size,
             drop_pending_updates=(get("BOT_DROP_PENDING_UPDATES") or "").lower()
             in {"1", "true", "yes"},
+            admin_ids=_parse_ids(get("ADMIN_TELEGRAM_IDS")),
         )
+
+
+def _parse_ids(value: str | None) -> tuple[int, ...]:
+    """«123, 456» → (123, 456); нечисловые части — ошибка настройки."""
+    if not value:
+        return ()
+    try:
+        return tuple(int(part) for part in value.replace(" ", "").split(",") if part)
+    except ValueError as exc:
+        raise BotConfigError(
+            f"ADMIN_TELEGRAM_IDS must be comma-separated numbers, got {value!r}"
+        ) from exc

@@ -27,6 +27,9 @@ class Store:
     # Служебные уведомления: (user_id, тексты по языкам)
     notifications: list[tuple[UUID, dict[str, str]]] = field(default_factory=list)
     rent_reminders: list[Any] = field(default_factory=list)
+    # Админка (TASK-110): очередь жалоб и действия «скрыть / вернуть»
+    cases: list[Any] = field(default_factory=list)
+    admin_actions: list[tuple[str, UUID]] = field(default_factory=list)
 
     def add_district(self, name_ru: str, name_en: str = "", name_ka: str = "") -> District:
         """Добавить район."""
@@ -371,3 +374,35 @@ class FakeRentRemindersRepository:
                 reminder.paid_for = due
                 return True
         return False
+
+
+class FakeAdminRepository:
+    """In-memory админка (TASK-110): статистика — заглушка, жалобы — из ``store.cases``."""
+
+    def __init__(self, store: Store) -> None:
+        self._store = store
+
+    async def stats(self, now: datetime) -> Any:
+        from bina.infrastructure.db.repositories.admin import AdminStats
+
+        return AdminStats(
+            users=len(self._store.users),
+            users_week=1,
+            premium=0,
+            stars_total=Decimal(450),
+            stars_month=Decimal(250),
+            payments_month=1,
+            sources=[("ss", 402), ("myhome", 626)],
+            hidden=1,
+            open_complaints=len(self._store.cases),
+            districts=[("Ваке", 120)],
+        )
+
+    async def complaint_queue(self, limit: int) -> list[Any]:
+        return self._store.cases[:limit]
+
+    async def hide(self, listing_id: UUID, now: datetime | None = None) -> None:
+        self._store.admin_actions.append(("hide", listing_id))
+
+    async def restore(self, listing_id: UUID, now: datetime | None = None) -> None:
+        self._store.admin_actions.append(("restore", listing_id))

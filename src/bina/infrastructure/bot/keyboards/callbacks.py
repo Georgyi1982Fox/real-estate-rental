@@ -77,3 +77,17 @@ class RentCallback(CallbackData, prefix="rent"):
     reminder: UUID | None = None
     day: int | None = None
     due: str | None = None
+
+
+class AdminAction(StrEnum):
+    """Действия админки (TASK-110)."""
+
+    STATS = "stats"
+    COMPLAINTS = "compl"
+    HIDE = "hide"
+    RESTORE = "restore"
+
+
+class AdminCallback(CallbackData, prefix="adm"):
+    action: AdminAction
+    listing: UUID | None = None

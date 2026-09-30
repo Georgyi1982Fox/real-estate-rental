@@ -30,6 +30,7 @@ from aiogram.types import User as TelegramUser
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bina.infrastructure.bot import factory as bot_factory
+from bina.infrastructure.bot.handlers import admin as admin_handlers
 from bina.infrastructure.bot.handlers import favorites as favorites_handlers
 from bina.infrastructure.bot.handlers import invite as invite_handlers
 from bina.infrastructure.bot.handlers import payments as payments_handlers
@@ -41,6 +42,7 @@ from bina.infrastructure.bot.middlewares import registration
 from bina.infrastructure.bot.settings import BotSettings
 from bina.infrastructure.db.models import User
 from tests.support.fakes import (
+    FakeAdminRepository,
     FakeDistrictsRepository,
     FakeFavoritesRepository,
     FakeListingsRepository,
@@ -170,6 +172,7 @@ def patch_repositories(monkeypatch: pytest.MonkeyPatch, store: Store) -> None:
     monkeypatch.setattr(start_handlers, "ReferralsRepository", fake(FakeReferralsRepository))
     monkeypatch.setattr(invite_handlers, "ReferralsRepository", fake(FakeReferralsRepository))
     monkeypatch.setattr(rent_handlers, "RentRemindersRepository", fake(FakeRentRemindersRepository))
+    monkeypatch.setattr(admin_handlers, "AdminRepository", fake(FakeAdminRepository))
 
 
 @pytest.fixture
