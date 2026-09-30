@@ -316,9 +316,11 @@ class MeOut(BaseModel):
     balance: float
     favorites_count: int
     created_at: datetime
+    # Владелец (ADMIN_TELEGRAM_IDS или роль admin): видит «Проверку функций»
+    is_admin: bool = False
 
     @classmethod
-    def from_model(cls, user: User, favorites_count: int) -> "MeOut":
+    def from_model(cls, user: User, favorites_count: int, is_admin: bool = False) -> "MeOut":
         """Преобразует ORM-модель."""
         tier = effective_tier(user, datetime.now(UTC))
         premium = tier != SubscriptionTier.FREE
@@ -331,6 +333,7 @@ class MeOut(BaseModel):
             balance=float(user.balance),
             favorites_count=favorites_count,
             created_at=user.created_at,
+            is_admin=is_admin,
         )
 
 

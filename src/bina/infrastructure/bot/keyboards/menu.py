@@ -57,6 +57,16 @@ def home_menu(language: str, mini_app_url: str | None, admin: bool = False) -> I
     ]
     if admin:
         rows.append([_button(language, "menu_admin", MenuSection.ADMIN)])
+        if mini_app_url:
+            # Временная страница «Проверка функций» в Mini App (только владельцу)
+            rows.append(
+                [
+                    InlineKeyboardButton(
+                        text=t(language, "menu_lab"),
+                        web_app=WebAppInfo(url=mini_app_url.rstrip("/") + "/lab"),
+                    )
+                ]
+            )
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 

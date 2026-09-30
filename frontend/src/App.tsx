@@ -2,6 +2,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import Layout from './components/Layout';
 import AuthPage from './pages/AuthPage';
 import FavoritesPage from './pages/FavoritesPage';
+import FeatureLabPage from './pages/FeatureLabPage';
 import HomePage from './pages/HomePage';
 import ListingPage from './pages/ListingPage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -27,6 +28,8 @@ const router = createBrowserRouter(
         { path: '/searches', element: <SavedSearchesPage /> },
         { path: '/notifications', element: <NotificationsPage /> },
         { path: '/test_card', element: <TestCardPage /> },
+        // Временная «Проверка функций» для владельца (удалить после FRONTEND-023…029)
+        { path: '/lab', element: <FeatureLabPage /> },
         { path: '*', element: <NotFoundPage /> },
       ],
     },

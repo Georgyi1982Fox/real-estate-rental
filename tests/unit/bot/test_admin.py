@@ -85,3 +85,14 @@ async def test_owner_sees_admin_button_in_menu(harness: BotHarness) -> None:
     assert "📊 Админка" in labels
     await harness.press(MenuCallback(section=MenuSection.ADMIN).pack())
     assert "Статистика" in harness.last_text()
+
+
+async def test_owner_gets_feature_lab_button(harness: BotHarness) -> None:
+    harness.dispatcher["settings"] = BotSettings(
+        token=TOKEN, admin_ids=(CHAT_ID,), mini_app_url="https://bina.example/"
+    )
+    await harness.send("/start")
+    buttons = [button for row in harness.last_markup().inline_keyboard for button in row]
+    [lab] = [button for button in buttons if button.text == "🧪 Проверка функций"]
+    assert lab.web_app is not None
+    assert lab.web_app.url == "https://bina.example/lab"
