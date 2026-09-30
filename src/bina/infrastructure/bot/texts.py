@@ -50,9 +50,13 @@ _RU: dict[str, str] = {
         "/terms: пользовательское соглашение\n"
         "/privacy: политика конфиденциальности\n"
         "/help: эта справка\n\n"
+        "🧠 Или просто напишите, что ищете, например: «двушка с балконом у метро до 1500».\n\n"
         "Добавляйте объявления в избранное кнопками ☆ под результатами поиска."
     ),
     "unknown": "Не понял 🤔 Воспользуйтесь меню или командой /help.",
+    "smart_header": "🧠 <b>Умный поиск:</b> «{query}»\nСамые близкие по смыслу объявления:",
+    "smart_empty": "🧠 По запросу «{query}» пока ничего не нашлось. Попробуйте описать иначе.",
+    "smart_hint": "Пишите своими словами, что ищете: район, бюджет, балкон, метро, животные…",
     "error": "⚠️ Что-то пошло не так. Попробуйте ещё раз чуть позже.",
     "menu_search": "🔍 Поиск",
     "menu_favorites": "❤️ Избранное",
@@ -247,9 +251,16 @@ _EN: dict[str, str] = {
         "/terms: terms of use\n"
         "/privacy: privacy policy\n"
         "/help: this help\n\n"
+        "🧠 Or just write what you need, e.g. "
+        "«2 rooms with a balcony near the metro up to 1500».\n\n"
         "Save listings with the ☆ buttons under search results."
     ),
     "unknown": "Sorry, I didn't get that 🤔 Use the menu or /help.",
+    "smart_header": "🧠 <b>Smart search:</b> «{query}»\nThe closest listings by meaning:",
+    "smart_empty": "🧠 Nothing found for «{query}» yet. Try describing it differently.",
+    "smart_hint": (
+        "Describe what you need in your own words: district, budget, balcony, metro, pets…"
+    ),
     "error": "⚠️ Something went wrong. Please try again a bit later.",
     "menu_search": "🔍 Search",
     "menu_favorites": "❤️ Favorites",
@@ -441,9 +452,15 @@ _KA: dict[str, str] = {
         "/terms: სამომხმარებლო შეთანხმება\n"
         "/privacy: კონფიდენციალურობის პოლიტიკა\n"
         "/help: ეს დახმარება\n\n"
+        "🧠 ან უბრალოდ დაწერეთ, რას ეძებთ, მაგ.: «ოროთახიანი აივნით მეტროსთან 1500-მდე».\n\n"
         "შეინახეთ განცხადებები ☆ ღილაკებით ძებნის შედეგების ქვეშ."
     ),
     "unknown": "ვერ გავიგე 🤔 გამოიყენეთ მენიუ ან /help.",
+    "smart_header": "🧠 <b>ჭკვიანი ძებნა:</b> «{query}»\nაზრით ყველაზე ახლო განცხადებები:",
+    "smart_empty": "🧠 მოთხოვნით «{query}» ჯერ არაფერი მოიძებნა. სცადეთ სხვანაირად აღწერა.",
+    "smart_hint": (
+        "დაწერეთ საკუთარი სიტყვებით, რას ეძებთ: უბანი, ბიუჯეტი, აივანი, მეტრო, ცხოველები…"
+    ),
     "error": "⚠️ რაღაც შეცდომა მოხდა. სცადეთ ცოტა მოგვიანებით.",
     "menu_search": "🔍 ძებნა",
     "menu_favorites": "❤️ რჩეულები",

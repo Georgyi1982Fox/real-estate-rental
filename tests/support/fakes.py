@@ -177,6 +177,25 @@ class FakeListingsRepository:
     def __init__(self, store: Store) -> None:
         self._store = store
 
+    async def semantic_search(
+        self,
+        filters: ListingSearchFilters,
+        vector: list[float],
+        model: str,
+        limit: int,
+        offset: int = 0,
+    ) -> list[Listing]:
+        from tests.support.embeddings import keyword_vector, similarity
+
+        ranked = sorted(
+            self._matching(filters),
+            key=lambda item: -similarity(vector, keyword_vector(item.title_ru)),
+        )
+        return ranked[offset : offset + limit]
+
+    async def semantic_count(self, filters: ListingSearchFilters, model: str) -> int:
+        return len(self._matching(filters))
+
     def _city(self, item: Listing) -> str | None:
         district = next((d for d in self._store.districts if d.id == item.district_id), None)
         return district.city if district else None

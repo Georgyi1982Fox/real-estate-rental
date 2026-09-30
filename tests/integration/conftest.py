@@ -50,6 +50,7 @@ MIGRATIONS = (
     "referrals",
     "rent_reminders",
     "district_city",
+    "embeddings_unique",
 )
 
 

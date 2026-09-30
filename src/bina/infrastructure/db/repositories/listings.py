@@ -34,6 +34,7 @@ from bina.application.repositories.listings import IListingsRepository
 from bina.application.repositories.notifications import PriceDrop
 from bina.infrastructure.db.models import (
     District,
+    Embedding,
     Favorite,
     Listing,
     ListingStatus,
@@ -137,6 +138,35 @@ class ListingsRepository(IListingsRepository):
         )
         result = await self._session.execute(query)
         return list(result.scalars().all())
+
+    async def semantic_search(
+        self,
+        filters: ListingSearchFilters,
+        vector: list[float],
+        model: str,
+        limit: int,
+        offset: int = 0,
+    ) -> list[Listing]:
+        """Объявления с отпечатком ``model`` по близости к ``vector`` (TASK-012)."""
+        query = (
+            select(Listing)
+            .join(Embedding, Embedding.listing_id == Listing.id)
+            .where(*self._search_conditions(filters), Embedding.model_name == model)
+            .order_by(Embedding.vector.cosine_distance(vector), Listing.id)
+            .limit(limit)
+            .offset(offset)
+        )
+        return list((await self._session.execute(query)).scalars().all())
+
+    async def semantic_count(self, filters: ListingSearchFilters, model: str) -> int:
+        """Сколько объявлений под фильтрами уже имеют отпечаток ``model``."""
+        query = (
+            select(func.count())
+            .select_from(Listing)
+            .join(Embedding, Embedding.listing_id == Listing.id)
+            .where(*self._search_conditions(filters), Embedding.model_name == model)
+        )
+        return int((await self._session.execute(query)).scalar_one())
 
     async def count(self, filters: ListingSearchFilters) -> int:
         """Количество активных объявлений, подходящих под фильтры."""

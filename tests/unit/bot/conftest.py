@@ -31,6 +31,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bina.infrastructure.bot import factory as bot_factory
 from bina.infrastructure.bot.handlers import admin as admin_handlers
+from bina.infrastructure.bot.handlers import fallback as fallback_handlers
 from bina.infrastructure.bot.handlers import favorites as favorites_handlers
 from bina.infrastructure.bot.handlers import invite as invite_handlers
 from bina.infrastructure.bot.handlers import payments as payments_handlers
@@ -177,6 +178,8 @@ def patch_repositories(monkeypatch: pytest.MonkeyPatch, store: Store) -> None:
     monkeypatch.setattr(invite_handlers, "ReferralsRepository", fake(FakeReferralsRepository))
     monkeypatch.setattr(rent_handlers, "RentRemindersRepository", fake(FakeRentRemindersRepository))
     monkeypatch.setattr(admin_handlers, "AdminRepository", fake(FakeAdminRepository))
+    monkeypatch.setattr(fallback_handlers, "ListingsRepository", fake(FakeListingsRepository))
+    monkeypatch.setattr(fallback_handlers, "FavoritesRepository", fake(FakeFavoritesRepository))
 
 
 @pytest.fixture

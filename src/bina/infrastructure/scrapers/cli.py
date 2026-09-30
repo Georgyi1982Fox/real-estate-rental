@@ -13,6 +13,7 @@ import structlog
 from bina.application.health_monitor import Alert, HealthMonitor
 from bina.application.ports.scraper import BaseScraper
 from bina.application.use_cases.check_fraud import CheckFraudUseCase, FraudStats
+from bina.application.use_cases.embed_listings import EmbedListingsUseCase, EmbedStats
 from bina.application.use_cases.find_duplicates import DuplicateStats, FindDuplicatesUseCase
 from bina.application.use_cases.geocode_listings import GeocodeListingsUseCase, GeocodeStats
 from bina.application.use_cases.notifications import (
@@ -43,7 +44,7 @@ from bina.infrastructure.db.repositories.users import UsersRepository
 from bina.infrastructure.db.session.manager import DatabaseManager
 from bina.infrastructure.llm.fraud_analyzer import LLMFraudAnalyzer
 from bina.infrastructure.llm.listing_extractor import LLMListingExtractor
-from bina.infrastructure.llm.llm_factory import LLMFactory
+from bina.infrastructure.llm.llm_factory import LLMFactory, embeddings_configured
 from bina.infrastructure.llm.translator import LLMTranslator
 from bina.infrastructure.scrapers.backfill import BackfillStats, DetailsSource, backfill_details
 from bina.infrastructure.scrapers.myhome_scraper import MyHomeScraper
@@ -72,6 +73,8 @@ DELIVERY_BATCH = 100
 DUPLICATES_BATCH = 2000
 # Адресов на карте за запуск: геокодер — не чаще 1 запроса в секунду
 GEOCODE_BATCH = 30
+# Отпечатков смысла за запуск (TASK-012): 500 объявлений ≈ 16 запросов, копейки
+EMBED_BATCH = 500
 
 
 def make_scraper(source: str, *, details: bool, dump_dir: Path | None) -> BaseScraper:
@@ -104,7 +107,6 @@ async def scrape(
     limit: int,
     *,
     details: bool = True,
-    embeddings: bool = False,
     dump_dir: Path | None = None,
 ) -> list[ScrapeResult]:
     """Парсит источники по очереди и сохраняет результат в БД (``DATABASE_URL``)."""
@@ -114,15 +116,7 @@ async def scrape(
         for source in sources:
             scraper = make_scraper(source, details=details, dump_dir=dump_dir)
             try:
-                results.append(
-                    await run_scrape(
-                        scraper,
-                        source,
-                        limit,
-                        db.session_factory,
-                        LLMFactory() if embeddings else None,
-                    )
-                )
+                results.append(await run_scrape(scraper, source, limit, db.session_factory))
                 if source == TELEGRAM:
                     await _archive_old_posts(db)
             finally:
@@ -154,12 +148,6 @@ async def scrape(
     help="Открывать страницу каждого объявления (фото, телефон, имя).",
 )
 @click.option(
-    "--embeddings/--no-embeddings",
-    default=False,
-    show_default=True,
-    help="Создавать embeddings (нужен ключ LLM API).",
-)
-@click.option(
     "--dump-dir",
     type=click.Path(path_type=Path, file_okay=False),
     help="Сохранить сырой HTML первой страницы списка и объявления (MyHome).",
@@ -170,7 +158,6 @@ def cli(
     source: str | None,
     limit: int,
     details: bool,
-    embeddings: bool,
     dump_dir: Path | None,
 ) -> None:
     """Парсинг объявлений недвижимости (MyHome.ge, SS.ge) в БД.
@@ -183,9 +170,7 @@ def cli(
         raise click.UsageError("Укажите --source (myhome, ss, telegram или all)")
 
     sources = scrape_sources() if source == "all" else [source]
-    results = asyncio.run(
-        scrape(sources, limit, details=details, embeddings=embeddings, dump_dir=dump_dir)
-    )
+    results = asyncio.run(scrape(sources, limit, details=details, dump_dir=dump_dir))
     _echo_results(results)
 
 
@@ -385,6 +370,31 @@ async def geocode(limit: int) -> GeocodeStats:
     finally:
         await geocoder.close()
         await db.dispose()
+
+
+async def embed(limit: int) -> EmbedStats:
+    """Отпечатки смысла для умного поиска (TASK-012)."""
+    from bina.infrastructure.db.repositories.embeddings import EmbeddingsRepository
+
+    db = DatabaseManager()
+    embedder = LLMFactory.create_embeddings_provider()
+    try:
+        async with db.session_factory() as session:
+            stats = await EmbedListingsUseCase(EmbeddingsRepository(session), embedder).execute(
+                limit
+            )
+            await session.commit()
+        return stats
+    finally:
+        await embedder.close()
+        await db.dispose()
+
+
+def _echo_embed(stats: EmbedStats) -> None:
+    click.echo(
+        f"умный поиск: объявлений {stats.checked}, отпечатков {stats.embedded}, "
+        f"отложено {stats.failed}"
+    )
 
 
 def _echo_geocode(stats: GeocodeStats) -> None:
@@ -612,6 +622,15 @@ def geocode_command(limit: int) -> None:
     _echo_geocode(asyncio.run(geocode(limit)))
 
 
+@cli.command(name="embeddings")
+@click.option("--limit", default=EMBED_BATCH, show_default=True, type=click.IntRange(1, 20000))
+def embeddings_command(limit: int) -> None:
+    """Посчитать отпечатки смысла для умного поиска (ключ — EMBEDDINGS_API_KEY или LLM_API_KEY)."""
+    if not embeddings_configured():
+        raise click.UsageError("Нужен EMBEDDINGS_API_KEY или LLM_API_KEY")
+    _echo_embed(asyncio.run(embed(limit)))
+
+
 @cli.command(name="rent-reminders")
 def rent_reminders_command() -> None:
     """Отправить напоминания об оплате аренды (за 3 дня, за 1 день и в день оплаты)."""
@@ -741,6 +760,9 @@ def schedule(
             await step("translate", translate_step)
             # До уведомлений: подозрительные объявления не должны в них попасть
             await step("fraud", fraud_step)
+        # После перевода: в отпечаток идёт английский текст (TASK-012)
+        if embeddings_configured():
+            await step("embeddings", lambda: _echo_async(_echo_embed, embed(EMBED_BATCH)))
         await step("rent", lambda: _echo_async(_echo_rent, rent_reminders()))
         await step("premium", lambda: _echo_async(_echo_premium, premium_reminders()))
         await step("notify", notify_step)

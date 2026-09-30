@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bina.application.ports.scraper import BaseScraper, RawListing
 from bina.infrastructure.db.repositories.listings import ListingsRepository
-from bina.infrastructure.llm.llm_factory import LLMFactory
 from bina.infrastructure.scrapers.deduplicator import (
     KnownListing,
     ListingDeduplicator,
@@ -39,7 +38,6 @@ async def run_scrape(
     source: str,
     limit: int,
     session_factory: async_sessionmaker[AsyncSession],
-    llm_factory: LLMFactory | None = None,
 ) -> ScrapeResult:
     """Парсит источник и сохраняет новые и изменившиеся объявления (с коммитом).
 
@@ -80,7 +78,7 @@ async def run_scrape(
     async with session_factory() as session:
         repository = ListingsRepository(session)
         changed = await ListingDeduplicator(repository).deduplicate(valid)
-        saved = await ScrapedListingsRepository(session, llm_factory).save_listings(changed)
+        saved = await ScrapedListingsRepository(session).save_listings(changed)
         await repository.mark_checked(source, [item.source_id for item in raw_listings])
         await repository.add_skips(source, rejected)
         await session.commit()

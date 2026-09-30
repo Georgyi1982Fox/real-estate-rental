@@ -4,7 +4,8 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Annotated
 
-from fastapi import APIRouter, Query
+import structlog
+from fastapi import APIRouter, Query, Request
 from pydantic import ValidationError
 
 from bina.application.dtos.listing_search import (
@@ -14,10 +15,13 @@ from bina.application.dtos.listing_search import (
     search_filters,
 )
 from bina.application.listing_details import CONDITIONS, FEATURES
+from bina.application.ports.embeddings import EmbeddingsError, IEmbedder
 from bina.application.risk_report import risk_report
+from bina.application.semantic_search import is_smart_query
 from bina.application.subscriptions import has_premium_access
 from bina.application.use_cases.analyze_price import AnalyzePriceUseCase
 from bina.application.use_cases.search_listings import SearchListingsUseCase
+from bina.application.use_cases.smart_search import SmartSearchUseCase
 from bina.infrastructure.api.dependencies import CurrentUserDep, SessionDep
 from bina.infrastructure.api.routes.common import (
     MAX_PER_PAGE,
@@ -42,8 +46,10 @@ from bina.infrastructure.api.schemas import (
 from bina.infrastructure.api.validation import clean_text
 from bina.infrastructure.db.models import Listing
 from bina.infrastructure.db.repositories.listings import ListingsRepository
+from bina.infrastructure.llm.llm_factory import LLMFactory, embeddings_configured
 
 router = APIRouter(prefix="/api/listings", tags=["listings"])
+logger = structlog.get_logger(__name__)
 
 SIMILAR_LIMIT = 3
 SIMILAR_PRICE_SPREAD = Decimal("0.3")
@@ -51,6 +57,7 @@ SIMILAR_PRICE_SPREAD = Decimal("0.3")
 
 @router.get("", response_model=ListingsPageOut)
 async def list_listings(
+    request: Request,
     session: SessionDep,
     page: Annotated[int, Query(ge=1)] = 1,
     per_page: Annotated[int, Query(ge=1, le=MAX_PER_PAGE)] = 20,
@@ -97,8 +104,9 @@ async def list_listings(
     sort: Annotated[
         ListingSort | None,
         Query(
-            description="newest, relevance, price_asc, price_desc, area_desc, price_per_m2_asc. "
-            "По умолчанию: relevance, если задан q, иначе newest"
+            description="newest, relevance, smart, price_asc, price_desc, area_desc, "
+            "price_per_m2_asc. smart — по смыслу q (умный поиск, TASK-012; если AI недоступен — "
+            "как relevance). По умолчанию: relevance, если задан q, иначе newest"
         ),
     ] = None,
 ) -> ListingsPageOut:
@@ -132,6 +140,19 @@ async def list_listings(
             "min_price must be <= max_price, min_area <= max_area, floor_min <= floor_max"
         ) from exc
 
+    if sort is ListingSort.SMART and is_smart_query(filters.query):
+        embedder = get_embedder(request)
+        if embedder is not None:
+            try:
+                smart = await SmartSearchUseCase(ListingsRepository(session), embedder).execute(
+                    filters, page=page - 1, page_size=per_page
+                )
+                return ListingsPageOut.from_page(smart)
+            except EmbeddingsError as exc:
+                logger.warning("Smart search unavailable, falling back", error=str(exc))
+        sort = ListingSort.RELEVANCE
+    elif sort is ListingSort.SMART:
+        sort = None
     result = await SearchListingsUseCase(ListingsRepository(session)).execute(
         filters,
         page=page - 1,
@@ -139,6 +160,18 @@ async def list_listings(
         sort=sort or (ListingSort.RELEVANCE if filters.query else ListingSort.NEWEST),
     )
     return ListingsPageOut.from_page(result)
+
+
+def get_embedder(request: Request) -> IEmbedder | None:
+    """Embeddings для умного поиска; в тестах — ``app.state.embedder``; без ключа — None."""
+    injected: IEmbedder | None = getattr(request.app.state, "embedder", None)
+    if injected is not None:
+        return injected
+    if not embeddings_configured():
+        return None
+    embedder: IEmbedder = LLMFactory.create_embeddings_provider()
+    request.app.state.embedder = embedder
+    return embedder
 
 
 @router.get("/{listing_id}", response_model=ListingOut)

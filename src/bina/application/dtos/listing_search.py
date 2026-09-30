@@ -20,6 +20,8 @@ class ListingSort(StrEnum):
     PRICE_DESC = "price_desc"
     AREA_DESC = "area_desc"
     PRICE_PER_M2_ASC = "price_per_m2_asc"
+    # TASK-012: по смыслу текста поиска (embeddings); без текста — как newest
+    SMART = "smart"
 
 
 # Источники объявлений (Listing.source_name)
