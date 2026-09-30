@@ -104,7 +104,10 @@ async def list_listings(
     ] = None,
     source: Annotated[
         str | None,
-        Query(description="Источники через запятую, любой из: ss, myhome, livo, korter, telegram"),
+        Query(
+            description="Источники через запятую, любой из: ss, myhome, livo, korter, telegram, "
+            "owner (собственники, TASK-096)"
+        ),
     ] = None,
     sort: Annotated[
         ListingSort | None,

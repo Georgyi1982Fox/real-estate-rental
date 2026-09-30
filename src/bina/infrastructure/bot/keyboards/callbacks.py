@@ -106,6 +106,31 @@ class AdminCallback(CallbackData, prefix="adm"):
     listing: UUID | None = None
 
 
+class OwnerAction(StrEnum):
+    """Размещение и управление объявлениями собственника (TASK-096)."""
+
+    LIST = "list"
+    NEW = "new"
+    CITY = "city"
+    PERIOD = "per"
+    ROOMS = "rooms"
+    SKIP_FLOOR = "nofl"
+    PHOTOS_DONE = "phok"
+    PUBLISH = "pub"
+    CANCEL = "cncl"
+    OFF = "off"
+    ON = "on"
+    PRICE = "price"
+
+
+class OwnerCallback(CallbackData, prefix="own"):
+    """``value`` — выбор на шаге мастера; ``listing`` — своё объявление."""
+
+    action: OwnerAction
+    value: str | None = None
+    listing: UUID | None = None
+
+
 class MenuSection(StrEnum):
     """Кнопки главного меню бота."""
 
@@ -113,6 +138,7 @@ class MenuSection(StrEnum):
     SEARCH = "search"
     SMART = "smart"
     DAILY = "daily"
+    OWNER = "owner"
     FAVORITES = "fav"
     PREMIUM = "premium"
     INVITE = "invite"

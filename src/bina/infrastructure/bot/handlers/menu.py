@@ -16,6 +16,7 @@ from bina.infrastructure.bot.handlers import (
     help,
     invite,
     legal,
+    owner,
     payments,
     profile,
     rent,
@@ -70,6 +71,8 @@ async def on_menu(
         await send_home(message, user, settings)
     elif section == MenuSection.SEARCH:
         await search.cmd_search(message, session, user, settings)
+    elif section == MenuSection.OWNER:
+        await owner.cmd_mylistings(message, user, session, state)
     elif section == MenuSection.DAILY:
         await search.cmd_daily(message, session, user, settings)
     elif section == MenuSection.SMART:

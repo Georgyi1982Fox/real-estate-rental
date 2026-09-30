@@ -8,6 +8,7 @@
 #
 # Подключение к базе — переменные PGHOST, PGUSER, PGPASSWORD, PGDATABASE.
 # Копии: /backups/bina-ГГГГ-ММ-ДД_ЧЧ-ММ.dump (pg_dump -Fc), старше BACKUP_KEEP_DAYS удаляются.
+# Фото собственников (том media, TASK-096) докопируются в /backups/media.
 set -eu
 
 DIR="${BACKUP_DIR:-/backups}"
@@ -32,6 +33,16 @@ backup_once() {
     mv "$tmp" "$file"
     log "Готово: $(du -h "$file" | cut -f1)"
     find "$DIR" -name 'bina-*.dump' -mtime +"$KEEP_DAYS" -print -delete | sed 's/^/Удалена старая копия: /'
+    backup_media
+}
+
+# Фото собственников (TASK-096): новые файлы докопируются в $DIR/media
+backup_media() {
+    if [ -d /media ] && [ -n "$(ls -A /media 2>/dev/null)" ]; then
+        mkdir -p "$DIR/media"
+        cp -ru /media/. "$DIR/media/"
+        log "Фото собственников: $(du -sh "$DIR/media" | cut -f1)"
+    fi
 }
 
 # Нужна ли копия: последней нет или она старше EVERY_HOURS

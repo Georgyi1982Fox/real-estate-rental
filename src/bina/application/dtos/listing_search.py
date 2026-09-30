@@ -27,7 +27,7 @@ class ListingSort(StrEnum):
 
 
 # Источники объявлений (Listing.source_name)
-SOURCES: tuple[str, ...] = ("ss", "myhome", "livo", "korter", "telegram")
+SOURCES: tuple[str, ...] = ("ss", "myhome", "livo", "korter", "telegram", "owner")
 
 
 class ListingSearchFilters(BaseModel):
@@ -70,7 +70,7 @@ class ListingSearchFilters(BaseModel):
     owner_only: bool = False
     # Опубликовано на сайте не раньше
     published_since: datetime | None = None
-    # Источники (любой из): ss, myhome, livo, korter, telegram (SOURCES)
+    # Источники (любой из): ss, myhome, livo, korter, telegram, owner (SOURCES)
     sources: tuple[str, ...] = ()
 
     @property

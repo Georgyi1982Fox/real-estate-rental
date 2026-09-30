@@ -11,6 +11,7 @@ from bina.application.dtos.pagination import Page
 from bina.application.fraud import fraud_level
 from bina.application.listing_details import CONDITIONS, FEATURES, clean_features
 from bina.application.localization import localize_address, localize_name
+from bina.application.owner_listings import MIN_DESCRIPTION
 from bina.application.price_analysis import PriceAnalysis, PriceLevel
 from bina.application.referrals import FRIEND_DISCOUNT_PERCENT
 from bina.application.risk_report import RiskReport
@@ -220,7 +221,7 @@ class RiskOut(BaseModel):
 class SourceLinkOut(BaseModel):
     """Та же квартира на другом сайте."""
 
-    source: str = Field(description="ss, myhome, livo, korter или telegram")
+    source: str = Field(description="ss, myhome, livo, korter, telegram или owner")
     url: str
 
 
@@ -711,3 +712,79 @@ class UnreadCountOut(BaseModel):
     """Число непрочитанных уведомлений."""
 
     count: int
+
+
+# ------------------------------------------------------------- TASK-096: собственники
+
+
+class OwnerListingIn(BaseModel):
+    """Тело ``POST /api/my/listings``: квартиру размещает собственник."""
+
+    city: CityCode
+    district: str = Field(min_length=2, max_length=60, description="Район текстом: «Ваке»")
+    rent_period: RentPeriod = "monthly"
+    price: Decimal = Field(gt=0, le=1_000_000, description="За месяц или за сутки (rent_period)")
+    currency: Literal["GEL", "USD", "EUR"] = "GEL"
+    rooms: int = Field(ge=1, le=10)
+    area: Decimal = Field(ge=10, le=1000, description="м²")
+    floor: int | None = Field(default=None, ge=0, le=60)
+    total_floors: int | None = Field(default=None, ge=1, le=60)
+    description: str = Field(min_length=20, max_length=3000)
+    phone: str | None = Field(default=None, max_length=20, description="Если нет — только Telegram")
+    features: list[str] = Field(default_factory=list, description="Коды удобств")
+
+    @field_validator("district")
+    @classmethod
+    def _clean_district(cls, value: str) -> str:
+        cleaned = clean_text(value)
+        if len(cleaned) < 2:
+            raise ValueError("must contain visible text")
+        return cleaned
+
+    @field_validator("description")
+    @classmethod
+    def _clean_description(cls, value: str) -> str:
+        # Абзацы сохраняются, теги и мусор — нет
+        cleaned = "\n".join(clean_text(line) for line in value.splitlines()).strip()
+        if len(cleaned) < MIN_DESCRIPTION:
+            raise ValueError(f"description must be at least {MIN_DESCRIPTION} characters")
+        return cleaned
+
+    @field_validator("features")
+    @classmethod
+    def _check_features(cls, value: list[str]) -> list[str]:
+        unknown = sorted(set(value) - set(FEATURES))
+        if unknown:
+            raise ValueError(f"unknown features: {', '.join(unknown)}")
+        return clean_features(value)
+
+
+class OwnerListingPatchIn(BaseModel):
+    """Тело ``PATCH /api/my/listings/{id}``: новая цена и/или снять/вернуть."""
+
+    price: Decimal | None = Field(default=None, gt=0, le=1_000_000)
+    currency: Literal["GEL", "USD", "EUR"] | None = None
+    active: bool | None = Field(default=None, description="false — снять (сдано), true — вернуть")
+
+
+class MyListingOut(ListingOut):
+    """Своё объявление: как в поиске, плюс состояние."""
+
+    status: Literal["active", "off", "hidden"] = Field(
+        description="active — в поиске; off — снято собственником; hidden — скрыто модератором"
+    )
+
+    @classmethod
+    def build(cls, listing: Listing) -> "MyListingOut":
+        if listing.hidden_at is not None:
+            status: Literal["active", "off", "hidden"] = "hidden"
+        elif listing.status.value == "active":
+            status = "active"
+        else:
+            status = "off"
+        return cls(**ListingOut.from_model(listing).model_dump(), status=status)
+
+
+class MyListingsOut(BaseModel):
+    items: list[MyListingOut]
+    limit: int = Field(description="Сколько объявлений может быть в поиске одновременно")

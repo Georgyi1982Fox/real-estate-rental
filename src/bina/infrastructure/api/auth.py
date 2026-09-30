@@ -22,6 +22,8 @@ class TelegramIdentity:
 
     telegram_id: int
     language_code: str | None = None
+    # Имя пользователя в Telegram (для ссылки «написать» в объявлении собственника)
+    username: str | None = None
 
 
 def _unauthorized(detail: str) -> HTTPException:
@@ -51,7 +53,11 @@ def verify_init_data(
         raise _unauthorized("Telegram init data expired")
     if data.user is None:
         raise _unauthorized("Telegram init data has no user")
-    return TelegramIdentity(telegram_id=data.user.id, language_code=data.user.language_code)
+    return TelegramIdentity(
+        telegram_id=data.user.id,
+        language_code=data.user.language_code,
+        username=data.user.username,
+    )
 
 
 def resolve_identity(

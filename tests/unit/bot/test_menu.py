@@ -82,6 +82,7 @@ COMMAND_BUTTONS = {
     "premium": MenuSection.PREMIUM,
     "invite": MenuSection.INVITE,
     "rent": MenuSection.RENT,
+    "mylistings": MenuSection.OWNER,
     "terms": MenuSection.TERMS,
     "privacy": MenuSection.PRIVACY,
     "paysupport": MenuSection.SUPPORT,

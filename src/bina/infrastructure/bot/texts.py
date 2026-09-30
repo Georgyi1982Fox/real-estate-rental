@@ -29,6 +29,111 @@ _RU: dict[str, str] = {
     "menu_premium": "⭐ Premium",
     "menu_invite": "🎁 Пригласить друга",
     "menu_rent": "🗓 Оплата аренды",
+    # TASK-096: собственник размещает квартиру
+    "menu_owner": "🏠 Сдать квартиру",
+    "owner_list": (
+        "🏠 <b>Ваши объявления</b>\n"
+        "\n"
+        "{items}\n"
+        "\n"
+        "Объявления видны всем в поиске. Сдали квартиру — снимите объявление."
+    ),
+    "owner_list_empty": (
+        "🏠 <b>Сдаёте квартиру?</b>\n"
+        "\n"
+        "Разместите объявление бесплатно: его увидят все, кто ищет жильё в Bina.ai. Это "
+        "займёт пару минут: город, район, цена, фото и описание.\n"
+        "\n"
+        "Можно до {limit} объявлений одновременно."
+    ),
+    "owner_list_item": "<b>{n}. {title}</b>\n💰 {price} · {status}",
+    "owner_status_active": "🟢 в поиске",
+    "owner_status_off": "⚪ снято",
+    "owner_status_hidden": "🔴 скрыто модератором",
+    "owner_new": "✍️ Разместить квартиру",
+    "owner_off": "⚪ Снять №{n}",
+    "owner_on": "🟢 Вернуть №{n}",
+    "owner_edit_price": "💰 Цена №{n}",
+    "owner_my": "🏠 Мои объявления",
+    "owner_ask_city": "🏙 <b>Шаг 1.</b> В каком городе квартира?",
+    "owner_ask_district": "📍 <b>Шаг 2.</b> Напишите район ({city}), например: <i>Ваке</i>.",
+    "owner_bad_district": "Напишите название района (хотя бы 2 буквы).",
+    "owner_ask_period": "📅 <b>Шаг 3.</b> Как сдаёте?",
+    "owner_ask_rooms": "🚪 <b>Шаг 4.</b> Сколько комнат?",
+    "owner_studio": "1 / студия",
+    "owner_ask_area": "📐 <b>Шаг 5.</b> Площадь в м², например: <i>60</i>.",
+    "owner_bad_area": "Напишите площадь числом от 10 до 1000, например: 60.",
+    "owner_ask_price": (
+        "💰 <b>Шаг 6.</b> Цена в месяц, например: <i>1500</i> (лари) или <i>600$</i>."
+    ),
+    "owner_ask_price_daily": (
+        "💰 <b>Шаг 6.</b> Цена за сутки, например: <i>100</i> (лари) или <i>40$</i>."
+    ),
+    "owner_bad_price": "Не понял цену. Напишите число, например: 1500 или 600$.",
+    "owner_ask_floor": (
+        "🏢 <b>Шаг 7.</b> Этаж и этажей в доме, например: <i>5/9</i>. Можно пропустить."
+    ),
+    "owner_bad_floor": "Напишите этаж так: 5/9 (или просто 5). Или нажмите «Пропустить».",
+    "owner_skip": "⏭ Пропустить",
+    "owner_ask_description": (
+        "📝 <b>Шаг 8.</b> Опишите квартиру: ремонт, мебель и техника, что рядом, условия "
+        "(залог, животные). На любом языке — переведём на грузинский, русский и английский."
+    ),
+    "owner_bad_description": "Описание — от 20 до 3000 знаков. Напишите чуть подробнее.",
+    "owner_ask_photos": (
+        "📷 <b>Шаг 9.</b> Пришлите фото квартиры (до {limit}). Можно сразу несколько."
+    ),
+    "owner_photo_added": "📷 Фото {count}/{limit}. Пришлите ещё или нажмите «Готово».",
+    "owner_photos_full": "Уже {limit} фото — больше нельзя. Нажмите «Готово».",
+    "owner_send_photo": "Пришлите фото (до {limit}) или нажмите «Готово» под последним фото.",
+    "owner_need_photo": "Нужно хотя бы одно фото.",
+    "owner_done": "✅ Готово",
+    "owner_ask_phone": (
+        "📱 <b>Шаг 10.</b> Как с вами связаться? Нажмите «Отправить номер» или напишите телефон."
+    ),
+    "owner_share_phone": "📱 Отправить номер",
+    "owner_no_phone": "✉️ Только через Telegram",
+    "owner_bad_phone": "Не похоже на телефон. Напишите номер цифрами, например: +995555123456.",
+    "owner_phone_ok": "👍 Спасибо!",
+    "owner_preview": (
+        "👀 <b>Проверьте объявление</b>\n"
+        "\n"
+        "🏙 {city}, {district}\n"
+        "🚪 Комнат: {rooms} · 📐 {area} м² · 🏢 Этаж: {floor}\n"
+        "💰 {price}\n"
+        "📷 Фото: {photos}\n"
+        "📱 Телефон: {phone}\n"
+        "✉️ Telegram: {telegram}\n"
+        "\n"
+        "{description}"
+    ),
+    "owner_publish": "✅ Опубликовать",
+    "owner_cancel": "❌ Отменить",
+    "owner_cancelled": "Размещение отменено.",
+    "owner_published": (
+        "🎉 <b>Объявление опубликовано!</b> Его уже видно в поиске.\n"
+        "\n"
+        "{listing}\n"
+        "\n"
+        "Сдали квартиру — снимите объявление в «🏠 Мои объявления»."
+    ),
+    "owner_turned_off": "Объявление снято",
+    "owner_turned_on": "Объявление снова в поиске",
+    "owner_ask_new_price": "💰 Напишите новую цену, например: 1400 или 550$.",
+    "owner_price_saved": "✅ Новая цена: {price}",
+    "owner_error_limit": (
+        "Можно держать в поиске не больше {limit} объявлений. Снимите одно из старых."
+    ),
+    "owner_error_no_contact": (
+        "Нужен телефон или имя пользователя в Telegram, чтобы с вами могли связаться."
+    ),
+    "owner_error_not_found": "Объявление не найдено.",
+    "owner_error_too_many_photos": "Слишком много фото.",
+    "owner_error_bad_photo": "Это не фото.",
+    "owner_admin_new": (
+        "🆕 <b>Новое объявление собственника</b>\n\n{listing}\n📷 Фото: {photos}\n\n{description}"
+    ),
+    "owner_admin_hide": "🚫 Скрыть",
     "menu_help": "❓ Помощь",
     "menu_support": "💬 Поддержка",
     "menu_terms": "📄 Соглашение",
@@ -53,6 +158,7 @@ _RU: dict[str, str] = {
         "/premium: Premium-подписка\n"
         "/invite: пригласить друга\n"
         "/rent: напоминания об оплате аренды\n"
+        "/mylistings: сдать свою квартиру\n"
         "/terms: пользовательское соглашение\n"
         "/privacy: политика конфиденциальности\n"
         "/help: эта справка\n\n"
@@ -258,6 +364,120 @@ _EN: dict[str, str] = {
     "menu_premium": "⭐ Premium",
     "menu_invite": "🎁 Invite a friend",
     "menu_rent": "🗓 Rent payments",
+    # TASK-096: собственник размещает квартиру
+    "menu_owner": "🏠 Rent out an apartment",
+    "owner_list": (
+        "🏠 <b>Your listings</b>\n"
+        "\n"
+        "{items}\n"
+        "\n"
+        "Everyone sees your listings in search. Rented it out? Take the listing down."
+    ),
+    "owner_list_empty": (
+        "🏠 <b>Renting out an apartment?</b>\n"
+        "\n"
+        "Post a listing for free: everyone looking for a home on Bina.ai will see it. It "
+        "takes a couple of minutes: city, district, price, photos and description.\n"
+        "\n"
+        "Up to {limit} listings at a time."
+    ),
+    "owner_list_item": "<b>{n}. {title}</b>\n💰 {price} · {status}",
+    "owner_status_active": "🟢 in search",
+    "owner_status_off": "⚪ taken down",
+    "owner_status_hidden": "🔴 hidden by moderator",
+    "owner_new": "✍️ Post an apartment",
+    "owner_off": "⚪ Take down #{n}",
+    "owner_on": "🟢 Restore #{n}",
+    "owner_edit_price": "💰 Price #{n}",
+    "owner_my": "🏠 My listings",
+    "owner_ask_city": "🏙 <b>Step 1.</b> Which city is the apartment in?",
+    "owner_ask_district": (
+        "📍 <b>Step 2.</b> Type the district ({city}), for example: <i>Vake</i>."
+    ),
+    "owner_bad_district": "Type the district name (at least 2 letters).",
+    "owner_ask_period": "📅 <b>Step 3.</b> How do you rent it out?",
+    "owner_ask_rooms": "🚪 <b>Step 4.</b> How many rooms?",
+    "owner_studio": "1 / studio",
+    "owner_ask_area": "📐 <b>Step 5.</b> Area in m², for example: <i>60</i>.",
+    "owner_bad_area": "Type the area as a number from 10 to 1000, for example: 60.",
+    "owner_ask_price": (
+        "💰 <b>Step 6.</b> Price per month, for example: <i>1500</i> (GEL) or <i>600$</i>."
+    ),
+    "owner_ask_price_daily": (
+        "💰 <b>Step 6.</b> Price per day, for example: <i>100</i> (GEL) or <i>40$</i>."
+    ),
+    "owner_bad_price": "I didn't get the price. Type a number, for example: 1500 or 600$.",
+    "owner_ask_floor": (
+        "🏢 <b>Step 7.</b> Floor and floors in the building, for example: <i>5/9</i>. You "
+        "can skip this."
+    ),
+    "owner_bad_floor": "Type the floor like this: 5/9 (or just 5). Or tap “Skip”.",
+    "owner_skip": "⏭ Skip",
+    "owner_ask_description": (
+        "📝 <b>Step 8.</b> Describe the apartment: renovation, furniture and appliances, "
+        "what's nearby, terms (deposit, pets). Any language — we'll translate it into "
+        "Georgian, Russian and English."
+    ),
+    "owner_bad_description": (
+        "The description should be 20 to 3000 characters. Please add a bit more."
+    ),
+    "owner_ask_photos": (
+        "📷 <b>Step 9.</b> Send photos of the apartment (up to {limit}). You can send "
+        "several at once."
+    ),
+    "owner_photo_added": "📷 Photo {count}/{limit}. Send more or tap “Done”.",
+    "owner_photos_full": "That's already {limit} photos, the maximum. Tap “Done”.",
+    "owner_send_photo": "Send photos (up to {limit}) or tap “Done” under the last photo.",
+    "owner_need_photo": "At least one photo is needed.",
+    "owner_done": "✅ Done",
+    "owner_ask_phone": (
+        "📱 <b>Step 10.</b> How can people contact you? Tap “Share number” or type your phone."
+    ),
+    "owner_share_phone": "📱 Share number",
+    "owner_no_phone": "✉️ Telegram only",
+    "owner_bad_phone": (
+        "That doesn't look like a phone number. Type it in digits, for example: +995555123456."
+    ),
+    "owner_phone_ok": "👍 Thanks!",
+    "owner_preview": (
+        "👀 <b>Check your listing</b>\n"
+        "\n"
+        "🏙 {city}, {district}\n"
+        "🚪 Rooms: {rooms} · 📐 {area} m² · 🏢 Floor: {floor}\n"
+        "💰 {price}\n"
+        "📷 Photos: {photos}\n"
+        "📱 Phone: {phone}\n"
+        "✉️ Telegram: {telegram}\n"
+        "\n"
+        "{description}"
+    ),
+    "owner_publish": "✅ Publish",
+    "owner_cancel": "❌ Cancel",
+    "owner_cancelled": "Posting cancelled.",
+    "owner_published": (
+        "🎉 <b>Your listing is live!</b> It already shows up in search.\n"
+        "\n"
+        "{listing}\n"
+        "\n"
+        "Rented it out? Take it down in “🏠 My listings”."
+    ),
+    "owner_turned_off": "Listing taken down",
+    "owner_turned_on": "Listing is back in search",
+    "owner_ask_new_price": "💰 Type the new price, for example: 1400 or 550$.",
+    "owner_price_saved": "✅ New price: {price}",
+    "owner_error_limit": (
+        "You can have at most {limit} listings in search. Take down one of the old ones."
+    ),
+    "owner_error_no_contact": (
+        "A phone number or a Telegram username is needed so people can contact you."
+    ),
+    "owner_error_not_found": "Listing not found.",
+    "owner_error_too_many_photos": "Too many photos.",
+    "owner_error_bad_photo": "That's not a photo.",
+    "owner_admin_new": (
+        "🆕 <b>New owner listing</b>\n\n{listing}\n📷 Photos: {photos}\n\n{description}"
+    ),
+    "owner_admin_hide": "🚫 Hide",
     "menu_help": "❓ Help",
     "menu_support": "💬 Support",
     "menu_terms": "📄 Terms",
@@ -282,6 +502,7 @@ _EN: dict[str, str] = {
         "/premium: Premium subscription\n"
         "/invite: invite a friend\n"
         "/rent: rent payment reminders\n"
+        "/mylistings: rent out your apartment\n"
         "/terms: terms of use\n"
         "/privacy: privacy policy\n"
         "/help: this help\n\n"
@@ -488,6 +709,112 @@ _KA: dict[str, str] = {
     "menu_premium": "⭐ Premium",
     "menu_invite": "🎁 მეგობრის მოწვევა",
     "menu_rent": "🗓 ქირის გადახდა",
+    # TASK-096: собственник размещает квартиру
+    "menu_owner": "🏠 ბინის გაქირავება",
+    "owner_list": (
+        "🏠 <b>თქვენი განცხადებები</b>\n"
+        "\n"
+        "{items}\n"
+        "\n"
+        "განცხადებები ძებნაში ყველასთვის ჩანს. ბინა გააქირავეთ? მოხსენით განცხადება."
+    ),
+    "owner_list_empty": (
+        "🏠 <b>ბინას აქირავებთ?</b>\n"
+        "\n"
+        "განათავსეთ განცხადება უფასოდ: მას ნახავს ყველა, ვინც Bina.ai-ზე საცხოვრებელს "
+        "ეძებს. ამას რამდენიმე წუთი სჭირდება: ქალაქი, უბანი, ფასი, ფოტოები და აღწერა.\n"
+        "\n"
+        "ერთდროულად შეიძლება {limit} განცხადებამდე."
+    ),
+    "owner_list_item": "<b>{n}. {title}</b>\n💰 {price} · {status}",
+    "owner_status_active": "🟢 ძებნაშია",
+    "owner_status_off": "⚪ მოხსნილია",
+    "owner_status_hidden": "🔴 დამალულია მოდერატორის მიერ",
+    "owner_new": "✍️ ბინის განთავსება",
+    "owner_off": "⚪ მოხსნა №{n}",
+    "owner_on": "🟢 დაბრუნება №{n}",
+    "owner_edit_price": "💰 ფასი №{n}",
+    "owner_my": "🏠 ჩემი განცხადებები",
+    "owner_ask_city": "🏙 <b>ნაბიჯი 1.</b> რომელ ქალაქშია ბინა?",
+    "owner_ask_district": "📍 <b>ნაბიჯი 2.</b> დაწერეთ უბანი ({city}), მაგალითად: <i>ვაკე</i>.",
+    "owner_bad_district": "დაწერეთ უბნის სახელი (მინიმუმ 2 ასო).",
+    "owner_ask_period": "📅 <b>ნაბიჯი 3.</b> როგორ აქირავებთ?",
+    "owner_ask_rooms": "🚪 <b>ნაბიჯი 4.</b> რამდენი ოთახია?",
+    "owner_studio": "1 / სტუდიო",
+    "owner_ask_area": "📐 <b>ნაბიჯი 5.</b> ფართი მ²-ში, მაგალითად: <i>60</i>.",
+    "owner_bad_area": "დაწერეთ ფართი რიცხვით 10-დან 1000-მდე, მაგალითად: 60.",
+    "owner_ask_price": (
+        "💰 <b>ნაბიჯი 6.</b> ფასი თვეში, მაგალითად: <i>1500</i> (ლარი) ან <i>600$</i>."
+    ),
+    "owner_ask_price_daily": (
+        "💰 <b>ნაბიჯი 6.</b> ფასი დღეში, მაგალითად: <i>100</i> (ლარი) ან <i>40$</i>."
+    ),
+    "owner_bad_price": "ფასი ვერ გავიგე. დაწერეთ რიცხვი, მაგალითად: 1500 ან 600$.",
+    "owner_ask_floor": (
+        "🏢 <b>ნაბიჯი 7.</b> სართული და სართულიანობა, მაგალითად: <i>5/9</i>. შეგიძლიათ გამოტოვოთ."
+    ),
+    "owner_bad_floor": "დაწერეთ სართული ასე: 5/9 (ან უბრალოდ 5). ან დააჭირეთ „გამოტოვება“.",
+    "owner_skip": "⏭ გამოტოვება",
+    "owner_ask_description": (
+        "📝 <b>ნაბიჯი 8.</b> აღწერეთ ბინა: რემონტი, ავეჯი და ტექნიკა, რა არის ახლოს, "
+        "პირობები (დეპოზიტი, ცხოველები). ნებისმიერ ენაზე — ვთარგმნით ქართულად, რუსულად და "
+        "ინგლისურად."
+    ),
+    "owner_bad_description": ("აღწერა უნდა იყოს 20-დან 3000 სიმბოლომდე. დაწერეთ ცოტა დაწვრილებით."),
+    "owner_ask_photos": (
+        "📷 <b>ნაბიჯი 9.</b> გამოგზავნეთ ბინის ფოტოები ({limit}-მდე). შეიძლება ერთად რამდენიმე."
+    ),
+    "owner_photo_added": "📷 ფოტო {count}/{limit}. გამოგზავნეთ კიდევ ან დააჭირეთ „მზადაა“.",
+    "owner_photos_full": "უკვე {limit} ფოტოა — მეტი არ შეიძლება. დააჭირეთ „მზადაა“.",
+    "owner_send_photo": ("გამოგზავნეთ ფოტოები ({limit}-მდე) ან დააჭირეთ „მზადაა“ ბოლო ფოტოს ქვეშ."),
+    "owner_need_photo": "საჭიროა მინიმუმ ერთი ფოტო.",
+    "owner_done": "✅ მზადაა",
+    "owner_ask_phone": (
+        "📱 <b>ნაბიჯი 10.</b> როგორ დაგიკავშირდნენ? დააჭირეთ „ნომრის გაგზავნა“ ან დაწერეთ ტელეფონი."
+    ),
+    "owner_share_phone": "📱 ნომრის გაგზავნა",
+    "owner_no_phone": "✉️ მხოლოდ Telegram-ით",
+    "owner_bad_phone": "ტელეფონს არ ჰგავს. დაწერეთ ნომერი ციფრებით, მაგალითად: +995555123456.",
+    "owner_phone_ok": "👍 გმადლობთ!",
+    "owner_preview": (
+        "👀 <b>შეამოწმეთ განცხადება</b>\n"
+        "\n"
+        "🏙 {city}, {district}\n"
+        "🚪 ოთახები: {rooms} · 📐 {area} მ² · 🏢 სართული: {floor}\n"
+        "💰 {price}\n"
+        "📷 ფოტო: {photos}\n"
+        "📱 ტელეფონი: {phone}\n"
+        "✉️ Telegram: {telegram}\n"
+        "\n"
+        "{description}"
+    ),
+    "owner_publish": "✅ გამოქვეყნება",
+    "owner_cancel": "❌ გაუქმება",
+    "owner_cancelled": "განთავსება გაუქმდა.",
+    "owner_published": (
+        "🎉 <b>განცხადება გამოქვეყნდა!</b> ის უკვე ჩანს ძებნაში.\n"
+        "\n"
+        "{listing}\n"
+        "\n"
+        "ბინა გააქირავეთ? მოხსენით განცხადება „🏠 ჩემი განცხადებები“-ში."
+    ),
+    "owner_turned_off": "განცხადება მოიხსნა",
+    "owner_turned_on": "განცხადება ისევ ძებნაშია",
+    "owner_ask_new_price": "💰 დაწერეთ ახალი ფასი, მაგალითად: 1400 ან 550$.",
+    "owner_price_saved": "✅ ახალი ფასი: {price}",
+    "owner_error_limit": (
+        "ძებნაში შეიძლება იყოს არაუმეტეს {limit} განცხადება. მოხსენით ერთ-ერთი ძველი."
+    ),
+    "owner_error_no_contact": (
+        "საჭიროა ტელეფონი ან Telegram-ის მომხმარებლის სახელი, რომ დაგიკავშირდნენ."
+    ),
+    "owner_error_not_found": "განცხადება ვერ მოიძებნა.",
+    "owner_error_too_many_photos": "ძალიან ბევრი ფოტოა.",
+    "owner_error_bad_photo": "ეს ფოტო არ არის.",
+    "owner_admin_new": (
+        "🆕 <b>მესაკუთრის ახალი განცხადება</b>\n\n{listing}\n📷 ფოტო: {photos}\n\n{description}"
+    ),
+    "owner_admin_hide": "🚫 დამალვა",
     "menu_help": "❓ დახმარება",
     "menu_support": "💬 მხარდაჭერა",
     "menu_terms": "📄 შეთანხმება",
@@ -512,6 +839,7 @@ _KA: dict[str, str] = {
         "/premium: Premium გამოწერა\n"
         "/invite: მეგობრის მოწვევა\n"
         "/rent: ქირის გადახდის შეხსენებები\n"
+        "/mylistings: თქვენი ბინის გაქირავება\n"
         "/terms: სამომხმარებლო შეთანხმება\n"
         "/privacy: კონფიდენციალურობის პოლიტიკა\n"
         "/help: ეს დახმარება\n\n"

@@ -61,6 +61,8 @@ def home_menu(language: str, mini_app_url: str | None, admin: bool = False) -> I
             _button(language, "menu_rent", MenuSection.RENT),
             _button(language, "menu_profile", MenuSection.PROFILE),
         ],
+        # TASK-096: собственник сдаёт свою квартиру
+        [_button(language, "menu_owner", MenuSection.OWNER)],
         [
             _button(language, "menu_help", MenuSection.HELP),
             _button(language, "menu_support", MenuSection.SUPPORT),
