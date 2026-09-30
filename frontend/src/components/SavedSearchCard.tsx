@@ -16,6 +16,7 @@ const normalize = (text: string) => text.replace(/[^\p{L}\p{N}]/gu, '').toLowerC
 
 interface SavedSearchCardProps {
   search: SavedSearch;
+  /** Районы поиска словами: «Ваке, Сабуртало +1» */
   districtName: string;
   /** Переход на главную с фильтрами поиска — новые квартиры считаются просмотренными */
   onOpen: () => void;

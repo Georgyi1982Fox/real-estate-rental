@@ -3,8 +3,10 @@ import type { Listing } from '../api/types';
 import type { DistrictNames } from '../hooks/useDistricts';
 import { useFavorites } from '../hooks/useFavorites';
 import { formatPrice, tr } from '../lib/format';
+import { fraudLevel } from '../lib/fraud';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
+import FraudBadge from './FraudBadge';
 
 interface ListingCardProps {
   listing: Listing;
@@ -57,6 +59,8 @@ export default function ListingCard({
               {t.card.no_photo}
             </div>
           )}
+
+          {fraudLevel(listing) !== 'none' && <FraudBadge />}
 
           <button
             type="button"

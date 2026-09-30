@@ -54,7 +54,13 @@ export default function PlanComparison({ free, premium, plan, isPremium }: PlanC
       <h2 id={titleId} className="px-4 pb-1 pt-4 text-lg font-semibold sm:px-5">
         {pt.compare}
       </h2>
-      <table className="plan-comparison__table w-full border-collapse text-sm">
+      {/* Фиксированные колонки: ширина не зависит от длины перевода, «Бесплатно» = «Premium» */}
+      <table className="plan-comparison__table w-full table-fixed border-collapse text-sm">
+        <colgroup>
+          <col className="w-[36%]" />
+          <col className="w-[32%]" />
+          <col className="w-[32%]" />
+        </colgroup>
         <thead>
           <tr className="text-left">
             <th scope="col" className={`${CELL} font-medium text-[var(--text-secondary)]`}>
@@ -80,7 +86,7 @@ export default function PlanComparison({ free, premium, plan, isPremium }: PlanC
               >
                 {row.label}
               </th>
-              <td className={`${CELL} whitespace-nowrap`}>{row.free}</td>
+              <td className={CELL}>{row.free}</td>
               <td
                 className={`${CELL} plan-comparison__premium bg-[var(--accent)]/10 font-semibold`}
               >

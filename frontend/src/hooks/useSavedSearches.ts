@@ -7,7 +7,7 @@ import type {
   SearchFilters,
   UpdateSavedSearchRequest,
 } from '../api/types';
-import { sameFilters } from '../lib/searchFilters';
+import { sameFilters, toSavedFilters } from '../lib/searchFilters';
 import { haptic } from '../lib/telegram';
 import { useAuth } from '../providers/AuthProvider';
 import { useI18n } from '../providers/I18nProvider';
@@ -156,7 +156,9 @@ export function useSavedSearches() {
   );
 
   const save = useCallback(
-    async (filters: SearchFilters, name?: string): Promise<SavedSearch | null> => {
+    async (searchFilters: SearchFilters, name?: string): Promise<SavedSearch | null> => {
+      // Один район — поле district, несколько — массив districts
+      const filters = toSavedFilters(searchFilters);
       const body: CreateSavedSearchRequest = { filters, notify: true };
       if (name) body.name = name;
       try {

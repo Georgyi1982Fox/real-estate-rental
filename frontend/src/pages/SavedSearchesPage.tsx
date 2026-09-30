@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import type { SavedSearch } from '../api/types';
 import { Link } from 'react-router-dom';
 import ConfirmDialog from '../components/ConfirmDialog';
 import EmptyState from '../components/EmptyState';
@@ -11,8 +12,8 @@ import { useDistricts } from '../hooks/useDistricts';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useSavedSearches } from '../hooks/useSavedSearches';
 import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
-import { fill, tr } from '../lib/format';
-import { describeFilters } from '../lib/searchFilters';
+import { fill } from '../lib/format';
+import { describeFilters, districtsLabel, filterDistricts } from '../lib/searchFilters';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 import { useToast } from '../providers/ToastProvider';
@@ -37,14 +38,12 @@ export default function SavedSearchesPage() {
   useDocumentTitle(`${st.page_title} — Bina.ai`);
   useTelegramBackButton('/');
 
-  const districtName = (id?: string) => (id && names[id] ? tr(names[id], lang) : '');
+  const districtName = (search: SavedSearch) =>
+    districtsLabel(filterDistricts(search.filters), names, lang);
   const titleOf = (id: string) => {
     const search = searches.find((item) => item.id === id);
     if (!search) return '';
-    return (
-      search.name.trim() ||
-      describeFilters(search.filters, districtName(search.filters.district), st)
-    );
+    return search.name.trim() || describeFilters(search.filters, districtName(search), st);
   };
   const dialogTitle = dialog ? titleOf(dialog.id) : '';
 
@@ -107,7 +106,7 @@ export default function SavedSearchesPage() {
           <li key={search.id}>
             <SavedSearchCard
               search={search}
-              districtName={districtName(search.filters.district)}
+              districtName={districtName(search)}
               onOpen={() => markSeen(search.id)}
               onToggleNotify={() => void toggleNotify(search.id)}
               onRename={() => setDialog({ kind: 'rename', id: search.id })}

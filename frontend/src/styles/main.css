@@ -352,4 +352,90 @@
       display: none;
     }
   }
+
+  /* Модалка: фон затемняется 150 мс, лист выезжает снизу 240 мс; закрытие — обратно.
+     Длительность закрытия совпадает с CLOSE_MS в Modal.tsx */
+  html.scroll-locked,
+  html.scroll-locked body {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  .modal::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgb(0 0 0 / 0.4);
+    backdrop-filter: blur(4px);
+    animation: modal-fade-in 150ms ease-out;
+  }
+  .modal[data-state='closing'] {
+    pointer-events: none;
+  }
+  .modal[data-state='closing']::before {
+    animation: modal-fade-out 200ms ease-in forwards;
+  }
+  .modal__panel {
+    /* --sheet-drag — смещение при свайпе вниз (Modal.tsx) */
+    transform: translateY(var(--sheet-drag, 0px));
+    transition: transform 200ms ease-out;
+    animation: modal-sheet-in 240ms ease-out;
+  }
+  .modal__panel.is-dragging {
+    transition: none;
+  }
+  .modal[data-state='closing'] .modal__panel {
+    animation: modal-sheet-out 200ms ease-in forwards;
+  }
+  @media (min-width: 640px) {
+    .modal__panel {
+      animation-name: modal-dialog-in;
+    }
+    .modal[data-state='closing'] .modal__panel {
+      animation-name: modal-dialog-out;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    /* Без движения — только прозрачность */
+    .modal__panel,
+    .modal[data-state='closing'] .modal__panel {
+      transition: none;
+      animation-name: modal-fade-in;
+    }
+    .modal[data-state='closing'] .modal__panel {
+      animation-name: modal-fade-out;
+    }
+  }
+  @keyframes modal-fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes modal-fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+  /* Без from: закрытие начинается с текущего места, в том числе после свайпа */
+  @keyframes modal-sheet-in {
+    from {
+      transform: translateY(100%);
+    }
+  }
+  @keyframes modal-sheet-out {
+    to {
+      transform: translateY(100%);
+    }
+  }
+  @keyframes modal-dialog-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.97);
+    }
+  }
+  @keyframes modal-dialog-out {
+    to {
+      opacity: 0;
+      transform: translateY(8px) scale(0.97);
+    }
+  }
 }
