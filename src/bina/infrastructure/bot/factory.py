@@ -20,6 +20,7 @@ COMMANDS: dict[str, dict[str, str]] = {
     "ru": {
         "search": "Поиск жилья",
         "smart": "Умный поиск своими словами",
+        "daily": "Посуточная аренда",
         "favorites": "Избранное",
         "profile": "Профиль и язык",
         "premium": "Premium-подписка",
@@ -33,6 +34,7 @@ COMMANDS: dict[str, dict[str, str]] = {
     "en": {
         "search": "Find a home",
         "smart": "Smart search in your own words",
+        "daily": "Daily rent",
         "favorites": "Favorites",
         "profile": "Profile and language",
         "premium": "Premium subscription",
@@ -46,6 +48,7 @@ COMMANDS: dict[str, dict[str, str]] = {
     "ka": {
         "search": "ბინის ძებნა",
         "smart": "ჭკვიანი ძებნა საკუთარი სიტყვებით",
+        "daily": "დღიური ქირა",
         "favorites": "რჩეულები",
         "profile": "პროფილი და ენა",
         "premium": "Premium გამოწერა",

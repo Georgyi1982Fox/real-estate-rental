@@ -24,13 +24,15 @@ from bina.infrastructure.db.models import District, Listing
 DISTRICTS_PER_PAGE = 12
 
 
-def city_keyboard(cities: Sequence[str], language: str) -> InlineKeyboardMarkup:
+def city_keyboard(
+    cities: Sequence[str], language: str, period: str | None = None
+) -> InlineKeyboardMarkup:
     """Выбор города (TASK-079), если районы есть больше чем в одном городе."""
     builder = InlineKeyboardBuilder()
     for code in cities:
         builder.button(
             text=f"🏙 {city_name(code, language)}",
-            callback_data=SearchCallback(step=SearchStep.DISTRICT, city=code),
+            callback_data=SearchCallback(step=SearchStep.DISTRICT, city=code, period=period),
         )
     builder.adjust(2)
     return builder.as_markup()
@@ -43,8 +45,9 @@ def district_keyboard(
     city: str | None = None,
     *,
     back_to_cities: bool = False,
+    period: str | None = None,
 ) -> InlineKeyboardMarkup:
-    """Шаг 1: выбор района города (по 2 в ряд, с пагинацией)."""
+    """Шаг 1: выбор района города (по 2 в ряд, с пагинацией); ``period`` — вид аренды."""
     pages = max(1, -(-len(districts) // DISTRICTS_PER_PAGE))
     page = min(max(page, 0), pages - 1)
     chunk = districts[page * DISTRICTS_PER_PAGE : (page + 1) * DISTRICTS_PER_PAGE]
@@ -52,36 +55,42 @@ def district_keyboard(
     builder = InlineKeyboardBuilder()
     builder.button(
         text=f"🌍 {t(language, 'any_district')}",
-        callback_data=SearchCallback(step=SearchStep.PRICE, city=city),
+        callback_data=SearchCallback(step=SearchStep.PRICE, city=city, period=period),
     )
     for district in chunk:
         builder.button(
             text=district_name(district, language),
-            callback_data=SearchCallback(step=SearchStep.PRICE, district=district.id, city=city),
+            callback_data=SearchCallback(
+                step=SearchStep.PRICE, district=district.id, city=city, period=period
+            ),
         )
     builder.adjust(1, 2)
 
     if pages > 1:
         nav: list[InlineKeyboardButton] = []
         if page > 0:
-            nav.append(_district_page_button("◀️", page - 1, city))
+            nav.append(_district_page_button("◀️", page - 1, city, period))
         if page < pages - 1:
-            nav.append(_district_page_button("▶️", page + 1, city))
+            nav.append(_district_page_button("▶️", page + 1, city, period))
         builder.row(*nav)
     if back_to_cities:
         builder.row(
             InlineKeyboardButton(
                 text=t(language, "back"),
-                callback_data=SearchCallback(step=SearchStep.CITY).pack(),
+                callback_data=SearchCallback(step=SearchStep.CITY, period=period).pack(),
             )
         )
     return builder.as_markup()
 
 
-def _district_page_button(text: str, page: int, city: str | None) -> InlineKeyboardButton:
+def _district_page_button(
+    text: str, page: int, city: str | None, period: str | None
+) -> InlineKeyboardButton:
     return InlineKeyboardButton(
         text=text,
-        callback_data=SearchCallback(step=SearchStep.DISTRICT, page=page, city=city).pack(),
+        callback_data=SearchCallback(
+            step=SearchStep.DISTRICT, page=page, city=city, period=period
+        ).pack(),
     )
 
 
@@ -115,7 +124,7 @@ def price_keyboard(
     )
     builder.button(
         text=t(language, "back"),
-        callback_data=SearchCallback(step=SearchStep.DISTRICT, city=city),
+        callback_data=SearchCallback(step=SearchStep.DISTRICT, city=city, period=period),
     )
     builder.adjust(2)
     return builder.as_markup()
@@ -178,7 +187,8 @@ def results_keyboard(
         [
             InlineKeyboardButton(
                 text=t(language, "new_search"),
-                callback_data=SearchCallback(step=SearchStep.CITY).pack(),
+                # Новый поиск — того же вида аренды (TASK-092)
+                callback_data=SearchCallback(step=SearchStep.CITY, period=query.period).pack(),
             )
         ]
     )

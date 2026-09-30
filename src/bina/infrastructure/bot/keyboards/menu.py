@@ -44,8 +44,11 @@ def home_menu(language: str, mini_app_url: str | None, admin: bool = False) -> I
             _button(language, "menu_search", MenuSection.SEARCH),
             _button(language, "menu_favorites", MenuSection.FAVORITES),
         ],
-        # TASK-012: поиск своими словами — отдельной заметной кнопкой
-        [_button(language, "menu_smart", MenuSection.SMART)],
+        # TASK-012: поиск своими словами; TASK-092: сразу посуточная аренда
+        [
+            _button(language, "menu_smart", MenuSection.SMART),
+            _button(language, "menu_daily", MenuSection.DAILY),
+        ],
     ]
     if mini_app_url:
         rows.append([open_app_button(language, mini_app_url)])

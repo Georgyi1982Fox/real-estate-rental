@@ -10,7 +10,7 @@ from bina.application.cities import city_name
 from bina.application.use_cases.search_listings import SearchListingsUseCase
 from bina.infrastructure.bot.formatters import district_name, format_listings
 from bina.infrastructure.bot.handlers.common import edit_or_answer
-from bina.infrastructure.bot.keyboards.callbacks import SearchCallback, SearchStep
+from bina.infrastructure.bot.keyboards.callbacks import DAILY_PERIOD, SearchCallback, SearchStep
 from bina.infrastructure.bot.keyboards.filters import (
     filters_from_callback,
     price_label,
@@ -36,46 +36,75 @@ async def cmd_search(
     session: AsyncSession,
     user: User,
     settings: BotSettings,
+    period: str | None = None,
 ) -> None:
     """/search: выбор города (если их несколько, TASK-079), затем района.
 
-    Если районов в БД нет, сразу показывает все объявления.
+    Если районов в БД нет, сразу показывает все объявления. ``period`` — посуточная
+    аренда (``/daily``, TASK-092).
     """
     cities = await DistrictsRepository(session).cities()
     if not cities:
-        query = SearchCallback(step=SearchStep.RESULTS)
+        query = SearchCallback(step=SearchStep.RESULTS, period=period)
         text, markup = await _render_results(session, user, query, settings)
         await message.answer(t(user.language, "no_districts") + "\n\n" + text, reply_markup=markup)
         return
-    text, markup = await _first_step(session, user.language, cities)
+    text, markup = await _first_step(session, user.language, cities, period)
     await message.answer(text, reply_markup=markup)
 
 
+async def cmd_daily(
+    message: Message,
+    session: AsyncSession,
+    user: User,
+    settings: BotSettings,
+) -> None:
+    """/daily и кнопка «🛏 Посуточно»: поиск сразу посуточной аренды (TASK-092)."""
+    await cmd_search(message, session, user, settings, DAILY_PERIOD)
+
+
 async def _first_step(
-    session: AsyncSession, language: str, cities: list[str]
+    session: AsyncSession, language: str, cities: list[str], period: str | None = None
 ) -> tuple[str, InlineKeyboardMarkup]:
     """Город — если районы есть в нескольких городах, иначе сразу районы."""
     if len(cities) > 1:
-        return t(language, "choose_city"), city_keyboard(cities, language)
-    return await _district_step(session, language, cities[0] if cities else None, 0, cities)
+        text = _with_period_title(t(language, "choose_city"), language, period)
+        return text, city_keyboard(cities, language, period)
+    city = cities[0] if cities else None
+    return await _district_step(session, language, city, 0, cities, period)
 
 
 async def _district_step(
-    session: AsyncSession, language: str, city: str | None, page: int, cities: list[str]
+    session: AsyncSession,
+    language: str,
+    city: str | None,
+    page: int,
+    cities: list[str],
+    period: str | None = None,
 ) -> tuple[str, InlineKeyboardMarkup]:
     districts = await DistrictsRepository(session).list_all(city)
-    markup = district_keyboard(districts, page, language, city, back_to_cities=len(cities) > 1)
-    return t(language, "choose_district"), markup
+    markup = district_keyboard(
+        districts, page, language, city, back_to_cities=len(cities) > 1, period=period
+    )
+    return _with_period_title(t(language, "choose_district"), language, period), markup
+
+
+def _with_period_title(text: str, language: str, period: str | None) -> str:
+    """Посуточная аренда — с заголовком «🛏 Посуточная аренда» над шагом."""
+    if period == DAILY_PERIOD:
+        return f"{t(language, 'daily_search_title')}\n\n{text}"
+    return text
 
 
 async def on_city_step(
     callback: CallbackQuery,
+    callback_data: SearchCallback,
     session: AsyncSession,
     user: User,
 ) -> None:
     """Выбор города (кнопки «Назад» и «Новый поиск»)."""
     cities = await DistrictsRepository(session).cities()
-    text, markup = await _first_step(session, user.language, cities)
+    text, markup = await _first_step(session, user.language, cities, callback_data.period)
     await edit_or_answer(callback, text, markup, user.language)
 
 
@@ -88,7 +117,12 @@ async def on_district_step(
     """Шаг 1: (пере)показ списка районов города на нужной странице."""
     cities = await DistrictsRepository(session).cities()
     text, markup = await _district_step(
-        session, user.language, callback_data.city, callback_data.page, cities
+        session,
+        user.language,
+        callback_data.city,
+        callback_data.page,
+        cities,
+        callback_data.period,
     )
     await edit_or_answer(callback, text, markup, user.language)
 
@@ -234,6 +268,8 @@ def create_router() -> Router:
     router = Router(name="search")
     router.message.register(cmd_search, Command("search"))
     router.message.register(cmd_search, F.text.in_(all_variants("menu_search")))
+    router.message.register(cmd_daily, Command("daily"))
+    router.message.register(cmd_daily, F.text.in_(all_variants("menu_daily")))
     router.callback_query.register(on_city_step, _step_filter(SearchStep.CITY))
     router.callback_query.register(on_district_step, _step_filter(SearchStep.DISTRICT))
     router.callback_query.register(on_price_step, _step_filter(SearchStep.PRICE))
