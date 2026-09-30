@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bina.infrastructure.api.auth import INIT_DATA_HEADER
 from bina.infrastructure.api.errors import REQUEST_ID_HEADER, install_error_handling
+from bina.infrastructure.api.rate_limit import install_rate_limit
 from bina.infrastructure.api.routes import (
     acceptance,
     assistant,
@@ -64,6 +65,7 @@ def create_app(
     # Порядок важен: последний добавленный middleware — внешний. CORS снаружи,
     # чтобы заголовки попали и в ответы с ошибками (413, 500)
     install_body_limit(app)
+    install_rate_limit(app, settings)
     install_error_handling(app)
     app.add_middleware(
         CORSMiddleware,

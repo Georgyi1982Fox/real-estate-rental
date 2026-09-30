@@ -4,6 +4,9 @@ from dataclasses import dataclass
 
 DEFAULT_CORS_ORIGINS: tuple[str, ...] = ("https://georgyi1982fox.github.io",)
 DEFAULT_INIT_DATA_MAX_AGE = 24 * 60 * 60
+# TASK-019: запросов в минуту с одного IP — всего и «тяжёлых» (PDF, AI, оплата)
+DEFAULT_RATE_LIMIT = 120
+DEFAULT_HEAVY_RATE_LIMIT = 20
 
 
 class ApiConfigError(ValueError):
@@ -20,6 +23,8 @@ class ApiSettings:
       (по умолчанию ``https://georgyi1982fox.github.io``)
     - ``BOT_TOKEN``: токен бота, нужен для проверки подписи ``X-Telegram-Init-Data``
     - ``API_INIT_DATA_MAX_AGE``: срок жизни initData в секундах (по умолчанию сутки)
+    - ``API_RATE_LIMIT`` / ``API_HEAVY_RATE_LIMIT``: запросов в минуту с одного IP —
+      всего (120) и «тяжёлых»: PDF, AI, оплата, жалобы (20); ``0`` — без ограничения
     - ``API_ALLOW_INSECURE_USER_ID``: ``1``/``true``, разрешить ``?user_id=`` без
       подписи Telegram. **Только для локальной разработки**: любой сможет
       действовать от имени любого пользователя.
@@ -31,6 +36,9 @@ class ApiSettings:
     allow_insecure_user_id: bool = False
     # Telegram ID владельца (ADMIN_TELEGRAM_IDS): страница «Проверка функций» в Mini App
     admin_ids: tuple[int, ...] = ()
+    # TASK-019: запросов в минуту с одного IP (0 — без ограничения)
+    rate_limit: int = DEFAULT_RATE_LIMIT
+    heavy_rate_limit: int = DEFAULT_HEAVY_RATE_LIMIT
 
     def __post_init__(self) -> None:
         """Проверяет согласованность настроек."""
@@ -70,6 +78,10 @@ class ApiSettings:
             allow_insecure_user_id=(get("API_ALLOW_INSECURE_USER_ID") or "").lower()
             in {"1", "true", "yes"},
             admin_ids=_parse_admin_ids(get("ADMIN_TELEGRAM_IDS")),
+            rate_limit=_parse_int(get("API_RATE_LIMIT"), DEFAULT_RATE_LIMIT, "API_RATE_LIMIT"),
+            heavy_rate_limit=_parse_int(
+                get("API_HEAVY_RATE_LIMIT"), DEFAULT_HEAVY_RATE_LIMIT, "API_HEAVY_RATE_LIMIT"
+            ),
         )
 
 
@@ -83,3 +95,12 @@ def _parse_admin_ids(value: str | None) -> tuple[int, ...]:
         raise ApiConfigError(
             f"ADMIN_TELEGRAM_IDS must be comma-separated numbers, got {value!r}"
         ) from exc
+
+
+def _parse_int(value: str | None, default: int, name: str) -> int:
+    if not value:
+        return default
+    try:
+        return int(value)
+    except ValueError as exc:
+        raise ApiConfigError(f"{name} must be an integer, got {value!r}") from exc

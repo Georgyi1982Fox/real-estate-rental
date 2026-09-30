@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bina.infrastructure.bot.handlers import build_router
 from bina.infrastructure.bot.middlewares import DbSessionMiddleware, RegistrationMiddleware
+from bina.infrastructure.bot.middlewares.throttling import ThrottlingMiddleware
 from bina.infrastructure.bot.settings import BotSettings
 from bina.infrastructure.bot.texts import t
 from bina.infrastructure.payments.settings import load_plans
@@ -67,6 +68,8 @@ def create_dispatcher(
     Порядок middleware: сессия БД, затем регистрация (ей нужна сессия).
     """
     dispatcher = Dispatcher(settings=settings, plans=load_plans())
+    # Флуд отбрасывается до обращения к базе (TASK-019)
+    dispatcher.update.outer_middleware(ThrottlingMiddleware(settings.rate_limit))
     dispatcher.update.outer_middleware(DbSessionMiddleware(session_factory))
     dispatcher.update.outer_middleware(RegistrationMiddleware())
     dispatcher.include_router(build_router())
