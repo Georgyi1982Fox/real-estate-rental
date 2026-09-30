@@ -45,6 +45,7 @@ MIGRATIONS = (
     "ai_usage",
     "listing_geocoded",
     "complaints",
+    "premium_reminders",
 )
 
 

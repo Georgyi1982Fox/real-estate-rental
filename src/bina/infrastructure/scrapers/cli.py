@@ -19,6 +19,10 @@ from bina.application.use_cases.notifications import (
     DeliverNotificationsUseCase,
     DeliveryStats,
 )
+from bina.application.use_cases.premium_reminders import (
+    PremiumReminderStats,
+    PremiumRemindersUseCase,
+)
 from bina.application.use_cases.translate_listings import (
     TranslateListingsUseCase,
     TranslationStats,
@@ -382,6 +386,28 @@ def _echo_geocode(stats: GeocodeStats) -> None:
     )
 
 
+async def premium_reminders() -> PremiumReminderStats:
+    """Напоминания об окончании Premium (TASK-107); отправит их ``notify``."""
+    from bina.infrastructure.db.repositories.premium_reminders import (
+        PremiumRemindersRepository,
+    )
+
+    db = DatabaseManager()
+    try:
+        async with db.session_factory() as session:
+            stats = await PremiumRemindersUseCase(PremiumRemindersRepository(session)).execute(
+                datetime.now(UTC)
+            )
+            await session.commit()
+        return stats
+    finally:
+        await db.dispose()
+
+
+def _echo_premium(stats: PremiumReminderStats) -> None:
+    click.echo(f"premium: напоминаний {stats.reminded}, «закончился» {stats.expired}")
+
+
 async def notify() -> tuple[CreatedNotifications, DeliveryStats | None]:
     """Создаёт уведомления и отправляет их в Telegram (если задан ``BOT_TOKEN``)."""
     db = DatabaseManager()
@@ -548,6 +574,12 @@ def geocode_command(limit: int) -> None:
     _echo_geocode(asyncio.run(geocode(limit)))
 
 
+@cli.command(name="premium-reminders")
+def premium_reminders_command() -> None:
+    """Напомнить об окончании Premium (за 3 дня и после) — отправит `bina-scrape notify`."""
+    _echo_premium(asyncio.run(premium_reminders()))
+
+
 @cli.command(name="fraud")
 @click.option("--limit", default=50, show_default=True, type=click.IntRange(1, 5000))
 def fraud_command(limit: int) -> None:
@@ -651,6 +683,10 @@ def schedule(
                 click.echo(FRAUD_BUSY_MESSAGE)
             except Exception as exc:  # noqa: BLE001 - сбой проверки не останавливает расписание
                 logger.error("Scheduled fraud check failed", error=str(exc))
+        try:
+            _echo_premium(await premium_reminders())
+        except Exception as exc:  # noqa: BLE001 - сбой не останавливает расписание
+            logger.error("Scheduled premium reminders failed", error=str(exc))
         try:
             _echo_notifications(*await notify())
         except Exception as exc:  # noqa: BLE001 - сбой уведомлений не останавливает расписание

@@ -76,6 +76,15 @@ class User(Base, SoftDeleteMixin):
         nullable=True,
     )
 
+    # TASK-107: для какого срока окончания уже напомнили (за 3 дня) и сообщили, что
+    # Premium закончился; после продления срок другой — напоминания придут снова
+    premium_reminded_for: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    premium_expired_notified_for: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
     # Relationships
     favorites: Mapped[list["Favorite"]] = relationship(
         back_populates="user",
