@@ -1,4 +1,5 @@
 import re
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
@@ -20,6 +21,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload
 
+from bina.application.costs import GEL_RATES
 from bina.application.dtos.listing_search import ListingSearchFilters, ListingSort
 from bina.application.duplicates import candidate_bounds
 from bina.application.fraud import HIDE_SCORE
@@ -46,6 +48,16 @@ if TYPE_CHECKING:
 
 # Меньше объявлений в районе — медиана цены ненадёжна (TASK-011)
 MIN_MEDIAN_SAMPLES = 5
+
+
+@dataclass(frozen=True, slots=True)
+class DistrictStats:
+    """Статистика района по объявлениям в поиске; цены — в лари."""
+
+    listings: int
+    # Медиана аренды по комнатам (4 — «4 и больше»); только где объявлений достаточно
+    median_rent: dict[int, Decimal]
+    median_per_m2: Decimal | None
 
 
 class ListingsRepository(IListingsRepository):
@@ -583,6 +595,66 @@ class ListingsRepository(IListingsRepository):
             .limit(limit)
         )
         return list((await self._session.execute(query)).scalars().all())
+
+    async def district_stats(self, district_id: UUID) -> DistrictStats:
+        """Объявления района в поиске: сколько их и медианы цен в лари (TASK-104)."""
+        rate = case(
+            *((Listing.currency == code, value) for code, value in GEL_RATES.items()),
+            else_=None,
+        )
+        price_gel = Listing.price * rate
+        bucket = func.least(Listing.rooms, ROOMS_GROUP_MAX).label("bucket")
+        visible = [*self._visible(), Listing.district_id == district_id, Listing.price > 0]
+        median = func.percentile_cont(0.5).within_group(price_gel)
+        rows = (
+            await self._session.execute(
+                select(bucket, func.count(), median).where(*visible).group_by(bucket)
+            )
+        ).all()
+        per_m2: float | None = (
+            await self._session.execute(
+                select(func.percentile_cont(0.5).within_group(price_gel / Listing.area)).where(
+                    *visible, Listing.area > 0
+                )
+            )
+        ).scalar_one()
+        return DistrictStats(
+            listings=sum(int(count) for _, count, _ in rows),
+            median_rent={
+                int(rooms): Decimal(str(value)).quantize(Decimal(1))
+                for rooms, count, value in rows
+                if value is not None and count >= MIN_MEDIAN_SAMPLES
+            },
+            median_per_m2=(
+                Decimal(str(per_m2)).quantize(Decimal("0.1")) if per_m2 is not None else None
+            ),
+        )
+
+    async def to_geocode(self, limit: int) -> list[Listing]:
+        """Объявления без координат, но с адресом, которые ещё не искали на карте (TASK-080)."""
+        query = (
+            select(Listing)
+            .where(
+                Listing.status == ListingStatus.ACTIVE,
+                Listing.is_deleted.is_(False),
+                Listing.latitude.is_(None),
+                Listing.address.is_not(None),
+                Listing.address != "",
+                Listing.geocoded_at.is_(None),
+            )
+            .order_by(Listing.created_at.desc())
+            .limit(limit)
+        )
+        return list((await self._session.execute(query)).scalars().all())
+
+    async def save_location(self, listing_id: UUID, location: tuple[float, float] | None) -> None:
+        """Записать найденную точку (или отметить, что искали и не нашли)."""
+        values: dict[str, Any] = {"geocoded_at": datetime.now(UTC)}
+        if location is not None:
+            values["latitude"], values["longitude"] = location
+        await self._session.execute(
+            update(Listing).where(Listing.id == listing_id).values(**values)
+        )
 
     @staticmethod
     def _visible() -> list[ColumnElement[bool]]:

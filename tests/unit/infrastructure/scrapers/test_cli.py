@@ -9,6 +9,7 @@ from click.testing import CliRunner
 
 from bina.application.use_cases.check_fraud import FraudStats
 from bina.application.use_cases.find_duplicates import DuplicateStats
+from bina.application.use_cases.geocode_listings import GeocodeStats
 from bina.application.use_cases.notifications import CreatedNotifications, DeliveryStats
 from bina.application.use_cases.translate_listings import TranslationStats
 from bina.infrastructure.scrapers import cli as scrape_cli
@@ -81,6 +82,7 @@ class OneShotScheduler:
 
 NO_FRAUD = FraudStats(checked=0, suspicious=0, hidden=0, failed=0)
 NO_DUPLICATES = DuplicateStats(checked=0, found=0)
+NO_GEOCODE = GeocodeStats(checked=0, found=0, failed=0)
 NO_DETAILS = BackfillStats(checked=0, updated=0, archived=0, failed=0)
 
 
@@ -100,6 +102,8 @@ def run_schedule(monkeypatch: pytest.MonkeyPatch, args: list[str]) -> Any:
         monkeypatch.setattr(scrape_cli, "fill_details", AsyncMock(return_value=NO_DETAILS))
     if not isinstance(getattr(scrape_cli, "find_duplicates"), AsyncMock):
         monkeypatch.setattr(scrape_cli, "find_duplicates", AsyncMock(return_value=NO_DUPLICATES))
+    if not isinstance(getattr(scrape_cli, "geocode"), AsyncMock):
+        monkeypatch.setattr(scrape_cli, "geocode", AsyncMock(return_value=NO_GEOCODE))
     if not isinstance(getattr(scrape_cli, "check_fraud"), AsyncMock):
         monkeypatch.setattr(scrape_cli, "check_fraud", AsyncMock(return_value=NO_FRAUD))
     return CliRunner().invoke(scrape_cli.cli, ["schedule", *args])
@@ -225,6 +229,10 @@ def test_schedule_translates_after_scraping(
         calls.append("duplicates")
         return DuplicateStats(checked=5, found=2)
 
+    async def fake_geocode(limit: int) -> GeocodeStats:
+        calls.append("geocode")
+        return GeocodeStats(checked=4, found=3, failed=0)
+
     async def fake_notify() -> tuple[CreatedNotifications, None]:
         calls.append("notify")
         return NO_NOTIFICATIONS, None
@@ -234,6 +242,7 @@ def test_schedule_translates_after_scraping(
     monkeypatch.setattr(scrape_cli, "check_fraud", check)
     monkeypatch.setattr(scrape_cli, "fill_details", AsyncMock(side_effect=fake_details))
     monkeypatch.setattr(scrape_cli, "find_duplicates", AsyncMock(side_effect=fake_duplicates))
+    monkeypatch.setattr(scrape_cli, "geocode", AsyncMock(side_effect=fake_geocode))
     monkeypatch.setattr(scrape_cli, "notify", AsyncMock(side_effect=fake_notify))
 
     result = run_schedule(monkeypatch, ["--translate-limit", "30", "--fraud-limit", "40"])
@@ -242,7 +251,8 @@ def test_schedule_translates_after_scraping(
     translate.assert_awaited_once_with(30)
     check.assert_awaited_once_with(40)
     # Дубликаты — до перевода (скрытые не переводятся), антифрод — до уведомлений
-    assert calls == ["details", "duplicates", "translate", "fraud", "notify"]
+    assert calls == ["details", "duplicates", "geocode", "translate", "fraud", "notify"]
+    assert "карта: проверено адресов 4, на карте 3" in result.output
     assert "дубликаты: проверено 5, склеено 2" in result.output
     assert "подробности: проверено 3, обновлено 2, снято с сайта 1" in result.output
     assert "перевод: проверено 2, переведено 2" in result.output
@@ -379,6 +389,17 @@ def test_duplicates_command(monkeypatch: pytest.MonkeyPatch) -> None:
     assert result.exit_code == 0, result.output
     find.assert_awaited_once_with(7)
     assert "дубликаты: проверено 7, склеено 3" in result.output
+
+
+def test_geocode_command(monkeypatch: pytest.MonkeyPatch) -> None:
+    geocode = AsyncMock(return_value=GeocodeStats(checked=5, found=4, failed=1))
+    monkeypatch.setattr(scrape_cli, "geocode", geocode)
+
+    result = CliRunner().invoke(scrape_cli.cli, ["geocode", "--limit", "5"])
+
+    assert result.exit_code == 0, result.output
+    geocode.assert_awaited_once_with(5)
+    assert "карта: проверено адресов 5, на карте 4, ошибок 1" in result.output
 
 
 def test_scrape_sources(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -43,6 +43,7 @@ MIGRATIONS = (
     "listing_duplicates",
     "scrape_skips",
     "ai_usage",
+    "listing_geocoded",
 )
 
 
