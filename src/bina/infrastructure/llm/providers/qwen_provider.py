@@ -10,13 +10,17 @@ from bina.application.ports.llm_provider import LLMProvider
 logger = structlog.get_logger(__name__)
 
 
+# Адрес по умолчанию для перевода и embeddings (TASK-012)
+AITUNNEL_BASE_URL = "https://api.aitunnel.ru/v1"
+
+
 class QwenProvider(LLMProvider):
     """Провайдер для Qwen модели через AITUNNEL."""
 
     def __init__(
         self,
         api_key: str,
-        base_url: str = "https://api.aitunnel.ru/v1",
+        base_url: str = AITUNNEL_BASE_URL,
         model: str = "qwen3-max",
         timeout: int = 30,
     ) -> None:

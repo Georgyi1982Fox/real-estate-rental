@@ -11,6 +11,7 @@ import click
 import structlog
 
 from bina.application.health_monitor import Alert, HealthMonitor
+from bina.application.ports.embeddings import EmbeddingsError
 from bina.application.ports.scraper import BaseScraper
 from bina.application.use_cases.check_fraud import CheckFraudUseCase, FraudStats
 from bina.application.use_cases.embed_listings import EmbedListingsUseCase, EmbedStats
@@ -628,7 +629,10 @@ def embeddings_command(limit: int) -> None:
     """Посчитать отпечатки смысла для умного поиска (ключ — EMBEDDINGS_API_KEY или LLM_API_KEY)."""
     if not embeddings_configured():
         raise click.UsageError("Нужен EMBEDDINGS_API_KEY или LLM_API_KEY")
-    _echo_embed(asyncio.run(embed(limit)))
+    try:
+        _echo_embed(asyncio.run(embed(limit)))
+    except EmbeddingsError as exc:
+        raise click.ClickException(f"Сервис AI не посчитал отпечатки: {exc}") from exc
 
 
 @cli.command(name="rent-reminders")

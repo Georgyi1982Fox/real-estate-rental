@@ -521,3 +521,16 @@ def test_schedule_skips_embeddings_without_key(
     run_schedule(monkeypatch, ["--no-translate"])
     embed: Any = scrape_cli.embed
     embed.assert_not_awaited()
+
+
+def test_embeddings_command_reports_service_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    from bina.application.ports.embeddings import EmbeddingsError
+
+    monkeypatch.setattr(scrape_cli, "embeddings_configured", lambda: True)
+    monkeypatch.setattr(scrape_cli, "embed", AsyncMock(side_effect=EmbeddingsError("HTTP 401")))
+
+    result = CliRunner().invoke(scrape_cli.cli, ["embeddings"])
+
+    assert result.exit_code == 1
+    assert "Сервис AI не посчитал отпечатки: HTTP 401" in result.output
+    assert "Traceback" not in result.output

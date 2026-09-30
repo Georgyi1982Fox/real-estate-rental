@@ -20,7 +20,7 @@
 
 ## Настройки
 Ничего настраивать не нужно: используется тот же ключ, что для перевода
-(`LLM_API_KEY`, `LLM_BASE_URL` — AITUNNEL). Если сервис не знает модель,
+(`LLM_API_KEY`) и тот же адрес (`LLM_BASE_URL`, если не задан — AITUNNEL, как у перевода). Если сервис не знает модель,
 в `.env` можно задать `EMBEDDINGS_MODEL`, а отдельный ключ — `EMBEDDINGS_API_KEY`
 и `EMBEDDINGS_BASE_URL`. Сбой шага `embeddings` приходит владельцу в Telegram (TASK-043).
 
