@@ -97,10 +97,10 @@ def test_price_drop_in_english_with_source_link() -> None:
     assert keyboard.inline_keyboard[0][0].url == "https://home.ss.ge/ru/1"
 
 
-def test_georgian_user_gets_english_interface() -> None:
+def test_georgian_user_gets_georgian_interface() -> None:
     rendered = render_notification(pending(language="ka", search_name=None), None)
     assert rendered is not None
-    assert rendered[0].startswith("🏠 <b>New apartment</b> for your search")
+    assert rendered[0].startswith("🏠 <b>ახალი ბინა</b> თქვენი ძებნით")
 
 
 def test_nothing_to_send() -> None:

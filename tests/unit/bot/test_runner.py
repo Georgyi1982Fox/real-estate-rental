@@ -3,8 +3,10 @@ from collections.abc import AsyncIterator
 
 import pytest
 from aiogram.methods import SendMessage, SetMyCommands, SetWebhook
+from aiogram.types import BotCommandScopeChat
 from aiohttp.test_utils import TestClient, TestServer
 
+from bina.infrastructure.bot.factory import setup_bot_ui
 from bina.infrastructure.bot.runner import HEALTH_PATH, build_webhook_app
 from bina.infrastructure.bot.settings import BotMode, BotSettings
 from tests.support.telegram import TOKEN
@@ -58,7 +60,7 @@ async def test_startup_sets_webhook_and_commands(
         "callback_query",
         "pre_checkout_query",
     }
-    assert len(harness.telegram.of(SetMyCommands)) == 2
+    assert len(harness.telegram.of(SetMyCommands)) == 3
 
 
 async def test_health(client: TestClient) -> None:  # type: ignore[type-arg]
@@ -96,3 +98,18 @@ async def test_webhook_processes_update(
     [reply] = harness.telegram.of(SendMessage)
     assert "rentals in Georgia" in reply.text
     assert 5 in harness.store.users
+
+
+async def test_admin_sees_admin_command(harness: BotHarness) -> None:
+    """TASK-110: /admin в меню команд — только в чате владельца."""
+    harness.reset()
+    await setup_bot_ui(harness.bot, BotSettings(token=TOKEN, admin_ids=(111,)))
+    calls = [call for call in harness.telegram.of(SetMyCommands) if isinstance(call, SetMyCommands)]
+    owner = [call for call in calls if isinstance(call.scope, BotCommandScopeChat)]
+    public = [call for call in calls if call.scope is None]
+    assert len(public) == 3
+    assert all("admin" not in [c.command for c in call.commands] for call in public)
+    [owner_call] = owner
+    assert isinstance(owner_call.scope, BotCommandScopeChat)
+    assert owner_call.scope.chat_id == 111
+    assert "admin" in [command.command for command in owner_call.commands]

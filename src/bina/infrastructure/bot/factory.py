@@ -1,9 +1,11 @@
 """Сборка Bot и Dispatcher."""
 
+import structlog
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from aiogram.types import BotCommand, MenuButtonWebApp, WebAppInfo
+from aiogram.exceptions import TelegramBadRequest
+from aiogram.types import BotCommand, BotCommandScopeChat, MenuButtonWebApp, WebAppInfo
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bina.infrastructure.bot.handlers import build_router
@@ -31,8 +33,20 @@ COMMANDS: dict[str, dict[str, str]] = {
         "rent": "Rent payment reminders",
         "help": "Help",
     },
+    "ka": {
+        "search": "ბინის ძებნა",
+        "favorites": "რჩეულები",
+        "profile": "პროფილი და ენა",
+        "premium": "Premium გამოწერა",
+        "invite": "მეგობრის მოწვევა",
+        "rent": "ქირის გადახდის შეხსენებები",
+        "help": "დახმარება",
+    },
 }
 DEFAULT_COMMANDS_LANGUAGE = "ru"
+ADMIN_COMMAND = {"admin": "Админка: статистика и жалобы"}
+
+logger = structlog.get_logger(__name__)
 
 
 def create_bot(settings: BotSettings) -> Bot:
@@ -60,12 +74,25 @@ def create_dispatcher(
 
 
 async def setup_bot_ui(bot: Bot, settings: BotSettings) -> None:
-    """Регистрирует команды в меню Telegram и кнопку Mini App (если задан URL)."""
+    """Регистрирует команды в меню Telegram и кнопку Mini App (если задан URL).
+
+    Владельцу (``ADMIN_TELEGRAM_IDS``) в его чате видна ещё и ``/admin`` (TASK-110).
+    """
     for language, commands in COMMANDS.items():
         await bot.set_my_commands(
             [BotCommand(command=name, description=text) for name, text in commands.items()],
             language_code=None if language == DEFAULT_COMMANDS_LANGUAGE else language,
         )
+    admin_commands = [
+        BotCommand(command=name, description=text)
+        for name, text in {**COMMANDS[DEFAULT_COMMANDS_LANGUAGE], **ADMIN_COMMAND}.items()
+    ]
+    for admin_id in settings.admin_ids:
+        try:
+            await bot.set_my_commands(admin_commands, scope=BotCommandScopeChat(chat_id=admin_id))
+        except TelegramBadRequest as exc:
+            # Владелец ещё не писал боту — меню появится после перезапуска бота
+            logger.warning("Admin commands not set", admin_id=admin_id, error=str(exc))
     if settings.mini_app_url:
         await bot.set_chat_menu_button(
             menu_button=MenuButtonWebApp(

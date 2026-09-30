@@ -24,7 +24,7 @@ def test_placeholders_match_between_languages(key: str) -> None:
 
 @pytest.mark.parametrize(
     ("language", "expected"),
-    [("ru", "ru"), ("en", "en"), ("ka", "en"), ("de", "ru")],
+    [("ru", "ru"), ("en", "en"), ("ka", "ka"), ("de", "ru")],
 )
 def test_ui_language(language: str, expected: str) -> None:
     assert ui_language(language) == expected
@@ -50,4 +50,17 @@ def test_t_allows_language_as_placeholder_name() -> None:
 
 
 def test_all_variants() -> None:
-    assert all_variants("menu_search") == {"🔍 Поиск", "🔍 Search"}
+    assert all_variants("menu_search") == {"🔍 Поиск", "🔍 Search", "🔍 ძებნა"}
+
+
+@pytest.mark.parametrize("language", ["ru", "en", "ka"])
+def test_texts_are_in_their_language(language: str) -> None:
+    """TASK-116: каждый текст бота написан буквами своего языка (кроме чисел и символов)."""
+    from bina.application.localization import script_of
+
+    for key, text in TEXTS[language].items():
+        # Только плейсхолдеры, цифры и значки — проверять нечего
+        letters = re.sub(r"{\w+}|<[^>]+>|/\w+|Bina\.ai|Premium|MyHome\.ge|SS\.ge|eur", "", text)
+        if not re.search(r"[^\W\d_]", letters):
+            continue
+        assert script_of(letters) == language, (key, text)
