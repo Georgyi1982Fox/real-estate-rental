@@ -104,6 +104,9 @@ class MenuSection(StrEnum):
     RENT = "rent"
     PROFILE = "profile"
     HELP = "help"
+    SUPPORT = "support"
+    TERMS = "terms"
+    PRIVACY = "privacy"
     ADMIN = "admin"
 
 

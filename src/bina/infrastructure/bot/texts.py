@@ -27,6 +27,9 @@ _RU: dict[str, str] = {
     "menu_invite": "🎁 Пригласить друга",
     "menu_rent": "🗓 Оплата аренды",
     "menu_help": "❓ Помощь",
+    "menu_support": "💬 Поддержка",
+    "menu_terms": "📄 Соглашение",
+    "menu_privacy": "🔒 Конфиденциальность",
     "menu_admin": "📊 Админка",
     "menu_lab": "🧪 Проверка функций",
     "welcome_new": (
@@ -219,6 +222,9 @@ _EN: dict[str, str] = {
     "menu_invite": "🎁 Invite a friend",
     "menu_rent": "🗓 Rent payments",
     "menu_help": "❓ Help",
+    "menu_support": "💬 Support",
+    "menu_terms": "📄 Terms",
+    "menu_privacy": "🔒 Privacy",
     "menu_admin": "📊 Admin",
     "menu_lab": "🧪 Feature check",
     "welcome_new": (
@@ -408,6 +414,9 @@ _KA: dict[str, str] = {
     "menu_invite": "🎁 მეგობრის მოწვევა",
     "menu_rent": "🗓 ქირის გადახდა",
     "menu_help": "❓ დახმარება",
+    "menu_support": "💬 მხარდაჭერა",
+    "menu_terms": "📄 შეთანხმება",
+    "menu_privacy": "🔒 კონფიდენციალურობა",
     "menu_admin": "📊 ადმინისტრირება",
     "menu_lab": "🧪 ფუნქციების შემოწმება",
     "welcome_new": (
