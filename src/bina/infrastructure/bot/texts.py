@@ -17,6 +17,7 @@ _RU: dict[str, str] = {
     "menu_rent": "🗓 Оплата аренды",
     "menu_help": "❓ Помощь",
     "menu_admin": "📊 Админка",
+    "menu_lab": "🧪 Проверка функций",
     "welcome_new": (
         "👋 Добро пожаловать в <b>Bina.ai</b>!\n\n"
         "Я помогу найти жильё в аренду в Грузии: объявления с MyHome.ge и SS.ge "
@@ -195,6 +196,7 @@ _EN: dict[str, str] = {
     "menu_rent": "🗓 Rent payments",
     "menu_help": "❓ Help",
     "menu_admin": "📊 Admin",
+    "menu_lab": "🧪 Feature check",
     "welcome_new": (
         "👋 Welcome to <b>Bina.ai</b>!\n\n"
         "I'll help you find a rental home in Georgia: listings from MyHome.ge and SS.ge "
@@ -370,6 +372,7 @@ _KA: dict[str, str] = {
     "menu_rent": "🗓 ქირის გადახდა",
     "menu_help": "❓ დახმარება",
     "menu_admin": "📊 ადმინისტრირება",
+    "menu_lab": "🧪 ფუნქციების შემოწმება",
     "welcome_new": (
         "👋 კეთილი იყოს თქვენი მობრძანება <b>Bina.ai</b>-ში!\n\n"
         "დაგეხმარებით საქართველოში ქირით საცხოვრებლის პოვნაში: განცხადებები MyHome.ge-დან "

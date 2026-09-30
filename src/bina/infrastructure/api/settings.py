@@ -29,6 +29,8 @@ class ApiSettings:
     bot_token: str | None = None
     init_data_max_age: int = DEFAULT_INIT_DATA_MAX_AGE
     allow_insecure_user_id: bool = False
+    # Telegram ID владельца (ADMIN_TELEGRAM_IDS): страница «Проверка функций» в Mini App
+    admin_ids: tuple[int, ...] = ()
 
     def __post_init__(self) -> None:
         """Проверяет согласованность настроек."""
@@ -67,4 +69,17 @@ class ApiSettings:
             init_data_max_age=init_data_max_age,
             allow_insecure_user_id=(get("API_ALLOW_INSECURE_USER_ID") or "").lower()
             in {"1", "true", "yes"},
+            admin_ids=_parse_admin_ids(get("ADMIN_TELEGRAM_IDS")),
         )
+
+
+def _parse_admin_ids(value: str | None) -> tuple[int, ...]:
+    """«123, 456» → (123, 456)."""
+    if not value:
+        return ()
+    try:
+        return tuple(int(part) for part in value.replace(" ", "").split(",") if part)
+    except ValueError as exc:
+        raise ApiConfigError(
+            f"ADMIN_TELEGRAM_IDS must be comma-separated numbers, got {value!r}"
+        ) from exc
