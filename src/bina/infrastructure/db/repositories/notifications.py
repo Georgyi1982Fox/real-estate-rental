@@ -170,7 +170,8 @@ class NotificationsRepository(INotificationsRepository):
     ) -> list[PendingNotification]:
         """Неотправленные в Telegram уведомления (старые первыми).
 
-        ``free_created_before``: без Premium — только созданные до этого момента.
+        ``free_created_before``: без Premium — только созданные до этого момента
+        (кроме служебных).
         """
         query = (
             select(Notification, User.telegram_id, User.language)
@@ -181,7 +182,14 @@ class NotificationsRepository(INotificationsRepository):
             .limit(limit)
         )
         if free_created_before is not None:
-            query = query.where(or_(premium_now(), Notification.created_at <= free_created_before))
+            # Служебные сообщения (о подписке) — без задержки
+            query = query.where(
+                or_(
+                    premium_now(),
+                    Notification.type == NotificationType.SYSTEM.value,
+                    Notification.created_at <= free_created_before,
+                )
+            )
         rows = (await self._session.execute(query)).all()
         return [
             PendingNotification(
