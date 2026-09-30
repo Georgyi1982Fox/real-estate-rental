@@ -92,6 +92,25 @@ _RU: dict[str, str] = {
         "Цена: {prices}. Оплата звёздами Telegram."
     ),
     "premium_free": "Сейчас у вас бесплатный тариф.",
+    # TASK-110: админка владельца
+    "admin_stats": (
+        "📊 <b>Статистика</b>\n\n"
+        "👤 Пользователей: {users} (+{users_week} за неделю)\n"
+        "⭐ Premium сейчас: {premium}\n"
+        "💰 Звёзды: {stars_month} за 30 дней ({payments_month} оплат), всего {stars_total}\n\n"
+        "🏠 Объявлений в поиске:\n{sources}\n"
+        "🙈 Скрыто: {hidden} · ⚠️ открытых жалоб: {complaints}\n\n"
+        "📍 Популярные районы:\n{districts}"
+    ),
+    "admin_refresh": "📊 Обновить",
+    "admin_complaints": "⚠️ Жалобы ({count})",
+    "admin_no_complaints": "Открытых жалоб нет.",
+    "admin_case": "⚠️ <b>{title}</b>\n{source} · жалоб: {count}{hidden}\nПричины: {reasons}",
+    "admin_case_hidden": " · уже скрыто",
+    "admin_hide": "🙈 Скрыть",
+    "admin_restore": "✅ Вернуть в поиск",
+    "admin_hidden": "Скрыто, жалобы закрыты.",
+    "admin_restored": "Возвращено в поиск, жалобы отклонены.",
     # TASK-109: напоминания об оплате аренды
     "rent_info": (
         "🗓 <b>Напоминания об оплате аренды</b>\n\n"
@@ -240,6 +259,25 @@ _EN: dict[str, str] = {
         "Price: {prices}. Paid with Telegram Stars."
     ),
     "premium_free": "You are on the free plan.",
+    # TASK-110: owner admin
+    "admin_stats": (
+        "📊 <b>Statistics</b>\n\n"
+        "👤 Users: {users} (+{users_week} this week)\n"
+        "⭐ Premium now: {premium}\n"
+        "💰 Stars: {stars_month} in 30 days ({payments_month} payments), {stars_total} in total\n\n"
+        "🏠 Listings in search:\n{sources}\n"
+        "🙈 Hidden: {hidden} · ⚠️ open complaints: {complaints}\n\n"
+        "📍 Popular districts:\n{districts}"
+    ),
+    "admin_refresh": "📊 Refresh",
+    "admin_complaints": "⚠️ Complaints ({count})",
+    "admin_no_complaints": "No open complaints.",
+    "admin_case": "⚠️ <b>{title}</b>\n{source} · complaints: {count}{hidden}\nReasons: {reasons}",
+    "admin_case_hidden": " · already hidden",
+    "admin_hide": "🙈 Hide",
+    "admin_restore": "✅ Back to search",
+    "admin_hidden": "Hidden, complaints closed.",
+    "admin_restored": "Back in search, complaints rejected.",
     # TASK-109: rent payment reminders
     "rent_info": (
         "🗓 <b>Rent payment reminders</b>\n\n"
