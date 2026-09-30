@@ -1,7 +1,6 @@
 """Тексты интерфейса бота.
 
-Интерфейс переведён на русский и английский. Для грузинского (``ka``)
-интерфейс пока английский, но объявления показываются на грузинском.
+Интерфейс переведён на русский, английский и грузинский (TASK-116).
 """
 
 from bina.application.use_cases.register_user import DEFAULT_LANGUAGE
@@ -73,7 +72,7 @@ _RU: dict[str, str] = {
     "subscription_until": " (до {date})",
     "tier_free": "Бесплатная",
     "tier_nomad": "Premium",
-    "tier_family": "Family",
+    "tier_family": "Семья",
     "tier_realtor": "Риелтор",
     "language_changed": "✅ Язык изменён.",
     # TASK-028: уведомления
@@ -337,10 +336,178 @@ _EN: dict[str, str] = {
     ),
 }
 
-TEXTS: dict[str, dict[str, str]] = {"ru": _RU, "en": _EN}
+_KA: dict[str, str] = {
+    "welcome_new": (
+        "👋 კეთილი იყოს თქვენი მობრძანება <b>Bina.ai</b>-ში!\n\n"
+        "დაგეხმარებით საქართველოში ქირით საცხოვრებლის პოვნაში: განცხადებები MyHome.ge-დან "
+        "და SS.ge-დან ერთ ადგილას, თარგმანით და თაღლითობაზე შემოწმებით.\n\n"
+        "დააჭირეთ „🔍 ძებნა“, რომ დაიწყოთ, ან /help დამატებითი ინფორმაციისთვის."
+    ),
+    "welcome_back": "👋 კეთილი იყოს თქვენი დაბრუნება! აირჩიეთ მოქმედება ქვემოთ მენიუში.",
+    "help": (
+        "<b>Bina.ai: ქირავნობა საქართველოში</b>\n\n"
+        "/search: ძებნა უბნის, ფასისა და ოთახების მიხედვით\n"
+        "/favorites: რჩეული განცხადებები\n"
+        "/profile: პროფილი, გამოწერა და ენა\n"
+        "/premium: Premium გამოწერა\n"
+        "/invite: მეგობრის მოწვევა\n"
+        "/rent: ქირის გადახდის შეხსენებები\n"
+        "/help: ეს დახმარება\n\n"
+        "შეინახეთ განცხადებები ☆ ღილაკებით ძებნის შედეგების ქვეშ."
+    ),
+    "unknown": "ვერ გავიგე 🤔 გამოიყენეთ მენიუ ან /help.",
+    "error": "⚠️ რაღაც შეცდომა მოხდა. სცადეთ ცოტა მოგვიანებით.",
+    "menu_search": "🔍 ძებნა",
+    "menu_favorites": "❤️ რჩეულები",
+    "menu_profile": "👤 პროფილი",
+    "open_app": "📱 Bina.ai-ს გახსნა",
+    "back": "⬅️ უკან",
+    "new_search": "🔄 ახალი ძებნა",
+    "choose_district": "📍 <b>ნაბიჯი 1/3.</b> აირჩიეთ უბანი:",
+    "no_districts": "უბნები ჯერ არ არის ჩატვირთული. ვაჩვენებ ყველა განცხადებას.",
+    "choose_price": "📍 {district}\n\n💰 <b>ნაბიჯი 2/3.</b> თვიური ბიუჯეტი:",
+    "choose_rooms": "📍 {district} · 💰 {price}\n\n🚪 <b>ნაბიჯი 3/3.</b> ოთახების რაოდენობა:",
+    "any_district": "ნებისმიერი უბანი",
+    "any_price": "ნებისმიერი ფასი",
+    "any_rooms": "ნებისმიერი",
+    "price_up_to": "{max} ₾-მდე",
+    "price_between": "{min}–{max} ₾",  # noqa: RUF001 (en dash в диапазоне)
+    "price_from": "{min} ₾-დან",
+    "rooms_exact": "{n}",
+    "rooms_from": "{n}+",
+    "rooms_label": "{value} ოთახი",
+    "search_header": "🔍 მოიძებნა: <b>{total}</b>\n📍 {district} · 💰 {price} · 🚪 {rooms}",
+    "search_empty": (
+        "🔍 ამ ფილტრებით ვერაფერი მოიძებნა.\n📍 {district} · 💰 {price} · 🚪 {rooms}\n\n"
+        "სცადეთ ძებნის გაფართოება."
+    ),
+    "page_counter": "გვერდი {page} / {pages}",
+    "listing_rooms": "{n} ოთახი",
+    "listing_area": "{area} მ²",
+    "fav_hint": "☆/★: რჩეულებში დამატება ან წაშლა",
+    "favorites_header": "❤️ <b>რჩეულები</b>: {total}",
+    "favorites_empty": "❤️ რჩეულები ჯერ არ გაქვთ.\n\nიპოვეთ ბინა „🔍 ძებნით“ და დააჭირეთ ☆.",
+    "fav_added": "★ დაემატა რჩეულებში",
+    "fav_removed": "☆ წაიშალა რჩეულებიდან",
+    "listing_unavailable": "ეს განცხადება აღარ არის ხელმისაწვდომი.",
+    "message_outdated": "ეს შეტყობინება მოძველებულია, გახსენით განყოფილება ხელახლა.",
+    "profile": (
+        "👤 <b>პროფილი</b>\n\n"
+        "🌐 ენა: {language}\n"
+        "⭐ გამოწერა: {tier}{expires}\n"
+        "💳 ბალანსი: {balance} ₾\n"
+        "❤️ რჩეულები: {favorites}\n"
+        "📅 წევრი {since}-დან\n\n"
+        "აირჩიეთ ინტერფეისის ენა:"
+    ),
+    "subscription_until": " ({date}-მდე)",
+    "tier_free": "უფასო",
+    "tier_nomad": "Premium",
+    "tier_family": "ოჯახი",
+    "tier_realtor": "რიელტორი",
+    "language_changed": "✅ ენა შეიცვალა.",
+    # TASK-028: შეტყობინებები
+    "notify_new_listing": "🏠 <b>ახალი ბინა</b> თქვენი ძებნით „{search}“\n\n{listing}",
+    "notify_new_listing_no_search": "🏠 <b>ახალი ბინა</b> თქვენი ძებნით\n\n{listing}",
+    "notify_price_drop": "📉 <b>ფასი შემცირდა</b>: {old} → <b>{new}</b>\n\n{listing}",
+    "notify_details": "{price} · {rooms} ოთახი · {area} მ²",
+    "notify_open": "გახსნა",
+    # TASK-026/027: Premium
+    "premium_info": (
+        "⭐ <b>Bina.ai Premium</b>\n\n"
+        "{status}\n\n"
+        "<b>უფასოდ:</b> შეუზღუდავი რჩეულები, {free_searches} შენახული ძებნა.\n"
+        "<b>Premium:</b> {premium_searches}-მდე შენახული ძებნა, ახალი ბინები მაშინვე "
+        "(უფასოდ — {free_delay} სთ-ის შემდეგ), შეტყობინებები ფასის შემცირებაზე.\n\n"
+        "ფასი: {prices}. გადახდა Telegram-ის ვარსკვლავებით."
+    ),
+    "premium_free": "ახლა გაქვთ უფასო ტარიფი.",
+    # TASK-110: ადმინისტრირება
+    "admin_stats": (
+        "📊 <b>სტატისტიკა</b>\n\n"
+        "👤 მომხმარებლები: {users} (+{users_week} ამ კვირაში)\n"
+        "⭐ Premium ახლა: {premium}\n"
+        "💰 ვარსკვლავები: {stars_month} 30 დღეში ({payments_month} გადახდა), "
+        "სულ {stars_total}\n\n"
+        "🏠 განცხადებები ძებნაში:\n{sources}\n"
+        "🙈 დამალული: {hidden} · ⚠️ ღია საჩივრები: {complaints}\n\n"
+        "📍 პოპულარული უბნები:\n{districts}"
+    ),
+    "admin_refresh": "📊 განახლება",
+    "admin_complaints": "⚠️ საჩივრები ({count})",
+    "admin_no_complaints": "ღია საჩივრები არ არის.",
+    "admin_case": "⚠️ <b>{title}</b>\n{source} · საჩივრები: {count}{hidden}\nმიზეზები: {reasons}",
+    "admin_case_hidden": " · უკვე დამალულია",
+    "admin_hide": "🙈 დამალვა",
+    "admin_restore": "✅ ძებნაში დაბრუნება",
+    "admin_hidden": "დამალულია, საჩივრები დახურულია.",
+    "admin_restored": "დაბრუნდა ძებნაში, საჩივრები უარყოფილია.",
+    # TASK-109: ქირის გადახდის შეხსენებები
+    "rent_info": (
+        "🗓 <b>ქირის გადახდის შეხსენებები</b>\n\n"
+        "შეგახსენებთ 3 დღით ადრე, 1 დღით ადრე და გადახდის დღეს. ღილაკი „გადახდილია“ "
+        "აჩერებს შეხსენებებს მომდევნო თვემდე.\n\n{items}"
+    ),
+    "rent_empty": "შეხსენებები ჯერ არ არის.",
+    "rent_item": "• ყოველი თვის {day} რიცხვში — {amount}",
+    "rent_item_paid": "• ყოველი თვის {day} რიცხვში — {amount} (✅ გადახდილია: {date})",
+    "rent_add": "🆕 შეხსენების დამატება",
+    "rent_delete": "🗑 {day} რიცხვის წაშლა",
+    "rent_limit": "შესაძლებელია არაუმეტეს {limit} შეხსენებისა.",
+    "rent_choose_day": "თვის რომელ რიცხვში იხდით ქირას?",
+    "rent_enter_amount": (
+        "გადახდა {day} რიცხვში. დაწერეთ თანხა, მაგალითად: <code>1500</code>, "
+        "<code>700 $</code> ან <code>650 eur</code>."
+    ),
+    "rent_bad_amount": (
+        "თანხა ვერ გავიგე. დაწერეთ რიცხვი, მაგალითად: <code>1500</code> ან <code>700 $</code>."
+    ),
+    "rent_saved": "✅ მზადაა: შეგახსენებთ {amount}-ის გადახდას ყოველი თვის {day} რიცხვში.",
+    "rent_deleted": "შეხსენება წაიშალა.",
+    "rent_due_in": "🗓 შეხსენება: ქირის გადახდა — {amount}, {date} ({days} დღეში).",
+    "rent_due_today": "🔔 დღეს ქირის გადახდის დღეა: {amount}.",
+    "rent_paid_button": "✅ გადახდილია",
+    "rent_paid_done": (
+        "✅ მონიშნულია: {date}-ის ქირა გადახდილია. შემდეგი შეხსენება — მომდევნო თვეში."
+    ),
+    # TASK-108: მოწვევები
+    "premium_discount": "🎁 მეგობრის მოწვევით: {percent}% ფასდაკლება პირველ შეძენაზე.",
+    "welcome_referred": (
+        "🎁 მეგობარმა მოგიწვიათ: {percent}% ფასდაკლება პირველ Premium-ზე — /premium"
+    ),
+    "invite_info": (
+        "🎁 <b>მოიწვიეთ მეგობრები</b>\n\n"
+        "მეგობარი მიიღებს {percent}% ფასდაკლებას პირველ Premium-ზე, თქვენ კი — {days} დღე "
+        "Premium-ს, როცა ის გადაიხდის (თვეში არაუმეტეს {limit} ჯილდოსი).\n\n"
+        "თქვენი ბმული:\n{link}\n\n"
+        "მოწვეულია: {invited}, ჯილდოები: {rewarded}."
+    ),
+    "premium_active": "✅ Premium მოქმედებს {date}-მდე.",
+    "premium_price": "<b>{price} ⭐</b> {days} დღით",
+    "premium_buy": "ყიდვა: {days} დღე — {price} ⭐",
+    "premium_extend": "გაგრძელება {days} დღით — {price} ⭐",
+    "premium_activated": "🎉 გმადლობთ! Premium მოქმედებს {date}-მდე.",
+    "premium_invoice_outdated": "ანგარიში მოძველებულია. გახსენით /premium და სცადეთ ხელახლა.",
+    "premium_payment_problem": (
+        "⚠️ გადახდა მიღებულია, მაგრამ გამოწერა ავტომატურად ვერ ჩაირთო. "
+        "მოგვწერეთ /paysupport-ში და გამოვასწორებთ."
+    ),
+    "fraud_warning": "თაღლითობის ნიშნები: ნუ გადაიხდით ნახვამდე",
+    "fav_limit": (
+        "უფასო ტარიფში რჩეულებში {limit} ბინამდეა შესაძლებელი. "
+        "წაშალეთ ზედმეტი ან ჩართეთ Premium: /premium"
+    ),
+    "paysupport": (
+        "💬 <b>გადახდასთან დაკავშირებული კითხვები</b>\n\n"
+        "თუ გამოწერა არ ჩაირთო ან ვარსკვლავების დაბრუნება გჭირდებათ, უპასუხეთ ამ "
+        "შეტყობინებას: აღწერეთ პრობლემა და გადახდის თარიღი."
+    ),
+}
+
+TEXTS: dict[str, dict[str, str]] = {"ru": _RU, "en": _EN, "ka": _KA}
 
 # Язык интерфейса, если для языка пользователя нет перевода
-_UI_FALLBACK: dict[str, str] = {"ka": "en"}
+_UI_FALLBACK: dict[str, str] = {}
 
 LANGUAGE_NAMES: dict[str, str] = {"ru": "Русский", "en": "English", "ka": "ქართული"}
 

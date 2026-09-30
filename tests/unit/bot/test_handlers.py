@@ -66,11 +66,11 @@ async def test_language_taken_from_telegram_on_registration(harness: BotHarness)
     assert "rentals in Georgia" in harness.last_text()
 
 
-async def test_georgian_user_gets_english_interface(harness: BotHarness) -> None:
+async def test_georgian_user_gets_georgian_interface(harness: BotHarness) -> None:
     await harness.send("/help", language_code="ka")
 
     assert harness.user.language == "ka"
-    assert "rentals in Georgia" in harness.last_text()
+    assert "ქირავნობა საქართველოში" in harness.last_text()
 
 
 async def test_unknown_message(harness: BotHarness) -> None:
