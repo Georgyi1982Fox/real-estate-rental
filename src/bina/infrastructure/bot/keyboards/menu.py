@@ -38,21 +38,26 @@ def _button(language: str, key: str, section: MenuSection) -> InlineKeyboardButt
 
 
 def home_menu(language: str, mini_app_url: str | None, admin: bool = False) -> InlineKeyboardMarkup:
-    """Все функции бота кнопками (сообщение «главное меню»)."""
-    rows = [
-        [
-            _button(language, "menu_search", MenuSection.SEARCH),
-            _button(language, "menu_favorites", MenuSection.FAVORITES),
-        ],
-        # TASK-012: поиск своими словами; TASK-092: сразу посуточная аренда
-        [
-            _button(language, "menu_smart", MenuSection.SMART),
-            _button(language, "menu_daily", MenuSection.DAILY),
-        ],
-    ]
+    """Все функции бота кнопками (сообщение «главное меню»), сгруппированные по смыслу.
+
+    Сверху — Mini App, затем поиск жилья, «Сдать квартиру», подписка, личное,
+    помощь и документы; внизу — админка (только владельцу).
+    """
+    rows: list[list[InlineKeyboardButton]] = []
     if mini_app_url:
         rows.append([open_app_button(language, mini_app_url)])
     rows += [
+        # Поиск жилья: обычный и сразу посуточный (TASK-092), своими словами (TASK-012)
+        [
+            _button(language, "menu_search", MenuSection.SEARCH),
+            _button(language, "menu_daily", MenuSection.DAILY),
+        ],
+        [
+            _button(language, "menu_smart", MenuSection.SMART),
+            _button(language, "menu_favorites", MenuSection.FAVORITES),
+        ],
+        # TASK-096: собственник сдаёт свою квартиру
+        [_button(language, "menu_owner", MenuSection.OWNER)],
         [
             _button(language, "menu_premium", MenuSection.PREMIUM),
             _button(language, "menu_invite", MenuSection.INVITE),
@@ -61,8 +66,6 @@ def home_menu(language: str, mini_app_url: str | None, admin: bool = False) -> I
             _button(language, "menu_rent", MenuSection.RENT),
             _button(language, "menu_profile", MenuSection.PROFILE),
         ],
-        # TASK-096: собственник сдаёт свою квартиру
-        [_button(language, "menu_owner", MenuSection.OWNER)],
         [
             _button(language, "menu_help", MenuSection.HELP),
             _button(language, "menu_support", MenuSection.SUPPORT),
@@ -73,17 +76,16 @@ def home_menu(language: str, mini_app_url: str | None, admin: bool = False) -> I
         ],
     ]
     if admin:
-        rows.append([_button(language, "menu_admin", MenuSection.ADMIN)])
+        admin_row = [_button(language, "menu_admin", MenuSection.ADMIN)]
         if mini_app_url:
             # Временная страница «Проверка функций» в Mini App (только владельцу)
-            rows.append(
-                [
-                    InlineKeyboardButton(
-                        text=t(language, "menu_lab"),
-                        web_app=WebAppInfo(url=mini_app_url.rstrip("/") + "/lab"),
-                    )
-                ]
+            admin_row.append(
+                InlineKeyboardButton(
+                    text=t(language, "menu_lab"),
+                    web_app=WebAppInfo(url=mini_app_url.rstrip("/") + "/lab"),
+                )
             )
+        rows.append(admin_row)
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 

@@ -100,3 +100,16 @@ def test_every_command_has_a_menu_button(language: str) -> None:
         if button.callback_data
     }
     assert set(COMMAND_BUTTONS.values()) <= sections
+
+
+def test_home_menu_layout() -> None:
+    """Кнопки по смыслу: сверху Mini App, поиск парами, «Сдать квартиру» отдельно."""
+    markup = home_menu("ru", "https://app.example", admin=True)
+    rows = [[button.text for button in row] for row in markup.inline_keyboard]
+    assert rows[0] == ["📱 Открыть Bina.ai"]
+    assert rows[1] == ["🔍 Поиск", "🛏 Посуточно"]
+    assert rows[2] == ["🧠 Умный поиск", "❤️ Избранное"]
+    assert rows[3] == ["🏠 Сдать квартиру"]
+    assert rows[-2] == ["📄 Соглашение", "🔒 Конфиденциальность"]
+    assert rows[-1] == ["📊 Админка", "🧪 Проверка функций"]
+    assert all(len(row) <= 2 for row in rows)
