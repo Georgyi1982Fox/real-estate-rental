@@ -19,6 +19,7 @@ from bina.infrastructure.api.routes import (
     acceptance,
     assistant,
     compare,
+    complaints,
     contract,
     costs,
     districts,
@@ -84,6 +85,7 @@ def create_app(
     app.include_router(contract.router)
     app.include_router(acceptance.router)
     app.include_router(costs.router)
+    app.include_router(complaints.router)
     app.include_router(location.router)
     app.include_router(districts.router)
     app.include_router(favorites.router)

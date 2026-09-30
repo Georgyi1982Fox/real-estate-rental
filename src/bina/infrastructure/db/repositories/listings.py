@@ -152,6 +152,8 @@ class ListingsRepository(IListingsRepository):
             Listing.is_deleted.is_(False),
             # TASK-011: почти наверняка мошенники — не в поиске и не в уведомлениях
             Listing.fraud_score < HIDE_SCORE,
+            # TASK-106: скрыто жалобами или модератором
+            Listing.hidden_at.is_(None),
             # TASK-090: та же квартира с другого сайта показывается один раз
             not_hidden_duplicate(),
         ]
@@ -663,6 +665,7 @@ class ListingsRepository(IListingsRepository):
             Listing.status == ListingStatus.ACTIVE,
             Listing.is_deleted.is_(False),
             Listing.fraud_score < HIDE_SCORE,
+            Listing.hidden_at.is_(None),
             not_hidden_duplicate(),
         ]
 
@@ -706,7 +709,7 @@ def _untranslated() -> ColumnElement[bool]:
 def not_hidden_duplicate() -> ColumnElement[bool]:
     """Не дубликат, или его основное объявление уже не в поиске (TASK-090).
 
-    Основное снято с сайта или скрыто антифродом — тогда показывается дубликат.
+    Основное снято с сайта или скрыто (антифрод, жалобы) — тогда показывается дубликат.
     """
     primary = aliased(Listing)
     visible_primary = (
@@ -716,6 +719,7 @@ def not_hidden_duplicate() -> ColumnElement[bool]:
             primary.status == ListingStatus.ACTIVE,
             primary.is_deleted.is_(False),
             primary.fraud_score < HIDE_SCORE,
+            primary.hidden_at.is_(None),
         )
         .exists()
     )

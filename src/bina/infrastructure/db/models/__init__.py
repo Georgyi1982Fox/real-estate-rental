@@ -2,6 +2,7 @@
 
 from .ai_usage import AIUsage
 from .base import Base, SoftDeleteMixin, TimestampMixin
+from .complaints import Complaint
 from .districts import District
 from .embeddings import Embedding
 from .favorites import Favorite
@@ -14,6 +15,7 @@ from .users import User
 __all__ = [
     "AIUsage",
     "Base",
+    "Complaint",
     "District",
     "Embedding",
     "Favorite",
