@@ -2,16 +2,18 @@
 
 from aiogram.types import (
     InlineKeyboardButton,
+    InlineKeyboardMarkup,
     KeyboardButton,
     ReplyKeyboardMarkup,
     WebAppInfo,
 )
 
+from bina.infrastructure.bot.keyboards.callbacks import MenuCallback, MenuSection
 from bina.infrastructure.bot.texts import t
 
 
 def main_menu(language: str) -> ReplyKeyboardMarkup:
-    """Постоянная клавиатура главного меню."""
+    """Постоянная клавиатура внизу чата; «🏠 Главное меню» возвращает в начало."""
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text=t(language, "menu_search"))],
@@ -19,10 +21,54 @@ def main_menu(language: str) -> ReplyKeyboardMarkup:
                 KeyboardButton(text=t(language, "menu_favorites")),
                 KeyboardButton(text=t(language, "menu_profile")),
             ],
+            [KeyboardButton(text=t(language, "menu_home"))],
         ],
         resize_keyboard=True,
         is_persistent=True,
     )
+
+
+def _button(language: str, key: str, section: MenuSection) -> InlineKeyboardButton:
+    return InlineKeyboardButton(
+        text=t(language, key), callback_data=MenuCallback(section=section).pack()
+    )
+
+
+def home_menu(language: str, mini_app_url: str | None, admin: bool = False) -> InlineKeyboardMarkup:
+    """Все функции бота кнопками (сообщение «главное меню»)."""
+    rows = [
+        [
+            _button(language, "menu_search", MenuSection.SEARCH),
+            _button(language, "menu_favorites", MenuSection.FAVORITES),
+        ],
+    ]
+    if mini_app_url:
+        rows.append([open_app_button(language, mini_app_url)])
+    rows += [
+        [
+            _button(language, "menu_premium", MenuSection.PREMIUM),
+            _button(language, "menu_invite", MenuSection.INVITE),
+        ],
+        [
+            _button(language, "menu_rent", MenuSection.RENT),
+            _button(language, "menu_profile", MenuSection.PROFILE),
+        ],
+        [_button(language, "menu_help", MenuSection.HELP)],
+    ]
+    if admin:
+        rows.append([_button(language, "menu_admin", MenuSection.ADMIN)])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def home_button(language: str) -> InlineKeyboardButton:
+    """Кнопка «🏠 Главное меню» под ответом."""
+    return _button(language, "menu_home", MenuSection.HOME)
+
+
+def with_home(markup: InlineKeyboardMarkup | None, language: str) -> InlineKeyboardMarkup:
+    """Та же клавиатура плюс «🏠 Главное меню» последней строкой."""
+    rows = list(markup.inline_keyboard) if markup else []
+    return InlineKeyboardMarkup(inline_keyboard=[*rows, [home_button(language)]])
 
 
 def open_app_button(language: str, mini_app_url: str) -> InlineKeyboardButton:

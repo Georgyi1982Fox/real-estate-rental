@@ -28,6 +28,7 @@ from bina.application.use_cases.notifications import FREE_DELIVERY_DELAY
 from bina.application.use_cases.referrals import RewardReferrerUseCase
 from bina.application.use_cases.subscriptions import ActivateSubscriptionUseCase
 from bina.infrastructure.bot.keyboards.callbacks import PremiumBuyCallback
+from bina.infrastructure.bot.keyboards.menu import with_home
 from bina.infrastructure.bot.texts import t
 from bina.infrastructure.db.models import User
 from bina.infrastructure.db.repositories.payments import PaymentsRepository
@@ -93,7 +94,7 @@ async def cmd_premium(
     discounted = await ReferralsRepository(session).discount_eligible(user)
     await message.answer(
         render_premium(user, plans, now, discounted),
-        reply_markup=premium_keyboard(user, plans, now, discounted),
+        reply_markup=with_home(premium_keyboard(user, plans, now, discounted), user.language),
     )
 
 

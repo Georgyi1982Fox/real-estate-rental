@@ -9,6 +9,7 @@ from . import (
     favorites,
     help,
     invite,
+    menu,
     payments,
     profile,
     rent,
@@ -35,6 +36,7 @@ def build_router() -> Router:
         invite.create_router(),
         rent.create_router(),
         admin.create_router(),
+        menu.create_router(),
         fallback.create_router(),
     )
     return router

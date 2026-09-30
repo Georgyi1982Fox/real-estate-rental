@@ -14,6 +14,7 @@ from bina.application.referrals import (
     invite_link,
     month_start,
 )
+from bina.infrastructure.bot.keyboards.menu import with_home
 from bina.infrastructure.bot.texts import t
 from bina.infrastructure.db.models import User
 from bina.infrastructure.db.repositories.referrals import ReferralsRepository
@@ -34,7 +35,8 @@ async def cmd_invite(message: Message, bot: Bot, user: User, session: AsyncSessi
             link=invite_link(me.username or "", code),
             invited=invited,
             rewarded=rewarded,
-        )
+        ),
+        reply_markup=with_home(None, user.language),
     )
 
 

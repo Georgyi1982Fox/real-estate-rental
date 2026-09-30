@@ -43,9 +43,12 @@ async def test_start_registers_new_user(harness: BotHarness) -> None:
 
     assert harness.user.telegram_id == 777
     assert harness.user.language == "ru"
-    [message] = harness.telegram.of(SendMessage)
-    assert "Добро пожаловать" in message.text
-    assert isinstance(message.reply_markup, ReplyKeyboardMarkup)
+    # Приветствие с клавиатурой внизу чата, затем главное меню кнопками
+    welcome, home = harness.telegram.of(SendMessage)
+    assert isinstance(welcome, SendMessage) and isinstance(home, SendMessage)
+    assert "Добро пожаловать" in welcome.text
+    assert isinstance(welcome.reply_markup, ReplyKeyboardMarkup)
+    assert "главное меню" in home.text
     assert harness.sessions[-1].commit.await_count == 1
 
 
@@ -55,7 +58,7 @@ async def test_start_greets_returning_user(harness: BotHarness) -> None:
 
     await harness.send("/start")
 
-    assert "С возвращением" in harness.last_text()
+    assert "С возвращением" in harness.sent_texts()[0]
     assert len(harness.store.users) == 1
 
 
@@ -241,7 +244,7 @@ async def test_favorites_empty(harness: BotHarness) -> None:
     await harness.send("❤️ Избранное")
 
     assert "пока пусто" in harness.last_text()
-    assert harness.last_markup() is None
+    assert buttons(harness.last_markup()) == [["🏠 Главное меню"]]
 
 
 async def test_favorites_list_and_pagination(harness: BotHarness) -> None:
@@ -256,7 +259,11 @@ async def test_favorites_list_and_pagination(harness: BotHarness) -> None:
     text = harness.last_text()
     assert "Избранное</b>: 4" in text
     assert "Избранное 3" in text and "Избранное 0" not in text
-    assert buttons(harness.last_markup()) == [["★ 1", "★ 2", "★ 3"], ["1/2", "▶️"]]
+    assert buttons(harness.last_markup()) == [
+        ["★ 1", "★ 2", "★ 3"],
+        ["1/2", "▶️"],
+        ["🏠 Главное меню"],
+    ]
 
     await harness.press(FavoritesPageCallback(page=1).pack())
     assert "Избранное 0" in harness.last_text()
@@ -288,7 +295,10 @@ async def test_profile(harness: BotHarness) -> None:
     assert "Язык: Русский" in text
     assert "Подписка: Бесплатная\n" in text
     assert "С нами с 01.09.2026" in text
-    assert buttons(harness.last_markup()) == [["✅ Русский", "English", "ქართული"]]
+    assert buttons(harness.last_markup()) == [
+        ["✅ Русский", "English", "ქართული"],
+        ["🏠 Главное меню"],
+    ]
 
 
 async def test_change_language(harness: BotHarness) -> None:
