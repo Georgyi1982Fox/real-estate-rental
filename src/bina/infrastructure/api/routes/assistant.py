@@ -15,7 +15,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, Field, field_validator
 
 from bina.application.ports.assistant import AssistantError, IAssistant, ListingBrief
-from bina.application.subscriptions import is_premium
+from bina.application.subscriptions import has_premium_access
 from bina.infrastructure.api.dependencies import CurrentUserDep, SessionDep
 from bina.infrastructure.api.routes.common import get_listing_or_404, payment_required
 from bina.infrastructure.api.schemas import ListingOut, ListingsOut
@@ -86,7 +86,7 @@ def listing_brief(listing: Listing, language: str) -> ListingBrief:
 
 
 def _require_premium(user: User) -> None:
-    if not is_premium(user, datetime.now(UTC)):
+    if not has_premium_access(user, datetime.now(UTC)):
         raise payment_required("assistant", 0)
 
 

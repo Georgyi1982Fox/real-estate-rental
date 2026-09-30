@@ -21,7 +21,7 @@ from bina.infrastructure.db.models import (
     SavedSearch,
     User,
 )
-from bina.infrastructure.db.repositories.users import premium_now
+from bina.infrastructure.db.repositories.users import premium_access_now
 
 
 class SavedSearchesRepository(ISavedSearchesRepository):
@@ -185,7 +185,7 @@ class NotificationsRepository(INotificationsRepository):
             # Служебные сообщения (о подписке) — без задержки
             query = query.where(
                 or_(
-                    premium_now(),
+                    premium_access_now(),
                     Notification.type == NotificationType.SYSTEM.value,
                     Notification.created_at <= free_created_before,
                 )

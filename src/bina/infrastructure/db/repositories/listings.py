@@ -40,7 +40,7 @@ from bina.infrastructure.db.models import (
     ScrapeSkip,
     User,
 )
-from bina.infrastructure.db.repositories.users import premium_now
+from bina.infrastructure.db.repositories.users import premium_access_now
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -436,7 +436,7 @@ class ListingsRepository(IListingsRepository):
             )
         )
         if premium_only:
-            query = query.where(premium_now())
+            query = query.where(premium_access_now())
         rows = (await self._session.execute(query)).all()
         # previous_price не NULL (условие выше), проверка — для типов
         return [

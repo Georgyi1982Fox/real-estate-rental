@@ -16,7 +16,7 @@ from fastapi import APIRouter, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field, field_validator
 
 from bina.application.contract import ContractData, Utilities
-from bina.application.subscriptions import is_premium
+from bina.application.subscriptions import has_premium_access
 from bina.infrastructure.api.delivery import (
     LANGUAGE_NAMES,
     Delivery,
@@ -105,7 +105,7 @@ async def make_contract(
     settings: SettingsDep,
 ) -> DocumentSentOut | Response:
     """Договор аренды в PDF (Premium): в чат с ботом или файлом в ответе."""
-    if not is_premium(user, datetime.now(UTC)):
+    if not has_premium_access(user, datetime.now(UTC)):
         raise payment_required("contract", 0)
     listing = await get_listing_or_404(session, listing_id)
     if not (body.address or listing.address):

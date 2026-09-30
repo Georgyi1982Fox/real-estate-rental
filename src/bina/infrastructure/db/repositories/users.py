@@ -1,11 +1,12 @@
 from datetime import date, datetime
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, and_, func, select, update
+from sqlalchemy import ColumnElement, and_, func, select, true, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bina.application.repositories.users import IUsersRepository
+from bina.application.subscriptions import premium_for_all
 from bina.infrastructure.db.models import AIUsage, User
 from bina.infrastructure.db.models.users import SubscriptionTier
 
@@ -16,6 +17,11 @@ def premium_now() -> ColumnElement[bool]:
         User.subscription_tier != SubscriptionTier.FREE,
         User.subscription_expires_at > func.now(),
     )
+
+
+def premium_access_now() -> ColumnElement[bool]:
+    """SQL-условие «можно платные функции»: Premium или режим для всех (``PREMIUM_FOR_ALL``)."""
+    return true() if premium_for_all() else premium_now()
 
 
 async def take_ai_request(

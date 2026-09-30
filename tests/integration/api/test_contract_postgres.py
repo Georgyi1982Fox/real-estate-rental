@@ -149,3 +149,35 @@ async def test_contract_caption_in_user_language(
     )
     assert answer.status_code == 200
     assert sender.sent[-1][3].startswith("Договор аренды (грузинский + русский)")
+
+
+async def test_premium_for_all_opens_contract(
+    client: AsyncClient,
+    session: AsyncSession,
+    sender: FakeSender,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Режим тестирования: договор доступен и без оплаты."""
+    monkeypatch.setenv("PREMIUM_FOR_ALL", "1")
+    listing = await ListingsRepository(session).create_or_update_from_raw(
+        RawListing(
+            source_id="c3",
+            source_name="ss",
+            title="Квартира",
+            description="",
+            price=1000,
+            currency="GEL",
+            rooms=2,
+            area=50,
+            district="Ваке",
+            url="https://ss.example/c3",
+        )
+    )
+    await session.commit()
+    answer = await client.post(
+        f"/api/listings/{listing.id}/contract",
+        json={**BODY, "address": "Paliashvili 1"},
+        headers=headers("en"),
+    )
+    assert answer.status_code == 200
+    assert len(sender.sent) == 1
