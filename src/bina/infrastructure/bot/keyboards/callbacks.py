@@ -59,3 +59,21 @@ class PremiumBuyCallback(CallbackData, prefix="buy"):
     """Купить тариф (прислать счёт в звёздах)."""
 
     plan: str
+
+
+class RentAction(StrEnum):
+    """Действие с напоминаниями об оплате аренды (TASK-109)."""
+
+    ADD = "add"
+    DAY = "day"
+    DELETE = "del"
+    PAID = "paid"
+
+
+class RentCallback(CallbackData, prefix="rent"):
+    """``day`` — день месяца при добавлении; ``due`` — дата оплаты ``YYYYMMDD`` для «Оплачено»."""
+
+    action: RentAction
+    reminder: UUID | None = None
+    day: int | None = None
+    due: str | None = None

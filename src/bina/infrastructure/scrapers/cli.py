@@ -23,6 +23,10 @@ from bina.application.use_cases.premium_reminders import (
     PremiumReminderStats,
     PremiumRemindersUseCase,
 )
+from bina.application.use_cases.rent_reminders import (
+    RentReminderStats,
+    SendRentRemindersUseCase,
+)
 from bina.application.use_cases.translate_listings import (
     TranslateListingsUseCase,
     TranslationStats,
@@ -408,6 +412,37 @@ def _echo_premium(stats: PremiumReminderStats) -> None:
     click.echo(f"premium: напоминаний {stats.reminded}, «закончился» {stats.expired}")
 
 
+async def rent_reminders() -> RentReminderStats | None:
+    """Напоминания об оплате аренды (TASK-109); ``None`` — нет ``BOT_TOKEN``."""
+    token = os.getenv("BOT_TOKEN", "").strip()
+    if not token:
+        return None
+    from aiogram import Bot
+
+    from bina.infrastructure.bot.rent_reminders import TelegramRentReminderSender
+    from bina.infrastructure.db.repositories.rent_reminders import RentRemindersRepository
+
+    db = DatabaseManager()
+    bot = Bot(token=token, default=_bot_defaults())
+    try:
+        async with db.session_factory() as session:
+            stats = await SendRentRemindersUseCase(
+                RentRemindersRepository(session), TelegramRentReminderSender(bot)
+            ).execute(datetime.now(UTC))
+            await session.commit()
+        return stats
+    finally:
+        await bot.session.close()
+        await db.dispose()
+
+
+def _echo_rent(stats: RentReminderStats | None) -> None:
+    if stats is None:
+        click.echo("аренда: напоминания не отправлены (нет BOT_TOKEN)")
+    else:
+        click.echo(f"аренда: напоминаний отправлено {stats.sent}, ошибок {stats.failed}")
+
+
 async def notify() -> tuple[CreatedNotifications, DeliveryStats | None]:
     """Создаёт уведомления и отправляет их в Telegram (если задан ``BOT_TOKEN``)."""
     db = DatabaseManager()
@@ -574,6 +609,12 @@ def geocode_command(limit: int) -> None:
     _echo_geocode(asyncio.run(geocode(limit)))
 
 
+@cli.command(name="rent-reminders")
+def rent_reminders_command() -> None:
+    """Отправить напоминания об оплате аренды (за 3 дня, за 1 день и в день оплаты)."""
+    _echo_rent(asyncio.run(rent_reminders()))
+
+
 @cli.command(name="premium-reminders")
 def premium_reminders_command() -> None:
     """Напомнить об окончании Premium (за 3 дня и после) — отправит `bina-scrape notify`."""
@@ -683,6 +724,10 @@ def schedule(
                 click.echo(FRAUD_BUSY_MESSAGE)
             except Exception as exc:  # noqa: BLE001 - сбой проверки не останавливает расписание
                 logger.error("Scheduled fraud check failed", error=str(exc))
+        try:
+            _echo_rent(await rent_reminders())
+        except Exception as exc:  # noqa: BLE001 - сбой не останавливает расписание
+            logger.error("Scheduled rent reminders failed", error=str(exc))
         try:
             _echo_premium(await premium_reminders())
         except Exception as exc:  # noqa: BLE001 - сбой не останавливает расписание

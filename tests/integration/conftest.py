@@ -48,6 +48,7 @@ MIGRATIONS = (
     "premium_reminders",
     "timestamp_columns",
     "referrals",
+    "rent_reminders",
 )
 
 

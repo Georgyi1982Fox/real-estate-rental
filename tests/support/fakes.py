@@ -26,6 +26,7 @@ class Store:
     payments: list[tuple[UUID, str, Decimal, str]] = field(default_factory=list)
     # Служебные уведомления: (user_id, тексты по языкам)
     notifications: list[tuple[UUID, dict[str, str]]] = field(default_factory=list)
+    rent_reminders: list[Any] = field(default_factory=list)
 
     def add_district(self, name_ru: str, name_en: str = "", name_ka: str = "") -> District:
         """Добавить район."""
@@ -330,3 +331,43 @@ class FakeReferralsRepository:
 
     async def notify(self, user_id: UUID, texts: dict[str, str]) -> None:
         self._store.notifications.append((user_id, texts))
+
+
+class FakeRentRemindersRepository:
+    """In-memory напоминания об оплате аренды (TASK-109)."""
+
+    def __init__(self, store: Store) -> None:
+        self._store = store
+
+    async def list_for_user(self, user_id: UUID) -> list[Any]:
+        return sorted(
+            (r for r in self._store.rent_reminders if r.user_id == user_id), key=lambda r: r.day
+        )
+
+    async def count_for_user(self, user_id: UUID) -> int:
+        return len(await self.list_for_user(user_id))
+
+    async def add(self, user_id: UUID, day: int, amount: Decimal, currency: str) -> Any:
+        from bina.infrastructure.db.models import RentReminder
+
+        reminder = RentReminder(
+            id=uuid4(), user_id=user_id, day=day, amount=amount, currency=currency, paid_for=None
+        )
+        self._store.rent_reminders.append(reminder)
+        return reminder
+
+    async def delete(self, user_id: UUID, reminder_id: UUID) -> bool:
+        before = len(self._store.rent_reminders)
+        self._store.rent_reminders = [
+            r
+            for r in self._store.rent_reminders
+            if not (r.id == reminder_id and r.user_id == user_id)
+        ]
+        return len(self._store.rent_reminders) < before
+
+    async def mark_paid(self, user_id: UUID, reminder_id: UUID, due: Any) -> bool:
+        for reminder in self._store.rent_reminders:
+            if reminder.id == reminder_id and reminder.user_id == user_id:
+                reminder.paid_for = due
+                return True
+        return False
