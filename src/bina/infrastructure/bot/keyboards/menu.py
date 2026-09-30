@@ -16,7 +16,10 @@ def main_menu(language: str) -> ReplyKeyboardMarkup:
     """Постоянная клавиатура внизу чата; «🏠 Главное меню» возвращает в начало."""
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=t(language, "menu_search"))],
+            [
+                KeyboardButton(text=t(language, "menu_search")),
+                KeyboardButton(text=t(language, "menu_smart")),
+            ],
             [
                 KeyboardButton(text=t(language, "menu_favorites")),
                 KeyboardButton(text=t(language, "menu_profile")),
@@ -41,6 +44,8 @@ def home_menu(language: str, mini_app_url: str | None, admin: bool = False) -> I
             _button(language, "menu_search", MenuSection.SEARCH),
             _button(language, "menu_favorites", MenuSection.FAVORITES),
         ],
+        # TASK-012: поиск своими словами — отдельной заметной кнопкой
+        [_button(language, "menu_smart", MenuSection.SMART)],
     ]
     if mini_app_url:
         rows.append([open_app_button(language, mini_app_url)])

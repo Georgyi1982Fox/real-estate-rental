@@ -53,3 +53,29 @@ async def test_nothing_found(harness: BotHarness) -> None:
     harness.dispatcher["embedder"] = FakeEmbedder()
     await harness.send("квартира с бассейном")
     assert "ничего не нашлось" in harness.last_text()
+
+
+async def test_smart_button_explains_how_to_use(harness: BotHarness) -> None:
+    """Кнопка «🧠 Умный поиск» в главном меню объясняет, что просто написать запрос."""
+    from bina.infrastructure.bot.keyboards.callbacks import MenuCallback, MenuSection
+
+    embedder = FakeEmbedder()
+    harness.dispatcher["embedder"] = embedder
+    await harness.send("/start")
+    menu = [b.text for row in harness.last_markup().inline_keyboard for b in row]
+    assert "🧠 Умный поиск" in menu
+
+    await harness.press(MenuCallback(section=MenuSection.SMART).pack())
+    assert "Напишите мне обычным сообщением" in harness.last_text()
+
+    # Кнопка внизу чата и команда — то же самое, это не запрос поиска
+    await harness.send("🧠 Умный поиск")
+    assert "Напишите мне обычным сообщением" in harness.last_text()
+    await harness.send("/smart")
+    assert "Напишите мне обычным сообщением" in harness.last_text()
+    assert embedder.calls == []
+
+
+async def test_smart_button_without_ai(harness: BotHarness) -> None:
+    await harness.send("/smart")
+    assert "недоступен" in harness.last_text()

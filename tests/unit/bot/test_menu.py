@@ -75,6 +75,7 @@ async def test_home_button_everywhere(harness: BotHarness) -> None:
 # владелец хочет видеть все функции кнопками, а не только в списке команд.
 COMMAND_BUTTONS = {
     "search": MenuSection.SEARCH,
+    "smart": MenuSection.SMART,
     "favorites": MenuSection.FAVORITES,
     "profile": MenuSection.PROFILE,
     "premium": MenuSection.PREMIUM,

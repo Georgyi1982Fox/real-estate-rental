@@ -21,7 +21,9 @@ _RU: dict[str, str] = {
     "menu_title": (
         "🏠 <b>Bina.ai — главное меню</b>\n\n"
         "Аренда жилья в Грузии: объявления с MyHome.ge и SS.ge, проверка на мошенничество, "
-        "документы и напоминания.\n\nВыберите, что сделать:"
+        "документы и напоминания.\n\n"
+        "🧠 Можно просто написать мне, какую квартиру ищете, — своими словами.\n\n"
+        "Выберите, что сделать:"
     ),
     "menu_premium": "⭐ Premium",
     "menu_invite": "🎁 Пригласить друга",
@@ -42,6 +44,7 @@ _RU: dict[str, str] = {
     "help": (
         "<b>Bina.ai: аренда жилья в Грузии</b>\n\n"
         "/search: поиск по району, цене и количеству комнат\n"
+        "/smart: умный поиск своими словами\n"
         "/favorites: избранные объявления\n"
         "/profile: профиль, подписка и язык\n"
         "/premium: Premium-подписка\n"
@@ -54,6 +57,21 @@ _RU: dict[str, str] = {
         "Добавляйте объявления в избранное кнопками ☆ под результатами поиска."
     ),
     "unknown": "Не понял 🤔 Воспользуйтесь меню или командой /help.",
+    "menu_smart": "🧠 Умный поиск",
+    "smart_intro": (
+        "🧠 <b>Умный поиск</b>\n\n"
+        "Напишите мне обычным сообщением, какую квартиру ищете, — своими словами, "
+        "как написали бы знакомому риелтору. Я найду объявления, подходящие по смыслу, "
+        "даже если в них другие слова.\n\n"
+        "Например:\n"
+        "• <i>двушка с балконом у метро до 1500 лари</i>\n"
+        "• <i>квартира у моря в Батуми, можно с котом</i>\n"
+        "• <i>тихая квартира с ремонтом для семьи в Ваке</i>\n\n"
+        "Можно писать по-русски, по-грузински или по-английски. ✍️ Жду ваше сообщение!"
+    ),
+    "smart_unavailable": (
+        "🧠 Умный поиск сейчас недоступен. Воспользуйтесь обычным поиском: 🔍 Поиск."
+    ),
     "smart_header": "🧠 <b>Умный поиск:</b> «{query}»\nСамые близкие по смыслу объявления:",
     "smart_empty": "🧠 По запросу «{query}» пока ничего не нашлось. Попробуйте описать иначе.",
     "smart_hint": "Пишите своими словами, что ищете: район, бюджет, балкон, метро, животные…",
@@ -222,7 +240,9 @@ _EN: dict[str, str] = {
     "menu_title": (
         "🏠 <b>Bina.ai — main menu</b>\n\n"
         "Rentals in Georgia: listings from MyHome.ge and SS.ge, scam checks, documents "
-        "and reminders.\n\nChoose what to do:"
+        "and reminders.\n\n"
+        "🧠 You can also just write to me what apartment you need, in your own words.\n\n"
+        "Choose what to do:"
     ),
     "menu_premium": "⭐ Premium",
     "menu_invite": "🎁 Invite a friend",
@@ -243,6 +263,7 @@ _EN: dict[str, str] = {
     "help": (
         "<b>Bina.ai: rentals in Georgia</b>\n\n"
         "/search: search by district, price and rooms\n"
+        "/smart: smart search in your own words\n"
         "/favorites: your saved listings\n"
         "/profile: profile, subscription and language\n"
         "/premium: Premium subscription\n"
@@ -256,6 +277,21 @@ _EN: dict[str, str] = {
         "Save listings with the ☆ buttons under search results."
     ),
     "unknown": "Sorry, I didn't get that 🤔 Use the menu or /help.",
+    "menu_smart": "🧠 Smart search",
+    "smart_intro": (
+        "🧠 <b>Smart search</b>\n\n"
+        "Just send me a message describing the apartment you want, in your own words, "
+        "as you would tell a friend who is a realtor. I will find listings that match "
+        "by meaning, even if they use different words.\n\n"
+        "For example:\n"
+        "• <i>2 rooms with a balcony near the metro up to 1500 GEL</i>\n"
+        "• <i>flat by the sea in Batumi, cats allowed</i>\n"
+        "• <i>quiet renovated flat for a family in Vake</i>\n\n"
+        "You can write in English, Russian or Georgian. ✍️ I'm waiting for your message!"
+    ),
+    "smart_unavailable": (
+        "🧠 Smart search is unavailable right now. Please use the regular 🔍 Search."
+    ),
     "smart_header": "🧠 <b>Smart search:</b> «{query}»\nThe closest listings by meaning:",
     "smart_empty": "🧠 Nothing found for «{query}» yet. Try describing it differently.",
     "smart_hint": (
@@ -423,7 +459,9 @@ _KA: dict[str, str] = {
     "menu_title": (
         "🏠 <b>Bina.ai — მთავარი მენიუ</b>\n\n"
         "ქირავნობა საქართველოში: განცხადებები MyHome.ge-დან და SS.ge-დან, თაღლითობის "
-        "შემოწმება, დოკუმენტები და შეხსენებები.\n\nაირჩიეთ, რა გავაკეთოთ:"
+        "შემოწმება, დოკუმენტები და შეხსენებები.\n\n"
+        "🧠 შეგიძლიათ უბრალოდ მომწეროთ, როგორ ბინას ეძებთ — საკუთარი სიტყვებით.\n\n"
+        "აირჩიეთ, რა გავაკეთოთ:"
     ),
     "menu_premium": "⭐ Premium",
     "menu_invite": "🎁 მეგობრის მოწვევა",
@@ -444,6 +482,7 @@ _KA: dict[str, str] = {
     "help": (
         "<b>Bina.ai: ქირავნობა საქართველოში</b>\n\n"
         "/search: ძებნა უბნის, ფასისა და ოთახების მიხედვით\n"
+        "/smart: ჭკვიანი ძებნა საკუთარი სიტყვებით\n"
         "/favorites: რჩეული განცხადებები\n"
         "/profile: პროფილი, გამოწერა და ენა\n"
         "/premium: Premium გამოწერა\n"
@@ -456,6 +495,19 @@ _KA: dict[str, str] = {
         "შეინახეთ განცხადებები ☆ ღილაკებით ძებნის შედეგების ქვეშ."
     ),
     "unknown": "ვერ გავიგე 🤔 გამოიყენეთ მენიუ ან /help.",
+    "menu_smart": "🧠 ჭკვიანი ძებნა",
+    "smart_intro": (
+        "🧠 <b>ჭკვიანი ძებნა</b>\n\n"
+        "უბრალოდ მომწერეთ ჩვეულებრივი შეტყობინებით, როგორ ბინას ეძებთ — საკუთარი "
+        "სიტყვებით, როგორც ნაცნობ რიელტორს მისწერდით. ვიპოვი აზრით შესაფერის "
+        "განცხადებებს, თუნდაც მათში სხვა სიტყვები იყოს.\n\n"
+        "მაგალითად:\n"
+        "• <i>ოროთახიანი აივნით მეტროსთან 1500 ლარამდე</i>\n"
+        "• <i>ბინა ზღვასთან ბათუმში, კატით შეიძლება</i>\n"
+        "• <i>მშვიდი გარემონტებული ბინა ოჯახისთვის ვაკეში</i>\n\n"
+        "შეგიძლიათ დაწეროთ ქართულად, რუსულად ან ინგლისურად. ✍️ ველოდები თქვენს შეტყობინებას!"
+    ),
+    "smart_unavailable": ("🧠 ჭკვიანი ძებნა ახლა მიუწვდომელია. გამოიყენეთ ჩვეულებრივი 🔍 ძებნა."),
     "smart_header": "🧠 <b>ჭკვიანი ძებნა:</b> «{query}»\nაზრით ყველაზე ახლო განცხადებები:",
     "smart_empty": "🧠 მოთხოვნით «{query}» ჯერ არაფერი მოიძებნა. სცადეთ სხვანაირად აღწერა.",
     "smart_hint": (

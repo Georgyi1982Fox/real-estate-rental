@@ -4,7 +4,8 @@
 поиск недоступен (нет ключа AI или сервис не ответил) — подсказка про меню.
 """
 
-from aiogram import Router
+from aiogram import F, Router
+from aiogram.filters import Command
 from aiogram.types import InlineKeyboardMarkup, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,7 +18,7 @@ from bina.infrastructure.bot.formatters import format_listings
 from bina.infrastructure.bot.keyboards.listings import favorite_buttons
 from bina.infrastructure.bot.keyboards.menu import open_app_button, with_home
 from bina.infrastructure.bot.settings import BotSettings
-from bina.infrastructure.bot.texts import t
+from bina.infrastructure.bot.texts import all_variants, t
 from bina.infrastructure.db.models import Listing, User
 from bina.infrastructure.db.repositories.favorites import FavoritesRepository
 from bina.infrastructure.db.repositories.listings import ListingsRepository
@@ -80,8 +81,16 @@ async def _answer_results(
     )
 
 
+async def cmd_smart(message: Message, user: User, embedder: IEmbedder | None = None) -> None:
+    """/smart и кнопка «🧠 Умный поиск»: как пользоваться (следующее сообщение — запрос)."""
+    key = "smart_intro" if embedder is not None else "smart_unavailable"
+    await message.answer(t(user.language, key), reply_markup=with_home(None, user.language))
+
+
 def create_router() -> Router:
     """Создаёт роутер раздела «fallback» (новый экземпляр на каждый Dispatcher)."""
     router = Router(name="fallback")
+    router.message.register(cmd_smart, Command("smart"))
+    router.message.register(cmd_smart, F.text.in_(all_variants("menu_smart")))
     router.message.register(on_unknown_message)
     return router
