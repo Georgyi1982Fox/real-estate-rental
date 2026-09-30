@@ -99,6 +99,9 @@ def run_schedule(monkeypatch: pytest.MonkeyPatch, args: list[str]) -> Any:
             await OneShotScheduler.instances[-1].job()
 
     monkeypatch.setattr("bina.infrastructure.scrapers.cli.asyncio.Event", Event)
+    # Настоящий парсинг ходит в сеть и в базу (DATABASE_URL) — в unit-тестах нельзя
+    if not isinstance(getattr(scrape_cli, "scrape"), AsyncMock):
+        monkeypatch.setattr(scrape_cli, "scrape", AsyncMock(return_value=[]))
     if not isinstance(getattr(scrape_cli, "notify"), AsyncMock):
         monkeypatch.setattr(scrape_cli, "notify", AsyncMock(return_value=(NO_NOTIFICATIONS, None)))
     if not isinstance(getattr(scrape_cli, "fill_details"), AsyncMock):
