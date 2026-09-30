@@ -13,6 +13,7 @@ from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message, PreCheck
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from bina.application.referrals import FRIEND_DISCOUNT_PERCENT
 from bina.application.subscriptions import (
     FREE_LIMITS,
     PREMIUM_LIMITS,
@@ -20,14 +21,17 @@ from bina.application.subscriptions import (
     Plan,
     is_premium,
     plan_for_payload,
+    price_for,
     validate_checkout,
 )
 from bina.application.use_cases.notifications import FREE_DELIVERY_DELAY
+from bina.application.use_cases.referrals import RewardReferrerUseCase
 from bina.application.use_cases.subscriptions import ActivateSubscriptionUseCase
 from bina.infrastructure.bot.keyboards.callbacks import PremiumBuyCallback
 from bina.infrastructure.bot.texts import t
 from bina.infrastructure.db.models import User
 from bina.infrastructure.db.repositories.payments import PaymentsRepository
+from bina.infrastructure.db.repositories.referrals import ReferralsRepository
 from bina.infrastructure.db.repositories.users import UsersRepository
 from bina.infrastructure.payments import invoice
 
@@ -36,8 +40,10 @@ logger = structlog.get_logger(__name__)
 DATE_FORMAT = "%d.%m.%Y"
 
 
-def render_premium(user: User, plans: dict[str, Plan], now: datetime) -> str:
-    """Текущий тариф, что даёт Premium и цена."""
+def render_premium(
+    user: User, plans: dict[str, Plan], now: datetime, discounted: bool = False
+) -> str:
+    """Текущий тариф, что даёт Premium и цена (со скидкой приглашённому другу)."""
     language = user.language
     if is_premium(user, now):
         assert user.subscription_expires_at is not None
@@ -46,8 +52,10 @@ def render_premium(user: User, plans: dict[str, Plan], now: datetime) -> str:
         )
     else:
         status = t(language, "premium_free")
+    if discounted:
+        status += "\n" + t(language, "premium_discount", percent=FRIEND_DISCOUNT_PERCENT)
     prices = ", ".join(
-        t(language, "premium_price", price=plan.price_stars, days=plan.days)
+        t(language, "premium_price", price=price_for(plan, discounted), days=plan.days)
         for plan in sorted(plans.values(), key=lambda plan: plan.days)
     )
     return t(
@@ -61,25 +69,31 @@ def render_premium(user: User, plans: dict[str, Plan], now: datetime) -> str:
     )
 
 
-def premium_keyboard(user: User, plans: dict[str, Plan], now: datetime) -> InlineKeyboardMarkup:
+def premium_keyboard(
+    user: User, plans: dict[str, Plan], now: datetime, discounted: bool = False
+) -> InlineKeyboardMarkup:
     """Кнопка покупки (или продления) для каждого тарифа."""
     key = "premium_extend" if is_premium(user, now) else "premium_buy"
     builder = InlineKeyboardBuilder()
     # Короткий срок первым: это самый частый выбор
     for plan in sorted(plans.values(), key=lambda plan: plan.days):
         builder.button(
-            text=t(user.language, key, price=plan.price_stars, days=plan.days),
+            text=t(user.language, key, price=price_for(plan, discounted), days=plan.days),
             callback_data=PremiumBuyCallback(plan=plan.id),
         )
     builder.adjust(1)
     return builder.as_markup()
 
 
-async def cmd_premium(message: Message, user: User, plans: dict[str, Plan]) -> None:
+async def cmd_premium(
+    message: Message, user: User, plans: dict[str, Plan], session: AsyncSession
+) -> None:
     """/premium: тариф и кнопка оплаты."""
     now = datetime.now(UTC)
+    discounted = await ReferralsRepository(session).discount_eligible(user)
     await message.answer(
-        render_premium(user, plans, now), reply_markup=premium_keyboard(user, plans, now)
+        render_premium(user, plans, now, discounted),
+        reply_markup=premium_keyboard(user, plans, now, discounted),
     )
 
 
@@ -89,29 +103,36 @@ async def on_buy(
     bot: Bot,
     user: User,
     plans: dict[str, Plan],
+    session: AsyncSession,
 ) -> None:
-    """Прислать счёт в звёздах."""
+    """Прислать счёт в звёздах (со скидкой, если друг пригласил и это первая покупка)."""
     plan = plans.get(callback_data.plan)
     if plan is None or callback.message is None:
         await callback.answer(t(user.language, "message_outdated"), show_alert=True)
         return
+    discounted = await ReferralsRepository(session).discount_eligible(user)
     await bot.send_invoice(
         chat_id=callback.message.chat.id,
         title=invoice.invoice_title(user.language),
         description=invoice.invoice_description(plan, user.language),
         payload=plan.invoice_payload,
         currency=STARS_CURRENCY,
-        prices=invoice.invoice_prices(plan, user.language),
+        prices=invoice.invoice_prices(plan, user.language, price_for(plan, discounted)),
     )
     await callback.answer()
 
 
-async def on_pre_checkout(query: PreCheckoutQuery, user: User, plans: dict[str, Plan]) -> None:
+async def on_pre_checkout(
+    query: PreCheckoutQuery, user: User, plans: dict[str, Plan], session: AsyncSession
+) -> None:
     """Последняя проверка перед списанием: тариф существует, сумма и валюта верны.
 
     Telegram ждёт ответ не дольше 10 секунд.
     """
-    plan = validate_checkout(plans, query.invoice_payload, query.currency, query.total_amount)
+    discounted = await ReferralsRepository(session).discount_eligible(user)
+    plan = validate_checkout(
+        plans, query.invoice_payload, query.currency, query.total_amount, discounted
+    )
     if plan is None:
         logger.warning(
             "Pre-checkout rejected",
@@ -153,6 +174,10 @@ async def on_successful_payment(
     if result.activated and result.expires_at is not None:
         await message.answer(
             t(user.language, "premium_activated", date=result.expires_at.strftime(DATE_FORMAT))
+        )
+        # TASK-108: первая оплата приглашённого — награда пригласившему
+        await RewardReferrerUseCase(ReferralsRepository(session)).execute(
+            user.id, datetime.now(UTC)
         )
 
 

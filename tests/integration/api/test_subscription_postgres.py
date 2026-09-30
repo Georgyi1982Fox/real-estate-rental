@@ -59,8 +59,20 @@ async def test_free_limits_and_premium(
     assert body["limits"] == {"favorites": None, "searches": 1}
     assert body["usage"] == {"favorites": 0, "searches": 0}
     assert body["plans"] == [
-        {"id": PREMIUM_MONTH, "tier": "nomad", "days": 30, "price_stars": 250},
-        {"id": PREMIUM_WEEK, "tier": "nomad", "days": 7, "price_stars": 100},
+        {
+            "id": PREMIUM_MONTH,
+            "tier": "nomad",
+            "days": 30,
+            "price_stars": 250,
+            "price_stars_for_you": 250,
+        },
+        {
+            "id": PREMIUM_WEEK,
+            "tier": "nomad",
+            "days": 7,
+            "price_stars": 100,
+            "price_stars_for_you": 100,
+        },
     ]
 
     first = await client.post("/api/searches", json={"filters": {"rooms": 2}}, headers=HEADERS)

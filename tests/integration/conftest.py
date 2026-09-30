@@ -46,6 +46,8 @@ MIGRATIONS = (
     "listing_geocoded",
     "complaints",
     "premium_reminders",
+    "timestamp_columns",
+    "referrals",
 )
 
 

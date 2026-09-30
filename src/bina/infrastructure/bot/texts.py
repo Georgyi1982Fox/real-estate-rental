@@ -20,6 +20,7 @@ _RU: dict[str, str] = {
         "/favorites: избранные объявления\n"
         "/profile: профиль, подписка и язык\n"
         "/premium: Premium-подписка\n"
+        "/invite: пригласить друга\n"
         "/help: эта справка\n\n"
         "Добавляйте объявления в избранное кнопками ☆ под результатами поиска."
     ),
@@ -90,6 +91,18 @@ _RU: dict[str, str] = {
         "Цена: {prices}. Оплата звёздами Telegram."
     ),
     "premium_free": "Сейчас у вас бесплатный тариф.",
+    # TASK-108: приглашения
+    "premium_discount": "🎁 По приглашению друга вам скидка {percent}% на первую покупку.",
+    "welcome_referred": (
+        "🎁 Вас пригласил друг: скидка {percent}% на первую покупку Premium — /premium"
+    ),
+    "invite_info": (
+        "🎁 <b>Пригласите друзей</b>\n\n"
+        "Друг получит скидку {percent}% на первый Premium, а вы — {days} дней Premium, "
+        "когда он оплатит (до {limit} наград в месяц).\n\n"
+        "Ваша ссылка:\n{link}\n\n"
+        "Приглашено: {invited}, наград: {rewarded}."
+    ),
     "premium_active": "✅ Premium действует до {date}.",
     "premium_price": "<b>{price} ⭐</b> за {days} дн.",
     "premium_buy": "Купить {days} дн. за {price} ⭐",
@@ -126,6 +139,7 @@ _EN: dict[str, str] = {
         "/favorites: your saved listings\n"
         "/profile: profile, subscription and language\n"
         "/premium: Premium subscription\n"
+        "/invite: invite a friend\n"
         "/help: this help\n\n"
         "Save listings with the ☆ buttons under search results."
     ),
@@ -196,6 +210,18 @@ _EN: dict[str, str] = {
         "Price: {prices}. Paid with Telegram Stars."
     ),
     "premium_free": "You are on the free plan.",
+    # TASK-108: invitations
+    "premium_discount": "🎁 You were invited by a friend: {percent}% off your first purchase.",
+    "welcome_referred": (
+        "🎁 A friend invited you: {percent}% off your first Premium purchase — /premium"
+    ),
+    "invite_info": (
+        "🎁 <b>Invite friends</b>\n\n"
+        "Your friend gets {percent}% off their first Premium, and you get {days} days of "
+        "Premium when they pay (up to {limit} rewards a month).\n\n"
+        "Your link:\n{link}\n\n"
+        "Invited: {invited}, rewards: {rewarded}."
+    ),
     "premium_active": "✅ Premium is active until {date}.",
     "premium_price": "<b>{price} ⭐</b> for {days} days",
     "premium_buy": "Buy {days} days for {price} ⭐",

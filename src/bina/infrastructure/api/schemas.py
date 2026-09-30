@@ -12,8 +12,9 @@ from bina.application.fraud import fraud_level
 from bina.application.listing_details import CONDITIONS, FEATURES, clean_features
 from bina.application.localization import localize_address, localize_name
 from bina.application.price_analysis import PriceAnalysis, PriceLevel
+from bina.application.referrals import FRIEND_DISCOUNT_PERCENT
 from bina.application.risk_report import RiskReport
-from bina.application.subscriptions import Limits, Plan, effective_tier
+from bina.application.subscriptions import Limits, Plan, effective_tier, price_for
 from bina.infrastructure.api.validation import clean_text
 from bina.infrastructure.db.models import District, Listing, Notification, SavedSearch, User
 from bina.infrastructure.db.models.users import SubscriptionTier
@@ -349,6 +350,8 @@ class PlanOut(BaseModel):
     tier: str
     days: int
     price_stars: int
+    # TASK-108: цена для этого пользователя (со скидкой приглашённому другу)
+    price_stars_for_you: int
 
 
 class LimitsOut(BaseModel):
@@ -374,6 +377,7 @@ class SubscriptionOut(BaseModel):
     limits: LimitsOut
     usage: UsageOut
     plans: list[PlanOut]
+    discount_percent: int = 0
 
     @classmethod
     def build(
@@ -385,6 +389,7 @@ class SubscriptionOut(BaseModel):
         favorites: int,
         searches: int,
         plans: list[Plan],
+        discounted: bool = False,
     ) -> "SubscriptionOut":
         """Собирает ответ."""
         return cls(
@@ -394,9 +399,16 @@ class SubscriptionOut(BaseModel):
             limits=LimitsOut(favorites=limits.favorites, searches=limits.searches),
             usage=UsageOut(favorites=favorites, searches=searches),
             plans=[
-                PlanOut(id=p.id, tier=p.tier.value, days=p.days, price_stars=p.price_stars)
+                PlanOut(
+                    id=p.id,
+                    tier=p.tier.value,
+                    days=p.days,
+                    price_stars=p.price_stars,
+                    price_stars_for_you=price_for(p, discounted),
+                )
                 for p in plans
             ],
+            discount_percent=FRIEND_DISCOUNT_PERCENT if discounted else 0,
         )
 
 

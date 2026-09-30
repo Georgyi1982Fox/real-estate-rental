@@ -12,11 +12,13 @@ from urllib.parse import urlencode
 from aiogram import Bot
 from aiogram.client.session.base import BaseSession
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.methods import EditMessageText, SendMessage, TelegramMethod
-from aiogram.types import Chat, InlineKeyboardMarkup, Message
+from aiogram.methods import EditMessageText, GetMe, SendMessage, TelegramMethod
+from aiogram.types import Chat, InlineKeyboardMarkup, Message, User
 
 TOKEN = "42:TEST"
 CHAT_ID = 777
+BOT_ID = 42
+BOT_USERNAME = "bina_test_bot"
 
 
 class FakeTelegramSession(BaseSession):
@@ -46,6 +48,8 @@ class FakeTelegramSession(BaseSession):
                 text=method.text,
                 reply_markup=markup if isinstance(markup, InlineKeyboardMarkup) else None,
             )
+        if isinstance(method, GetMe):
+            return User(id=BOT_ID, is_bot=True, first_name="Bina", username=BOT_USERNAME)
         return True
 
     async def stream_content(

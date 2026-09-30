@@ -31,9 +31,11 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bina.infrastructure.bot import factory as bot_factory
 from bina.infrastructure.bot.handlers import favorites as favorites_handlers
+from bina.infrastructure.bot.handlers import invite as invite_handlers
 from bina.infrastructure.bot.handlers import payments as payments_handlers
 from bina.infrastructure.bot.handlers import profile as profile_handlers
 from bina.infrastructure.bot.handlers import search as search_handlers
+from bina.infrastructure.bot.handlers import start as start_handlers
 from bina.infrastructure.bot.middlewares import registration
 from bina.infrastructure.bot.settings import BotSettings
 from bina.infrastructure.db.models import User
@@ -42,6 +44,7 @@ from tests.support.fakes import (
     FakeFavoritesRepository,
     FakeListingsRepository,
     FakePaymentsRepository,
+    FakeReferralsRepository,
     FakeUsersRepository,
     Store,
 )
@@ -161,6 +164,9 @@ def patch_repositories(monkeypatch: pytest.MonkeyPatch, store: Store) -> None:
     monkeypatch.setattr(profile_handlers, "FavoritesRepository", fake(FakeFavoritesRepository))
     monkeypatch.setattr(payments_handlers, "UsersRepository", fake(FakeUsersRepository))
     monkeypatch.setattr(payments_handlers, "PaymentsRepository", fake(FakePaymentsRepository))
+    monkeypatch.setattr(payments_handlers, "ReferralsRepository", fake(FakeReferralsRepository))
+    monkeypatch.setattr(start_handlers, "ReferralsRepository", fake(FakeReferralsRepository))
+    monkeypatch.setattr(invite_handlers, "ReferralsRepository", fake(FakeReferralsRepository))
 
 
 @pytest.fixture
