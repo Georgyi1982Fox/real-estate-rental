@@ -1,31 +1,63 @@
+"""Embeddings объявлений (TASK-012)."""
+
+from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from bina.infrastructure.db.models import Embedding
+from bina.infrastructure.db.models import Embedding, Listing, ListingStatus
 
 
 class EmbeddingsRepository:
-    """Репозиторий для работы с embeddings."""
+    """Отпечатки объявлений: какие ещё не посчитаны и сохранение пачкой."""
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def save_embedding(self, listing_id: UUID, embedding: list[float]) -> None:
-        """Сохраняет embedding для объявления."""
-        # Проверяем, существует ли уже embedding
-        query = select(Embedding).where(Embedding.listing_id == listing_id)
-        result = await self._session.execute(query)
-        existing_embedding = result.scalar_one_or_none()
-
-        if existing_embedding is not None:
-            # Обновляем существующий embedding
-            existing_embedding.vector = embedding
-        else:
-            # Создаем новый embedding
-            new_embedding = Embedding(
-                listing_id=listing_id,
-                vector=embedding,
+    async def to_embed(self, limit: int, model: str) -> list[Listing]:
+        """Активные объявления без отпечатка этой модели, новые первыми."""
+        has_embedding = (
+            select(Embedding.id)
+            .where(Embedding.listing_id == Listing.id, Embedding.model_name == model)
+            .exists()
+        )
+        query = (
+            select(Listing)
+            .where(
+                Listing.status == ListingStatus.ACTIVE,
+                Listing.is_deleted.is_(False),
+                ~has_embedding,
             )
-            self._session.add(new_embedding)
+            .options(selectinload(Listing.district))
+            .order_by(Listing.created_at.desc())
+            .limit(limit)
+        )
+        return list((await self._session.execute(query)).scalars().all())
+
+    async def save_many(self, vectors: Sequence[tuple[UUID, list[float]]], model: str) -> None:
+        """Сохранить (или заменить) отпечатки; у объявления один отпечаток."""
+        if not vectors:
+            return
+        statement = pg_insert(Embedding).values(
+            [
+                {"listing_id": listing_id, "vector": vector, "model_name": model}
+                for listing_id, vector in vectors
+            ]
+        )
+        await self._session.execute(
+            statement.on_conflict_do_update(
+                index_elements=[Embedding.listing_id],
+                set_={
+                    "vector": statement.excluded.vector,
+                    "model_name": statement.excluded.model_name,
+                    "updated_at": func.now(),
+                },
+            )
+        )
+
+    async def save_embedding(self, listing_id: UUID, embedding: list[float]) -> None:
+        """Сохранить отпечаток одного объявления (модель по умолчанию)."""
+        await self.save_many([(listing_id, embedding)], "text-embedding-3-small")

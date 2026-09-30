@@ -22,10 +22,12 @@ class Embedding(Base):
         primary_key=True,
         server_default="gen_random_uuid()",
     )
+    # Один отпечаток на объявление (миграция embeddings_unique)
     listing_id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
         ForeignKey("bina_listings.id"),
         nullable=False,
+        unique=True,
     )
     vector: Mapped[list[float]] = mapped_column(
         Vector(1536),

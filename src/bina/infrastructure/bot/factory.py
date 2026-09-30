@@ -8,6 +8,7 @@ from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import BotCommand, BotCommandScopeChat, MenuButtonWebApp, WebAppInfo
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from bina.application.ports.embeddings import IEmbedder
 from bina.infrastructure.bot.handlers import build_router
 from bina.infrastructure.bot.middlewares import DbSessionMiddleware, RegistrationMiddleware
 from bina.infrastructure.bot.middlewares.throttling import ThrottlingMiddleware
@@ -70,13 +71,15 @@ def create_bot(settings: BotSettings) -> Bot:
 def create_dispatcher(
     settings: BotSettings,
     session_factory: async_sessionmaker[AsyncSession],
+    embedder: IEmbedder | None = None,
 ) -> Dispatcher:
     """Создаёт Dispatcher с middleware и роутерами.
 
     ``settings`` и тарифы ``plans`` доступны в обработчиках как одноимённые аргументы.
     Порядок middleware: сессия БД, затем регистрация (ей нужна сессия).
     """
-    dispatcher = Dispatcher(settings=settings, plans=load_plans())
+    # embedder — умный поиск по тексту сообщения (TASK-012); None — выключен
+    dispatcher = Dispatcher(settings=settings, plans=load_plans(), embedder=embedder)
     # Флуд отбрасывается до обращения к базе (TASK-019)
     dispatcher.update.outer_middleware(ThrottlingMiddleware(settings.rate_limit))
     dispatcher.update.outer_middleware(DbSessionMiddleware(session_factory))

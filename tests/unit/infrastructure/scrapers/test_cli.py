@@ -8,6 +8,7 @@ import pytest
 from click.testing import CliRunner
 
 from bina.application.use_cases.check_fraud import FraudStats
+from bina.application.use_cases.embed_listings import EmbedStats
 from bina.application.use_cases.find_duplicates import DuplicateStats
 from bina.application.use_cases.geocode_listings import GeocodeStats
 from bina.application.use_cases.notifications import CreatedNotifications, DeliveryStats
@@ -44,7 +45,7 @@ def test_scrape_myhome(scrape: AsyncMock, tmp_path: Path) -> None:
     assert "сохранено 2" in result.output
     args: Any = scrape.await_args
     assert args.args == (["myhome"], 100)
-    assert args.kwargs == {"details": False, "embeddings": False, "dump_dir": tmp_path}
+    assert args.kwargs == {"details": False, "dump_dir": tmp_path}
 
 
 def test_all_sources(scrape: AsyncMock) -> None:
@@ -87,6 +88,7 @@ NO_DUPLICATES = DuplicateStats(checked=0, found=0)
 NO_GEOCODE = GeocodeStats(checked=0, found=0, failed=0)
 NO_PREMIUM = PremiumReminderStats(reminded=0, expired=0)
 NO_DETAILS = BackfillStats(checked=0, updated=0, archived=0, failed=0)
+NO_EMBED = EmbedStats(checked=0, embedded=0, failed=0)
 
 
 def run_schedule(monkeypatch: pytest.MonkeyPatch, args: list[str]) -> Any:
@@ -118,6 +120,8 @@ def run_schedule(monkeypatch: pytest.MonkeyPatch, args: list[str]) -> Any:
         monkeypatch.setattr(scrape_cli, "check_api_health", AsyncMock(return_value=None))
     if not isinstance(getattr(scrape_cli, "send_owner_alerts"), AsyncMock):
         monkeypatch.setattr(scrape_cli, "send_owner_alerts", AsyncMock(return_value=None))
+    if not isinstance(getattr(scrape_cli, "embed"), AsyncMock):
+        monkeypatch.setattr(scrape_cli, "embed", AsyncMock(return_value=NO_EMBED))
     if not isinstance(getattr(scrape_cli, "check_fraud"), AsyncMock):
         monkeypatch.setattr(scrape_cli, "check_fraud", AsyncMock(return_value=NO_FRAUD))
     return CliRunner().invoke(scrape_cli.cli, ["schedule", *args])
@@ -493,3 +497,27 @@ async def test_owner_alerts_need_token_and_admins(monkeypatch: pytest.MonkeyPatc
     monkeypatch.setenv("BOT_TOKEN", "1:x")
     # Без владельца — ничего не отправляется и база не нужна
     await scrape_cli.send_owner_alerts([Alert("alert_api_ok", {})])
+
+
+def test_schedule_computes_embeddings_when_ai_configured(
+    scrape: AsyncMock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """TASK-012: отпечатки для умного поиска — шаг расписания, если есть ключ AI."""
+    embed = AsyncMock(return_value=EmbedStats(checked=7, embedded=7, failed=0))
+    monkeypatch.setattr(scrape_cli, "embed", embed)
+    monkeypatch.setattr(scrape_cli, "embeddings_configured", lambda: True)
+
+    result = run_schedule(monkeypatch, ["--no-translate"])
+
+    assert result.exit_code == 0, result.output
+    embed.assert_awaited_once_with(scrape_cli.EMBED_BATCH)
+    assert "умный поиск: объявлений 7, отпечатков 7" in result.output
+
+
+def test_schedule_skips_embeddings_without_key(
+    scrape: AsyncMock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(scrape_cli, "embeddings_configured", lambda: False)
+    run_schedule(monkeypatch, ["--no-translate"])
+    embed: Any = scrape_cli.embed
+    embed.assert_not_awaited()

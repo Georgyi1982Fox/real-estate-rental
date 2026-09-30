@@ -5,9 +5,11 @@ from aiogram import Bot, Dispatcher
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiohttp import web
 
+from bina.application.ports.embeddings import IEmbedder
 from bina.infrastructure.bot.factory import create_bot, create_dispatcher, setup_bot_ui
 from bina.infrastructure.bot.settings import BotSettings
 from bina.infrastructure.db.session.manager import DatabaseManager
+from bina.infrastructure.llm.llm_factory import LLMFactory, embeddings_configured
 
 logger = structlog.get_logger(__name__)
 
@@ -22,7 +24,7 @@ async def run_polling(settings: BotSettings) -> None:
     """
     db = DatabaseManager()
     bot = create_bot(settings)
-    dispatcher = create_dispatcher(settings, db.session_factory)
+    dispatcher = create_dispatcher(settings, db.session_factory, _embedder())
     try:
         await bot.delete_webhook(drop_pending_updates=settings.drop_pending_updates)
         await setup_bot_ui(bot, settings)
@@ -84,7 +86,7 @@ def run_webhook(settings: BotSettings) -> None:
 
     db = DatabaseManager()
     bot = create_bot(settings)
-    dispatcher = create_dispatcher(settings, db.session_factory)
+    dispatcher = create_dispatcher(settings, db.session_factory, _embedder())
 
     async def dispose_db() -> None:
         await db.dispose()
@@ -92,3 +94,10 @@ def run_webhook(settings: BotSettings) -> None:
     dispatcher.shutdown.register(dispose_db)
     app = build_webhook_app(bot, dispatcher, settings)
     web.run_app(app, host=settings.webapp_host, port=settings.webapp_port, print=None)
+
+
+def _embedder() -> IEmbedder | None:
+    """Умный поиск в чате (TASK-012), если задан ключ AI."""
+    if not embeddings_configured():
+        return None
+    return LLMFactory.create_embeddings_provider()
