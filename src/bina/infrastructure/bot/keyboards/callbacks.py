@@ -112,6 +112,7 @@ class MenuSection(StrEnum):
     HOME = "home"
     SEARCH = "search"
     SMART = "smart"
+    DAILY = "daily"
     FAVORITES = "fav"
     PREMIUM = "premium"
     INVITE = "invite"

@@ -76,6 +76,7 @@ async def test_home_button_everywhere(harness: BotHarness) -> None:
 COMMAND_BUTTONS = {
     "search": MenuSection.SEARCH,
     "smart": MenuSection.SMART,
+    "daily": MenuSection.DAILY,
     "favorites": MenuSection.FAVORITES,
     "profile": MenuSection.PROFILE,
     "premium": MenuSection.PREMIUM,

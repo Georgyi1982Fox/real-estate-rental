@@ -70,6 +70,8 @@ async def on_menu(
         await send_home(message, user, settings)
     elif section == MenuSection.SEARCH:
         await search.cmd_search(message, session, user, settings)
+    elif section == MenuSection.DAILY:
+        await search.cmd_daily(message, session, user, settings)
     elif section == MenuSection.SMART:
         await fallback.cmd_smart(message, user, embedder)
     elif section == MenuSection.FAVORITES:

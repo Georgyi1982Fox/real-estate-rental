@@ -47,6 +47,7 @@ _RU: dict[str, str] = {
         "<b>Bina.ai: аренда жилья в Грузии</b>\n\n"
         "/search: поиск по району, цене и количеству комнат\n"
         "/smart: умный поиск своими словами\n"
+        "/daily: посуточная аренда\n"
         "/favorites: избранные объявления\n"
         "/profile: профиль, подписка и язык\n"
         "/premium: Premium-подписка\n"
@@ -60,6 +61,8 @@ _RU: dict[str, str] = {
     ),
     "unknown": "Не понял 🤔 Воспользуйтесь меню или командой /help.",
     "menu_smart": "🧠 Умный поиск",
+    "menu_daily": "🛏 Посуточно",
+    "daily_search_title": "🛏 <b>Посуточная аренда</b> (цена за сутки)",
     "smart_intro": (
         "🧠 <b>Умный поиск</b>\n\n"
         "Напишите мне обычным сообщением, какую квартиру ищете, — своими словами, "
@@ -273,6 +276,7 @@ _EN: dict[str, str] = {
         "<b>Bina.ai: rentals in Georgia</b>\n\n"
         "/search: search by district, price and rooms\n"
         "/smart: smart search in your own words\n"
+        "/daily: daily rent\n"
         "/favorites: your saved listings\n"
         "/profile: profile, subscription and language\n"
         "/premium: Premium subscription\n"
@@ -287,6 +291,8 @@ _EN: dict[str, str] = {
     ),
     "unknown": "Sorry, I didn't get that 🤔 Use the menu or /help.",
     "menu_smart": "🧠 Smart search",
+    "menu_daily": "🛏 Daily rent",
+    "daily_search_title": "🛏 <b>Daily rent</b> (price per day)",
     "smart_intro": (
         "🧠 <b>Smart search</b>\n\n"
         "Just send me a message describing the apartment you want, in your own words, "
@@ -500,6 +506,7 @@ _KA: dict[str, str] = {
         "<b>Bina.ai: ქირავნობა საქართველოში</b>\n\n"
         "/search: ძებნა უბნის, ფასისა და ოთახების მიხედვით\n"
         "/smart: ჭკვიანი ძებნა საკუთარი სიტყვებით\n"
+        "/daily: დღიური ქირა\n"
         "/favorites: რჩეული განცხადებები\n"
         "/profile: პროფილი, გამოწერა და ენა\n"
         "/premium: Premium გამოწერა\n"
@@ -513,6 +520,8 @@ _KA: dict[str, str] = {
     ),
     "unknown": "ვერ გავიგე 🤔 გამოიყენეთ მენიუ ან /help.",
     "menu_smart": "🧠 ჭკვიანი ძებნა",
+    "menu_daily": "🛏 დღიურად",
+    "daily_search_title": "🛏 <b>დღიური ქირა</b> (ფასი დღეში)",
     "smart_intro": (
         "🧠 <b>ჭკვიანი ძებნა</b>\n\n"
         "უბრალოდ მომწერეთ ჩვეულებრივი შეტყობინებით, როგორ ბინას ეძებთ — საკუთარი "
