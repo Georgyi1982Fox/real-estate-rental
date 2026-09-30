@@ -41,7 +41,7 @@
 - `application/contract.py` — пункты на ka / ru / en.
 - `infrastructure/documents/pdf.py` — общие части PDF (для акта приёмки TASK-102 тоже).
 - `infrastructure/documents/contract_pdf.py` — сборка договора.
-- `infrastructure/api/routes/contract.py` — API.
+- `infrastructure/api/routes/contract.py` — API; выдача PDF в чат или файлом — `infrastructure/api/delivery.py`.
 - Шрифт DejaVu Sans (есть грузинские буквы) лежит в `infrastructure/documents/fonts/`
   с лицензией. Библиотека — `fpdf2`.
 

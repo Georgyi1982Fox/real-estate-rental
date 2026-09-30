@@ -47,6 +47,22 @@ def bilingual_table(pdf: FPDF, rows: list[tuple[str, str]], font_size: float = 8
             row.cell(right)
 
 
+def signatures(
+    pdf: FPDF,
+    labels: tuple[tuple[str, str], tuple[str, str]],
+    names: tuple[str, str],
+) -> None:
+    """Подписи двух сторон: «роль ka / роль 2-й язык: имя» и линия под подпись."""
+    pdf.ln(6)
+    pdf.set_font(FONT, "", 9)
+    half = (pdf.w - pdf.l_margin - pdf.r_margin) / 2
+    for (ka, other), name in zip(labels, names, strict=True):
+        pdf.cell(half, 6, f"{ka} / {other}: {name}")
+    pdf.ln(9)
+    pdf.cell(half, 6, "_______________________")
+    pdf.cell(half, 6, "_______________________", new_x="LMARGIN", new_y="NEXT")
+
+
 def small_print(pdf: FPDF, *lines: str) -> None:
     """Мелкий текст внизу (дисклеймер)."""
     pdf.ln(4)
