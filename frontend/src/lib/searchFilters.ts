@@ -1,6 +1,6 @@
 // Фильтры поиска: разбор адреса страницы, строка запроса для API, описание словами
 
-import type { SearchFilters } from '../api/types';
+import type { District, SearchFilters } from '../api/types';
 import type { DistrictNames } from '../hooks/useDistricts';
 import type { Lang, Strings } from '../i18n/strings';
 import { fill, formatPrice, tr } from './format';
@@ -16,6 +16,14 @@ const DISTRICT_NAMES_SHOWN = 2;
 
 /** Параметры адреса страницы; несколько районов — district=a,b через запятую */
 export const FILTER_KEYS = ['district', 'min_price', 'max_price', 'rooms'] as const;
+
+/** Поиск по словам: параметр адреса и запроса к API. В фильтры (и сохранённые поиски) не входит */
+export const QUERY_KEY = 'q';
+/** Столько символов принимает бэкенд в q */
+export const QUERY_MAX = 100;
+/** С такой длины текста появляются подсказки районов */
+export const SUGGEST_MIN_CHARS = 2;
+export const SUGGEST_MAX = 6;
 
 /** Целое число из адреса в диапазоне [min, max], иначе undefined */
 function parseInteger(raw: string | null, min: number, max: number): number | undefined {
@@ -53,6 +61,11 @@ export function parseFilters(params: URLSearchParams): SearchFilters {
   return filters;
 }
 
+/** Текст поиска без пробелов по краям, не длиннее QUERY_MAX */
+export function cleanQuery(raw: string | null): string {
+  return (raw ?? '').trim().slice(0, QUERY_MAX).trim();
+}
+
 /**
  * Только заполненные фильтры, в постоянном порядке ключей. Районы отсортированы:
  * «Ваке, Сабуртало» и «Сабуртало, Ваке» — один и тот же поиск.
@@ -70,6 +83,16 @@ export function filterEntries(filters: SearchFilters): [string, string][] {
 export function filtersToQuery(filters: SearchFilters): string {
   // Запятую не кодируем: адрес читается глазами, а бэкенд понимает оба варианта
   return new URLSearchParams(filterEntries(filters)).toString().replace(/%2C/gi, ',');
+}
+
+/**
+ * Строка запроса для /api/listings: поиск по словам + фильтры.
+ * sort не передаём — при q сервер сам ставит сверху самые подходящие.
+ */
+export function searchToQuery(filters: SearchFilters, query: string): string {
+  const filterQuery = filtersToQuery(filters);
+  const textQuery = query ? new URLSearchParams({ [QUERY_KEY]: query }).toString() : '';
+  return [textQuery, filterQuery].filter(Boolean).join('&');
 }
 
 export function hasFilters(filters: SearchFilters): boolean {
@@ -108,6 +131,33 @@ export function districtsLabel(ids: string[], names: DistrictNames, lang: Lang):
   const shown = known.slice(0, DISTRICT_NAMES_SHOWN).join(', ');
   const rest = known.length - DISTRICT_NAMES_SHOWN;
   return rest > 0 ? `${shown} +${rest}` : shown;
+}
+
+/**
+ * Районы для подсказок: название на любом из трёх языков содержит текст (без учёта регистра).
+ * Сначала те, чьё название на языке интерфейса начинается с текста. Уже выбранные не показываем.
+ */
+export function suggestDistricts(
+  districts: District[],
+  text: string,
+  lang: Lang,
+  selected: string[],
+): District[] {
+  const needle = text.trim().toLocaleLowerCase();
+  if (needle.length < SUGGEST_MIN_CHARS) return [];
+  const matches = districts.filter(
+    ({ id, name }) =>
+      !selected.includes(id) &&
+      (['ka', 'ru', 'en'] as const).some((key) =>
+        tr(name, key).toLocaleLowerCase().includes(needle),
+      ),
+  );
+  const startsWith = (district: District) =>
+    tr(district.name, lang).toLocaleLowerCase().startsWith(needle);
+  return [
+    ...matches.filter(startsWith),
+    ...matches.filter((district) => !startsWith(district)),
+  ].slice(0, SUGGEST_MAX);
 }
 
 /** Части описания фильтров по отдельности — для чипов и строки описания */
