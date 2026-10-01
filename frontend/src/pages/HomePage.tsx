@@ -16,27 +16,41 @@ import { useDistricts } from '../hooks/useDistricts';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useSearchFilters } from '../hooks/useSearchFilters';
 import { fill } from '../lib/format';
-import { countFilters, filtersToQuery, hasFilters } from '../lib/searchFilters';
+import { countFilters, filterDistricts, hasFilters, searchToQuery } from '../lib/searchFilters';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 
 const LISTINGS_PER_PAGE = 6;
 const SKELETON_COUNT = 4;
 const GRID_CLASS = 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
+const PRIMARY_BUTTON_CLASS =
+  'inline-flex min-h-11 items-center justify-center rounded-[var(--radius-md)] bg-[var(--primary)] px-5 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--primary-hover)] active:scale-[.98]';
 
 export default function HomePage() {
   const { t } = useI18n();
   const ht = t.home;
-  const { filters, page, setFilters, replaceFilters, resetFilters, setPage } = useSearchFilters();
+  const {
+    filters,
+    query,
+    page,
+    setFilters,
+    replaceFilters,
+    resetFilters,
+    setQuery,
+    addDistrict,
+    setPage,
+  } = useSearchFilters();
   const [filtersOpen, setFiltersOpen] = useState(false);
   // Стабильная ссылка: Modal перезапускает эффект (фокус) при смене onClose
   const closeFilters = useCallback(() => setFiltersOpen(false), []);
-  const filterQuery = filtersToQuery(filters);
+  const searchQuery = searchToQuery(filters, query);
   const { data, error, loading, reload } = useApi<ListingsPage>(
-    `/api/listings?page=${page}&per_page=${LISTINGS_PER_PAGE}${filterQuery ? `&${filterQuery}` : ''}`,
+    `/api/listings?page=${page}&per_page=${LISTINGS_PER_PAGE}${searchQuery ? `&${searchQuery}` : ''}`,
   );
   const { districts, names } = useDistricts();
   const filtered = hasFilters(filters);
+  // Есть что сбрасывать: фильтры или текст поиска
+  const narrowed = filtered || query !== '';
 
   useDocumentTitle(`Bina.ai — ${ht.page_title}`);
 
@@ -58,13 +72,19 @@ export default function HomePage() {
       </header>
 
       <section className="home__filters flex flex-col gap-4" aria-label={ht.filters}>
-        <SearchBar>
+        <SearchBar
+          query={query}
+          districts={districts}
+          selectedDistricts={filterDistricts(filters)}
+          onSearch={setQuery}
+          onSelectDistrict={addDistrict}
+        >
           <FilterButton count={countFilters(filters)} onClick={() => setFiltersOpen(true)} />
         </SearchBar>
         <FilterChips filters={filters} districtNames={names} onRemove={setFilters} />
         <div className="home__filter-actions flex flex-wrap items-center gap-3">
           <SaveSearchButton filters={filters} />
-          {filtered && (
+          {narrowed && (
             <button
               type="button"
               className="home__reset inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-md)] px-3 py-2.5 text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] active:scale-[.98]"
@@ -82,6 +102,7 @@ export default function HomePage() {
           open={filtersOpen}
           onClose={closeFilters}
           filters={filters}
+          query={query}
           districts={districts}
           onApply={replaceFilters}
         />
@@ -94,7 +115,7 @@ export default function HomePage() {
       >
         <header className="flex items-baseline justify-between gap-3">
           <h2 id="home-listings-title" className="text-xl font-bold tracking-tight">
-            {filtered ? ht.results : ht.featured}
+            {narrowed ? ht.results : ht.featured}
           </h2>
           {data && (
             <span className="text-sm text-[var(--text-secondary)]">
@@ -113,12 +134,32 @@ export default function HomePage() {
 
         {error && <ErrorState onRetry={reload} />}
 
-        {data && data.items.length === 0 && (
+        {data && data.items.length === 0 && query && (
+          <EmptyState
+            icon="🔍"
+            title={fill(ht.search_empty_title, query)}
+            text={ht.search_empty_text}
+          >
+            {/* Убирает только текст поиска: фильтры остаются */}
+            <button
+              type="button"
+              className={PRIMARY_BUTTON_CLASS}
+              onClick={() => {
+                haptic('light');
+                setQuery('');
+              }}
+            >
+              {ht.search_reset}
+            </button>
+          </EmptyState>
+        )}
+
+        {data && data.items.length === 0 && !query && (
           <EmptyState title={ht.empty_title} text={ht.empty_text}>
             {filtered && (
               <button
                 type="button"
-                className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-md)] bg-[var(--primary)] px-5 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--primary-hover)] active:scale-[.98]"
+                className={PRIMARY_BUTTON_CLASS}
                 onClick={() => {
                   haptic('light');
                   resetFilters();
