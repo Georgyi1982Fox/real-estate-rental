@@ -13,6 +13,13 @@
 Сейчас `premiumPlan()` (`src/lib/premium.ts`) берёт первый — месяц, поэтому купить неделю
 в Mini App нельзя. В боте обе кнопки уже есть.
 
+## Перед началом
+```bash
+git checkout develop
+git pull
+git checkout -b feature/frontend-016-plan-choice
+```
+
 ## Что сделать
 1. **Страница Premium** (`src/pages/PremiumPage.tsx`): две карточки или переключатель
    «7 дней — 100 ⭐» / «30 дней — 250 ⭐». Значения брать из `plans` (не хардкодить).
