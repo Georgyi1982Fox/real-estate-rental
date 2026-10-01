@@ -33,13 +33,6 @@ _FLOOR_RE = re.compile(r"^\s*(\d{1,2})\s*(?:(?:/|из|of|-)\s*(\d{1,2}))?\s*$", 
 _TELEGRAM_USERNAME_RE = re.compile(r"^[A-Za-z0-9_]{5,32}$")
 _PHONE_RE = re.compile(r"^\+?\d{6,15}$")
 
-# Заголовок на трёх языках: «2-комн. квартира, Ваке, 60 м²»
-_TITLES = {
-    "ru": ("{rooms}-комн. квартира, {district}, {area} м²", "Посуточно: {title}"),
-    "en": ("{rooms}-room apartment, {district}, {area} m²", "Daily: {title}"),
-    "ka": ("{rooms}-ოთახიანი ბინა, {district}, {area} მ²", "დღიურად: {title}"),
-}
-
 
 @dataclass(frozen=True, slots=True)
 class OwnerListingDraft:
@@ -99,26 +92,6 @@ def valid_description(text: str) -> bool:
     return MIN_DESCRIPTION <= len(text.strip()) <= MAX_DESCRIPTION
 
 
-def format_area(area: Decimal) -> str:
-    return f"{area.normalize():f}"
-
-
-def owner_titles(draft: OwnerListingDraft, districts: dict[str, str]) -> dict[str, str]:
-    """Заголовки ``title_ru/en/ka``; ``districts`` — название района на каждом языке."""
-    rooms = f"{MAX_ROOMS}+" if draft.rooms > MAX_ROOMS else str(draft.rooms)
-    titles: dict[str, str] = {}
-    for language, (template, daily) in _TITLES.items():
-        title = template.format(
-            rooms=rooms,
-            district=districts.get(language) or draft.district,
-            area=format_area(draft.area),
-        )
-        titles[f"title_{language}"] = (
-            daily.format(title=title) if draft.rent_period == DAILY else title
-        )
-    return titles
-
-
 def owner_raw_listing(
     draft: OwnerListingDraft, source_id: str, photos: list[str], now: datetime
 ) -> RawListing:
@@ -126,7 +99,7 @@ def owner_raw_listing(
     return RawListing(
         source_id=source_id,
         source_name=OWNER_SOURCE,
-        # Заголовки на всех языках записываются отдельно (owner_titles)
+        # Заголовки на всех языках собирает репозиторий (listing_titles)
         title="",
         description=draft.description.strip(),
         price=float(draft.price),

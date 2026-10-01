@@ -685,7 +685,9 @@ def fraud_command(limit: int) -> None:
 )
 @click.option(
     "--translate-limit",
-    default=200,
+    # С livo/korter и посуточной арендой новых объявлений в час больше: 200 не успевали.
+    # Переводятся только описания (заголовки собираются сами), это недорого
+    default=1000,
     show_default=True,
     type=click.IntRange(1, 5000),
     help="Максимум объявлений для перевода за запуск.",

@@ -34,6 +34,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bina.application.cities import CITIES, city_name
+from bina.application.listing_titles import format_area
 from bina.application.owner_listings import (
     MAX_ACTIVE_LISTINGS,
     MAX_PHOTOS,
@@ -41,7 +42,6 @@ from bina.application.owner_listings import (
     OwnerListingDraft,
     OwnerListingError,
     clean_phone,
-    format_area,
     parse_area,
     parse_floor,
     telegram_contact,
