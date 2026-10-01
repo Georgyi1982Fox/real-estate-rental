@@ -12,9 +12,8 @@ from bina.application.owner_listings import (
     OWNER_SOURCE,
     OwnerListingDraft,
     owner_raw_listing,
-    owner_titles,
 )
-from bina.infrastructure.db.models import District, Listing, ListingStatus
+from bina.infrastructure.db.models import Listing, ListingStatus
 from bina.infrastructure.db.repositories.listings import ListingsRepository
 
 
@@ -61,17 +60,10 @@ class OwnerListingsRepository:
         photos: list[str],
         now: datetime,
     ) -> Listing:
-        """Новое объявление: как с сайта, плюс хозяин и заголовки на трёх языках."""
+        """Новое объявление: как с сайта, плюс хозяин."""
         raw = owner_raw_listing(draft, source_id, photos, now)
+        # Заголовки на трёх языках ставит сам create_or_update_from_raw (listing_titles)
         listing = await ListingsRepository(self._session).create_or_update_from_raw(raw)
-        district = await self._session.get(District, listing.district_id)
-        names = (
-            {"ru": district.name_ru, "en": district.name_en, "ka": district.name_ka}
-            if district is not None
-            else {}
-        )
-        for column, title in owner_titles(draft, names).items():
-            setattr(listing, column, title)
         listing.owner_user_id = user_id
         await self._session.flush()
         await self._session.refresh(listing, attribute_names=["district"])

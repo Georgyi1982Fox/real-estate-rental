@@ -26,6 +26,7 @@ from bina.application.dtos.listing_search import ListingSearchFilters, ListingSo
 from bina.application.duplicates import candidate_bounds
 from bina.application.fraud import HIDE_SCORE
 from bina.application.listing_details import clean_features
+from bina.application.listing_titles import listing_titles
 from bina.application.localization import district_names, script_of
 from bina.application.ports.scraper import RawListing
 from bina.application.ports.translator import LANGUAGES, ListingText
@@ -230,9 +231,20 @@ class ListingsRepository(IListingsRepository):
         исходный текст не изменился.
         """
         district = await self._get_or_create_district(raw_listing.district, raw_listing.city)
-        texts = source_texts(raw_listing)
+        # Заголовок собирается из данных на трёх языках; с сайта берётся только описание
+        texts = {
+            column: text
+            for column, text in source_texts(raw_listing).items()
+            if column.startswith("description_")
+        }
         values: dict[str, object] = {
             **texts,
+            **listing_titles(
+                raw_listing.rooms,
+                raw_listing.area,
+                rent_period_code(raw_listing.rent_period),
+                {"ru": district.name_ru, "en": district.name_en, "ka": district.name_ka},
+            ),
             "price": Decimal(str(raw_listing.price)),
             "currency": raw_listing.currency,
             "rooms": raw_listing.rooms,
@@ -285,7 +297,7 @@ class ListingsRepository(IListingsRepository):
             listing = Listing(
                 source_id=raw_listing.source_id,
                 source_name=raw_listing.source_name,
-                # Второй язык заполнит перевод (TranslateListingUseCase)
+                # Описания на других языках заполнит перевод (TranslateListingUseCase)
                 title_ru="",
                 title_ka="",
                 description_ru="",
@@ -793,12 +805,14 @@ def source_text_changed(listing: Listing, texts: dict[str, str]) -> bool:
 
 
 def stale_translation_resets(texts: dict[str, str]) -> dict[str, str]:
-    """Пустые тексты во всех колонках, кроме пришедших с сайта: их заново переведёт AI."""
+    """Пустые описания на всех языках, кроме пришедших с сайта: их заново переведёт AI.
+
+    Заголовки не сбрасываются: они собираются из данных (``listing_titles``).
+    """
     return {
-        f"{kind}_{language}": ""
-        for kind in ("title", "description")
+        f"description_{language}": ""
         for language in LANGUAGES
-        if f"{kind}_{language}" not in texts
+        if f"description_{language}" not in texts
     }
 
 

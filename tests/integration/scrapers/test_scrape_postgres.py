@@ -57,22 +57,27 @@ async def count(session: AsyncSession, model: type[Listing] | type[District]) ->
 async def test_create_and_update_from_raw(session: AsyncSession) -> None:
     repository = ListingsRepository(session)
 
-    listing = await repository.create_or_update_from_raw(raw("1", language="ka", title="ბინა"))
-    assert (listing.title_ka, listing.title_ru) == ("ბინა", "")
+    listing = await repository.create_or_update_from_raw(
+        raw("1", language="ka", title="ბინა", description="ბინა ვაკეში")
+    )
+    # Заголовок — из данных на трёх языках; описание — как на сайте
+    assert listing.title_ru == "2-комн. квартира, Ваке, 55 м²"
+    assert listing.title_ka == "2-ოთახიანი ბინა, ვაკე, 55 მ²"
+    assert (listing.description_ka, listing.description_ru) == ("ბინა ვაკეში", "")
     assert listing.images == ["https://static.example.com/1/1.jpg"]
     assert (listing.phone, listing.owner_name) == ("+995555123456", "Нино")
     assert listing.url == "https://www.myhome.ge/ru/1/"
 
     # Перевод на русский не затирается, если текст тот же (изменилась только цена).
     # Изменение текста сбрасывает перевод: test_translations_postgres.py
-    listing.title_ru = "Квартира (перевод)"
+    listing.description_ru = "Квартира в Ваке (перевод)"
     updated = await repository.create_or_update_from_raw(
-        raw("1", language="ka", title="ბინა", price=1500.0)
+        raw("1", language="ka", title="ბინა", description="ბინა ვაკეში", price=1500.0)
     )
     assert updated.id == listing.id
-    assert (updated.title_ka, updated.title_ru, updated.price) == (
-        "ბინა",
-        "Квартира (перевод)",
+    assert (updated.description_ka, updated.description_ru, updated.price) == (
+        "ბინა ვაკეში",
+        "Квартира в Ваке (перевод)",
         Decimal(1500),
     )
 

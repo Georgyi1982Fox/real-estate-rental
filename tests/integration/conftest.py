@@ -53,6 +53,7 @@ MIGRATIONS = (
     "embeddings_unique",
     "listing_rent_period",
     "listing_owner",
+    "listing_generated_titles",
 )
 
 

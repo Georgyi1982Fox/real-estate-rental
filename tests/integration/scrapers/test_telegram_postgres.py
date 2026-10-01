@@ -70,7 +70,7 @@ async def test_channel_posts_saved_once(
     assert flat.currency == "GEL", "доллары пересчитаны в лари"
     assert flat.url == "https://t.me/m2tbilis/73972"
     assert flat.description_ru.startswith("Дигомский массив")
-    assert flat.title_ru == "3-комн. квартира"
+    assert flat.title_ru == "3-комн. квартира, Дигоми, 100 м²"
     assert len(flat.images) == 9
     assert flat.details_fetched_at is not None
     skipped = (await session.execute(select(ScrapeSkip.source_id))).scalars().all()
