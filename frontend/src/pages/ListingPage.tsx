@@ -1,10 +1,12 @@
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import type { ListResponse, Listing } from '../api/types';
 import ContactButton from '../components/ContactButton';
 import ErrorState from '../components/ErrorState';
+import ExternalLink from '../components/ExternalLink';
 import FavoriteButton from '../components/FavoriteButton';
 import FraudWarning from '../components/FraudWarning';
 import Gallery from '../components/Gallery';
+import ListingDates from '../components/ListingDates';
 import ListingDescription from '../components/ListingDescription';
 import ListingSkeleton from '../components/ListingSkeleton';
 import ListingSpecs from '../components/ListingSpecs';
@@ -18,7 +20,6 @@ import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
 import { useTelegramMainButton } from '../hooks/useTelegramMainButton';
 import { fill, formatPrice, tr } from '../lib/format';
 import { fraudLevel } from '../lib/fraud';
-import { isInTelegram, openLink } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 import NotFoundPage from './NotFoundPage';
 
@@ -29,7 +30,6 @@ export default function ListingPage() {
   const { lang, t } = useI18n();
   const lt = t.listing;
   const { names } = useDistricts();
-  const navigate = useNavigate();
   const {
     data: listing,
     error,
@@ -62,6 +62,7 @@ export default function ListingPage() {
   const district = listing ? (districtEntry ? tr(districtEntry, lang) : listing.district) : '';
   const ownerName = tr(listing?.owner?.name, lang) || listing?.owner_name || '';
   const address = tr(listing?.address, lang);
+  const mapUrl = listing ? googleMapsUrl(listing.latitude, listing.longitude) : '';
 
   return (
     <>
@@ -101,10 +102,18 @@ export default function ListingPage() {
                     {title}
                   </h1>
                   <p className="listing-summary__meta flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[var(--text-secondary)]">
-                    <span className="inline-flex items-center gap-1">
+                    <span className="inline-flex min-w-0 items-start gap-1 break-words">
                       <span aria-hidden="true">📍</span>
-                      {district}
+                      {address ? `${address}, ${district}` : district}
                     </span>
+                    {mapUrl && (
+                      <ExternalLink
+                        href={mapUrl}
+                        className="listing-summary__map rounded-[var(--radius-sm)] font-semibold text-[var(--text-primary)] underline underline-offset-2 transition-colors hover:text-[var(--primary)]"
+                      >
+                        {lt.on_map} ↗
+                      </ExternalLink>
+                    )}
                     {typeof listing.rating === 'number' && (
                       <span className="inline-flex items-center gap-1">
                         <span className="text-[var(--accent)]" aria-hidden="true">
@@ -147,20 +156,12 @@ export default function ListingPage() {
 
                 {listing.source_url && sourceSite && (
                   <p className="listing-source m-0 text-sm text-[var(--text-secondary)]">
-                    <a
+                    <ExternalLink
                       href={listing.source_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
                       className="listing-source__link font-semibold text-[var(--primary)] underline-offset-2 hover:underline"
-                      onClick={(event) => {
-                        // В Telegram внешние ссылки — только через SDK; в браузере работает обычная ссылка
-                        if (!isInTelegram()) return;
-                        event.preventDefault();
-                        openLink(listing.source_url ?? '', (path) => navigate(path));
-                      }}
                     >
                       {fill(lt.open_source, sourceSite)} ↗
-                    </a>
+                    </ExternalLink>
                     {!listing.has_phone && <span className="block">{lt.source_hint}</span>}
                   </p>
                 )}
@@ -191,6 +192,8 @@ export default function ListingPage() {
                   </figcaption>
                 </figure>
               </section>
+
+              <ListingDates publishedAt={listing.published_at} updatedAt={listing.updated_at} />
             </div>
           </div>
         </article>
@@ -207,6 +210,13 @@ export default function ListingPage() {
       )}
     </>
   );
+}
+
+/** Ссылка «На карте»; координат нет (null, не число) — '' */
+function googleMapsUrl(latitude?: number | null, longitude?: number | null): string {
+  if (typeof latitude !== 'number' || typeof longitude !== 'number') return '';
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return '';
+  return `https://www.google.com/maps?q=${latitude},${longitude}`;
 }
 
 /** Короткое имя сайта для подписи: www.myhome.ge → MyHome.ge, home.ss.ge → SS.ge */

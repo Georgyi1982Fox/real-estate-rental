@@ -23,9 +23,9 @@
       "district": "saburtalo",
       "city": "Tbilisi",
       "address": {
-        "ka": "ვაჟა-ფშაველას გამზირი 21, თბილისი",
-        "ru": "пр. Важа-Пшавела 21, Тбилиси",
-        "en": "21 Vazha-Pshavela Ave, Tbilisi"
+        "ka": "ვაჟა-ფშაველას გამზირი 21",
+        "ru": "пр. Важа-Пшавела 21",
+        "en": "21 Vazha-Pshavela Ave"
       },
       "features": ["furnished", "balcony", "air_conditioning", "washing_machine", "internet", "elevator"],
       "owner": {

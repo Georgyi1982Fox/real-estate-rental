@@ -1,7 +1,14 @@
 import { useCallback, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { SearchFilters } from '../api/types';
-import { FILTER_KEYS, filterEntries, parseFilters } from '../lib/searchFilters';
+import {
+  cleanQuery,
+  FILTER_KEYS,
+  filterDistricts,
+  filterEntries,
+  parseFilters,
+  QUERY_KEY,
+} from '../lib/searchFilters';
 
 /** Записать фильтры в параметры адреса вместо прежних; страница сбрасывается на первую */
 function writeFilters(params: URLSearchParams, filters: SearchFilters): void {
@@ -11,8 +18,8 @@ function writeFilters(params: URLSearchParams, filters: SearchFilters): void {
 }
 
 /**
- * Фильтры и страница главной живут в адресе:
- * ?district=<id>,<id>&min_price=..&max_price=..&rooms=..&page=..
+ * Поиск, фильтры и страница главной живут в адресе:
+ * ?q=<текст>&district=<id>,<id>&min_price=..&max_price=..&rooms=..&page=..
  * Такую ссылку можно открыть заново или сохранить как поиск.
  */
 export function useSearchFilters() {
@@ -20,6 +27,7 @@ export function useSearchFilters() {
   const navigate = useNavigate();
   // Новый объект только при изменении адреса — на filters можно опираться в эффектах
   const filters = useMemo(() => parseFilters(new URLSearchParams(search)), [search]);
+  const query = cleanQuery(new URLSearchParams(search).get(QUERY_KEY));
   const page = Math.max(
     1,
     Number.parseInt(new URLSearchParams(search).get('page') ?? '1', 10) || 1,
@@ -54,7 +62,40 @@ export function useSearchFilters() {
     [update],
   );
 
-  const resetFilters = useCallback(() => replaceFilters({}), [replaceFilters]);
+  /** «Сбросить фильтры» убирает и текст поиска */
+  const resetFilters = useCallback(
+    () =>
+      update((params) => {
+        writeFilters(params, {});
+        params.delete(QUERY_KEY);
+      }, true),
+    [update],
+  );
+
+  /** Поиск по словам; пустая строка убирает q. Фильтры остаются, страница — первая */
+  const setQuery = useCallback(
+    (text: string) => {
+      update((params) => {
+        const next = cleanQuery(text);
+        if (next) params.set(QUERY_KEY, next);
+        else params.delete(QUERY_KEY);
+        params.delete('page');
+      }, true);
+    },
+    [update],
+  );
+
+  /** Район из подсказок поиска: добавляется к фильтру районов, текст поиска убирается */
+  const addDistrict = useCallback(
+    (id: string) => {
+      update((params) => {
+        const current = parseFilters(params);
+        writeFilters(params, { ...current, districts: [...filterDistricts(current), id] });
+        params.delete(QUERY_KEY);
+      }, true);
+    },
+    [update],
+  );
 
   const setPage = useCallback(
     (next: number) => {
@@ -66,5 +107,15 @@ export function useSearchFilters() {
     [update],
   );
 
-  return { filters, page, setFilters, replaceFilters, resetFilters, setPage };
+  return {
+    filters,
+    query,
+    page,
+    setFilters,
+    replaceFilters,
+    resetFilters,
+    setQuery,
+    addDistrict,
+    setPage,
+  };
 }

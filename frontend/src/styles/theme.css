@@ -34,6 +34,10 @@
   --danger-bg: #fef2f2;
   --danger-border: #fca5a5;
   --danger-text: #7f1d1d;
+
+  /* Значок «Собственник» (FRONTEND-015) */
+  --success-bg: #ecfdf5;
+  --success-text: #065f46;
 }
 
 :root {
@@ -83,6 +87,8 @@
     --danger-bg: rgba(239, 68, 68, 0.12);
     --danger-border: rgba(239, 68, 68, 0.5);
     --danger-text: #fecaca;
+    --success-bg: rgba(16, 185, 129, 0.16);
+    --success-text: #a7f3d0;
   }
 }
 
@@ -100,4 +106,6 @@
   --danger-bg: rgba(239, 68, 68, 0.12);
   --danger-border: rgba(239, 68, 68, 0.5);
   --danger-text: #fecaca;
+  --success-bg: rgba(16, 185, 129, 0.16);
+  --success-text: #a7f3d0;
 }

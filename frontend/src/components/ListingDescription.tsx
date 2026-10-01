@@ -9,7 +9,7 @@ interface ListingDescriptionProps {
 export default function ListingDescription({ text }: ListingDescriptionProps) {
   const { t } = useI18n();
   const lt = t.listing;
-  const textRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLParagraphElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [clamped, setClamped] = useState(false);
 
@@ -33,15 +33,14 @@ export default function ListingDescription({ text }: ListingDescriptionProps) {
       </h2>
       {text ? (
         <>
-          <div
+          {/* pre-line сохраняет переносы строк автора; больше одной пустой строки подряд не оставляем */}
+          <p
             id="listing-description-text"
             ref={textRef}
-            className={`listing-description__text space-y-3 break-words text-sm leading-relaxed text-[var(--text-primary)] sm:text-base ${expanded ? '' : 'line-clamp-5'}`}
+            className={`listing-description__text whitespace-pre-line break-words text-sm leading-relaxed text-[var(--text-primary)] sm:text-base ${expanded ? '' : 'line-clamp-5'}`}
           >
-            {text.split('\n\n').map((paragraph, index) => (
-              <p key={index}>{paragraph}</p>
-            ))}
-          </div>
+            {text.replace(/\r\n?/g, '\n').replace(/\n{3,}/g, '\n\n')}
+          </p>
           {(clamped || expanded) && (
             <button
               type="button"
