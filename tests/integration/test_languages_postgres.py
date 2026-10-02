@@ -57,6 +57,10 @@ RAW = RawListing(
 )
 
 
+# Заголовок из данных (bina.application.listing_titles)
+TITLE_RU = "3-комн. квартира, Сабуртало, 70 м²"
+
+
 def assert_all_languages(value: dict[str, str], field: str) -> None:
     assert set(value) == set(LANGS), f"{field}: нет языков {set(LANGS) - set(value)}"
     for lang in LANGS:
@@ -72,9 +76,11 @@ async def test_every_field_in_every_language(
     await session.commit()
     listing_id = listing.id
 
-    # Текст лёг в колонки своего языка, а не «русской страницы»
-    assert (listing.title_ru, listing.description_ka) == (RAW.title, RAW.description)
-    assert (listing.description_ru, listing.title_ka) == ("", "")
+    # Описание легло в колонку своего языка, а не «русской страницы»;
+    # заголовок собран из данных сразу на трёх языках
+    assert (listing.title_ru, listing.description_ka) == (TITLE_RU, RAW.description)
+    assert listing.description_ru == ""
+    assert script_of(listing.title_ka) == "ka" and script_of(listing.title_en) == "en"
 
     assert await repository.language_coverage() == (1, 1)
 
@@ -84,8 +90,8 @@ async def test_every_field_in_every_language(
             translator, ListingsRepository(work), after_save=work.commit
         ).execute(limit=10)
     assert stats.translated == 1
-    # Заголовок — сначала на язык описания, потом всё — с языка описания
-    assert translator.calls == [("ru", ("ka",)), ("ka", ("ru", "en"))]
+    # Один запрос: описание — с языка описания на остальные (заголовки уже есть)
+    assert translator.calls == [("ka", ("ru", "en"))]
 
     app = create_app(ApiSettings(), session_factory)
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -100,7 +106,7 @@ async def test_every_field_in_every_language(
     assert_all_languages(body["owner"]["name"], "owner")
     assert_all_languages(districts[body["district"]], "district")
     # Текст сайта не заменён переводом
-    assert body["title"]["ru"] == RAW.title
+    assert body["title"]["ru"] == TITLE_RU
     assert body["description"]["ka"] == RAW.description
 
     # Повторный запуск: переводить больше нечего
@@ -116,7 +122,7 @@ async def test_every_field_in_every_language(
     updated = await repository.create_or_update_from_raw(changed)
     await session.commit()
     assert (updated.description_ru, updated.description_en) == ("", "")
-    assert updated.title_ru == RAW.title
+    assert updated.title_ru == TITLE_RU
 
 
 class SlowTranslator(ScriptTranslator):

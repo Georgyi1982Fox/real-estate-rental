@@ -258,7 +258,7 @@ async def test_notifications_flow(
     assert drop["old_price"] == 1500.0
     assert drop["listing"]["price"] == 1200.0
     assert drop["listing"]["image"] == "https://static.ss.ge/1.jpg"
-    assert drop["listing"]["title"] == {"ru": "Квартира 1"}
+    assert drop["listing"]["title"]["ru"].startswith("2-комн. квартира, ")
     new = next(item for item in body["items"] if item["type"] == "new_listing")
     assert (new["search_id"], new["search_name"]) == (search_id, "Ваке, 2 комн., до 2 000 ₾")
 

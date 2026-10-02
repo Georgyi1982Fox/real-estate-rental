@@ -54,12 +54,13 @@ async def test_translate_save_reset_and_api(
     session: AsyncSession, session_factory: async_sessionmaker[AsyncSession]
 ) -> None:
     repository = ListingsRepository(session)
-    first = await repository.create_or_update_from_raw(raw("1", "Квартира в Ваке"))
-    await repository.create_or_update_from_raw(raw("2", "Квартира в Сабуртало"))
+    first = await repository.create_or_update_from_raw(raw("1", "Квартира", "Квартира в Ваке"))
+    await repository.create_or_update_from_raw(raw("2", "Квартира", "Квартира в Сабуртало"))
     await session.commit()
 
-    # Новые объявления: английский и грузинский пустые (server_default миграции)
-    assert (first.title_ka, first.title_en, first.description_en) == ("", "", "")
+    # Заголовки сразу на трёх языках (из данных); описание ждёт перевода
+    assert first.title_ka == "2-ოთახიანი ბინა, ვაკე, 60 მ²"
+    assert (first.description_ka, first.description_en) == ("", "")
     assert len(await repository.list_untranslated(10)) == 2
 
     translator = EchoTranslator()
@@ -71,20 +72,23 @@ async def test_translate_save_reset_and_api(
     session.expire_all()
     listing = await repository.find_by_source("1", "ss")
     assert isinstance(listing, Listing)
-    assert listing.title_ka == "[ka] Квартира в Ваке"
-    assert listing.description_en == "[en] Описание"
+    assert listing.description_ka == "[ka] Квартира в Ваке"
+    assert listing.title_ka == "2-ოთახიანი ბინა, ვაკე, 60 მ²", "заголовок перевод не трогает"
 
     # Повторный парсинг того же текста перевод не трогает
-    await repository.create_or_update_from_raw(raw("1", "Квартира в Ваке"))
+    await repository.create_or_update_from_raw(raw("1", "Квартира", "Квартира в Ваке"))
     await session.commit()
     assert await repository.list_untranslated(10) == []
 
-    # Владелец изменил текст — старый перевод сброшен и будет сделан заново
-    await repository.create_or_update_from_raw(raw("1", "Квартира в Ваке, после ремонта"))
+    # Владелец изменил текст — старый перевод описания сброшен и будет сделан заново
+    await repository.create_or_update_from_raw(
+        raw("1", "Квартира", "Квартира в Ваке, после ремонта")
+    )
     await session.commit()
     pending = await repository.list_untranslated(10)
     assert [item.source_id for item in pending] == ["1"]
-    assert (pending[0].title_ka, pending[0].title_en) == ("", "")
+    assert (pending[0].description_ka, pending[0].description_en) == ("", "")
+    assert pending[0].title_en == "2-room apartment, Vake, 60 m²"
 
     # API отдаёт все три языка
     await TranslateListingsUseCase(translator, repository).execute(limit=10)
@@ -93,6 +97,11 @@ async def test_translate_save_reset_and_api(
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         body = (await client.get(f"/api/listings/{listing.id}")).json()
     assert body["title"] == {
+        "ka": "2-ოთახიანი ბინა, ვაკე, 60 მ²",
+        "ru": "2-комн. квартира, Ваке, 60 м²",
+        "en": "2-room apartment, Vake, 60 m²",
+    }
+    assert body["description"] == {
         "ka": "[ka] Квартира в Ваке, после ремонта",
         "ru": "Квартира в Ваке, после ремонта",
         "en": "[en] Квартира в Ваке, после ремонта",
@@ -104,8 +113,8 @@ async def test_each_translation_is_committed(
 ) -> None:
     """Перевод сохраняется сразу: сбой на следующем объявлении его не откатывает."""
     repository = ListingsRepository(session)
-    await repository.create_or_update_from_raw(raw("1", "Первая"))
-    await repository.create_or_update_from_raw(raw("2", "Вторая"))
+    await repository.create_or_update_from_raw(raw("1", "Квартира", "Первая"))
+    await repository.create_or_update_from_raw(raw("2", "Квартира", "Вторая"))
     await session.commit()
 
     class FailSecond(EchoTranslator):

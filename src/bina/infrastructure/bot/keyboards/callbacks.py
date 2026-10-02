@@ -153,3 +153,25 @@ class MenuSection(StrEnum):
 
 class MenuCallback(CallbackData, prefix="m"):
     section: MenuSection
+
+
+class ChatAction(StrEnum):
+    """Чат с хозяином и просмотры (TASK-111, TASK-112)."""
+
+    OPEN = "o"  # id — объявление: карточка с кнопками
+    WRITE = "w"  # id — объявление: написать хозяину
+    REPLY = "r"  # id — диалог: ответить
+    VIEW = "v"  # id — объявление: выбрать день просмотра
+    DAY = "d"  # id — объявление, day: выбрать час
+    TIME = "t"  # id — объявление, day, hour: отправить просьбу
+    CONFIRM = "y"  # id — просмотр: хозяин подтверждает
+    DECLINE = "n"  # id — просмотр: хозяин отказывает
+
+
+class ChatCallback(CallbackData, prefix="ch"):
+    """``day`` — дата ``ГГГГММДД``, ``hour`` — час начала просмотра."""
+
+    action: ChatAction
+    id: UUID
+    day: int = 0
+    hour: int = 0

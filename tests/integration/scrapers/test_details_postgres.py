@@ -67,7 +67,8 @@ def detailed(source_id: str, **fields: Any) -> RawListing:
 async def ids(client: AsyncClient, query: str = "") -> list[str]:
     body = (await client.get(f"/api/listings?per_page=50&{query}")).json()
     assert "items" in body, body
-    return [item["title"]["ru"].removeprefix("Квартира ") for item in body["items"]]
+    # Заголовки собираются из данных, поэтому объявление узнаём по ссылке на сайт
+    return [item["source_url"].rsplit("/", 1)[-1] for item in body["items"]]
 
 
 async def test_details_filters_and_sort(
@@ -153,7 +154,7 @@ async def test_list_only_update_keeps_details(session: AsyncSession) -> None:
     )
     assert listing.fraud_checked_at is None  # не проверялось; сброса из-за списка не было
 
-    # Перевод не затирает описания, которые сайт дал сам, но добавляет заголовки
+    # Перевод не затирает ни описания, которые сайт дал сам, ни собранные заголовки
     await repository.save_texts(
         listing.id,
         {
@@ -163,8 +164,9 @@ async def test_list_only_update_keeps_details(session: AsyncSession) -> None:
     )
     await session.commit()
     await session.refresh(listing)
-    assert (listing.title_ka, listing.description_ka) == ("ბინა x", "ქართული აღწერა")
-    assert (listing.title_en, listing.description_en) == ("Apartment x", "English description")
+    assert listing.description_ka == "ქართული აღწერა"
+    assert listing.description_en == "English description"
+    assert listing.title_ka.startswith("2-ოთახიანი ბინა") and listing.title_en.startswith("2-room")
 
 
 class FakeSite(SSScraper):

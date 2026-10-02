@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
+from bina.application.listing_titles import listing_titles
 from bina.application.owner_listings import (
     MAX_ACTIVE_LISTINGS,
     MAX_PHOTOS,
@@ -14,7 +15,6 @@ from bina.application.owner_listings import (
     OwnerListingError,
     clean_phone,
     owner_raw_listing,
-    owner_titles,
     parse_area,
     parse_floor,
     telegram_contact,
@@ -71,12 +71,12 @@ def test_contacts_and_description() -> None:
 
 def test_titles_in_three_languages() -> None:
     names = {"ru": "Ваке", "en": "Vake", "ka": "ვაკე"}
-    assert owner_titles(draft(), names) == {
+    assert listing_titles(2, Decimal(60), "monthly", names) == {
         "title_ru": "2-комн. квартира, Ваке, 60 м²",
         "title_en": "2-room apartment, Vake, 60 m²",
         "title_ka": "2-ოთახიანი ბინა, ვაკე, 60 მ²",
     }
-    daily = owner_titles(draft(rent_period="daily", area=Decimal("45.5")), names)
+    daily = listing_titles(2, Decimal("45.50"), "daily", names)
     assert daily["title_ru"] == "Посуточно: 2-комн. квартира, Ваке, 45.5 м²"
 
 
@@ -216,3 +216,9 @@ async def test_photos_and_price(
     assert listing.price == Decimal(1400)
     with pytest.raises(OwnerListingError, match="not_found"):
         await use_case.update_price(uuid4(), listing.id, Decimal(1), "GEL", NOW)
+
+
+def test_title_falls_back_to_russian_district() -> None:
+    titles = listing_titles(3, 100.0, None, {"ru": "Дигоми", "en": "", "ka": ""})
+    assert titles["title_en"] == "3-room apartment, Дигоми, 100 m²"
+    assert titles["title_ka"] == "3-ოთახიანი ბინა, Дигоми, 100 მ²"

@@ -35,3 +35,15 @@ class ITranslator(ABC):
         Raises:
             TranslationError: если перевод получить не удалось.
         """
+
+
+class IMessageTranslator(ABC):
+    """Переводит сообщения чата арендатора и хозяина (TASK-111)."""
+
+    @abstractmethod
+    async def translate_message(self, text: str, target: str) -> str:
+        """Перевод ``text`` (язык определяется сам) на ``target``.
+
+        Raises:
+            TranslationError: если перевод получить не удалось.
+        """

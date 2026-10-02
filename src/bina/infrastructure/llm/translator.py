@@ -15,6 +15,7 @@ from pydantic import BaseModel, ValidationError
 
 from bina.application.ports.llm_provider import LLMProvider
 from bina.application.ports.translator import (
+    IMessageTranslator,
     ITranslator,
     ListingText,
     TranslationError,
@@ -117,3 +118,64 @@ class LLMTranslator(ITranslator):
                 logger.warning("Bad translation response", attempt=attempt, error=last_error)
                 prompt += "\n\nYour previous reply was not valid. Reply with the JSON object only."
         raise TranslationError(f"invalid LLM response: {last_error}")
+
+
+class _TranslatedMessage(BaseModel):
+    text: str
+
+
+def build_message_prompt(text: str, target: str) -> str:
+    """Промпт перевода сообщения чата (TASK-111)."""
+    return f"""You translate chat messages between a tenant and a landlord about renting
+an apartment in Georgia. Translate the message below to {LANGUAGE_NAMES[target]}.
+
+Rules:
+- Natural, polite, conversational phrasing; Georgian in Georgian script.
+- Keep numbers, prices, dates, times, addresses, phone numbers and URLs exactly as they are.
+- If the message is already in {LANGUAGE_NAMES[target]}, return it unchanged.
+- Translate only. Do not answer the message, do not add or drop information.
+
+Reply with ONLY a JSON object, no markdown: {{"text": "..."}}
+
+Message:
+{text}
+"""
+
+
+class LLMMessageTranslator(IMessageTranslator):
+    """:class:`IMessageTranslator` поверх :class:`LLMProvider`."""
+
+    def __init__(self, provider: LLMProvider, attempts: int = 2) -> None:
+        self._provider = provider
+        self._attempts = attempts
+
+    async def translate_message(self, text: str, target: str) -> str:
+        if target not in LANGUAGE_NAMES:
+            raise TranslationError(f"unsupported language: {target}")
+        prompt = build_message_prompt(text, target)
+        last_error = ""
+        for attempt in range(1, self._attempts + 1):
+            try:
+                raw = await self._provider.complete(prompt)
+            except (httpx.HTTPError, KeyError, ValueError) as exc:
+                raise TranslationError(f"LLM request failed: {exc}") from exc
+            match = JSON_OBJECT_RE.search(raw)
+            try:
+                if match is None:
+                    raise ValueError("no JSON object in the response")
+                result = _TranslatedMessage.model_validate(json.loads(match.group(0)))
+            except (json.JSONDecodeError, ValidationError, ValueError) as exc:
+                last_error = str(exc)
+                logger.warning("Bad message translation", attempt=attempt, error=last_error)
+                prompt += "\n\nYour previous reply was not valid. Reply with the JSON object only."
+                continue
+            if result.text.strip():
+                return result.text.strip()
+            last_error = "empty translation"
+        raise TranslationError(f"invalid LLM response: {last_error}")
+
+    async def close(self) -> None:
+        """Закрывает HTTP-клиент провайдера (если есть)."""
+        close = getattr(self._provider, "close", None)
+        if close is not None:
+            await close()

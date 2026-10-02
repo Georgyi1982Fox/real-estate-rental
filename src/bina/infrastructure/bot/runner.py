@@ -1,15 +1,20 @@
 """Запуск бота в режимах polling и webhook."""
 
+import os
+
 import structlog
 from aiogram import Bot, Dispatcher
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiohttp import web
 
 from bina.application.ports.embeddings import IEmbedder
+from bina.application.ports.translator import IMessageTranslator
+from bina.infrastructure.bot import viewing_reminders
 from bina.infrastructure.bot.factory import create_bot, create_dispatcher, setup_bot_ui
 from bina.infrastructure.bot.settings import BotSettings
 from bina.infrastructure.db.session.manager import DatabaseManager
 from bina.infrastructure.llm.llm_factory import LLMFactory, embeddings_configured
+from bina.infrastructure.llm.translator import LLMMessageTranslator
 
 logger = structlog.get_logger(__name__)
 
@@ -24,7 +29,9 @@ async def run_polling(settings: BotSettings) -> None:
     """
     db = DatabaseManager()
     bot = create_bot(settings)
-    dispatcher = create_dispatcher(settings, db.session_factory, _embedder())
+    dispatcher = create_dispatcher(settings, db.session_factory, _embedder(), _message_translator())
+    # Напоминания о просмотрах за 2 часа (TASK-112) — пока бот запущен
+    viewing_reminders.register(dispatcher, db.session_factory)
     try:
         await bot.delete_webhook(drop_pending_updates=settings.drop_pending_updates)
         await setup_bot_ui(bot, settings)
@@ -86,7 +93,9 @@ def run_webhook(settings: BotSettings) -> None:
 
     db = DatabaseManager()
     bot = create_bot(settings)
-    dispatcher = create_dispatcher(settings, db.session_factory, _embedder())
+    dispatcher = create_dispatcher(settings, db.session_factory, _embedder(), _message_translator())
+    # Напоминания о просмотрах за 2 часа (TASK-112) — пока бот запущен
+    viewing_reminders.register(dispatcher, db.session_factory)
 
     async def dispose_db() -> None:
         await db.dispose()
@@ -101,3 +110,10 @@ def _embedder() -> IEmbedder | None:
     if not embeddings_configured():
         return None
     return LLMFactory.create_embeddings_provider()
+
+
+def _message_translator() -> IMessageTranslator | None:
+    """Перевод сообщений чата с хозяином (TASK-111), если задан ключ AI."""
+    if not os.getenv("LLM_API_KEY"):
+        return None
+    return LLMMessageTranslator(LLMFactory.create_provider())

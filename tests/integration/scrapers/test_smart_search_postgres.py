@@ -17,12 +17,13 @@ from bina.infrastructure.db.repositories.listings import ListingsRepository
 from tests.support.embeddings import FakeEmbedder
 
 
-def flat(source_id: str, title: str, **fields: Any) -> RawListing:
+def flat(source_id: str, text: str, **fields: Any) -> RawListing:
+    # Заголовок собирается из данных, смысл объявления — в описании
     base = RawListing(
         source_id=source_id,
         source_name="ss",
-        title=title,
-        description="",
+        title="Квартира",
+        description=text,
         price=1000.0,
         currency="GEL",
         rooms=2,
