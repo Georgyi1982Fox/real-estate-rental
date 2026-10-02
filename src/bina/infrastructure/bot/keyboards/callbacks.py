@@ -99,11 +99,15 @@ class AdminAction(StrEnum):
     COMPLAINTS = "compl"
     HIDE = "hide"
     RESTORE = "restore"
+    # Проверка собственника (TASK-098): request — заявка
+    VERIFY_OK = "vok"
+    VERIFY_NO = "vno"
 
 
 class AdminCallback(CallbackData, prefix="adm"):
     action: AdminAction
     listing: UUID | None = None
+    request: UUID | None = None
 
 
 class OwnerAction(StrEnum):
@@ -121,6 +125,8 @@ class OwnerAction(StrEnum):
     OFF = "off"
     ON = "on"
     PRICE = "price"
+    PROMOTE = "top"  # TASK-097: «🔥 Топ» за звёзды
+    VERIFY = "ver"  # TASK-098: прислать документ собственника
 
 
 class OwnerCallback(CallbackData, prefix="own"):

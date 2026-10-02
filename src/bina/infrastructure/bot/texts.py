@@ -403,6 +403,58 @@ _RU: dict[str, str] = {
         "У вас уже {n} просьбы о просмотре без ответа. Дождитесь ответа хозяев."
     ),
     "view_error_already_answered": "Вы уже ответили на эту просьбу.",
+    "owner_promote": "🔥 Топ №{n}",
+    "owner_verify": "✅ Проверка №{n}",
+    "owner_mark_promoted": " · 🔥 в топе до {date}",
+    "owner_mark_verified": " · ✅ проверено",
+    "owner_mark_pending": " · ⏳ документ на проверке",
+    "owner_error_not_active": "Сначала верните объявление в поиск.",
+    "owner_error_verified": "Это объявление уже проверено ✅",
+    "owner_error_pending": "Документ уже на проверке, ответ придёт сюда.",
+    "promo_invoice_title": "🔥 Топ на {days} дней",
+    "promo_invoice_description": (
+        "{days} дней вверху поиска со значком «🔥 Топ» и ещё раз в уведомлениях арендаторам, "
+        "которые ищут такую квартиру."
+    ),
+    "promo_activated": "🔥 <b>Готово!</b> Объявление в топе до {date}.",
+    "promo_invoice_outdated": (
+        "Объявление снято с поиска или удалено. Откройте «🏠 Мои объявления» и попробуйте снова."
+    ),
+    "promo_payment_problem": (
+        "Оплата прошла, но объявление не найдено. Напишите в поддержку: /paysupport"
+    ),
+    "verify_ask": (
+        "✅ <b>Проверенный собственник</b>\n"
+        "\n"
+        "Пришлите фото или PDF выписки из Публичного реестра на эту квартиру — где видно адрес "
+        "и имя собственника.\n"
+        "\n"
+        "Документ увидит только администратор Bina.ai, после проверки он удаляется. Это "
+        "бесплатно.\n"
+        "\n"
+        "Передумали — нажмите «🏠 Главное меню»."
+    ),
+    "verify_send_file": "Пришлите документ фотографией или файлом.",
+    "verify_sent": ("📨 Документ отправлен на проверку. Ответ придёт сюда, обычно в течение дня."),
+    "verify_admin": (
+        "📄 <b>Проверка собственника</b>\n"
+        "{listing}\n"
+        "\n"
+        "Совпадают ли адрес и имя собственника в документе с объявлением?"
+    ),
+    "verify_admin_ok_button": "✅ Подтвердить",
+    "verify_admin_no_button": "❌ Отказать",
+    "verify_admin_done_ok": "✅ Собственник подтверждён: {title}. Документ удалён из чата.",
+    "verify_admin_done_no": "❌ Отказано: {title}. Документ удалён из чата.",
+    "verify_approved": (
+        "✅ <b>Готово!</b> Объявление «{title}» отмечено значком «Проверенный собственник». "
+        "Таким объявлениям арендаторы доверяют больше."
+    ),
+    "verify_rejected": (
+        "❌ Не удалось подтвердить собственность по документу для «{title}». Пришлите чёткое "
+        "фото выписки, где видно адрес квартиры и ваше имя: «🏠 Мои объявления» → «✅ "
+        "Проверка»."
+    ),
 }
 
 _EN: dict[str, str] = {
@@ -817,6 +869,61 @@ _EN: dict[str, str] = {
         "You already have {n} unanswered viewing requests. Please wait for the landlords to answer."
     ),
     "view_error_already_answered": "You have already answered this request.",
+    "owner_promote": "🔥 Top #{n}",
+    "owner_verify": "✅ Verify #{n}",
+    "owner_mark_promoted": " · 🔥 top until {date}",
+    "owner_mark_verified": " · ✅ verified",
+    "owner_mark_pending": " · ⏳ document under review",
+    "owner_error_not_active": "Put the listing back in search first.",
+    "owner_error_verified": "This listing is already verified ✅",
+    "owner_error_pending": "The document is already under review, the answer will come here.",
+    "promo_invoice_title": "🔥 Top for {days} days",
+    "promo_invoice_description": (
+        "{days} days at the top of search with the «🔥 Top» badge, and once more in the alerts "
+        "of tenants looking for an apartment like this."
+    ),
+    "promo_activated": "🔥 <b>Done!</b> The listing is in the top until {date}.",
+    "promo_invoice_outdated": (
+        "The listing was taken down or deleted. Open «🏠 My listings» and try again."
+    ),
+    "promo_payment_problem": (
+        "The payment went through, but the listing was not found. Please contact support: "
+        "/paysupport"
+    ),
+    "verify_ask": (
+        "✅ <b>Verified owner</b>\n"
+        "\n"
+        "Send a photo or PDF of the Public Registry extract for this apartment, showing the "
+        "address and the owner's name.\n"
+        "\n"
+        "Only the Bina.ai administrator will see the document, and it is deleted after the "
+        "check. It is free.\n"
+        "\n"
+        "Changed your mind? Press «🏠 Main menu»."
+    ),
+    "verify_send_file": "Please send the document as a photo or a file.",
+    "verify_sent": (
+        "📨 The document has been sent for review. The answer will come here, usually within a day."
+    ),
+    "verify_admin": (
+        "📄 <b>Owner verification</b>\n"
+        "{listing}\n"
+        "\n"
+        "Do the address and the owner's name in the document match the listing?"
+    ),
+    "verify_admin_ok_button": "✅ Approve",
+    "verify_admin_no_button": "❌ Reject",
+    "verify_admin_done_ok": ("✅ Owner verified: {title}. The document was deleted from the chat."),
+    "verify_admin_done_no": "❌ Rejected: {title}. The document was deleted from the chat.",
+    "verify_approved": (
+        "✅ <b>Done!</b> The listing «{title}» now has the «Verified owner» badge. Tenants "
+        "trust such listings more."
+    ),
+    "verify_rejected": (
+        "❌ We could not confirm ownership from the document for «{title}». Send a clear photo "
+        "of the extract showing the apartment address and your name: «🏠 My listings» → «✅ "
+        "Verify»."
+    ),
 }
 
 _KA: dict[str, str] = {
@@ -1215,6 +1322,61 @@ _KA: dict[str, str] = {
         "უკვე გაქვთ {n} უპასუხო თხოვნა ნახვაზე. დაელოდეთ მეპატრონეების პასუხს."
     ),
     "view_error_already_answered": "ამ თხოვნას უკვე უპასუხეთ.",
+    "owner_promote": "🔥 ტოპი №{n}",
+    "owner_verify": "✅ შემოწმება №{n}",
+    "owner_mark_promoted": " · 🔥 ტოპში {date}-მდე",
+    "owner_mark_verified": " · ✅ შემოწმებულია",
+    "owner_mark_pending": " · ⏳ დოკუმენტი მოწმდება",
+    "owner_error_not_active": "ჯერ დააბრუნეთ განცხადება ძებნაში.",
+    "owner_error_verified": "ეს განცხადება უკვე შემოწმებულია ✅",
+    "owner_error_pending": "დოკუმენტი უკვე მოწმდება, პასუხი აქ მოვა.",
+    "promo_invoice_title": "🔥 ტოპი {days} დღით",
+    "promo_invoice_description": (
+        "{days} დღე ძებნის თავში ნიშნით «🔥 ტოპი» და კიდევ ერთხელ იმ დამქირავებლების "
+        "შეტყობინებებში, ვინც ასეთ ბინას ეძებს."
+    ),
+    "promo_activated": "🔥 <b>მზადაა!</b> განცხადება ტოპშია {date}-მდე.",
+    "promo_invoice_outdated": (
+        "განცხადება ძებნიდან მოხსნილია ან წაშლილია. გახსენით «🏠 ჩემი განცხადებები» და სცადეთ "
+        "თავიდან."
+    ),
+    "promo_payment_problem": (
+        "გადახდა შესრულდა, მაგრამ განცხადება ვერ მოიძებნა. მიწერეთ მხარდაჭერას: /paysupport"
+    ),
+    "verify_ask": (
+        "✅ <b>შემოწმებული მესაკუთრე</b>\n"
+        "\n"
+        "გამოგზავნეთ ამ ბინის საჯარო რეესტრის ამონაწერის ფოტო ან PDF, სადაც ჩანს მისამართი და "
+        "მესაკუთრის სახელი.\n"
+        "\n"
+        "დოკუმენტს მხოლოდ Bina.ai-ის ადმინისტრატორი ნახავს, შემოწმების შემდეგ ის წაიშლება. ეს "
+        "უფასოა.\n"
+        "\n"
+        "გადაიფიქრეთ? დააჭირეთ «🏠 მთავარი მენიუ»."
+    ),
+    "verify_send_file": "გამოგზავნეთ დოკუმენტი ფოტოს ან ფაილის სახით.",
+    "verify_sent": (
+        "📨 დოკუმენტი შესამოწმებლად გაიგზავნა. პასუხი აქ მოვა, ჩვეულებრივ ერთი დღის განმავლობაში."
+    ),
+    "verify_admin": (
+        "📄 <b>მესაკუთრის შემოწმება</b>\n"
+        "{listing}\n"
+        "\n"
+        "ემთხვევა დოკუმენტში მისამართი და მესაკუთრის სახელი განცხადებას?"
+    ),
+    "verify_admin_ok_button": "✅ დადასტურება",
+    "verify_admin_no_button": "❌ უარი",
+    "verify_admin_done_ok": "✅ მესაკუთრე დადასტურდა: {title}. დოკუმენტი ჩატიდან წაიშალა.",
+    "verify_admin_done_no": "❌ უარი: {title}. დოკუმენტი ჩატიდან წაიშალა.",
+    "verify_approved": (
+        "✅ <b>მზადაა!</b> განცხადებას «{title}» მიენიჭა ნიშანი «შემოწმებული მესაკუთრე». ასეთ "
+        "განცხადებებს დამქირავებლები მეტად ენდობიან."
+    ),
+    "verify_rejected": (
+        "❌ დოკუმენტით «{title}»-ის საკუთრების დადასტურება ვერ მოხერხდა. გამოგზავნეთ "
+        "ამონაწერის მკაფიო ფოტო, სადაც ჩანს ბინის მისამართი და თქვენი სახელი: «🏠 ჩემი "
+        "განცხადებები» → «✅ შემოწმება»."
+    ),
 }
 
 TEXTS: dict[str, dict[str, str]] = {"ru": _RU, "en": _EN, "ka": _KA}

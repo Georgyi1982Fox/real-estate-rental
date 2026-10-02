@@ -78,6 +78,17 @@ class OwnerListingsRepository:
             listing.source_updated_at = now
         await self._session.flush()
 
+    async def set_promotion(self, listing: Listing, until: datetime, now: datetime) -> None:
+        """Продвижение до ``until`` (TASK-097); ``promoted_at`` — снова в уведомления."""
+        listing.promoted_until = until
+        listing.promoted_at = now
+        await self._session.flush()
+
+    async def set_verified(self, listing: Listing) -> None:
+        """«✅ Проверенный собственник» (TASK-098)."""
+        listing.is_verified = True
+        await self._session.flush()
+
     async def set_url(self, listing: Listing, url: str) -> None:
         listing.url = url
         await self._session.flush()

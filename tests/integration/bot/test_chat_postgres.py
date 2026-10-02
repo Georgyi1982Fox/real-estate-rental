@@ -2,14 +2,12 @@
 
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from itertools import count
 from uuid import UUID
 
 import pytest
 from aiogram import Bot, Dispatcher
 from aiogram.methods import AnswerCallbackQuery, EditMessageText, SendMessage
-from aiogram.types import CallbackQuery, Chat, InlineKeyboardMarkup, Message, Update
-from aiogram.types import User as TelegramUser
+from aiogram.types import InlineKeyboardMarkup
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -22,6 +20,7 @@ from bina.infrastructure.bot.settings import BotSettings
 from bina.infrastructure.bot.viewing_reminders import send_viewing_reminders
 from bina.infrastructure.db.models import ChatMessage, Listing, User, Viewing
 from bina.infrastructure.db.repositories.owner_listings import OwnerListingsRepository
+from tests.support.people import Person
 from tests.support.telegram import TOKEN, FakeTelegramSession
 
 TENANT_ID = 1001
@@ -34,46 +33,6 @@ class EchoTranslator(IMessageTranslator):
 
     async def translate_message(self, text: str, target: str) -> str:
         return f"[{target}] {text}"
-
-
-class Person:
-    """Человек пишет боту (арендатор или хозяин)."""
-
-    def __init__(self, dispatcher: Dispatcher, bot: Bot, telegram_id: int, language: str) -> None:
-        self.dispatcher = dispatcher
-        self.bot = bot
-        self.chat = Chat(id=telegram_id, type="private")
-        self.user = TelegramUser(
-            id=telegram_id, is_bot=False, first_name="User", language_code=language
-        )
-        self._ids = count(telegram_id * 1000)
-
-    async def send(self, text: str) -> None:
-        message = Message(
-            message_id=next(self._ids),
-            date=datetime.now(UTC),
-            chat=self.chat,
-            from_user=self.user,
-            text=text,
-        )
-        await self.dispatcher.feed_update(
-            self.bot, Update(update_id=next(self._ids), message=message)
-        )
-
-    async def press(self, data: str, markup: InlineKeyboardMarkup | None = None) -> None:
-        message = Message(
-            message_id=1, date=datetime.now(UTC), chat=self.chat, text="…", reply_markup=markup
-        )
-        query = CallbackQuery(
-            id=str(next(self._ids)),
-            from_user=self.user,
-            chat_instance="ci",
-            data=data,
-            message=message,
-        )
-        await self.dispatcher.feed_update(
-            self.bot, Update(update_id=next(self._ids), callback_query=query)
-        )
 
 
 @pytest.fixture

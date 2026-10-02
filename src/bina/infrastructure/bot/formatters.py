@@ -1,9 +1,11 @@
 """Форматирование объявлений для сообщений Telegram (HTML parse mode)."""
 
+from datetime import UTC, datetime
 from decimal import Decimal
 from html import escape
 
 from bina.application.fraud import FraudLevel, fraud_level
+from bina.application.promotion import is_promoted
 from bina.application.rent_period import DAILY
 from bina.infrastructure.bot.texts import t
 from bina.infrastructure.db.models import District, Listing
@@ -81,6 +83,9 @@ def format_listing(listing: Listing, index: int, language: str) -> str:
     ]
     if listing.is_verified:
         details.append("✅")
+    # TASK-097: оплачено продвижение
+    if is_promoted(listing.promoted_until, datetime.now(UTC)):
+        details.append("🔥")
     text = f"<b>{index}. {title}</b>\n" + " · ".join(details)
     if fraud_level(listing.fraud_score or 0) is not FraudLevel.NONE:
         text += f"\n⚠️ <i>{t(language, 'fraud_warning')}</i>"

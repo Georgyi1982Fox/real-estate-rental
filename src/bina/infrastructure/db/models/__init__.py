@@ -13,6 +13,7 @@ from .payments import Payment
 from .rent_reminders import RentReminder
 from .scrape_skips import ScrapeSkip
 from .users import User
+from .verifications import Verification
 
 __all__ = [
     "AIUsage",
@@ -34,5 +35,6 @@ __all__ = [
     "SoftDeleteMixin",
     "TimestampMixin",
     "User",
+    "Verification",
     "Viewing",
 ]

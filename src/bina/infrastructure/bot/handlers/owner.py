@@ -61,6 +61,7 @@ from bina.infrastructure.bot.settings import BotSettings
 from bina.infrastructure.bot.texts import all_variants, t
 from bina.infrastructure.db.models import Listing, ListingStatus, User
 from bina.infrastructure.db.repositories.owner_listings import OwnerListingsRepository
+from bina.infrastructure.db.repositories.verifications import VerificationsRepository
 from bina.infrastructure.storage.photos import LocalPhotoStorage
 
 logger = structlog.get_logger(__name__)
@@ -116,15 +117,26 @@ def _markup(*buttons: tuple[str, OwnerCallback], width: int = 1) -> InlineKeyboa
     return builder.as_markup()
 
 
-def _status(language: str, listing: Listing) -> str:
+def _status(language: str, listing: Listing, pending: frozenset[UUID] = frozenset()) -> str:
     if listing.hidden_at is not None:
-        return t(language, "owner_status_hidden")
-    if listing.status == ListingStatus.ACTIVE:
-        return t(language, "owner_status_active")
-    return t(language, "owner_status_off")
+        status = t(language, "owner_status_hidden")
+    elif listing.status == ListingStatus.ACTIVE:
+        status = t(language, "owner_status_active")
+    else:
+        status = t(language, "owner_status_off")
+    # TASK-097, TASK-098: топ и проверка собственника
+    if listing.promoted_until is not None and listing.promoted_until > datetime.now(UTC):
+        status += t(language, "owner_mark_promoted", date=listing.promoted_until.strftime("%d.%m"))
+    if listing.is_verified:
+        status += t(language, "owner_mark_verified")
+    elif listing.id in pending:
+        status += t(language, "owner_mark_pending")
+    return status
 
 
-def render_list(language: str, listings: list[Listing]) -> str:
+def render_list(
+    language: str, listings: list[Listing], pending: frozenset[UUID] = frozenset()
+) -> str:
     if not listings:
         return t(language, "owner_list_empty", limit=MAX_ACTIVE_LISTINGS)
     lines = [
@@ -134,15 +146,18 @@ def render_list(language: str, listings: list[Listing]) -> str:
             n=number,
             title=escape(listing_title(listing, language)[:MAX_TITLE]),
             price=listing_price(listing, language),
-            status=_status(language, listing),
+            status=_status(language, listing, pending),
         )
         for number, listing in enumerate(listings, 1)
     ]
     return t(language, "owner_list", items="\n\n".join(lines))
 
 
-def list_keyboard(language: str, listings: list[Listing]) -> InlineKeyboardMarkup:
+def list_keyboard(
+    language: str, listings: list[Listing], pending: frozenset[UUID] = frozenset()
+) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
+    rows: list[int] = []
     for number, listing in enumerate(listings, 1):
         active = listing.status == ListingStatus.ACTIVE
         action = OwnerAction.OFF if active else OwnerAction.ON
@@ -155,10 +170,27 @@ def list_keyboard(language: str, listings: list[Listing]) -> InlineKeyboardMarku
             text=t(language, "owner_edit_price", n=number),
             callback_data=OwnerCallback(action=OwnerAction.PRICE, listing=listing.id),
         )
+        rows.append(2)
+        # «🔥 Топ» — объявлениям в поиске; «✅ Проверка» — пока не проверено и не на проверке
+        extra = 0
+        if active and listing.hidden_at is None:
+            builder.button(
+                text=t(language, "owner_promote", n=number),
+                callback_data=OwnerCallback(action=OwnerAction.PROMOTE, listing=listing.id),
+            )
+            extra += 1
+        if not listing.is_verified and listing.id not in pending:
+            builder.button(
+                text=t(language, "owner_verify", n=number),
+                callback_data=OwnerCallback(action=OwnerAction.VERIFY, listing=listing.id),
+            )
+            extra += 1
+        if extra:
+            rows.append(extra)
     builder.button(
         text=t(language, "owner_new"), callback_data=OwnerCallback(action=OwnerAction.NEW)
     )
-    builder.adjust(*([2] * len(listings)), 1)
+    builder.adjust(*rows, 1)
     return with_home(builder.as_markup(), language)
 
 
@@ -168,9 +200,10 @@ async def cmd_mylistings(
     """/mylistings и кнопка «🏠 Мои объявления»."""
     await state.clear()
     listings = await OwnerListingsRepository(session).list_for_user(user.id)
+    pending = frozenset(await VerificationsRepository(session).pending_listing_ids(user.id))
     await message.answer(
-        render_list(user.language, listings),
-        reply_markup=list_keyboard(user.language, listings),
+        render_list(user.language, listings, pending),
+        reply_markup=list_keyboard(user.language, listings, pending),
         disable_web_page_preview=True,
     )
 
