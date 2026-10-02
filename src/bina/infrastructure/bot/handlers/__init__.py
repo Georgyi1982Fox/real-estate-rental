@@ -4,6 +4,7 @@ from aiogram import Router
 
 from . import (
     admin,
+    chat,
     errors,
     fallback,
     favorites,
@@ -38,6 +39,7 @@ def build_router() -> Router:
         invite.create_router(),
         rent.create_router(),
         owner.create_router(),
+        chat.create_router(),
         legal.create_router(),
         admin.create_router(),
         menu.create_router(),

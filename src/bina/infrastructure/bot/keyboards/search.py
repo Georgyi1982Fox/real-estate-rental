@@ -16,7 +16,11 @@ from bina.infrastructure.bot.keyboards.filters import (
     price_ranges,
     rooms_button_label,
 )
-from bina.infrastructure.bot.keyboards.listings import favorite_buttons, pagination_row
+from bina.infrastructure.bot.keyboards.listings import (
+    chat_buttons,
+    favorite_buttons,
+    pagination_row,
+)
 from bina.infrastructure.bot.keyboards.menu import open_app_button
 from bina.infrastructure.bot.texts import t
 from bina.infrastructure.db.models import District, Listing
@@ -175,7 +179,8 @@ def results_keyboard(
     mini_app_url: str | None = None,
 ) -> InlineKeyboardMarkup:
     """Результаты: кнопки избранного, пагинация, новый поиск, Mini App."""
-    rows = favorite_buttons(page.items, page.page * page.page_size + 1, favorite_ids)
+    start = page.page * page.page_size + 1
+    rows = favorite_buttons(page.items, start, favorite_ids) + chat_buttons(page.items, start)
 
     def to_page(number: int) -> SearchCallback:
         return query.model_copy(update={"step": SearchStep.RESULTS, "page": number})

@@ -339,6 +339,70 @@ _RU: dict[str, str] = {
         "Если подписка не включилась или нужен возврат звёзд, напишите нам "
         "в ответ на это сообщение: опишите проблему и дату оплаты."
     ),
+    "chat_card": (
+        "🏠 <b>{title}</b>\n"
+        "💰 {price}\n"
+        "\n"
+        "Напишите хозяину на своём языке — бот переведёт сообщение на его язык. Или запишитесь "
+        "на просмотр."
+    ),
+    "chat_open_button": "💬 {n}",
+    "chat_write_button": "✍️ Написать хозяину",
+    "chat_view_button": "📅 Записаться на просмотр",
+    "chat_prompt": (
+        "✍️ Напишите сообщение хозяину. Бот переведёт его на язык хозяина.\n"
+        "\n"
+        "Передумали — нажмите «🏠 Главное меню»."
+    ),
+    "chat_reply_prompt": "✍️ Напишите ответ. Бот переведёт его на язык собеседника.",
+    "chat_sent": "✅ Отправлено. Ответ придёт сюда, в этот чат.",
+    "chat_to_owner": "💬 <b>Сообщение от арендатора</b>\n🏠 {title}\n\n{text}",
+    "chat_to_tenant": "💬 <b>Ответ хозяина</b>\n🏠 {title}\n\n{text}",
+    "chat_original": "Оригинал: {text}",
+    "chat_reply_button": "↩️ Ответить",
+    "chat_not_delivered": "Не удалось доставить: собеседник остановил бота.",
+    "chat_error_not_found": "Это объявление больше недоступно.",
+    "chat_error_own_listing": "Это ваше объявление 🙂",
+    "chat_error_limit": (
+        "Сегодня вы уже начали {n} новых диалогов. Новые можно будет начать завтра."
+    ),
+    "chat_error_too_long": "Слишком длинное сообщение: можно до {n} знаков.",
+    "chat_error_empty": "Отправьте сообщение текстом.",
+    "view_choose_day": "📅 Выберите день просмотра:",
+    "view_choose_hour": "🕐 {day}: выберите время просмотра:",
+    "view_no_hours": "На этот день свободного времени нет, выберите другой.",
+    "view_today": "Сегодня",
+    "view_tomorrow": "Завтра",
+    "weekdays_short": "пн,вт,ср,чт,пт,сб,вс",
+    "view_when": "{weekday} {date} в {time}",
+    "view_requested": (
+        "✅ Просьба отправлена хозяину: {when}. Бот сообщит, как только он ответит."
+    ),
+    "view_to_owner": (
+        "📅 <b>Просьба о просмотре</b>\n🏠 {title}\n🕐 {when}\n\nВам подходит это время?"
+    ),
+    "view_confirm_button": "✅ Подходит",
+    "view_decline_button": "❌ Другое время",
+    "view_confirmed_owner": "✅ Просмотр подтверждён: {when}. Бот напомнит за 2 часа.",
+    "view_declined_owner": "Хорошо, арендатор выберет другое время.",
+    "view_confirmed_tenant": (
+        "✅ <b>Хозяин подтвердил просмотр</b>\n"
+        "🏠 {title}\n"
+        "🕐 {when}{address}\n"
+        "\n"
+        "Бот напомнит за 2 часа."
+    ),
+    "view_declined_tenant": (
+        "❌ Хозяину не подходит {when}\n🏠 {title}\n\nВыберите другое время или напишите хозяину."
+    ),
+    "view_reminder": "⏰ <b>Напоминание: просмотр сегодня в {time}</b>\n🏠 {title}{address}",
+    "view_address": "\n📍 {address}",
+    "view_error_slot_taken": "Это время уже занято, выберите другое.",
+    "view_error_slot_invalid": "Это время уже недоступно, выберите другое.",
+    "view_error_too_many_viewings": (
+        "У вас уже {n} просьбы о просмотре без ответа. Дождитесь ответа хозяев."
+    ),
+    "view_error_already_answered": "Вы уже ответили на эту просьбу.",
 }
 
 _EN: dict[str, str] = {
@@ -683,6 +747,76 @@ _EN: dict[str, str] = {
         "If your subscription wasn't activated or you need a refund of Stars, reply to "
         "this message describing the problem and the payment date."
     ),
+    "chat_card": (
+        "🏠 <b>{title}</b>\n"
+        "💰 {price}\n"
+        "\n"
+        "Write to the landlord in your language and the bot will translate your message into "
+        "theirs. Or book a viewing."
+    ),
+    "chat_open_button": "💬 {n}",
+    "chat_write_button": "✍️ Message the landlord",
+    "chat_view_button": "📅 Book a viewing",
+    "chat_prompt": (
+        "✍️ Write your message to the landlord. The bot will translate it into their "
+        "language.\n"
+        "\n"
+        "Changed your mind? Press «🏠 Main menu»."
+    ),
+    "chat_reply_prompt": "✍️ Write your reply. The bot will translate it for the other person.",
+    "chat_sent": "✅ Sent. The reply will arrive here, in this chat.",
+    "chat_to_owner": "💬 <b>Message from a tenant</b>\n🏠 {title}\n\n{text}",
+    "chat_to_tenant": "💬 <b>Reply from the landlord</b>\n🏠 {title}\n\n{text}",
+    "chat_original": "Original: {text}",
+    "chat_reply_button": "↩️ Reply",
+    "chat_not_delivered": "Could not deliver: the other person has stopped the bot.",
+    "chat_error_not_found": "This listing is no longer available.",
+    "chat_error_own_listing": "This is your own listing 🙂",
+    "chat_error_limit": (
+        "You have already started {n} new conversations today. You can start new ones tomorrow."
+    ),
+    "chat_error_too_long": "The message is too long: up to {n} characters.",
+    "chat_error_empty": "Please send your message as text.",
+    "view_choose_day": "📅 Choose the day of the viewing:",
+    "view_choose_hour": "🕐 {day}: choose the time of the viewing:",
+    "view_no_hours": "No free time on this day, please choose another.",
+    "view_today": "Today",
+    "view_tomorrow": "Tomorrow",
+    "weekdays_short": "Mon,Tue,Wed,Thu,Fri,Sat,Sun",
+    "view_when": "{weekday} {date} at {time}",
+    "view_requested": (
+        "✅ Request sent to the landlord: {when}. The bot will let you know as soon as they answer."
+    ),
+    "view_to_owner": (
+        "📅 <b>Viewing request</b>\n🏠 {title}\n🕐 {when}\n\nDoes this time suit you?"
+    ),
+    "view_confirm_button": "✅ Suits me",
+    "view_decline_button": "❌ Another time",
+    "view_confirmed_owner": (
+        "✅ Viewing confirmed: {when}. The bot will remind you 2 hours before."
+    ),
+    "view_declined_owner": "OK, the tenant will choose another time.",
+    "view_confirmed_tenant": (
+        "✅ <b>The landlord confirmed the viewing</b>\n"
+        "🏠 {title}\n"
+        "🕐 {when}{address}\n"
+        "\n"
+        "The bot will remind you 2 hours before."
+    ),
+    "view_declined_tenant": (
+        "❌ {when} does not suit the landlord\n"
+        "🏠 {title}\n"
+        "\n"
+        "Choose another time or message the landlord."
+    ),
+    "view_reminder": "⏰ <b>Reminder: viewing today at {time}</b>\n🏠 {title}{address}",
+    "view_address": "\n📍 {address}",
+    "view_error_slot_taken": "This time is already taken, please choose another.",
+    "view_error_slot_invalid": "This time is no longer available, please choose another.",
+    "view_error_too_many_viewings": (
+        "You already have {n} unanswered viewing requests. Please wait for the landlords to answer."
+    ),
+    "view_error_already_answered": "You have already answered this request.",
 }
 
 _KA: dict[str, str] = {
@@ -1021,6 +1155,66 @@ _KA: dict[str, str] = {
         "თუ გამოწერა არ ჩაირთო ან ვარსკვლავების დაბრუნება გჭირდებათ, უპასუხეთ ამ "
         "შეტყობინებას: აღწერეთ პრობლემა და გადახდის თარიღი."
     ),
+    "chat_card": (
+        "🏠 <b>{title}</b>\n"
+        "💰 {price}\n"
+        "\n"
+        "მისწერეთ მეპატრონეს თქვენს ენაზე — ბოტი შეტყობინებას მის ენაზე თარგმნის. ან ჩაეწერეთ "
+        "ბინის სანახავად."
+    ),
+    "chat_open_button": "💬 {n}",
+    "chat_write_button": "✍️ მეპატრონისთვის მიწერა",
+    "chat_view_button": "📅 ნახვაზე ჩაწერა",
+    "chat_prompt": (
+        "✍️ დაწერეთ შეტყობინება მეპატრონისთვის. ბოტი მას მეპატრონის ენაზე თარგმნის.\n"
+        "\n"
+        "გადაიფიქრეთ? დააჭირეთ «🏠 მთავარი მენიუ»."
+    ),
+    "chat_reply_prompt": "✍️ დაწერეთ პასუხი. ბოტი მას თანამოსაუბრის ენაზე თარგმნის.",
+    "chat_sent": "✅ გაიგზავნა. პასუხი აქ, ამ ჩატში მოვა.",
+    "chat_to_owner": "💬 <b>შეტყობინება დამქირავებლისგან</b>\n🏠 {title}\n\n{text}",
+    "chat_to_tenant": "💬 <b>მეპატრონის პასუხი</b>\n🏠 {title}\n\n{text}",
+    "chat_original": "ორიგინალი: {text}",
+    "chat_reply_button": "↩️ პასუხი",
+    "chat_not_delivered": "ვერ მიეწოდა: თანამოსაუბრემ ბოტი გააჩერა.",
+    "chat_error_not_found": "ეს განცხადება აღარ არის ხელმისაწვდომი.",
+    "chat_error_own_listing": "ეს თქვენი განცხადებაა 🙂",
+    "chat_error_limit": "დღეს უკვე დაიწყეთ {n} ახალი საუბარი. ახლის დაწყება ხვალ შეგეძლებათ.",
+    "chat_error_too_long": "შეტყობინება ძალიან გრძელია: მაქსიმუმ {n} სიმბოლო.",
+    "chat_error_empty": "გთხოვთ, გამოგზავნეთ შეტყობინება ტექსტით.",
+    "view_choose_day": "📅 აირჩიეთ ნახვის დღე:",
+    "view_choose_hour": "🕐 {day}: აირჩიეთ ნახვის დრო:",
+    "view_no_hours": "ამ დღეს თავისუფალი დრო არ არის, აირჩიეთ სხვა.",
+    "view_today": "დღეს",
+    "view_tomorrow": "ხვალ",
+    "weekdays_short": "ორშ,სამ,ოთხ,ხუთ,პარ,შაბ,კვ",
+    "view_when": "{weekday} {date}, {time}",
+    "view_requested": (
+        "✅ თხოვნა მეპატრონეს გაეგზავნა: {when}. ბოტი შეგატყობინებთ, როგორც კი უპასუხებს."
+    ),
+    "view_to_owner": "📅 <b>ნახვის თხოვნა</b>\n🏠 {title}\n🕐 {when}\n\nმოსახერხებელია ეს დრო?",
+    "view_confirm_button": "✅ მაწყობს",
+    "view_decline_button": "❌ სხვა დრო",
+    "view_confirmed_owner": "✅ ნახვა დადასტურდა: {when}. ბოტი 2 საათით ადრე შეგახსენებთ.",
+    "view_declined_owner": "კარგი, დამქირავებელი სხვა დროს აირჩევს.",
+    "view_confirmed_tenant": (
+        "✅ <b>მეპატრონემ ნახვა დაადასტურა</b>\n"
+        "🏠 {title}\n"
+        "🕐 {when}{address}\n"
+        "\n"
+        "ბოტი 2 საათით ადრე შეგახსენებთ."
+    ),
+    "view_declined_tenant": (
+        "❌ მეპატრონეს არ აწყობს {when}\n🏠 {title}\n\nაირჩიეთ სხვა დრო ან მისწერეთ მეპატრონეს."
+    ),
+    "view_reminder": "⏰ <b>შეხსენება: ნახვა დღეს, {time}</b>\n🏠 {title}{address}",
+    "view_address": "\n📍 {address}",
+    "view_error_slot_taken": "ეს დრო უკვე დაკავებულია, აირჩიეთ სხვა.",
+    "view_error_slot_invalid": "ეს დრო აღარ არის ხელმისაწვდომი, აირჩიეთ სხვა.",
+    "view_error_too_many_viewings": (
+        "უკვე გაქვთ {n} უპასუხო თხოვნა ნახვაზე. დაელოდეთ მეპატრონეების პასუხს."
+    ),
+    "view_error_already_answered": "ამ თხოვნას უკვე უპასუხეთ.",
 }
 
 TEXTS: dict[str, dict[str, str]] = {"ru": _RU, "en": _EN, "ka": _KA}
