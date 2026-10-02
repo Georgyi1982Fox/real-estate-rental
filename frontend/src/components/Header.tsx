@@ -6,15 +6,24 @@ import { fill } from '../lib/format';
 import { useAuth } from '../providers/AuthProvider';
 import { useI18n } from '../providers/I18nProvider';
 import Avatar from './Avatar';
+import type { NavMode } from './BottomNav';
 import CountBadge from './CountBadge';
 import Icon from './Icon';
 import LanguageSwitcher from './LanguageSwitcher';
 
-export default function Header() {
+interface HeaderProps {
+  /** Нижняя панель вкладок: «Избранное» и «Профиль» уже есть в ней — в шапке их не повторяем */
+  nav: NavMode;
+}
+
+export default function Header({ nav }: HeaderProps) {
   const { t } = useI18n();
   const { count } = useFavorites();
   const { user, loading } = useAuth();
   const unread = useUnreadNotifications();
+  // always — панель на любой ширине, mobile — только до 1024px
+  const inNav = nav === 'always';
+  const navHidden = nav === 'mobile' ? 'max-lg:hidden' : '';
 
   return (
     // relative z-30: backdrop-blur создаёт свой stacking context — без z-index меню языка уходит под контент
@@ -40,14 +49,16 @@ export default function Header() {
         </Link>
         <div className="flex items-center gap-1">
           <LanguageSwitcher />
-          <Link
-            to="/favorites"
-            className="app-icon-button app-header__favorites relative"
-            aria-label={count > 0 ? fill(t.header.favorites_count, count) : t.header.favorites}
-          >
-            <Icon name="heart" className="size-5" />
-            <CountBadge count={count} max={99} />
-          </Link>
+          {!inNav && (
+            <Link
+              to="/favorites"
+              className={`app-icon-button app-header__favorites relative ${navHidden}`}
+              aria-label={count > 0 ? fill(t.header.favorites_count, count) : t.header.favorites}
+            >
+              <Icon name="heart" className="size-5" />
+              <CountBadge count={count} max={99} />
+            </Link>
+          )}
           {/* Гостю уведомлений нет — колокольчик не показываем */}
           {user && (
             <Link
@@ -62,10 +73,10 @@ export default function Header() {
               <CountBadge count={unread} max={9} />
             </Link>
           )}
-          {user ? (
+          {inNav ? null : user ? (
             <Link
               to="/profile"
-              className="app-header__avatar inline-grid min-h-10 min-w-10 place-items-center rounded-full hover:opacity-85 active:scale-[0.97]"
+              className={`app-header__avatar inline-grid min-h-10 min-w-10 place-items-center rounded-full hover:opacity-85 active:scale-[0.97] ${navHidden}`}
               aria-label={fill(t.header.profile, user.first_name || user.username || '')}
             >
               <Avatar user={user} className="medallion size-8 text-sm" />
@@ -73,13 +84,13 @@ export default function Header() {
           ) : loading ? (
             // Ждём /api/auth/me — место под аватар, чтобы шапка не прыгала
             <span
-              className="app-header__avatar-skeleton mx-1 size-8 animate-pulse rounded-full bg-[var(--surface-hover)]"
+              className={`app-header__avatar-skeleton mx-1 size-8 animate-pulse rounded-full bg-[var(--surface-hover)] ${navHidden}`}
               aria-hidden="true"
             />
           ) : (
             <Link
               to="/auth"
-              className="app-icon-button app-header__login"
+              className={`app-icon-button app-header__login ${navHidden}`}
               aria-label={t.header.login}
             >
               {/* Lucide «circle-user» */}

@@ -1,8 +1,9 @@
 import { useCallback, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { BOT_URL } from '../lib/config';
-import { haptic, openLink } from '../lib/telegram';
+import { Link } from 'react-router-dom';
+import { botSectionUrl } from '../lib/config';
+import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
+import ExternalLink from './ExternalLink';
 import Icon from './Icon';
 import type { IconName } from './Icon';
 import Modal from './Modal';
@@ -22,11 +23,10 @@ function RowContent({ icon, label }: { icon: IconName; label: string }) {
   );
 }
 
-/** Меню профиля: избранное, сохранённые поиски, помощь (бот), о приложении */
+/** Меню профиля: избранное, сохранённые поиски, помощь, поддержка (бот), о приложении */
 export default function ProfileMenu() {
   const { t } = useI18n();
   const pt = t.profile;
-  const navigate = useNavigate();
   const [aboutOpen, setAboutOpen] = useState(false);
   // Стабильная ссылка: Modal перезапускает эффект (фокус) при смене onClose
   const closeAbout = useCallback(() => setAboutOpen(false), []);
@@ -45,20 +45,15 @@ export default function ProfileMenu() {
           </Link>
         </li>
         <li>
-          <a
-            href={BOT_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={ROW_CLASS}
-            onClick={(event) => {
-              // В Telegram чат с ботом открывается нативно (openTelegramLink)
-              event.preventDefault();
-              haptic('light');
-              openLink(BOT_URL, navigate);
-            }}
-          >
+          <Link to="/help" className={ROW_CLASS} onClick={() => haptic('light')}>
             <RowContent icon="help" label={pt.help} />
-          </a>
+          </Link>
+        </li>
+        <li>
+          {/* Поддержка — раздел бота; в Telegram чат открывается нативно (openTelegramLink) */}
+          <ExternalLink href={botSectionUrl('support')} className={ROW_CLASS}>
+            <RowContent icon="message" label={t.hub.tiles.support.title} />
+          </ExternalLink>
         </li>
         <li>
           <button

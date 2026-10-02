@@ -3,13 +3,17 @@ import Layout from './components/Layout';
 import AuthPage from './pages/AuthPage';
 import FavoritesPage from './pages/FavoritesPage';
 import FeatureLabPage from './pages/FeatureLabPage';
+import HelpPage from './pages/HelpPage';
 import HomePage from './pages/HomePage';
+import LegalPage from './pages/LegalPage';
 import ListingPage from './pages/ListingPage';
 import NotFoundPage from './pages/NotFoundPage';
 import NotificationsPage from './pages/NotificationsPage';
 import PremiumPage from './pages/PremiumPage';
 import ProfilePage from './pages/ProfilePage';
 import SavedSearchesPage from './pages/SavedSearchesPage';
+import SearchPage from './pages/SearchPage';
+import SoonPage from './pages/SoonPage';
 import TestCardPage from './pages/TestCardPage';
 import { AuthProvider } from './providers/AuthProvider';
 import { I18nProvider } from './providers/I18nProvider';
@@ -21,7 +25,15 @@ const router = createBrowserRouter(
       element: <Layout />,
       children: [
         { path: '/', element: <HomePage /> },
+        { path: '/search', element: <SearchPage /> },
         { path: '/listing/:id', element: <ListingPage /> },
+        { path: '/help', element: <HelpPage /> },
+        { path: '/legal/:doc', element: <LegalPage /> },
+        // Разделы главного меню без своей страницы — заглушка «Скоро» (FRONTEND-029, 031–033)
+        { path: '/daily', element: <SoonPage feature="daily" /> },
+        { path: '/smart', element: <SoonPage feature="smart" /> },
+        { path: '/my-listings', element: <SoonPage feature="owner" /> },
+        { path: '/invite', element: <SoonPage feature="invite" /> },
         { path: '/favorites', element: <FavoritesPage /> },
         { path: '/profile', element: <ProfilePage /> },
         { path: '/premium', element: <PremiumPage /> },

@@ -82,7 +82,15 @@ export interface Listing {
   rating?: number;
   /** Есть ли телефон (GET /api/listings/{id}/phone); MyHome номера скрывает */
   has_phone?: boolean;
-  /** Объявление на сайте-источнике */
+  /**
+   * Откуда объявление: 'owner' — хозяин разместил сам через бота (TASK-096),
+   * остальные значения — сайты-источники
+   */
+  source?: string | null;
+  /**
+   * Объявление на сайте-источнике. У объявлений хозяина (source === 'owner') —
+   * ссылка на переписку в боте: https://t.me/<бот>?start=chat_<id>
+   */
   source_url?: string | null;
   /** Имя арендодателя с сайта-источника */
   owner_name?: string | null;
@@ -268,4 +276,22 @@ export interface NotificationsPage {
 
 export interface UnreadCountResponse {
   count: number;
+}
+
+/** Документы сервиса: GET /api/legal/{doc}?lang= */
+export type LegalDocId = 'terms' | 'privacy';
+
+export interface LegalSection {
+  title: string;
+  /** Обычный текст, абзацы разделены переводом строки */
+  text: string;
+}
+
+export interface LegalDocument {
+  /** Нет — заголовок берём из словаря интерфейса */
+  title?: string | null;
+  /** «Редакция от …» */
+  version_label?: string | null;
+  intro?: string | null;
+  sections: LegalSection[];
 }

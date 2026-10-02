@@ -99,6 +99,28 @@
       padding-right: 2rem;
     }
   }
+  /* ---------- Нижняя панель вкладок (FRONTEND-034) ---------- */
+  /* Подвал не должен прятаться под панелью */
+  .app-footer--nav {
+    padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom));
+  }
+  /* Уведомления (toast) поднимаются над панелью */
+  html:has(.bottom-nav) {
+    --toast-offset: var(--bottom-nav-height);
+  }
+  @media (min-width: 1024px) {
+    /* В браузере на компьютере панели нет — навигация в шапке; в Telegram она есть всегда */
+    .bottom-nav--mobile {
+      display: none;
+    }
+    .app-footer--nav-mobile {
+      padding-bottom: 0;
+    }
+    html:has(.bottom-nav--mobile) {
+      --toast-offset: 0px;
+    }
+  }
+
   /* Горизонтальные ленты со свайпом (галерея, похожие квартиры): скролл есть, полосы нет */
   .no-scrollbar {
     scrollbar-width: none;
