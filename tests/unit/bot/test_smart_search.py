@@ -1,6 +1,14 @@
 """Умный поиск в чате: текст сообщения → объявления по смыслу (TASK-012)."""
 
+from datetime import UTC, datetime
+from typing import Any
+
+import pytest
+from aiogram.types import Chat, Message, Update, Voice
+
+from bina.application.ports.speech import ISpeechToText, SpeechError
 from tests.support.embeddings import FakeEmbedder
+from tests.support.telegram import CHAT_ID
 
 from .conftest import BotHarness
 
@@ -79,3 +87,82 @@ async def test_smart_button_explains_how_to_use(harness: BotHarness) -> None:
 async def test_smart_button_without_ai(harness: BotHarness) -> None:
     await harness.send("/smart")
     assert "недоступен" in harness.last_text()
+
+
+# --- голосовые
+
+
+class FakeSpeech(ISpeechToText):
+    def __init__(self, text: str = "", fail: bool = False) -> None:
+        self.text = text
+        self.fail = fail
+        self.calls: list[bytes] = []
+
+    async def transcribe(self, audio: bytes, filename: str) -> str:
+        self.calls.append(audio)
+        if self.fail:
+            raise SpeechError("down")
+        return self.text
+
+
+async def send_voice(harness: BotHarness, duration: int = 5) -> None:
+    await harness.dispatcher.feed_update(
+        harness.bot,
+        Update(
+            update_id=900,
+            message=Message(
+                message_id=901,
+                date=datetime.now(UTC),
+                chat=Chat(id=CHAT_ID, type="private"),
+                from_user=harness.telegram_user,
+                voice=Voice(file_id="voice-1", file_unique_id="v1", duration=duration),
+            ),
+        ),
+    )
+
+
+@pytest.fixture
+def voice_download(monkeypatch: pytest.MonkeyPatch) -> None:
+    from bina.infrastructure.bot.handlers import fallback
+
+    async def download(bot: Any, file_id: str) -> bytes:
+        return b"OggS-audio"
+
+    monkeypatch.setattr(fallback, "download_voice", download)
+
+
+async def test_voice_message_searches_by_meaning(harness: BotHarness, voice_download: None) -> None:
+    seed(harness)
+    embedder = FakeEmbedder()
+    speech = FakeSpeech("хочу квартиру с балконом")
+    harness.dispatcher["embedder"] = embedder
+    harness.dispatcher["speech"] = speech
+
+    await send_voice(harness)
+
+    texts = harness.sent_texts()
+    assert "Вы сказали: «<i>хочу квартиру с балконом</i>»" in texts[-2]
+    assert "Умный поиск" in texts[-1]
+    assert speech.calls == [b"OggS-audio"]
+    assert embedder.calls == [["хочу квартиру с балконом"]]
+
+
+async def test_voice_not_recognized(harness: BotHarness, voice_download: None) -> None:
+    harness.dispatcher["embedder"] = FakeEmbedder()
+    harness.dispatcher["speech"] = FakeSpeech(fail=True)
+    await send_voice(harness)
+    assert "Не получилось разобрать голосовое" in harness.last_text()
+
+
+async def test_voice_too_long(harness: BotHarness, voice_download: None) -> None:
+    speech = FakeSpeech("квартира")
+    harness.dispatcher["embedder"] = FakeEmbedder()
+    harness.dispatcher["speech"] = speech
+    await send_voice(harness, duration=120)
+    assert "длинновато" in harness.last_text()
+    assert speech.calls == []
+
+
+async def test_voice_without_ai(harness: BotHarness) -> None:
+    await send_voice(harness)
+    assert "Голосовые сейчас не распознаются" in harness.last_text()

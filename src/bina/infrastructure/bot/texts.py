@@ -178,7 +178,8 @@ _RU: dict[str, str] = {
         "• <i>двушка с балконом у метро до 1500 лари</i>\n"
         "• <i>квартира у моря в Батуми, можно с котом</i>\n"
         "• <i>тихая квартира с ремонтом для семьи в Ваке</i>\n\n"
-        "Можно писать по-русски, по-грузински или по-английски. ✍️ Жду ваше сообщение!"
+        "Можно писать или сказать голосовым 🎙 — по-русски, по-грузински или по-английски. "
+        "✍️ Жду ваше сообщение!"
     ),
     "smart_unavailable": (
         "🧠 Умный поиск сейчас недоступен. Воспользуйтесь обычным поиском: 🔍 Поиск."
@@ -455,6 +456,12 @@ _RU: dict[str, str] = {
         "фото выписки, где видно адрес квартиры и ваше имя: «🏠 Мои объявления» → «✅ "
         "Проверка»."
     ),
+    "voice_heard": "🎙 Вы сказали: «<i>{text}</i>»",
+    "voice_failed": (
+        "😕 Не получилось разобрать голосовое. Скажите ещё раз чётче или напишите текстом."
+    ),
+    "voice_too_long": "🎙 Голосовое длинновато — уложитесь, пожалуйста, в {seconds} секунд.",
+    "voice_unavailable": "🎙 Голосовые сейчас не распознаются. Напишите, пожалуйста, текстом.",
 }
 
 _EN: dict[str, str] = {
@@ -639,7 +646,8 @@ _EN: dict[str, str] = {
         "• <i>2 rooms with a balcony near the metro up to 1500 GEL</i>\n"
         "• <i>flat by the sea in Batumi, cats allowed</i>\n"
         "• <i>quiet renovated flat for a family in Vake</i>\n\n"
-        "You can write in English, Russian or Georgian. ✍️ I'm waiting for your message!"
+        "You can type or send a voice message 🎙 — in English, Russian or Georgian. "
+        "✍️ I'm waiting for your message!"
     ),
     "smart_unavailable": (
         "🧠 Smart search is unavailable right now. Please use the regular 🔍 Search."
@@ -924,6 +932,16 @@ _EN: dict[str, str] = {
         "of the extract showing the apartment address and your name: «🏠 My listings» → «✅ "
         "Verify»."
     ),
+    "voice_heard": "🎙 You said: «<i>{text}</i>»",
+    "voice_failed": (
+        "😕 Could not make out the voice message. Please say it again more clearly or type it."
+    ),
+    "voice_too_long": (
+        "🎙 The voice message is a bit long — please keep it under {seconds} seconds."
+    ),
+    "voice_unavailable": (
+        "🎙 Voice messages are not recognized right now. Please type your request."
+    ),
 }
 
 _KA: dict[str, str] = {
@@ -1100,7 +1118,8 @@ _KA: dict[str, str] = {
         "• <i>ოროთახიანი აივნით მეტროსთან 1500 ლარამდე</i>\n"
         "• <i>ბინა ზღვასთან ბათუმში, კატით შეიძლება</i>\n"
         "• <i>მშვიდი გარემონტებული ბინა ოჯახისთვის ვაკეში</i>\n\n"
-        "შეგიძლიათ დაწეროთ ქართულად, რუსულად ან ინგლისურად. ✍️ ველოდები თქვენს შეტყობინებას!"
+        "შეგიძლიათ დაწეროთ ან გამოგზავნოთ ხმოვანი შეტყობინება 🎙 — ქართულად, რუსულად ან "
+        "ინგლისურად. ✍️ ველოდები თქვენს შეტყობინებას!"
     ),
     "smart_unavailable": ("🧠 ჭკვიანი ძებნა ახლა მიუწვდომელია. გამოიყენეთ ჩვეულებრივი 🔍 ძებნა."),
     "smart_header": "🧠 <b>ჭკვიანი ძებნა:</b> «{query}»\nაზრით ყველაზე ახლო განცხადებები:",
@@ -1377,6 +1396,12 @@ _KA: dict[str, str] = {
         "ამონაწერის მკაფიო ფოტო, სადაც ჩანს ბინის მისამართი და თქვენი სახელი: «🏠 ჩემი "
         "განცხადებები» → «✅ შემოწმება»."
     ),
+    "voice_heard": "🎙 თქვენ თქვით: «<i>{text}</i>»",
+    "voice_failed": (
+        "😕 ხმოვანი შეტყობინება ვერ გავარჩიე. თქვით კიდევ ერთხელ უფრო გარკვევით ან დაწერეთ ტექსტით."
+    ),
+    "voice_too_long": "🎙 ხმოვანი ცოტა გრძელია — გთხოვთ, ჩაეტიეთ {seconds} წამში.",
+    "voice_unavailable": "🎙 ხმოვანი შეტყობინებები ახლა არ ამოიცნობა. გთხოვთ, დაწერეთ ტექსტით.",
 }
 
 TEXTS: dict[str, dict[str, str]] = {"ru": _RU, "en": _EN, "ka": _KA}

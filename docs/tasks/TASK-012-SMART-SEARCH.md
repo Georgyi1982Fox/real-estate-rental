@@ -34,3 +34,14 @@
 `use_cases/smart_search.py`, `llm/providers/openai_embeddings_provider.py`,
 `db/repositories/embeddings.py` (+ миграция `embeddings_unique`: один отпечаток на объявление),
 `ListingsRepository.semantic_search`, `bot/handlers/fallback.py`.
+
+## Голосом
+Голосовое сообщение боту (до 60 секунд) — тот же умный поиск: AI распознаёт речь
+(Whisper, `POST {адрес AI}/audio/transcriptions`, модель `whisper-1`), бот отвечает
+«🎙 Вы сказали: «…»» и показывает объявления. Тот же ключ, что у умного поиска;
+свои можно задать `STT_API_KEY`, `STT_BASE_URL`, `STT_MODEL`. Не распознал — просит
+сказать ещё раз или написать текстом.
+
+Код: `application/ports/speech.py`, `llm/providers/openai_transcription_provider.py`,
+`bot/handlers/fallback.py` (`on_voice`). Тесты: `tests/unit/bot/test_smart_search.py`,
+`tests/unit/llm/test_transcription_provider.py`.

@@ -10,6 +10,9 @@ if TYPE_CHECKING:
     from bina.infrastructure.llm.providers.openai_embeddings_provider import (
         OpenAIEmbeddingsProvider,
     )
+    from bina.infrastructure.llm.providers.openai_transcription_provider import (
+        OpenAITranscriptionProvider,
+    )
 
 
 class LLMFactory:
@@ -94,6 +97,31 @@ class LLMFactory:
             model=os.getenv("EMBEDDINGS_MODEL") or DEFAULT_MODEL,
             base_url=base_url,
         )
+
+
+def create_speech_provider() -> "OpenAITranscriptionProvider":
+    """Распознавание голосовых (умный поиск голосом) — тот же ключ и адрес, что у embeddings.
+
+    Свои можно задать ``STT_API_KEY`` / ``STT_BASE_URL``; модель — ``STT_MODEL``
+    (по умолчанию whisper-1).
+    """
+    from bina.infrastructure.llm.providers.openai_transcription_provider import (
+        DEFAULT_MODEL,
+        OpenAITranscriptionProvider,
+    )
+
+    base_url = (
+        os.getenv("STT_BASE_URL")
+        or os.getenv("EMBEDDINGS_BASE_URL")
+        or os.getenv("LLM_BASE_URL")
+        or _DEFAULT_EMBEDDINGS_URLS.get(os.getenv("LLM_PROVIDER", "qwen").lower())
+        or AITUNNEL_BASE_URL
+    )
+    return OpenAITranscriptionProvider(
+        api_key=os.getenv("STT_API_KEY") or embeddings_api_key(),
+        model=os.getenv("STT_MODEL") or DEFAULT_MODEL,
+        base_url=base_url,
+    )
 
 
 # Куда идут embeddings, если адрес не задан: туда же, куда перевод этого провайдера
