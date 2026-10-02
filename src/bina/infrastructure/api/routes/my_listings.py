@@ -36,6 +36,7 @@ from bina.infrastructure.api.dependencies import (
     TelegramUsernameDep,
 )
 from bina.infrastructure.api.routes.common import bad_request, not_found
+from bina.infrastructure.api.routes.referral import bot_username
 from bina.infrastructure.api.schemas import (
     MyListingOut,
     MyListingsOut,
@@ -81,6 +82,7 @@ async def list_my_listings(user: CurrentUserDep, session: SessionDep) -> MyListi
 
 @router.post("", response_model=MyListingOut, status_code=status.HTTP_201_CREATED)
 async def create_listing(
+    request: Request,
     body: OwnerListingIn,
     user: CurrentUserDep,
     username: TelegramUsernameDep,
@@ -107,12 +109,29 @@ async def create_listing(
         features=body.features,
     )
     try:
-        listing = await _use_case(session).publish(user.id, draft, [], datetime.now(UTC))
+        listing = await _use_case(session).publish(
+            user.id,
+            draft,
+            [],
+            datetime.now(UTC),
+            bot_username=await _bot_username(request, settings),
+        )
     except OwnerListingError as exc:
         _raise(exc)
     await session.commit()
     await _alert(settings, listing, user)
     return MyListingOut.build(listing)
+
+
+async def _bot_username(request: Request, settings: ApiSettings) -> str | None:
+    """Имя бота для кнопки «Написать» (чат через бота); бот не настроен — None."""
+    try:
+        return await bot_username(request, settings)
+    except HTTPException:
+        return None
+    except Exception as exc:  # noqa: BLE001 - нет связи с Telegram: объявление всё равно разместим
+        logger.warning("Bot username not resolved", error=str(exc))
+        return None
 
 
 @router.patch("/{listing_id}", response_model=MyListingOut)

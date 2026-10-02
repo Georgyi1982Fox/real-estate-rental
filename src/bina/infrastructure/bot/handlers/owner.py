@@ -478,8 +478,9 @@ async def on_publish(
     data = await state.get_data()
     photos = await download_photos(bot, list(data.get("photos") or []))
     try:
+        me = await bot.me()
         listing = await _use_case(session).publish(
-            user.id, draft_from(data), photos, datetime.now(UTC)
+            user.id, draft_from(data), photos, datetime.now(UTC), bot_username=me.username
         )
     except OwnerListingError as exc:
         await message.answer(t(user.language, f"owner_error_{exc.code}", limit=MAX_ACTIVE_LISTINGS))

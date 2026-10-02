@@ -4,10 +4,11 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, func, select
+from sqlalchemy import ColumnElement, String, cast, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from bina.application.chat import chat_link
 from bina.application.owner_listings import (
     OWNER_SOURCE,
     OwnerListingDraft,
@@ -76,6 +77,24 @@ class OwnerListingsRepository:
             # Вернули — как свежее объявление
             listing.source_updated_at = now
         await self._session.flush()
+
+    async def set_url(self, listing: Listing, url: str) -> None:
+        listing.url = url
+        await self._session.flush()
+
+    async def link_to_chat(self, bot_username: str) -> int:
+        """Кнопка «Написать» у всех объявлений хозяев — в чат через бота (TASK-111)."""
+        prefix = chat_link(bot_username, "")
+        result = await self._session.execute(
+            update(Listing)
+            .where(
+                Listing.source_name == OWNER_SOURCE,
+                or_(Listing.url.is_(None), Listing.url.not_like(f"{prefix}%")),
+            )
+            .values(url=func.concat(prefix, cast(Listing.id, String)))
+            .returning(Listing.id)
+        )
+        return len(result.all())
 
     async def update_price(
         self, listing: Listing, price: Decimal, currency: str, now: datetime

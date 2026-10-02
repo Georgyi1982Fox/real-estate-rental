@@ -52,6 +52,7 @@ async def client(
 ) -> AsyncIterator[AsyncClient]:
     monkeypatch.setenv("MEDIA_DIR", str(tmp_path))
     app = create_app(ApiSettings(bot_token=BOT_TOKEN), session_factory)
+    app.state.bot_username = "bina_bot"
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as http:
         yield http
 
@@ -64,7 +65,8 @@ async def test_post_photos_and_manage(client: AsyncClient) -> None:
     assert listing["rent_period"] == "daily"
     assert listing["title"]["ru"] == "Посуточно: 1-комн. квартира, Старый Батуми, 40 м²"
     assert listing["title"]["en"] == "Daily: 1-room apartment, Old Batumi, 40 m²"
-    assert listing["source_url"] == "https://t.me/sea_owner"
+    # «Написать» — чат с хозяином через бота, не личный Telegram хозяина (TASK-111)
+    assert listing["source_url"] == f"https://t.me/bina_bot?start=chat_{listing['id']}"
     assert listing["features"] == ["air_conditioning", "internet"]
     assert listing["owner_type"] == "owner"
     listing_id = listing["id"]

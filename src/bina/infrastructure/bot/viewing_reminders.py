@@ -16,6 +16,7 @@ from bina.application.use_cases.chat import ChatUseCase
 from bina.infrastructure.bot.handlers.chat import deliver, render_reminder
 from bina.infrastructure.bot.keyboards.menu import with_home
 from bina.infrastructure.db.repositories.chat import ChatRepository
+from bina.infrastructure.db.repositories.owner_listings import OwnerListingsRepository
 
 logger = structlog.get_logger(__name__)
 
@@ -53,11 +54,28 @@ async def reminders_loop(bot: Bot, session_factory: async_sessionmaker[AsyncSess
         await asyncio.sleep(CHECK_EVERY_SECONDS)
 
 
+async def link_owner_listings(bot: Bot, session_factory: async_sessionmaker[AsyncSession]) -> None:
+    """«Написать» у объявлений хозяев, размещённых раньше, — тоже в чат через бота (TASK-111)."""
+    try:
+        me = await bot.me()
+        if not me.username:
+            return
+        async with session_factory() as session:
+            linked = await OwnerListingsRepository(session).link_to_chat(me.username)
+            await session.commit()
+    except Exception as exc:  # noqa: BLE001 - не мешаем запуску бота
+        logger.warning("Owner listings not linked to chat", error=str(exc))
+        return
+    if linked:
+        logger.info("Owner listings linked to chat", listings=linked)
+
+
 def register(dispatcher: Dispatcher, session_factory: async_sessionmaker[AsyncSession]) -> None:
-    """Запуск при старте бота, остановка при выключении."""
+    """При старте: ссылки «Написать» и цикл напоминаний; остановка при выключении."""
     tasks: list[asyncio.Task[None]] = []
 
     async def on_startup(bot: Bot) -> None:
+        await link_owner_listings(bot, session_factory)
         tasks.append(asyncio.create_task(reminders_loop(bot, session_factory)))
 
     async def on_shutdown() -> None:
