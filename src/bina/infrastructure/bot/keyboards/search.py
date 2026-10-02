@@ -12,6 +12,7 @@ from bina.infrastructure.bot.formatters import district_name
 from bina.infrastructure.bot.keyboards.callbacks import DAILY_PERIOD, SearchCallback, SearchStep
 from bina.infrastructure.bot.keyboards.filters import (
     ROOM_OPTIONS,
+    filters_from_callback,
     price_label,
     price_ranges,
     rooms_button_label,
@@ -21,7 +22,7 @@ from bina.infrastructure.bot.keyboards.listings import (
     favorite_buttons,
     pagination_row,
 )
-from bina.infrastructure.bot.keyboards.menu import open_app_button
+from bina.infrastructure.bot.keyboards.menu import mini_app_search_url, open_app_button
 from bina.infrastructure.bot.texts import t
 from bina.infrastructure.db.models import District, Listing
 
@@ -198,5 +199,7 @@ def results_keyboard(
         ]
     )
     if mini_app_url:
-        rows.append([open_app_button(language, mini_app_url)])
+        # Приложение сразу с тем же поиском, а не просто главная
+        search_url = mini_app_search_url(mini_app_url, filters_from_callback(query))
+        rows.append([open_app_button(language, search_url)])
     return InlineKeyboardMarkup(inline_keyboard=rows)
