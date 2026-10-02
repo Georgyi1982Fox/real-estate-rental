@@ -8,12 +8,17 @@ from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_applicati
 from aiohttp import web
 
 from bina.application.ports.embeddings import IEmbedder
+from bina.application.ports.speech import ISpeechToText
 from bina.application.ports.translator import IMessageTranslator
 from bina.infrastructure.bot import viewing_reminders
 from bina.infrastructure.bot.factory import create_bot, create_dispatcher, setup_bot_ui
 from bina.infrastructure.bot.settings import BotSettings
 from bina.infrastructure.db.session.manager import DatabaseManager
-from bina.infrastructure.llm.llm_factory import LLMFactory, embeddings_configured
+from bina.infrastructure.llm.llm_factory import (
+    LLMFactory,
+    create_speech_provider,
+    embeddings_configured,
+)
 from bina.infrastructure.llm.translator import LLMMessageTranslator
 
 logger = structlog.get_logger(__name__)
@@ -29,7 +34,9 @@ async def run_polling(settings: BotSettings) -> None:
     """
     db = DatabaseManager()
     bot = create_bot(settings)
-    dispatcher = create_dispatcher(settings, db.session_factory, _embedder(), _message_translator())
+    dispatcher = create_dispatcher(
+        settings, db.session_factory, _embedder(), _message_translator(), _speech()
+    )
     # Напоминания о просмотрах за 2 часа (TASK-112) — пока бот запущен
     viewing_reminders.register(dispatcher, db.session_factory)
     try:
@@ -93,7 +100,9 @@ def run_webhook(settings: BotSettings) -> None:
 
     db = DatabaseManager()
     bot = create_bot(settings)
-    dispatcher = create_dispatcher(settings, db.session_factory, _embedder(), _message_translator())
+    dispatcher = create_dispatcher(
+        settings, db.session_factory, _embedder(), _message_translator(), _speech()
+    )
     # Напоминания о просмотрах за 2 часа (TASK-112) — пока бот запущен
     viewing_reminders.register(dispatcher, db.session_factory)
 
@@ -117,3 +126,10 @@ def _message_translator() -> IMessageTranslator | None:
     if not os.getenv("LLM_API_KEY"):
         return None
     return LLMMessageTranslator(LLMFactory.create_provider())
+
+
+def _speech() -> ISpeechToText | None:
+    """Голосовые в умном поиске — тем же ключом AI, что и умный поиск."""
+    if not embeddings_configured():
+        return None
+    return create_speech_provider()

@@ -2,15 +2,23 @@
 
 «Двушка с балконом в Ваке до 1500» → объявления, близкие по смыслу. Если умный
 поиск недоступен (нет ключа AI или сервис не ответил) — подсказка про меню.
+
+Голосовое сообщение — то же самое: AI распознаёт речь (Whisper), бот показывает,
+что услышал, и ищет по этому тексту.
 """
 
-from aiogram import F, Router
+from html import escape
+
+import structlog
+from aiogram import Bot, F, Router
+from aiogram.exceptions import TelegramAPIError
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardMarkup, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bina.application.dtos.listing_search import ListingSearchFilters
 from bina.application.ports.embeddings import EmbeddingsError, IEmbedder
+from bina.application.ports.speech import ISpeechToText, SpeechError
 from bina.application.rent_period import period_from_text
 from bina.application.semantic_search import is_smart_query
 from bina.application.use_cases.smart_search import SmartSearchUseCase
@@ -24,8 +32,12 @@ from bina.infrastructure.db.models import Listing, User
 from bina.infrastructure.db.repositories.favorites import FavoritesRepository
 from bina.infrastructure.db.repositories.listings import ListingsRepository
 
+logger = structlog.get_logger(__name__)
+
 # Длиннее запрос не нужен (и не тратим токены на простыни текста)
 MAX_QUERY = 200
+# Голосовые длиннее не распознаём: запрос — пара фраз
+MAX_VOICE_SECONDS = 60
 
 
 async def on_unknown_message(
@@ -37,6 +49,61 @@ async def on_unknown_message(
 ) -> None:
     """Текст — умный поиск; иначе подсказка про меню и /help."""
     query = clean_text(message.text or "")[:MAX_QUERY]
+    if not await _smart_search(message, user, session, settings, query, embedder):
+        await message.answer(t(user.language, "unknown"))
+
+
+async def on_voice(
+    message: Message,
+    user: User,
+    session: AsyncSession,
+    settings: BotSettings,
+    bot: Bot,
+    embedder: IEmbedder | None = None,
+    speech: ISpeechToText | None = None,
+) -> None:
+    """Голосовое: распознать и искать по тексту, как по написанному."""
+    voice = message.voice
+    assert voice is not None
+    language = user.language
+    if speech is None or embedder is None:
+        await message.answer(
+            t(language, "voice_unavailable"), reply_markup=with_home(None, language)
+        )
+        return
+    if voice.duration > MAX_VOICE_SECONDS:
+        await message.answer(t(language, "voice_too_long", seconds=MAX_VOICE_SECONDS))
+        return
+    try:
+        audio = await download_voice(bot, voice.file_id)
+        text = await speech.transcribe(audio, "voice.ogg")
+    except (SpeechError, TelegramAPIError) as exc:
+        logger.warning("Voice not recognized", error=str(exc))
+        text = ""
+    query = clean_text(text)[:MAX_QUERY]
+    if not query:
+        await message.answer(t(language, "voice_failed"), reply_markup=with_home(None, language))
+        return
+    await message.answer(t(language, "voice_heard", text=escape(query)))
+    if not await _smart_search(message, user, session, settings, query, embedder):
+        await message.answer(t(language, "voice_failed"), reply_markup=with_home(None, language))
+
+
+async def download_voice(bot: Bot, file_id: str) -> bytes:
+    """Голосовое из Telegram (на тестах подменяется)."""
+    buffer = await bot.download(file_id)
+    return buffer.read() if buffer is not None else b""
+
+
+async def _smart_search(
+    message: Message,
+    user: User,
+    session: AsyncSession,
+    settings: BotSettings,
+    query: str,
+    embedder: IEmbedder | None,
+) -> bool:
+    """Умный поиск по ``query`` с ответом; ``False`` — не получилось (нет AI, сбой, не запрос)."""
     if embedder is not None and is_smart_query(query) and not query.startswith("/"):
         try:
             page = await SmartSearchUseCase(ListingsRepository(session), embedder).execute(
@@ -48,8 +115,8 @@ async def on_unknown_message(
             page = None
         if page is not None:
             await _answer_results(message, user, session, settings, query, page.items)
-            return
-    await message.answer(t(user.language, "unknown"))
+            return True
+    return False
 
 
 async def _answer_results(
@@ -95,5 +162,6 @@ def create_router() -> Router:
     router = Router(name="fallback")
     router.message.register(cmd_smart, Command("smart"))
     router.message.register(cmd_smart, F.text.in_(all_variants("menu_smart")))
+    router.message.register(on_voice, F.voice)
     router.message.register(on_unknown_message)
     return router

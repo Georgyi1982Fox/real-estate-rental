@@ -9,6 +9,7 @@ from aiogram.types import BotCommand, BotCommandScopeChat, MenuButtonWebApp, Web
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bina.application.ports.embeddings import IEmbedder
+from bina.application.ports.speech import ISpeechToText
 from bina.application.ports.translator import IMessageTranslator
 from bina.infrastructure.bot.handlers import build_router
 from bina.infrastructure.bot.middlewares import DbSessionMiddleware, RegistrationMiddleware
@@ -83,6 +84,7 @@ def create_dispatcher(
     session_factory: async_sessionmaker[AsyncSession],
     embedder: IEmbedder | None = None,
     message_translator: IMessageTranslator | None = None,
+    speech: ISpeechToText | None = None,
 ) -> Dispatcher:
     """Создаёт Dispatcher с middleware и роутерами.
 
@@ -96,6 +98,8 @@ def create_dispatcher(
         plans=load_plans(),
         embedder=embedder,
         message_translator=message_translator,
+        # Распознавание голосовых для умного поиска; None — голосовые не понимаем
+        speech=speech,
     )
     # Флуд отбрасывается до обращения к базе (TASK-019)
     dispatcher.update.outer_middleware(ThrottlingMiddleware(settings.rate_limit))
