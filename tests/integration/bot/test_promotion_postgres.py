@@ -122,7 +122,7 @@ async def test_promotion_paid_with_stars(
     my_list = telegram.of(SendMessage)[-1]
     assert isinstance(my_list.reply_markup, InlineKeyboardMarkup)
     buttons = [b.text for row in my_list.reply_markup.inline_keyboard for b in row]
-    assert "🔥 Топ №1" in buttons and "✅ Проверка №1" in buttons
+    assert "🔥 Топ" in buttons and "✅ Проверка" in buttons, "одно объявление — без номера"
 
     await owner.press(OwnerCallback(action=OwnerAction.PROMOTE, listing=listing.id).pack())
     [invoice] = telegram.of(SendInvoice)

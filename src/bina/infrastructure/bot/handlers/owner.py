@@ -158,16 +158,22 @@ def list_keyboard(
 ) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     rows: list[int] = []
+
+    def label(key: str, number: int) -> str:
+        # Номер — только если объявлений несколько: «🟢 Вернуть 2»
+        text = t(language, key)
+        return f"{text} {number}" if len(listings) > 1 else text
+
     for number, listing in enumerate(listings, 1):
         active = listing.status == ListingStatus.ACTIVE
         action = OwnerAction.OFF if active else OwnerAction.ON
         key = "owner_off" if active else "owner_on"
         builder.button(
-            text=t(language, key, n=number),
+            text=label(key, number),
             callback_data=OwnerCallback(action=action, listing=listing.id),
         )
         builder.button(
-            text=t(language, "owner_edit_price", n=number),
+            text=label("owner_edit_price", number),
             callback_data=OwnerCallback(action=OwnerAction.PRICE, listing=listing.id),
         )
         rows.append(2)
@@ -175,13 +181,13 @@ def list_keyboard(
         extra = 0
         if active and listing.hidden_at is None:
             builder.button(
-                text=t(language, "owner_promote", n=number),
+                text=label("owner_promote", number),
                 callback_data=OwnerCallback(action=OwnerAction.PROMOTE, listing=listing.id),
             )
             extra += 1
         if not listing.is_verified and listing.id not in pending:
             builder.button(
-                text=t(language, "owner_verify", n=number),
+                text=label("owner_verify", number),
                 callback_data=OwnerCallback(action=OwnerAction.VERIFY, listing=listing.id),
             )
             extra += 1
