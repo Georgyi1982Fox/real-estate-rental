@@ -25,7 +25,7 @@ from bina.application.use_cases.smart_search import SmartSearchUseCase
 from bina.infrastructure.api.validation import clean_text
 from bina.infrastructure.bot.formatters import format_listings
 from bina.infrastructure.bot.keyboards.listings import favorite_buttons
-from bina.infrastructure.bot.keyboards.menu import open_app_button, with_home
+from bina.infrastructure.bot.keyboards.menu import with_home
 from bina.infrastructure.bot.settings import BotSettings
 from bina.infrastructure.bot.texts import all_variants, t
 from bina.infrastructure.db.models import Listing, User
@@ -136,9 +136,9 @@ async def _answer_results(
     favorite_ids = await FavoritesRepository(session).filter_favorite_ids(
         user.id, [listing.id for listing in items]
     )
+    # Кнопки «Открыть в приложении» нет: сайт пока не умеет показать результаты умного
+    # поиска по ссылке (?q=…&sort=smart — FRONTEND-031), а просто главная только путает
     rows = favorite_buttons(items, 1, favorite_ids)
-    if settings.mini_app_url:
-        rows.append([open_app_button(language, settings.mini_app_url)])
     text = "\n\n".join(
         [
             t(language, "smart_header", query=query),

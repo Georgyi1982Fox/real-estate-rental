@@ -1,5 +1,7 @@
 """Главное меню и общие кнопки."""
 
+from urllib.parse import urlencode
+
 from aiogram.types import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
@@ -8,8 +10,13 @@ from aiogram.types import (
     WebAppInfo,
 )
 
+from bina.application.dtos.listing_search import ListingSearchFilters
+from bina.application.rent_period import DAILY
 from bina.infrastructure.bot.keyboards.callbacks import MenuCallback, MenuSection
 from bina.infrastructure.bot.texts import t
+
+# На сайте комнаты 1…4, «4» — «4 и больше»
+MINI_APP_ROOMS_MAX = 4
 
 
 def main_menu(language: str) -> ReplyKeyboardMarkup:
@@ -98,6 +105,30 @@ def with_home(markup: InlineKeyboardMarkup | None, language: str) -> InlineKeybo
     """Та же клавиатура плюс «🏠 Главное меню» последней строкой."""
     rows = list(markup.inline_keyboard) if markup else []
     return InlineKeyboardMarkup(inline_keyboard=[*rows, [home_button(language)]])
+
+
+def mini_app_search_url(mini_app_url: str, filters: ListingSearchFilters) -> str:
+    """Mini App сразу с тем же поиском: ``?district=…&min_price=…&max_price=…&rooms=…``.
+
+    Параметры — как в адресе главной страницы сайта (``frontend/src/lib/searchFilters.ts``).
+    """
+    params: dict[str, str] = {}
+    if filters.district_id is not None:
+        params["district"] = str(filters.district_id)
+    if filters.price_min is not None:
+        params["min_price"] = str(int(filters.price_min))
+    if filters.price_max is not None:
+        params["max_price"] = str(int(filters.price_max))
+    rooms = filters.rooms_min
+    if rooms is not None and (filters.rooms_max == rooms or filters.rooms_max is None):
+        # На сайте «4» — «4 и больше»
+        params["rooms"] = str(min(rooms, MINI_APP_ROOMS_MAX))
+    if filters.rent_period == DAILY:
+        params["rent_period"] = DAILY
+    if not params:
+        return mini_app_url
+    separator = "&" if "?" in mini_app_url else "?"
+    return f"{mini_app_url}{separator}{urlencode(params)}"
 
 
 def open_app_button(language: str, mini_app_url: str) -> InlineKeyboardButton:
