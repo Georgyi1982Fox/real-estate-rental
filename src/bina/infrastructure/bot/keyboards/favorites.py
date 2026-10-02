@@ -4,7 +4,11 @@ from aiogram.types import InlineKeyboardMarkup
 
 from bina.application.dtos.pagination import Page
 from bina.infrastructure.bot.keyboards.callbacks import FavoritesPageCallback
-from bina.infrastructure.bot.keyboards.listings import favorite_buttons, pagination_row
+from bina.infrastructure.bot.keyboards.listings import (
+    chat_buttons,
+    favorite_buttons,
+    pagination_row,
+)
 from bina.infrastructure.bot.keyboards.menu import open_app_button
 from bina.infrastructure.db.models import Listing
 
@@ -16,7 +20,8 @@ def favorites_keyboard(
 ) -> InlineKeyboardMarkup:
     """Кнопки ★ (все объявления на странице в избранном) и пагинация."""
     favorite_ids = {listing.id for listing in page.items}
-    rows = favorite_buttons(page.items, page.page * page.page_size + 1, favorite_ids)
+    start = page.page * page.page_size + 1
+    rows = favorite_buttons(page.items, start, favorite_ids) + chat_buttons(page.items, start)
     nav = pagination_row(
         page,
         FavoritesPageCallback(page=page.page - 1),

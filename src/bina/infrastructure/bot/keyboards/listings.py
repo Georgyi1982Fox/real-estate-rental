@@ -1,4 +1,4 @@
-"""Общие элементы списков объявлений: кнопки избранного и пагинация."""
+"""Общие элементы списков объявлений: кнопки избранного, чата с хозяином и пагинация."""
 
 from collections.abc import Sequence
 from uuid import UUID
@@ -7,7 +7,10 @@ from aiogram.filters.callback_data import CallbackData
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from bina.application.dtos.pagination import Page
+from bina.application.owner_listings import OWNER_SOURCE
 from bina.infrastructure.bot.keyboards.callbacks import (
+    ChatAction,
+    ChatCallback,
     FavoriteToggleCallback,
     NoopCallback,
 )
@@ -30,6 +33,21 @@ def favorite_buttons(
             callback_data=FavoriteToggleCallback(listing_id=listing.id).pack(),
         )
         for offset, listing in enumerate(listings)
+    ]
+    return [
+        buttons[i : i + FAV_BUTTONS_PER_ROW] for i in range(0, len(buttons), FAV_BUTTONS_PER_ROW)
+    ]
+
+
+def chat_buttons(listings: Sequence[Listing], start_index: int) -> list[list[InlineKeyboardButton]]:
+    """Ряды кнопок «💬 N» — объявления хозяев, которым можно написать (TASK-111)."""
+    buttons = [
+        InlineKeyboardButton(
+            text=f"💬 {start_index + offset}",
+            callback_data=ChatCallback(action=ChatAction.OPEN, id=listing.id).pack(),
+        )
+        for offset, listing in enumerate(listings)
+        if listing.source_name == OWNER_SOURCE and listing.owner_user_id is not None
     ]
     return [
         buttons[i : i + FAV_BUTTONS_PER_ROW] for i in range(0, len(buttons), FAV_BUTTONS_PER_ROW)
