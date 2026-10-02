@@ -12,6 +12,7 @@
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from enum import StrEnum
+from uuid import UUID
 
 from bina.application.rent_reminders import TBILISI
 
@@ -95,6 +96,11 @@ def valid_slot(starts_at: datetime, now: datetime) -> bool:
         and local.date() in viewing_days(now)
         and local.hour in viewing_hours(local.date(), now)
     )
+
+
+def chat_link(bot_username: str, listing_id: UUID | str) -> str:
+    """Ссылка «написать хозяину через бота» — кнопка «Написать» у объявлений хозяев."""
+    return f"https://t.me/{bot_username}?start={START_PREFIX}{listing_id}"
 
 
 def listing_from_start(payload: str | None) -> str | None:

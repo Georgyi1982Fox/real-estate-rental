@@ -37,7 +37,7 @@ from bina.infrastructure.bot.keyboards.callbacks import (
 from bina.infrastructure.bot.settings import BotSettings
 from bina.infrastructure.db.models import Listing, ListingStatus
 from bina.infrastructure.db.repositories.listings import ListingsRepository
-from tests.support.telegram import CHAT_ID, TOKEN, FakeTelegramSession
+from tests.support.telegram import BOT_USERNAME, CHAT_ID, TOKEN, FakeTelegramSession
 
 ADMIN_ID = 555
 CHAT = Chat(id=CHAT_ID, type="private")
@@ -181,7 +181,7 @@ async def test_owner_posts_apartment(
         "monthly",
     )
     assert (listing.floor, listing.total_floors, listing.phone) == (5, 9, "+995555123456")
-    assert listing.url == "https://t.me/nino_home"
+    assert listing.url == f"https://t.me/{BOT_USERNAME}?start=chat_{listing.id}"
     assert (listing.title_ru, listing.title_en) == (
         "2-комн. квартира, Ваке, 60 м²",
         "2-room apartment, Vake, 60 m²",

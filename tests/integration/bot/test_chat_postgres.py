@@ -342,3 +342,22 @@ async def test_new_chats_limit(
         assert error.value.code == ChatErrorCode.LIMIT
         # Завтра — можно
         assert await use_case.start(listing.id, tenant, now + timedelta(days=1, minutes=1))
+
+
+async def test_old_owner_listings_linked_to_chat(
+    listing: Listing, bot: Bot, session_factory: async_sessionmaker[AsyncSession]
+) -> None:
+    from bina.infrastructure.bot.viewing_reminders import link_owner_listings
+    from tests.support.telegram import BOT_USERNAME
+
+    async with session_factory() as session:
+        stored = await session.get(Listing, listing.id)
+        assert stored is not None
+        stored.url = "https://t.me/nino_home"  # как было до TASK-111
+        await session.commit()
+    await link_owner_listings(bot, session_factory)
+    await link_owner_listings(bot, session_factory)  # повторно — без изменений
+    async with session_factory() as session:
+        stored = await session.get(Listing, listing.id)
+        assert stored is not None
+        assert stored.url == f"https://t.me/{BOT_USERNAME}?start=chat_{listing.id}"

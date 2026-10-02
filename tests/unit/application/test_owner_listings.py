@@ -138,6 +138,9 @@ class FakeRepository:
     async def set_photos(self, listing: Listing, photos: list[str]) -> None:
         listing.images = photos
 
+    async def set_url(self, listing: Listing, url: str) -> None:
+        listing.url = url
+
 
 class FakeStorage:
     def __init__(self) -> None:

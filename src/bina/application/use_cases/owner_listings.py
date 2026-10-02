@@ -9,6 +9,7 @@ from uuid import UUID
 
 import structlog
 
+from bina.application.chat import chat_link
 from bina.application.owner_listings import (
     BAD_PHOTO,
     LIMIT_REACHED,
@@ -50,6 +51,8 @@ class IOwnerListingsRepository(Protocol):
 
     async def set_photos(self, listing: Listing, photos: list[str]) -> None: ...
 
+    async def set_url(self, listing: Listing, url: str) -> None: ...
+
 
 class OwnerListingsUseCase:
     """Всё, что собственник делает со своими объявлениями (бот и API)."""
@@ -59,9 +62,17 @@ class OwnerListingsUseCase:
         self._storage = storage
 
     async def publish(
-        self, user_id: UUID, draft: OwnerListingDraft, photos: Sequence[bytes], now: datetime
+        self,
+        user_id: UUID,
+        draft: OwnerListingDraft,
+        photos: Sequence[bytes],
+        now: datetime,
+        bot_username: str | None = None,
     ) -> Listing:
         """Новое объявление — сразу в поиске.
+
+        ``bot_username`` — кнопка «Написать» ведёт в чат с хозяином через бота (TASK-111),
+        а не в личный Telegram хозяина.
 
         Raises:
             OwnerListingError: лимит объявлений, нет контакта, слишком много фото.
@@ -81,6 +92,8 @@ class OwnerListingsUseCase:
                 # Одно битое фото не должно сорвать всё объявление
                 logger.warning("Owner photo skipped", error=str(exc))
         listing = await self._repository.create(user_id, draft, source_id, urls, now)
+        if bot_username:
+            await self._repository.set_url(listing, chat_link(bot_username, listing.id))
         logger.info("Owner listing published", listing_id=str(listing.id), photos=len(urls))
         return listing
 
