@@ -14,6 +14,22 @@ def texts(markup: InlineKeyboardMarkup) -> list[str]:
     return [button.text for row in markup.inline_keyboard for button in row]
 
 
+@pytest.mark.parametrize(
+    ("payload", "expected"),
+    [("rent", "Напоминаний пока нет"), ("support", "Вопросы по оплате")],
+)
+async def test_start_link_opens_section(harness: BotHarness, payload: str, expected: str) -> None:
+    """Кнопки сайта ведут в бота ссылкой ``?start=<раздел>`` (FRONTEND-034)."""
+    await harness.send(f"/start {payload}")
+    assert expected in harness.last_text()
+
+
+@pytest.mark.parametrize("payload", ["admin", "home", "nonsense", "ref_zzzzzz"])
+async def test_start_link_without_section_shows_menu(harness: BotHarness, payload: str) -> None:
+    await harness.send(f"/start {payload}")
+    assert "главное меню" in harness.last_text()
+
+
 async def test_start_shows_menu(harness: BotHarness) -> None:
     await harness.send("/start")
     assert "главное меню" in harness.last_text()

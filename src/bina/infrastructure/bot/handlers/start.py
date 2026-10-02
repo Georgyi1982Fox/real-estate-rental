@@ -1,9 +1,12 @@
-from aiogram import Router
+from aiogram import Bot, Router
 from aiogram.filters import CommandObject, CommandStart
+from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from bina.application.ports.embeddings import IEmbedder
 from bina.application.referrals import FRIEND_DISCOUNT_PERCENT, code_from_start
+from bina.application.subscriptions import Plan
 from bina.infrastructure.bot.handlers import menu
 from bina.infrastructure.bot.keyboards.menu import main_menu
 from bina.infrastructure.bot.settings import BotSettings
@@ -19,8 +22,16 @@ async def cmd_start(
     is_new_user: bool,
     session: AsyncSession,
     settings: BotSettings,
+    plans: dict[str, Plan],
+    bot: Bot,
+    state: FSMContext,
+    embedder: IEmbedder | None = None,
 ) -> None:
-    """/start: приветствие и главное меню; ``/start ref_<код>`` — приглашение друга (TASK-108)."""
+    """/start: приветствие и главное меню.
+
+    ``/start ref_<код>`` — приглашение друга (TASK-108); ``/start rent``, ``/start support`` …
+    — сразу раздел меню (кнопки сайта, FRONTEND-034).
+    """
     key = "welcome_new" if is_new_user else "welcome_back"
     await message.answer(t(user.language, key), reply_markup=main_menu(user.language))
     code = code_from_start(command.args)
@@ -31,7 +42,21 @@ async def cmd_start(
             await message.answer(
                 t(user.language, "welcome_referred", percent=FRIEND_DISCOUNT_PERCENT)
             )
-    await menu.send_home(message, user, settings)
+    section = menu.section_from_start(command.args)
+    if section is None:
+        await menu.send_home(message, user, settings)
+        return
+    await menu.open_section(
+        message,
+        section,
+        user=user,
+        session=session,
+        settings=settings,
+        plans=plans,
+        bot=bot,
+        state=state,
+        embedder=embedder,
+    )
 
 
 def create_router() -> Router:
