@@ -120,6 +120,12 @@ class Listing(Base, SoftDeleteMixin):
         default=0,
         nullable=False,
     )
+    # TASK-097: платное продвижение — до этого времени объявление вверху поиска («🔥 Топ»)
+    promoted_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )
+    # Когда последний раз оплатили продвижение — объявление снова уходит в уведомления
+    promoted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # TASK-096: кто разместил объявление сам (собственник); у объявлений с сайтов — None
     owner_user_id: Mapped[UUID | None] = mapped_column(
         PG_UUID(as_uuid=True),

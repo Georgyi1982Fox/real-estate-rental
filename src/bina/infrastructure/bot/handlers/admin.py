@@ -157,5 +157,7 @@ async def on_admin(
 def create_router() -> Router:
     router = Router(name="admin")
     router.message.register(cmd_admin, Command("admin"))
-    router.callback_query.register(on_admin, AdminCallback.filter(F.action.in_(set(AdminAction))))
+    # Проверку собственника (VERIFY_*) обрабатывает handlers/promotion.py
+    actions = {AdminAction.STATS, AdminAction.COMPLAINTS, AdminAction.HIDE, AdminAction.RESTORE}
+    router.callback_query.register(on_admin, AdminCallback.filter(F.action.in_(actions)))
     return router

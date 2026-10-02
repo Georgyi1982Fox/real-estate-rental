@@ -449,11 +449,15 @@ class ListingsRepository(IListingsRepository):
     async def search_created_since(
         self, filters: ListingSearchFilters, since: datetime, limit: int
     ) -> list[Listing]:
-        """Активные объявления под фильтры, появившиеся после ``since`` (новые сверху)."""
+        """Активные объявления под фильтры, появившиеся после ``since`` (новые сверху).
+
+        Оплатившие продвижение после ``since`` — тоже, и первыми (TASK-097).
+        """
+        promoted = Listing.promoted_at > since
         query = (
             select(Listing)
-            .where(*self._search_conditions(filters), Listing.created_at > since)
-            .order_by(Listing.created_at.desc())
+            .where(*self._search_conditions(filters), or_(Listing.created_at > since, promoted))
+            .order_by(func.coalesce(promoted, False).desc(), Listing.created_at.desc())
             .limit(limit)
         )
         return list((await self._session.execute(query)).scalars().all())
@@ -906,8 +910,12 @@ def _sort_order(sort: ListingSort, filters: ListingSearchFilters) -> list[Any]:
     if sort is ListingSort.PRICE_PER_M2_ASC:
         # Без площади цена за м² неизвестна — такие в конце
         return [(Listing.price / func.nullif(Listing.area, 0)).asc().nulls_last()]
-    return []
+    # «Новые сверху» (по умолчанию): сначала оплатившие продвижение (TASK-097)
+    return [PROMOTED.desc()]
 
+
+# TASK-097: продвижение ещё действует
+PROMOTED = func.coalesce(Listing.promoted_until > func.now(), False)
 
 # ---------------------------------------------------------------- TASK-022: поиск
 

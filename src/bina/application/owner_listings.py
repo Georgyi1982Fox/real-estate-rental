@@ -136,3 +136,7 @@ NO_CONTACT = "no_contact"
 NOT_FOUND = "not_found"
 TOO_MANY_PHOTOS = "too_many_photos"
 BAD_PHOTO = "bad_photo"
+# TASK-097, TASK-098
+NOT_ACTIVE = "not_active"  # продвигать можно только объявление в поиске
+ALREADY_VERIFIED = "verified"
+VERIFICATION_PENDING = "pending"
