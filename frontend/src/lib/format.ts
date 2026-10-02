@@ -31,15 +31,55 @@ export function formatMoney(value: unknown, currency: string = 'GEL'): string {
   return withSymbol(`${sign}${groupDigits(whole)}${cents === '00' ? '' : `.${cents}`}`, currency);
 }
 
+// Chromium (Chrome, Edge, WebView Telegram на Android) не знает грузинского в Intl-датах
+// и молча подставляет английский («August 28», «yesterday») — для ka форматируем сами
+const KA_MONTHS = [
+  'იანვარი',
+  'თებერვალი',
+  'მარტი',
+  'აპრილი',
+  'მაისი',
+  'ივნისი',
+  'ივლისი',
+  'აგვისტო',
+  'სექტემბერი',
+  'ოქტომბერი',
+  'ნოემბერი',
+  'დეკემბერი',
+];
+
+function dateText(date: Date, lang: Lang, withYear: boolean): string {
+  if (lang === 'ka') {
+    const dayMonth = `${date.getDate()} ${KA_MONTHS[date.getMonth()] ?? ''}`;
+    return withYear ? `${dayMonth}, ${date.getFullYear()}` : dayMonth;
+  }
+  return new Intl.DateTimeFormat(DATE_LOCALES[lang], {
+    day: 'numeric',
+    month: 'long',
+    year: withYear ? 'numeric' : undefined,
+  }).format(date);
+}
+
+/** «5 мин. назад», «вчера»: n единиц времени назад (n = 0 — «сейчас») */
+function agoText(n: number, unit: 'second' | 'minute' | 'hour' | 'day', lang: Lang): string {
+  if (lang === 'ka') {
+    if (n === 0 || unit === 'second') return 'ახლა';
+    if (unit === 'minute') return `${n} წთ წინ`;
+    if (unit === 'hour') return `${n} სთ წინ`;
+    if (n === 1) return 'გუშინ';
+    return n === 2 ? 'გუშინწინ' : `${n} დღის წინ`;
+  }
+  return new Intl.RelativeTimeFormat(DATE_LOCALES[lang], {
+    numeric: 'auto',
+    style: 'short',
+  }).format(-n, unit);
+}
+
 /** Дата вида '27 сентября 2026 г.' на языке интерфейса; невалидная строка — '' */
 export function formatDate(iso: string, lang: Lang): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '';
-  return new Intl.DateTimeFormat(DATE_LOCALES[lang], {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }).format(date);
+  return dateText(date, lang, true);
 }
 
 const MINUTE = 60_000;
@@ -58,15 +98,39 @@ function startOfDay(date: Date): number {
 export function timeAgo(iso: string, lang: Lang, now: Date = new Date()): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '';
-  const rtf = new Intl.RelativeTimeFormat(DATE_LOCALES[lang], { numeric: 'auto', style: 'short' });
   // Часы сервера могут спешить — будущее время показываем как «сейчас»
   const diff = Math.max(0, now.getTime() - date.getTime());
-  if (diff < MINUTE) return rtf.format(0, 'second');
-  if (diff < HOUR) return rtf.format(-Math.floor(diff / MINUTE), 'minute');
+  if (diff < MINUTE) return agoText(0, 'second', lang);
+  if (diff < HOUR) return agoText(Math.floor(diff / MINUTE), 'minute', lang);
   const days = Math.round((startOfDay(now) - startOfDay(date)) / DAY);
-  if (days === 0) return rtf.format(-Math.floor(diff / HOUR), 'hour');
-  if (days < 7) return rtf.format(-days, 'day');
+  if (days === 0) return agoText(Math.floor(diff / HOUR), 'hour', lang);
+  if (days < 7) return agoText(days, 'day', lang);
   return formatDate(iso, lang);
+}
+
+/**
+ * Когда объявление опубликовано/обновлено: сегодня от часа и больше — «01:25 ч назад»
+ * (шаблон hoursAgo из словаря), меньше часа и до недели — как timeAgo, старше — «31 августа».
+ * Невалидная строка — ''.
+ */
+export function listingTime(
+  iso: string,
+  lang: Lang,
+  hoursAgo: string,
+  now: Date = new Date(),
+): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  const diff = Math.max(0, now.getTime() - date.getTime());
+  const days = Math.round((startOfDay(now) - startOfDay(date)) / DAY);
+  if (days <= 0 && diff >= HOUR) {
+    const hours = String(Math.floor(diff / HOUR)).padStart(2, '0');
+    const minutes = String(Math.floor((diff % HOUR) / MINUTE)).padStart(2, '0');
+    return fill(hoursAgo, `${hours}:${minutes}`);
+  }
+  if (days < 7) return timeAgo(iso, lang, now);
+  // Год — только если он не текущий: «31 августа», но «31 августа 2025 г.»
+  return dateText(date, lang, date.getFullYear() !== now.getFullYear());
 }
 
 /** Локализованное значение из {ka, ru, en} с фолбэком ka → en → ru; строки возвращаются как есть */

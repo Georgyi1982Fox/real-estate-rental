@@ -15,6 +15,41 @@ export type ListingId = string | number;
 /** Проверка на мошенничество: warning — предупредить; high — скрыто из поиска, открывается по ссылке */
 export type FraudLevel = 'none' | 'warning' | 'high';
 
+/** Удобства со страницы объявления на сайте-источнике (TASK-018) */
+export type FeatureCode =
+  | 'furniture'
+  | 'kitchen_appliances'
+  | 'air_conditioning'
+  | 'heating'
+  | 'hot_water'
+  | 'washing_machine'
+  | 'dishwasher'
+  | 'fridge'
+  | 'tv'
+  | 'internet'
+  | 'gas'
+  | 'elevator'
+  | 'parking'
+  | 'balcony'
+  | 'storage'
+  | 'pool'
+  | 'pets_allowed'
+  | 'security';
+
+export type ConditionCode =
+  | 'newly_renovated'
+  | 'renovated'
+  | 'needs_renovation'
+  | 'under_renovation'
+  | 'white_frame'
+  | 'black_frame'
+  | 'green_frame';
+
+/** Кто сдаёт: собственник (в т. ч. разместил сам через бота) или агентство */
+export type OwnerType = 'owner' | 'agent';
+
+// Подробности объявления: null — сайт не указал, поля может не быть вовсе
+// (объявление ещё не дозагружено) — в обоих случаях строку не показываем
 export interface Listing {
   id: ListingId;
   title: Localized;
@@ -22,15 +57,26 @@ export interface Listing {
   price: number;
   currency: Currency | string;
   rooms: number;
-  bedrooms?: number;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
   area: number;
-  floor?: number;
-  total_floors?: number;
+  floor?: number | null;
+  total_floors?: number | null;
+  condition?: ConditionCode | null;
   deposit?: number;
   district: string;
   city?: string;
+  /** Улица на языках интерфейса; {} — сайт не указал */
   address?: Localized;
-  features?: string[];
+  /** Неизвестные коды не показываем */
+  features?: FeatureCode[];
+  owner_type?: OwnerType | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  /** Опубликовано на сайте-источнике */
+  published_at?: string | null;
+  /** Обновлено на сайте-источнике */
+  updated_at?: string | null;
   owner?: Owner;
   images?: string[];
   rating?: number;

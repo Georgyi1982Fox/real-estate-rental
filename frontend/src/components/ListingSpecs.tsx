@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 import type { Listing } from '../api/types';
-import { featureName } from '../i18n/features';
-import { formatPrice } from '../lib/format';
+import { conditionName } from '../i18n/conditions';
+import { fillVars, formatPrice } from '../lib/format';
 import { useI18n } from '../providers/I18nProvider';
+import ListingAmenities from './ListingAmenities';
 
 interface ListingSpecsProps {
   listing: Listing;
@@ -10,22 +11,26 @@ interface ListingSpecsProps {
 
 function SpecItem({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="listing-specs__item min-w-0 rounded-[var(--radius-md)] bg-[var(--surface-hover)] p-3">
+    <div className="listing-specs__item min-w-0 rounded-[var(--radius-md)] bg-[var(--surface-hover)] px-2.5 py-3 sm:p-3">
       <dt className="text-xs text-[var(--text-secondary)]">{label}</dt>
-      <dd className="mt-1 text-base font-semibold">{children}</dd>
+      {/* На 375px длинное слово («გარემონტებული») крупным шрифтом не помещается в плитку и рвётся */}
+      <dd className="mt-1 break-words text-[13px] font-semibold sm:text-base">{children}</dd>
     </div>
   );
 }
 
-/** Характеристики + удобства. Необязательные поля показываются, только если пришли числом */
+/**
+ * Характеристики + удобства. Необязательные поля показываются, только если сайт их указал:
+ * null, отсутствующее поле и неизвестный код — строки нет.
+ */
 export default function ListingSpecs({ listing }: ListingSpecsProps) {
   const { lang, t } = useI18n();
   const lt = t.listing;
-  // Только известные коды, на языке интерфейса
-  const features = (listing.features ?? []).flatMap((code) => {
-    const name = featureName(code, lang);
-    return name ? [{ code, name }] : [];
-  });
+  const condition = conditionName(listing.condition, lang);
+  const ownerType =
+    listing.owner_type === 'owner' || listing.owner_type === 'agent'
+      ? lt.owner_types[listing.owner_type]
+      : '';
 
   return (
     <section
@@ -40,40 +45,27 @@ export default function ListingSpecs({ listing }: ListingSpecsProps) {
         {typeof listing.bedrooms === 'number' && (
           <SpecItem label={lt.bedrooms}>{listing.bedrooms}</SpecItem>
         )}
+        {typeof listing.bathrooms === 'number' && (
+          <SpecItem label={lt.bathrooms}>{listing.bathrooms}</SpecItem>
+        )}
         <SpecItem label={lt.area}>
           {listing.area} {t.card.sqm}
         </SpecItem>
         {typeof listing.floor === 'number' && (
           <SpecItem label={lt.floor}>
-            {listing.floor}
-            {typeof listing.total_floors === 'number' && ` / ${listing.total_floors}`}
+            {typeof listing.total_floors === 'number'
+              ? fillVars(lt.floor_of, { floor: listing.floor, total: listing.total_floors })
+              : listing.floor}
           </SpecItem>
         )}
+        {condition && <SpecItem label={lt.condition}>{condition}</SpecItem>}
         {typeof listing.deposit === 'number' && (
           <SpecItem label={lt.deposit}>{formatPrice(listing.deposit, listing.currency)}</SpecItem>
         )}
+        {ownerType && <SpecItem label={lt.listed_by}>{ownerType}</SpecItem>}
       </dl>
 
-      {features.length > 0 && (
-        <>
-          <h3 className="pt-2 text-sm font-semibold text-[var(--text-secondary)]">
-            {lt.amenities}
-          </h3>
-          <ul className="listing-specs__features flex list-none flex-wrap gap-2 p-0">
-            {features.map(({ code, name }) => (
-              <li
-                key={code}
-                className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] px-3 py-1.5 text-sm"
-              >
-                <span className="text-[var(--secondary)]" aria-hidden="true">
-                  ✓
-                </span>
-                {name}
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
+      <ListingAmenities codes={listing.features ?? []} />
     </section>
   );
 }

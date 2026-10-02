@@ -7,6 +7,7 @@ import { fraudLevel } from '../lib/fraud';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 import FraudBadge from './FraudBadge';
+import OwnerBadge from './OwnerBadge';
 
 interface ListingCardProps {
   listing: Listing;
@@ -33,6 +34,7 @@ export default function ListingCard({
   const districtEntry = districtNames?.[listing.district];
   const district = districtEntry ? tr(districtEntry, lang) : listing.district;
   const image = listing.images?.[0];
+  const hasFloor = typeof listing.floor === 'number';
 
   return (
     <article
@@ -89,9 +91,12 @@ export default function ListingCard({
                 {title}
               </Link>
             </Heading>
-            <p className="listing-card__price mt-1 text-lg font-bold leading-6 text-[var(--text-primary)]">
-              {formatPrice(listing.price, listing.currency)}
-            </p>
+            <div className="listing-card__price-row mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+              <p className="listing-card__price text-lg font-bold leading-6 text-[var(--text-primary)]">
+                {formatPrice(listing.price, listing.currency)}
+              </p>
+              {listing.owner_type === 'owner' && <OwnerBadge />}
+            </div>
           </div>
 
           <p className="listing-card__district flex items-center gap-2 break-words text-sm text-[var(--text-secondary)]">
@@ -99,7 +104,9 @@ export default function ListingCard({
             <span>{district}</span>
           </p>
 
-          <dl className="listing-card__meta grid grid-cols-2 gap-3 border-t border-[var(--border)] pt-3 text-sm text-[var(--text-secondary)]">
+          <dl
+            className={`listing-card__meta grid gap-3 border-t border-[var(--border)] pt-3 text-sm text-[var(--text-secondary)] ${hasFloor ? 'grid-cols-3' : 'grid-cols-2'}`}
+          >
             <div className="listing-card__meta-item min-w-0">
               <dt className="sr-only">{t.card.rooms}</dt>
               <dd className="break-words">
@@ -107,13 +114,27 @@ export default function ListingCard({
                 {t.card.rooms_unit}
               </dd>
             </div>
-            <div className="listing-card__meta-item min-w-0 text-right">
+            <div
+              className={`listing-card__meta-item min-w-0 ${hasFloor ? 'text-center' : 'text-right'}`}
+            >
               <dt className="sr-only">{t.card.area}</dt>
               <dd className="break-words">
                 <span className="font-medium text-[var(--text-primary)]">{listing.area}</span>{' '}
                 {t.card.sqm}
               </dd>
             </div>
+            {hasFloor && (
+              <div className="listing-card__meta-item min-w-0 text-right">
+                <dt className="sr-only">{t.card.floor}</dt>
+                <dd className="break-words">
+                  <span className="font-medium text-[var(--text-primary)]">
+                    {listing.floor}
+                    {typeof listing.total_floors === 'number' && `/${listing.total_floors}`}
+                  </span>{' '}
+                  {t.card.floor_unit}
+                </dd>
+              </div>
+            )}
           </dl>
         </figcaption>
       </figure>
