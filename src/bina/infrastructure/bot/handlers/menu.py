@@ -61,11 +61,44 @@ async def on_menu(
 ) -> None:
     """Нажатие кнопки главного меню: открывает раздел, как соответствующая команда."""
     message = callback.message
-    if not isinstance(message, Message):
-        await callback.answer()
-        return
     await callback.answer()
-    section = callback_data.section
+    if not isinstance(message, Message):
+        return
+    await open_section(
+        message,
+        callback_data.section,
+        user=user,
+        session=session,
+        settings=settings,
+        plans=plans,
+        bot=bot,
+        state=state,
+        embedder=embedder,
+    )
+
+
+def section_from_start(payload: str | None) -> MenuSection | None:
+    """Раздел из ссылки ``t.me/<бот>?start=<раздел>`` (кнопки сайта, FRONTEND-034)."""
+    try:
+        section = MenuSection((payload or "").strip().lower())
+    except ValueError:
+        return None
+    return None if section in (MenuSection.HOME, MenuSection.ADMIN) else section
+
+
+async def open_section(
+    message: Message,
+    section: MenuSection,
+    *,
+    user: User,
+    session: AsyncSession,
+    settings: BotSettings,
+    plans: dict[str, Plan],
+    bot: Bot,
+    state: FSMContext,
+    embedder: IEmbedder | None = None,
+) -> None:
+    """Открывает раздел главного меню, как соответствующая команда."""
     if section == MenuSection.HOME:
         await state.clear()
         await send_home(message, user, settings)
