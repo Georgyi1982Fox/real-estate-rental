@@ -1,14 +1,12 @@
-import { useI18n } from '../providers/I18nProvider';
-
 interface ContactButtonProps {
+  /** «Написать» или, у объявления хозяина, «Написать хозяину» */
+  label: string;
   onClick: () => void;
   loading: boolean;
 }
 
 /** Кнопка «Написать» для браузера; внутри Telegram её заменяет MainButton (логика — useContact) */
-export default function ContactButton({ onClick, loading }: ContactButtonProps) {
-  const { t } = useI18n();
-
+export default function ContactButton({ label, onClick, loading }: ContactButtonProps) {
   return (
     <button
       type="button"
@@ -22,7 +20,7 @@ export default function ContactButton({ onClick, loading }: ContactButtonProps) 
       ) : (
         <span aria-hidden="true">💬</span>
       )}
-      {t.listing.write}
+      {label}
     </button>
   );
 }

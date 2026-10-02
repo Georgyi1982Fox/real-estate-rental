@@ -38,6 +38,17 @@
   /* Значок «Собственник» (FRONTEND-015) */
   --success-bg: #ecfdf5;
   --success-text: #065f46;
+
+  /* Иконки главного меню (FRONTEND-034): у каждой группы плиток свой цвет */
+  --tone-search: #5f7358;
+  --tone-daily: #c2410c;
+  --tone-owner: #2563eb;
+  --tone-benefit: #b45309;
+  --tone-housing: #7c3aed;
+  --tone-more: #64748b;
+
+  /* Высота нижней панели вкладок без safe-area */
+  --bottom-nav-height: 3.5rem;
 }
 
 :root {
@@ -89,6 +100,12 @@
     --danger-text: #fecaca;
     --success-bg: rgba(16, 185, 129, 0.16);
     --success-text: #a7f3d0;
+    --tone-search: #a7c49d;
+    --tone-daily: #fdba74;
+    --tone-owner: #93c5fd;
+    --tone-benefit: #fcd34d;
+    --tone-housing: #c4b5fd;
+    --tone-more: #cbd5e1;
   }
 }
 
@@ -108,4 +125,10 @@
   --danger-text: #fecaca;
   --success-bg: rgba(16, 185, 129, 0.16);
   --success-text: #a7f3d0;
+  --tone-search: #a7c49d;
+  --tone-daily: #fdba74;
+  --tone-owner: #93c5fd;
+  --tone-benefit: #fcd34d;
+  --tone-housing: #c4b5fd;
+  --tone-more: #cbd5e1;
 }

@@ -50,7 +50,7 @@ export default function SavedSearchCard({
       aria-labelledby={titleId}
     >
       <Link
-        to={query ? `/?${query}` : '/'}
+        to={query ? `/search?${query}` : '/search'}
         className="saved-search__open flex items-start gap-3 p-4 hover:bg-[var(--surface-hover)]"
         onClick={() => {
           haptic('light');

@@ -44,7 +44,7 @@ export default function FavoritesPage() {
       {isEmpty && (
         <EmptyState icon="♡" title={ft.empty_title} text={ft.empty_text}>
           <Link
-            to="/"
+            to="/search"
             className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-md)] bg-[var(--primary)] px-5 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--primary-hover)] active:scale-[.98]"
           >
             {ft.find}

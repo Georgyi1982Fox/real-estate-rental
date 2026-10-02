@@ -92,7 +92,7 @@ export default function SavedSearchesPage() {
     content = (
       <EmptyState icon="🔔" title={st.empty_title}>
         <Link
-          to="/"
+          to="/search"
           className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-md)] bg-[var(--primary)] px-5 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--primary-hover)] active:scale-[.98]"
         >
           {st.to_search}

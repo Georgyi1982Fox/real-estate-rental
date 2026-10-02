@@ -40,7 +40,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={showToast}>
       {children}
       <section
-        className="toast-region pointer-events-none fixed inset-x-4 bottom-[calc(1rem+var(--safe-bottom))] z-50 mx-auto max-w-md"
+        className="toast-region pointer-events-none fixed inset-x-4 bottom-[calc(1rem+var(--safe-bottom)+var(--toast-offset,0px))] z-50 mx-auto max-w-md"
         aria-live="polite"
       >
         {toasts.map((toast) => (
