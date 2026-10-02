@@ -5,6 +5,7 @@ from decimal import Decimal
 from html import escape
 
 from bina.application.fraud import FraudLevel, fraud_level
+from bina.application.photo_analysis import level_label
 from bina.application.promotion import is_promoted
 from bina.application.rent_period import DAILY
 from bina.infrastructure.bot.texts import t
@@ -83,6 +84,9 @@ def format_listing(listing: Listing, index: int, language: str) -> str:
     ]
     if listing.is_verified:
         details.append("✅")
+    # TASK-114: ремонт по фото (AI)
+    if repair := level_label(listing.repair_level, language):
+        details.append(f"🛠 {repair}")
     # TASK-097: оплачено продвижение
     if is_promoted(listing.promoted_until, datetime.now(UTC)):
         details.append("🔥")

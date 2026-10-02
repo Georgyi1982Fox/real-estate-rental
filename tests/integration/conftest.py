@@ -56,6 +56,7 @@ MIGRATIONS = (
     "listing_generated_titles",
     "chat_viewings",
     "promotion_verification",
+    "photo_reports",
 )
 
 

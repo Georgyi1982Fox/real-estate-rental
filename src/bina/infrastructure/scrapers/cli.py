@@ -13,6 +13,7 @@ import structlog
 from bina.application.health_monitor import Alert, HealthMonitor
 from bina.application.ports.embeddings import EmbeddingsError
 from bina.application.ports.scraper import BaseScraper
+from bina.application.use_cases.analyze_photos import AnalyzePhotosUseCase, PhotoStats
 from bina.application.use_cases.check_fraud import CheckFraudUseCase, FraudStats
 from bina.application.use_cases.embed_listings import EmbedListingsUseCase, EmbedStats
 from bina.application.use_cases.find_duplicates import DuplicateStats, FindDuplicatesUseCase
@@ -41,11 +42,16 @@ from bina.infrastructure.db.repositories.notifications import (
     NotificationsRepository,
     SavedSearchesRepository,
 )
+from bina.infrastructure.db.repositories.photo_reports import PhotoReportsRepository
 from bina.infrastructure.db.repositories.users import UsersRepository
 from bina.infrastructure.db.session.manager import DatabaseManager
 from bina.infrastructure.llm.fraud_analyzer import LLMFraudAnalyzer
 from bina.infrastructure.llm.listing_extractor import LLMListingExtractor
 from bina.infrastructure.llm.llm_factory import LLMFactory, embeddings_configured
+from bina.infrastructure.llm.photo_analyzer import (
+    create_photo_analyzer,
+    photo_analysis_configured,
+)
 from bina.infrastructure.llm.translator import LLMTranslator
 from bina.infrastructure.scrapers.backfill import BackfillStats, DetailsSource, backfill_details
 from bina.infrastructure.scrapers.korter_scraper import KorterScraper
@@ -404,6 +410,42 @@ def _echo_embed(stats: EmbedStats) -> None:
     )
 
 
+# TASK-114: сколько объявлений разбирать по фото за запуск (PHOTO_ANALYSIS_LIMIT, 0 — выключено)
+DEFAULT_PHOTO_LIMIT = 50
+
+
+def photo_limit() -> int:
+    raw = os.getenv("PHOTO_ANALYSIS_LIMIT", "").strip()
+    try:
+        return max(int(raw), 0) if raw else DEFAULT_PHOTO_LIMIT
+    except ValueError:
+        return DEFAULT_PHOTO_LIMIT
+
+
+async def analyze_photos(limit: int) -> PhotoStats:
+    """AI-разбор фото новых объявлений: ремонт и видимые дефекты (TASK-114)."""
+    db = DatabaseManager()
+    analyzer = create_photo_analyzer()
+    try:
+        async with db.session_factory() as session:
+            use_case = AnalyzePhotosUseCase(
+                PhotoReportsRepository(session),
+                analyzer,
+                model=analyzer.model,
+                after_save=session.commit,
+            )
+            stats = await use_case.execute(limit)
+            await session.commit()
+        return stats
+    finally:
+        await analyzer.close()
+        await db.dispose()
+
+
+def _echo_photos(stats: PhotoStats) -> None:
+    click.echo(f"фото: разобрано объявлений {stats.analyzed}, отложено {stats.failed}")
+
+
 def _echo_geocode(stats: GeocodeStats) -> None:
     click.echo(
         f"карта: проверено адресов {stats.checked}, на карте {stats.found}, ошибок {stats.failed}"
@@ -629,6 +671,17 @@ def geocode_command(limit: int) -> None:
     _echo_geocode(asyncio.run(geocode(limit)))
 
 
+@cli.command(name="photos")
+@click.option(
+    "--limit", default=DEFAULT_PHOTO_LIMIT, show_default=True, type=click.IntRange(1, 5000)
+)
+def photos_command(limit: int) -> None:
+    """AI-разбор фото объявлений: ремонт и дефекты (ключ — LLM_API_KEY)."""
+    if not photo_analysis_configured():
+        raise click.UsageError("Нужен LLM_API_KEY")
+    _echo_photos(asyncio.run(analyze_photos(limit)))
+
+
 @cli.command(name="embeddings")
 @click.option("--limit", default=EMBED_BATCH, show_default=True, type=click.IntRange(1, 20000))
 def embeddings_command(limit: int) -> None:
@@ -772,6 +825,11 @@ def schedule(
             await step("translate", translate_step)
             # До уведомлений: подозрительные объявления не должны в них попасть
             await step("fraud", fraud_step)
+            # TASK-114: ремонт и дефекты по фото (до уведомлений — значок уже в них)
+            if photo_limit():
+                await step(
+                    "photos", lambda: _echo_async(_echo_photos, analyze_photos(photo_limit()))
+                )
         # После перевода: в отпечаток идёт английский текст (TASK-012)
         if embeddings_configured():
             await step("embeddings", lambda: _echo_async(_echo_embed, embed(EMBED_BATCH)))

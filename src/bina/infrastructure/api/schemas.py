@@ -12,6 +12,7 @@ from bina.application.fraud import fraud_level
 from bina.application.listing_details import CONDITIONS, FEATURES, clean_features
 from bina.application.localization import localize_address, localize_name
 from bina.application.owner_listings import MIN_DESCRIPTION
+from bina.application.photo_analysis import REPAIR_LEVELS
 from bina.application.price_analysis import PriceAnalysis, PriceLevel
 from bina.application.promotion import is_promoted
 from bina.application.referrals import FRIEND_DISCOUNT_PERCENT
@@ -27,6 +28,10 @@ Localized = dict[str, str]
 CityCode = Literal["tbilisi", "batumi"]
 # Вид аренды (bina.application.rent_period, TASK-092)
 RentPeriod = Literal["monthly", "daily"]
+
+
+def _repair_level(value: str | None) -> Any:
+    return value if value in REPAIR_LEVELS else None
 
 
 def _rent_period(value: str | None) -> RentPeriod:
@@ -53,6 +58,9 @@ class ListingOut(BaseModel):
     area: float
     district: UUID = Field(description="ID района, название — в GET /api/districts")
     is_verified: bool
+    repair_level: Literal["excellent", "good", "needs_repair"] | None = Field(
+        default=None, description="Ремонт по фото (AI, TASK-114); None — фото ещё не разобраны"
+    )
     is_promoted: bool = Field(default=False, description="Оплачено продвижение «🔥 Топ» (TASK-097)")
     images: list[str] = Field(default_factory=list)
     has_phone: bool = Field(
@@ -106,6 +114,7 @@ class ListingOut(BaseModel):
             area=float(listing.area),
             district=listing.district_id,
             is_verified=listing.is_verified,
+            repair_level=_repair_level(listing.repair_level),
             is_promoted=is_promoted(listing.promoted_until, datetime.now(UTC)),
             images=list(listing.images or []),
             has_phone=bool(listing.phone),

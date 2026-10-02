@@ -120,6 +120,9 @@ class Listing(Base, SoftDeleteMixin):
         default=0,
         nullable=False,
     )
+    # TASK-114: уровень ремонта по фото (AI) — excellent / good / needs_repair; разбор —
+    # bina_photo_reports
+    repair_level: Mapped[str | None] = mapped_column(String(16), nullable=True)
     # TASK-097: платное продвижение — до этого времени объявление вверху поиска («🔥 Топ»)
     promoted_until: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True, index=True
