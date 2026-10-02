@@ -256,6 +256,14 @@ export function useUnreadNotifications(): number {
   return isAuthenticated ? count : 0;
 }
 
+/**
+ * То же число без своих запросов — для плитки главного меню: счётчик уже обновляет
+ * шапка (useUnreadNotifications), она есть на каждой странице.
+ */
+export function useUnreadCount(): number {
+  return useSyncExternalStore(subscribe, getSnapshot);
+}
+
 /* ---------- лента для страницы /notifications ---------- */
 
 interface FeedState {

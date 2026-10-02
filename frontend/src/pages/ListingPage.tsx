@@ -1,5 +1,6 @@
 import { Link, useParams } from 'react-router-dom';
 import type { ListResponse, Listing } from '../api/types';
+import BookViewingButton from '../components/BookViewingButton';
 import ContactButton from '../components/ContactButton';
 import ErrorState from '../components/ErrorState';
 import ExternalLink from '../components/ExternalLink';
@@ -40,12 +41,18 @@ export default function ListingPage() {
     listingId !== null ? `/api/listings/${listingId}/similar` : null,
   );
 
-  useTelegramBackButton('/');
+  useTelegramBackButton('/search');
+
+  // Хозяин разместил объявление сам: source_url — переписка с ним в боте (с AI-переводом),
+  // а не сайт-источник
+  const byOwner = listing?.source === 'owner';
+  const writeLabel = byOwner ? lt.write_owner : lt.write;
+  const chatUrl = byOwner ? (listing?.source_url ?? '') : '';
 
   // «Написать»: в Telegram — нативная MainButton внизу экрана, в браузере — обычная кнопка
   const { contact, loading: contactLoading } = useContact(listing?.id ?? null, listing?.source_url);
   const nativeContact = useTelegramMainButton({
-    text: lt.write,
+    text: writeLabel,
     onClick: contact,
     visible: Boolean(listing),
     loading: contactLoading,
@@ -53,7 +60,12 @@ export default function ListingPage() {
 
   const title = listing ? tr(listing.title, lang) : '';
   // Сайт-источник для ссылки «Открыть на …»: myhome.ge, home.ss.ge → ss.ge
-  const sourceSite = listing?.source_url ? siteName(listing.source_url) : '';
+  const sourceSite = listing?.source_url && !byOwner ? siteName(listing.source_url) : '';
+  // Кнопки связи: «Написать» (в браузере), «На просмотр», телефон, избранное.
+  // Три — в один ряд на планшете, иначе по две
+  const contactButtons = [!nativeContact, Boolean(chatUrl), listing?.has_phone, true].filter(
+    Boolean,
+  ).length;
   useDocumentTitle(title ? `${title} — Bina.ai` : 'Bina.ai');
 
   if (listingId === null || error?.isNotFound) return <NotFoundPage />;
@@ -68,7 +80,7 @@ export default function ListingPage() {
     <>
       <nav className="listing-page__breadcrumb mb-4" aria-label={lt.back}>
         <Link
-          to="/"
+          to="/search"
           className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
         >
           <span aria-hidden="true">←</span> {lt.back}
@@ -145,14 +157,23 @@ export default function ListingPage() {
                 <FraudWarning level={fraudLevel(listing)} reasons={listing.fraud_reasons ?? []} />
 
                 <section
-                  className={`listing-contact grid grid-cols-1 gap-3 lg:grid-cols-1 ${nativeContact ? 'sm:grid-cols-2' : 'sm:grid-cols-3'}`}
+                  className={`listing-contact grid grid-cols-1 gap-3 lg:grid-cols-1 ${contactButtons === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}
                   aria-label={lt.contact}
                 >
-                  {!nativeContact && <ContactButton onClick={contact} loading={contactLoading} />}
+                  {!nativeContact && (
+                    <ContactButton label={writeLabel} onClick={contact} loading={contactLoading} />
+                  )}
+                  {chatUrl && <BookViewingButton href={chatUrl} />}
                   {/* Кнопка телефона — только если он есть: иначе «Написать» ведёт на сайт-источник */}
                   {listing.has_phone && <PhoneReveal listingId={listing.id} />}
                   <FavoriteButton listingId={listing.id} />
                 </section>
+
+                {chatUrl && (
+                  <p className="listing-contact__hint m-0 text-xs text-[var(--text-secondary)]">
+                    {lt.translate_hint}
+                  </p>
+                )}
 
                 {listing.source_url && sourceSite && (
                   <p className="listing-source m-0 text-sm text-[var(--text-secondary)]">

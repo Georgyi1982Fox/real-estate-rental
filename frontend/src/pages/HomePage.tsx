@@ -1,127 +1,83 @@
-import { useCallback, useState } from 'react';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import type { ListingsPage } from '../api/types';
 import EmptyState from '../components/EmptyState';
 import ErrorState from '../components/ErrorState';
-import FilterButton from '../components/FilterButton';
-import FilterChips from '../components/FilterChips';
-import FilterModal from '../components/FilterModal';
-import Icon from '../components/Icon';
+import HubMenu from '../components/HubMenu';
 import ListingCard from '../components/ListingCard';
-import Pagination from '../components/Pagination';
-import SaveSearchButton from '../components/SaveSearchButton';
 import SearchBar from '../components/SearchBar';
 import Skeleton from '../components/Skeleton';
 import { useApi } from '../hooks/useApi';
 import { useDistricts } from '../hooks/useDistricts';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
-import { useSearchFilters } from '../hooks/useSearchFilters';
 import { fill } from '../lib/format';
-import { countFilters, filterDistricts, hasFilters, searchToQuery } from '../lib/searchFilters';
-import { haptic } from '../lib/telegram';
+import { FILTER_KEYS, QUERY_KEY } from '../lib/searchFilters';
+import { useAuth } from '../providers/AuthProvider';
 import { useI18n } from '../providers/I18nProvider';
 
-const LISTINGS_PER_PAGE = 6;
-const SKELETON_COUNT = 4;
-const GRID_CLASS = 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
-const PRIMARY_BUTTON_CLASS =
-  'inline-flex min-h-11 items-center justify-center rounded-[var(--radius-md)] bg-[var(--primary)] px-5 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--primary-hover)] active:scale-[.98]';
+const NEW_LISTINGS_COUNT = 6;
+const SKELETON_COUNT = 3;
+const GRID_CLASS = 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3';
+const NO_DISTRICTS: string[] = [];
 
+/** Параметры ленты: раньше она жила на «/», старые ссылки (?district=…&q=…) ведут в /search */
+const SEARCH_PARAMS = [...FILTER_KEYS, QUERY_KEY, 'page'];
+
+/** Главный экран-«хаб»: приветствие, поиск, меню всех разделов и новые объявления */
 export default function HomePage() {
   const { t } = useI18n();
-  const ht = t.home;
-  const {
-    filters,
-    query,
-    page,
-    setFilters,
-    replaceFilters,
-    resetFilters,
-    setQuery,
-    addDistrict,
-    setPage,
-  } = useSearchFilters();
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  // Стабильная ссылка: Modal перезапускает эффект (фокус) при смене onClose
-  const closeFilters = useCallback(() => setFiltersOpen(false), []);
-  const searchQuery = searchToQuery(filters, query);
-  const { data, error, loading, reload } = useApi<ListingsPage>(
-    `/api/listings?page=${page}&per_page=${LISTINGS_PER_PAGE}${searchQuery ? `&${searchQuery}` : ''}`,
-  );
+  const ht = t.hub;
+  const { user } = useAuth();
+  const { search } = useLocation();
+  const navigate = useNavigate();
   const { districts, names } = useDistricts();
-  const filtered = hasFilters(filters);
-  // Есть что сбрасывать: фильтры или текст поиска
-  const narrowed = filtered || query !== '';
+  const { data, error, loading, reload } = useApi<ListingsPage>(
+    `/api/listings?page=1&per_page=${NEW_LISTINGS_COUNT}`,
+  );
 
   useDocumentTitle(`Bina.ai — ${ht.page_title}`);
 
-  const changePage = (next: number) => {
-    setPage(next);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const params = new URLSearchParams(search);
+  if (SEARCH_PARAMS.some((key) => params.has(key))) {
+    return <Navigate to={`/search${search}`} replace />;
+  }
+
+  const name = user?.first_name.trim() ?? '';
 
   return (
-    <section className="home space-y-6" aria-labelledby="home-title">
-      <header className="home__hero space-y-2 py-4 sm:py-8">
-        <p className="text-sm font-medium text-[var(--primary)]">Bina.ai</p>
-        <h1 id="home-title" className="max-w-2xl text-3xl font-bold tracking-tight sm:text-4xl">
-          {ht.heading}
+    <section className="home flex flex-col gap-6" aria-labelledby="home-title">
+      <header className="home__hero flex flex-col gap-4 pt-2 sm:pt-4">
+        <h1 id="home-title" className="text-2xl font-bold tracking-tight sm:text-3xl">
+          {name ? fill(ht.greeting, name) : ht.greeting_guest}
         </h1>
-        <p className="max-w-2xl text-sm leading-6 text-[var(--text-secondary)] sm:text-base">
-          {ht.subtitle}
-        </p>
+        {/* Поиск с главной открывает ленту /search с этим запросом или районом */}
+        <SearchBar
+          query=""
+          districts={districts}
+          selectedDistricts={NO_DISTRICTS}
+          onSearch={(text) => {
+            if (text) navigate(`/search?${new URLSearchParams({ [QUERY_KEY]: text })}`);
+          }}
+          onSelectDistrict={(id) => navigate(`/search?${new URLSearchParams({ district: id })}`)}
+        />
       </header>
 
-      <section className="home__filters flex flex-col gap-4" aria-label={ht.filters}>
-        <SearchBar
-          query={query}
-          districts={districts}
-          selectedDistricts={filterDistricts(filters)}
-          onSearch={setQuery}
-          onSelectDistrict={addDistrict}
-        >
-          <FilterButton count={countFilters(filters)} onClick={() => setFiltersOpen(true)} />
-        </SearchBar>
-        <FilterChips filters={filters} districtNames={names} onRemove={setFilters} />
-        <div className="home__filter-actions flex flex-wrap items-center gap-3">
-          <SaveSearchButton filters={filters} />
-          {narrowed && (
-            <button
-              type="button"
-              className="home__reset inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-md)] px-3 py-2.5 text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] active:scale-[.98]"
-              onClick={() => {
-                haptic('light');
-                resetFilters();
-              }}
-            >
-              <Icon name="close" className="size-4" />
-              {ht.reset_filters}
-            </button>
-          )}
-        </div>
-        <FilterModal
-          open={filtersOpen}
-          onClose={closeFilters}
-          filters={filters}
-          query={query}
-          districts={districts}
-          onApply={replaceFilters}
-        />
-      </section>
+      <HubMenu />
 
       <section
-        className="home__listings space-y-6"
+        className="home__listings flex flex-col gap-4"
         aria-labelledby="home-listings-title"
         aria-busy={loading}
       >
         <header className="flex items-baseline justify-between gap-3">
           <h2 id="home-listings-title" className="text-xl font-bold tracking-tight">
-            {narrowed ? ht.results : ht.featured}
+            {ht.new_listings}
           </h2>
-          {data && (
-            <span className="text-sm text-[var(--text-secondary)]">
-              {fill(ht.count, data.total)}
-            </span>
-          )}
+          <Link
+            to="/search"
+            className="home__see-all rounded-[var(--radius-sm)] text-sm font-semibold text-[var(--text-primary)] underline underline-offset-2 hover:text-[var(--text-secondary)]"
+          >
+            {ht.see_all}
+          </Link>
         </header>
 
         {loading && (
@@ -134,57 +90,21 @@ export default function HomePage() {
 
         {error && <ErrorState onRetry={reload} />}
 
-        {data && data.items.length === 0 && query && (
-          <EmptyState
-            icon="🔍"
-            title={fill(ht.search_empty_title, query)}
-            text={ht.search_empty_text}
-          >
-            {/* Убирает только текст поиска: фильтры остаются */}
-            <button
-              type="button"
-              className={PRIMARY_BUTTON_CLASS}
-              onClick={() => {
-                haptic('light');
-                setQuery('');
-              }}
-            >
-              {ht.search_reset}
-            </button>
-          </EmptyState>
-        )}
-
-        {data && data.items.length === 0 && !query && (
-          <EmptyState title={ht.empty_title} text={ht.empty_text}>
-            {filtered && (
-              <button
-                type="button"
-                className={PRIMARY_BUTTON_CLASS}
-                onClick={() => {
-                  haptic('light');
-                  resetFilters();
-                }}
-              >
-                {ht.reset_filters}
-              </button>
-            )}
-          </EmptyState>
+        {data && data.items.length === 0 && (
+          <EmptyState title={t.home.empty_title} text={t.home.empty_text} />
         )}
 
         {data && data.items.length > 0 && (
-          <>
-            <div className={GRID_CLASS}>
-              {data.items.map((listing) => (
-                <ListingCard
-                  key={listing.id}
-                  listing={listing}
-                  districtNames={names}
-                  headingLevel="h3"
-                />
-              ))}
-            </div>
-            <Pagination current={data.page} total={data.pages} onChange={changePage} />
-          </>
+          <div className={GRID_CLASS}>
+            {data.items.map((listing) => (
+              <ListingCard
+                key={listing.id}
+                listing={listing}
+                districtNames={names}
+                headingLevel="h3"
+              />
+            ))}
+          </div>
         )}
       </section>
     </section>
