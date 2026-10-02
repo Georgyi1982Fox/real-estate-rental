@@ -33,6 +33,7 @@ from bina.infrastructure.api.routes import (
     me,
     my_listings,
     notifications,
+    photo_report,
     referral,
     searches,
     subscription,
@@ -90,6 +91,7 @@ def create_app(
     app.include_router(compare.router)
     app.include_router(listings.router)
     app.include_router(assistant.router)
+    app.include_router(photo_report.router)
     app.include_router(contract.router)
     app.include_router(acceptance.router)
     app.include_router(costs.router)

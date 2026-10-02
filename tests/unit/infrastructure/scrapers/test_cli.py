@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock
 import pytest
 from click.testing import CliRunner
 
+from bina.application.use_cases.analyze_photos import PhotoStats
 from bina.application.use_cases.check_fraud import FraudStats
 from bina.application.use_cases.embed_listings import EmbedStats
 from bina.application.use_cases.find_duplicates import DuplicateStats
@@ -122,6 +123,10 @@ def run_schedule(monkeypatch: pytest.MonkeyPatch, args: list[str]) -> Any:
         monkeypatch.setattr(scrape_cli, "send_owner_alerts", AsyncMock(return_value=None))
     if not isinstance(getattr(scrape_cli, "embed"), AsyncMock):
         monkeypatch.setattr(scrape_cli, "embed", AsyncMock(return_value=NO_EMBED))
+    if not isinstance(getattr(scrape_cli, "analyze_photos"), AsyncMock):
+        monkeypatch.setattr(
+            scrape_cli, "analyze_photos", AsyncMock(return_value=PhotoStats(analyzed=0, failed=0))
+        )
     if not isinstance(getattr(scrape_cli, "check_fraud"), AsyncMock):
         monkeypatch.setattr(scrape_cli, "check_fraud", AsyncMock(return_value=NO_FRAUD))
     return CliRunner().invoke(scrape_cli.cli, ["schedule", *args])
