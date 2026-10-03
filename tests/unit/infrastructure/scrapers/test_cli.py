@@ -1,5 +1,7 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import UTC, date, datetime
+from decimal import Decimal
 from pathlib import Path
 from typing import Any, ClassVar
 from unittest.mock import AsyncMock
@@ -7,6 +9,7 @@ from unittest.mock import AsyncMock
 import pytest
 from click.testing import CliRunner
 
+from bina.application.daily_report import DailyReport
 from bina.application.use_cases.analyze_photos import PhotoStats
 from bina.application.use_cases.check_fraud import FraudStats
 from bina.application.use_cases.embed_listings import EmbedStats
@@ -129,6 +132,8 @@ def run_schedule(monkeypatch: pytest.MonkeyPatch, args: list[str]) -> Any:
         monkeypatch.setattr(
             scrape_cli, "analyze_photos", AsyncMock(return_value=PhotoStats(analyzed=0, failed=0))
         )
+    if not isinstance(getattr(scrape_cli, "daily_report"), AsyncMock):
+        monkeypatch.setattr(scrape_cli, "daily_report", AsyncMock(return_value=False))
     if not isinstance(getattr(scrape_cli, "check_fraud"), AsyncMock):
         monkeypatch.setattr(scrape_cli, "check_fraud", AsyncMock(return_value=NO_FRAUD))
     return CliRunner().invoke(scrape_cli.cli, ["schedule", *args])
@@ -504,6 +509,50 @@ async def test_owner_alerts_need_token_and_admins(monkeypatch: pytest.MonkeyPatc
     monkeypatch.setenv("BOT_TOKEN", "1:x")
     # Без владельца — ничего не отправляется и база не нужна
     await scrape_cli.send_owner_alerts([Alert("alert_api_ok", {})])
+
+
+def test_schedule_sends_daily_report(monkeypatch: pytest.MonkeyPatch) -> None:
+    """TASK-041: каждый запуск спрашивает, не пора ли прислать отчёт за сутки."""
+    report = AsyncMock(return_value=True)
+    monkeypatch.setattr(scrape_cli, "daily_report", report)
+
+    result = run_schedule(monkeypatch, [])
+
+    assert result.exit_code == 0, result.output
+    report.assert_awaited_once()
+    assert "Ежедневный отчёт отправлен" in result.output
+
+
+async def test_daily_report_needs_token_and_admins(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("ADMIN_TELEGRAM_IDS", raising=False)
+    monkeypatch.setenv("BOT_TOKEN", "1:x")
+    # Без владельца — ничего не отправляется и база не нужна
+    assert not await scrape_cli.daily_report(datetime.now(UTC), force=True)
+
+
+@pytest.mark.parametrize("language", ["ru", "en", "ka"])
+def test_daily_report_text(language: str) -> None:
+    report = DailyReport(
+        users=120,
+        users_new=7,
+        listings=5400,
+        listings_new=310,
+        owner_listings_new=4,
+        agencies=3,
+        agencies_new=1,
+        chats_new=9,
+        viewings_new=2,
+        verifications_pending=1,
+        open_complaints=5,
+        payments=2,
+        stars=Decimal(250),
+        premium=6,
+        ai_requests=48,
+    )
+    text = scrape_cli.render_daily_report(language, date(2026, 10, 3), report)
+    assert "03.10.2026" in text
+    for number in ("120", "+7", "5400", "+310", "250 ⭐", "48"):
+        assert number in text
 
 
 def test_schedule_computes_embeddings_when_ai_configured(

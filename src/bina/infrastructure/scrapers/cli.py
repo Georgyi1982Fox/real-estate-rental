@@ -3,16 +3,18 @@
 import asyncio
 import os
 from collections.abc import Awaitable, Callable
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 import click
 import structlog
 
+from bina.application.daily_report import DailyReport, report_day
 from bina.application.health_monitor import Alert, HealthMonitor
 from bina.application.ports.embeddings import EmbeddingsError
 from bina.application.ports.scraper import BaseScraper
+from bina.application.rent_reminders import TBILISI
 from bina.application.use_cases.agencies import run_bumps
 from bina.application.use_cases.analyze_photos import AnalyzePhotosUseCase, PhotoStats
 from bina.application.use_cases.check_fraud import CheckFraudUseCase, FraudStats
@@ -38,6 +40,7 @@ from bina.application.use_cases.translate_listings import (
     TranslationStats,
 )
 from bina.infrastructure.db.locks import FRAUD_LOCK, TRANSLATE_LOCK, advisory_lock
+from bina.infrastructure.db.repositories.admin import AdminRepository
 from bina.infrastructure.db.repositories.agencies import AgenciesRepository
 from bina.infrastructure.db.repositories.listings import ListingsRepository
 from bina.infrastructure.db.repositories.notifications import (
@@ -456,6 +459,11 @@ async def bump_listings() -> int:
         await db.dispose()
 
 
+def _echo_report(sent: bool) -> None:
+    if sent:
+        click.echo("Ежедневный отчёт отправлен владельцу")
+
+
 def _echo_bumps(bumped: int) -> None:
     click.echo(f"premium-объявления: поднято {bumped}")
 
@@ -724,6 +732,14 @@ def premium_reminders_command() -> None:
     _echo_premium(asyncio.run(premium_reminders()))
 
 
+@cli.command(name="daily-report")
+def daily_report_command() -> None:
+    """Прислать ежедневный отчёт владельцу прямо сейчас (TASK-041)."""
+    if not asyncio.run(daily_report(datetime.now(UTC), force=True)):
+        raise click.ClickException("Не задан BOT_TOKEN или ADMIN_TELEGRAM_IDS")
+    click.echo("Отчёт отправлен")
+
+
 @cli.command(name="fraud")
 @click.option("--limit", default=50, show_default=True, type=click.IntRange(1, 5000))
 def fraud_command(limit: int) -> None:
@@ -858,6 +874,8 @@ def schedule(
         await step("notify", notify_step)
         monitor.api_health(await check_api_health(), datetime.now(UTC))
         await send_owner_alerts(monitor.collect())
+        # TASK-041: раз в день — сводка владельцу
+        await step("report", lambda: _echo_async(_echo_report, daily_report(datetime.now(UTC))))
 
     async def run() -> None:
         scheduler = ScraperScheduler(job, interval_hours=interval)
@@ -895,13 +913,71 @@ async def check_api_health() -> str | None:
 
 async def send_owner_alerts(alerts: list[Alert]) -> None:
     """Написать владельцу (``ADMIN_TELEGRAM_IDS``) в Telegram на его языке."""
+    if not alerts:
+        return
+    from bina.infrastructure.bot.texts import t
+
+    await _send_to_admins(
+        lambda language: "\n\n".join(t(language, a.text, **a.params) for a in alerts)
+    )
+
+
+async def daily_report(now: datetime, *, force: bool = False) -> bool:
+    """Ежедневный отчёт владельцу (TASK-041): раз в день после ``DAILY_REPORT_HOUR``.
+
+    ``force`` — отправить сейчас, не глядя на час и на то, отправлен ли уже. ``True`` — отправлен.
+    """
+    if not os.getenv("BOT_TOKEN", "").strip() or not _admin_ids():
+        return False
+    day = now.astimezone(TBILISI).date() if force else report_day(now)
+    if day is None:
+        return False
+    db = DatabaseManager()
+    try:
+        async with db.session_factory() as session:
+            admin = AdminRepository(session)
+            if not force and not await admin.claim_daily_report(day):
+                return False
+            report = await admin.daily(now)
+            await session.commit()
+    finally:
+        await db.dispose()
+    await _send_to_admins(lambda language: render_daily_report(language, day, report))
+    return True
+
+
+def render_daily_report(language: str, day: date, report: DailyReport) -> str:
+    from bina.infrastructure.bot.texts import t
+
+    return t(
+        language,
+        "daily_report",
+        day=f"{day:%d.%m.%Y}",
+        users=report.users,
+        users_new=report.users_new,
+        listings=report.listings,
+        listings_new=report.listings_new,
+        owner_listings_new=report.owner_listings_new,
+        agencies=report.agencies,
+        agencies_new=report.agencies_new,
+        chats_new=report.chats_new,
+        viewings_new=report.viewings_new,
+        payments=report.payments,
+        stars=f"{report.stars:.0f}",
+        premium=report.premium,
+        ai_requests=report.ai_requests,
+        complaints=report.open_complaints,
+        verifications=report.verifications_pending,
+    )
+
+
+async def _send_to_admins(render: Callable[[str], str]) -> None:
+    """Отправить каждому админу текст на его языке; сбой отправки не роняет расписание."""
     token = os.getenv("BOT_TOKEN", "").strip()
     admin_ids = _admin_ids()
-    if not alerts or not token or not admin_ids:
+    if not token or not admin_ids:
         return
     from aiogram import Bot
-
-    from bina.infrastructure.bot.texts import t
 
     db = DatabaseManager()
     bot = Bot(token=token, default=_bot_defaults())
@@ -909,12 +985,12 @@ async def send_owner_alerts(alerts: list[Alert]) -> None:
         async with db.session_factory() as session:
             languages = await UsersRepository(session).languages_by_telegram_ids(admin_ids)
         for admin_id in admin_ids:
-            language = languages.get(admin_id, "ru")
-            text = "\n\n".join(t(language, alert.text, **alert.params) for alert in alerts)
             try:
-                await bot.send_message(admin_id, text, parse_mode=None)
+                await bot.send_message(
+                    admin_id, render(languages.get(admin_id, "ru")), parse_mode=None
+                )
             except Exception as exc:  # noqa: BLE001 - сообщение владельцу не должно ронять расписание
-                logger.warning("Owner alert not sent", admin_id=admin_id, error=str(exc))
+                logger.warning("Owner message not sent", admin_id=admin_id, error=str(exc))
     finally:
         await bot.session.close()
         await db.dispose()

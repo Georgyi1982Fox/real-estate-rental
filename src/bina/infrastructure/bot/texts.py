@@ -551,6 +551,19 @@ _RU: dict[str, str] = {
     "owner_bad_location": "Эта точка не в Грузии. Отправьте точку квартиры или напишите адрес.",
     "owner_bad_address": "Напишите адрес: улицу и номер дома (от 3 до 150 знаков).",
     "owner_location_point": "точка на карте",
+    "daily_report": (
+        "📊 Bina.ai — отчёт за сутки ({day})\n"
+        "\n"
+        "👤 Пользователей: {users} (+{users_new})\n"
+        "🏠 Объявлений в поиске: {listings} (+{listings_new})\n"
+        "🏡 Новых от хозяев и риелторов: {owner_listings_new}\n"
+        "🏢 Агентств: {agencies} (+{agencies_new})\n"
+        "💬 Новых чатов: {chats_new} · 📅 заявок на просмотр: {viewings_new}\n"
+        "💰 Оплат: {payments} на {stars} ⭐ · Premium сейчас: {premium}\n"
+        "🤖 Запросов к AI-помощнику: {ai_requests}\n"
+        "\n"
+        "Ждут вашего решения: ⚠️ жалоб {complaints} · 🪪 проверок собственника {verifications}"
+    ),
 }
 
 _EN: dict[str, str] = {
@@ -1126,6 +1139,20 @@ _EN: dict[str, str] = {
     ),
     "owner_bad_address": "Type the address: street and building number (3 to 150 characters).",
     "owner_location_point": "point on the map",
+    "daily_report": (
+        "📊 Bina.ai — daily report ({day})\n"
+        "\n"
+        "👤 Users: {users} (+{users_new})\n"
+        "🏠 Listings in search: {listings} (+{listings_new})\n"
+        "🏡 New from owners and realtors: {owner_listings_new}\n"
+        "🏢 Agencies: {agencies} (+{agencies_new})\n"
+        "💬 New chats: {chats_new} · 📅 viewing requests: {viewings_new}\n"
+        "💰 Payments: {payments} for {stars} ⭐ · Premium now: {premium}\n"
+        "🤖 AI assistant requests: {ai_requests}\n"
+        "\n"
+        "Waiting for your decision: ⚠️ complaints {complaints} · 🪪 owner checks "
+        "{verifications}"
+    ),
 }
 
 _KA: dict[str, str] = {
@@ -1678,6 +1705,20 @@ _KA: dict[str, str] = {
     ),
     "owner_bad_address": "დაწერეთ მისამართი: ქუჩა და სახლის ნომერი (3-დან 150 სიმბოლომდე).",
     "owner_location_point": "წერტილი რუკაზე",
+    "daily_report": (
+        "📊 Bina.ai — დღის ანგარიში ({day})\n"
+        "\n"
+        "👤 მომხმარებლები: {users} (+{users_new})\n"
+        "🏠 განცხადებები ძებნაში: {listings} (+{listings_new})\n"
+        "🏡 ახალი მესაკუთრეებისა და რიელტორებისგან: {owner_listings_new}\n"
+        "🏢 სააგენტოები: {agencies} (+{agencies_new})\n"
+        "💬 ახალი ჩატები: {chats_new} · 📅 დათვალიერების მოთხოვნები: {viewings_new}\n"
+        "💰 გადახდები: {payments}, სულ {stars} ⭐ · Premium ახლა: {premium}\n"
+        "🤖 AI ასისტენტის მოთხოვნები: {ai_requests}\n"
+        "\n"
+        "თქვენს გადაწყვეტილებას ელოდება: ⚠️ საჩივრები {complaints} · 🪪 მესაკუთრის შემოწმება "
+        "{verifications}"
+    ),
 }
 
 TEXTS: dict[str, dict[str, str]] = {"ru": _RU, "en": _EN, "ka": _KA}
