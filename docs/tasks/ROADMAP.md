@@ -150,8 +150,8 @@
 | 056 | CSRF защита | ✅ | не нужна: вход по подписи Telegram в заголовке, без cookie |
 | 057 | 2FA | ⏸ | вход через Telegram |
 | 058 | GDPR compliance | 📋 | вместе с TASK-089 |
-| 059 | Data export | 📋 | |
-| 060 | Account deletion | 📋 | |
+| 059 | Data export | ✅ бэкенд | `TASK-060-ACCOUNT-DATA.md`; фронт — FRONTEND-040 |
+| 060 | Account deletion | ✅ бэкенд | `TASK-060-ACCOUNT-DATA.md`; фронт — FRONTEND-040 |
 | 061 | Audit log | 📋 | |
 | 062 | Penetration testing | 📋 | перед публичным запуском |
 | 063 | Security headers | 📋 | с TASK-047 (Nginx) |

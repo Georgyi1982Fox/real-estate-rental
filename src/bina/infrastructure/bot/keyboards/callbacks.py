@@ -200,3 +200,16 @@ class AgencyCallback(CallbackData, prefix="ag"):
     action: AgencyAction
     value: str | None = None
     listing: UUID | None = None
+
+
+class AccountAction(StrEnum):
+    """Свои данные (TASK-059, TASK-060) — в профиле."""
+
+    EXPORT = "e"  # прислать файл со всеми данными
+    ASK_DELETE = "d"  # спросить: точно удалить?
+    DELETE = "y"  # удалить всё
+    CANCEL = "n"
+
+
+class AccountCallback(CallbackData, prefix="acc"):
+    action: AccountAction

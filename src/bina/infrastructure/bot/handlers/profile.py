@@ -1,21 +1,29 @@
+import json
 from datetime import UTC, datetime
 
 from aiogram import F, Router
 from aiogram.filters import Command
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import BufferedInputFile, CallbackQuery, Message, ReplyKeyboardRemove
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bina.application.subscriptions import effective_tier, is_premium
+from bina.application.use_cases.account import AccountUseCase
 from bina.application.use_cases.register_user import SUPPORTED_LANGUAGES
 from bina.infrastructure.bot.formatters import format_number
 from bina.infrastructure.bot.handlers.common import edit_or_answer
-from bina.infrastructure.bot.keyboards.callbacks import LanguageCallback
+from bina.infrastructure.bot.keyboards.callbacks import (
+    AccountAction,
+    AccountCallback,
+    LanguageCallback,
+)
 from bina.infrastructure.bot.keyboards.menu import main_menu, with_home
-from bina.infrastructure.bot.keyboards.profile import language_keyboard
+from bina.infrastructure.bot.keyboards.profile import delete_confirm_keyboard, language_keyboard
 from bina.infrastructure.bot.texts import LANGUAGE_NAMES, all_variants, t
 from bina.infrastructure.db.models import User
+from bina.infrastructure.db.repositories.account import AccountRepository
 from bina.infrastructure.db.repositories.favorites import FavoritesRepository
 from bina.infrastructure.db.repositories.users import UsersRepository
+from bina.infrastructure.storage.photos import LocalPhotoStorage
 
 DATE_FORMAT = "%d.%m.%Y"
 
@@ -62,6 +70,48 @@ async def on_language(
         )
 
 
+async def on_account(
+    callback: CallbackQuery,
+    callback_data: AccountCallback,
+    session: AsyncSession,
+    user: User,
+) -> None:
+    """Свои данные (TASK-059, TASK-060): файл со всем, что хранится, или удаление."""
+    language = user.language
+    message = callback.message if isinstance(callback.message, Message) else None
+    use_case = AccountUseCase(AccountRepository(session), LocalPhotoStorage())
+    action = callback_data.action
+    if action == AccountAction.EXPORT:
+        await callback.answer()
+        data = await use_case.export(user, datetime.now(UTC))
+        document = BufferedInputFile(
+            json.dumps(data, ensure_ascii=False, indent=2).encode(), "bina-my-data.json"
+        )
+        if message is not None:
+            await message.answer_document(document, caption=t(language, "account_export_done"))
+        return
+    if action == AccountAction.ASK_DELETE:
+        await callback.answer()
+        paid = t(language, "account_delete_paid") if is_premium(user, datetime.now(UTC)) else ""
+        if message is not None:
+            await message.answer(
+                t(language, "account_delete_ask", paid=paid),
+                reply_markup=delete_confirm_keyboard(language),
+            )
+        return
+    if action == AccountAction.CANCEL:
+        await callback.answer(t(language, "account_delete_cancelled"))
+        if message is not None:
+            await message.delete_reply_markup()
+        return
+    await use_case.erase(user, datetime.now(UTC), session.commit)
+    await callback.answer()
+    if message is not None:
+        await message.delete_reply_markup()
+        # Меню больше не нужно: новый /start начнёт с чистого листа
+        await message.answer(t(language, "account_deleted"), reply_markup=ReplyKeyboardRemove())
+
+
 def render_profile(user: User, favorites: int, language: str) -> str:
     """Текст профиля."""
     now = datetime.now(UTC)
@@ -90,4 +140,5 @@ def create_router() -> Router:
     router.message.register(cmd_profile, Command("profile"))
     router.message.register(cmd_profile, F.text.in_(all_variants("menu_profile")))
     router.callback_query.register(on_language, LanguageCallback.filter())
+    router.callback_query.register(on_account, AccountCallback.filter())
     return router
