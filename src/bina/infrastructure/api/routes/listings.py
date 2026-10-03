@@ -33,6 +33,7 @@ from bina.infrastructure.api.routes.common import (
     parse_codes,
     parse_decimal,
     parse_districts,
+    valid_city,
 )
 from bina.infrastructure.api.schemas import (
     CityCode,
@@ -66,7 +67,7 @@ async def list_listings(
     page: Annotated[int, Query(ge=1)] = 1,
     per_page: Annotated[int, Query(ge=1, le=MAX_PER_PAGE)] = 20,
     city: Annotated[
-        CityCode | None, Query(description="Город: tbilisi, batumi; пусто — все (TASK-079)")
+        CityCode | None, Query(description="Код города (см. /api/cities); пусто — все (TASK-079)")
     ] = None,
     rent_period: Annotated[
         RentPeriod,
@@ -122,6 +123,7 @@ async def list_listings(
     ] = None,
 ) -> ListingsPageOut:
     """Активные объявления с пагинацией, фильтрами, поиском по тексту и сортировкой."""
+    valid_city(city)
     try:
         filters = search_filters(
             city=city,

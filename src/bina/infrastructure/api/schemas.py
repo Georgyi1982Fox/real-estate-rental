@@ -7,6 +7,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from bina.application.cities import CITIES
 from bina.application.dtos.pagination import Page
 from bina.application.fraud import fraud_level
 from bina.application.listing_details import CONDITIONS, FEATURES, clean_features
@@ -25,7 +26,8 @@ from bina.infrastructure.db.models.users import SubscriptionTier
 # Текст на нескольких языках: {"ka": ..., "ru": ..., "en": ...}; пустые языки опускаются
 Localized = dict[str, str]
 # Код города (bina.application.cities.CITIES)
-CityCode = Literal["tbilisi", "batumi"]
+# Коды городов берём из единого списка bina.application.cities (TASK-079)
+CityCode = str
 # Вид аренды (bina.application.rent_period, TASK-092)
 RentPeriod = Literal["monthly", "daily"]
 
@@ -517,6 +519,13 @@ class SearchFiltersIn(BaseModel):
     @classmethod
     def _clean_query(cls, value: str | None) -> str | None:
         return (clean_text(value) or None) if value is not None else None
+
+    @field_validator("city")
+    @classmethod
+    def _check_city(cls, value: str | None) -> str | None:
+        if value is not None and value not in CITIES:
+            raise ValueError(f"unknown city: {value}")
+        return value
 
     @field_validator("features")
     @classmethod

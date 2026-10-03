@@ -6,6 +6,7 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from bina.application.cities import CITIES
 from bina.infrastructure.db.models import Listing, ListingStatus
 from bina.infrastructure.db.repositories.listings import ListingsRepository
 
@@ -96,3 +97,10 @@ async def get_visible_listing_or_404(session: AsyncSession, listing_id: str) -> 
     if listing.status != ListingStatus.ACTIVE or listing.hidden_at is not None:
         raise not_found()
     return listing
+
+
+def valid_city(city: str | None) -> str | None:
+    """Проверить код города (TASK-079); неизвестный — 400 с понятным сообщением."""
+    if city is not None and city not in CITIES:
+        raise bad_request(f"unknown city: {city}")
+    return city

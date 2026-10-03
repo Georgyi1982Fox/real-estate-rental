@@ -191,7 +191,10 @@ async def test_city_filter(client: AsyncClient, seeded: Store) -> None:
     assert [item["district"] for item in listings] == [str(batumi.id)]
     tbilisi = (await client.get("/api/listings", params={"city": "tbilisi"})).json()["items"]
     assert tbilisi and all(item["district"] != str(batumi.id) for item in tbilisi)
-    assert (await client.get("/api/listings", params={"city": "kutaisi"})).status_code == 422
+    # Кутаиси — известный город (TASK-079), просто пока без объявлений
+    empty = await client.get("/api/listings", params={"city": "kutaisi"})
+    assert empty.status_code == 200 and empty.json()["items"] == []
+    assert (await client.get("/api/listings", params={"city": "paris"})).status_code == 422
 
     cities = (await client.get("/api/cities")).json()["items"]
     assert [city["code"] for city in cities] == ["tbilisi", "batumi"]
