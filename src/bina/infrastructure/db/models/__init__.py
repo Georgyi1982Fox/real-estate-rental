@@ -5,6 +5,7 @@ from .ai_usage import AIUsage
 from .base import Base, SoftDeleteMixin, TimestampMixin
 from .chat import ChatMessage, Conversation, Viewing
 from .complaints import Complaint
+from .daily_reports import DailyReportRecord
 from .districts import District
 from .embeddings import Embedding
 from .favorites import Favorite
@@ -24,6 +25,7 @@ __all__ = [
     "ChatMessage",
     "Complaint",
     "Conversation",
+    "DailyReportRecord",
     "District",
     "Embedding",
     "Favorite",

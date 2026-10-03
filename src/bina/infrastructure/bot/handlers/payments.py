@@ -188,6 +188,8 @@ async def on_successful_payment(
         amount=payment.total_amount,
         now=datetime.now(UTC),
     )
+    # Деньги уже списаны: сохраняем сразу, чтобы сбой ответа не откатил оплату
+    await session.commit()
     if result.activated and result.expires_at is not None:
         await message.answer(
             t(user.language, "premium_activated", date=result.expires_at.strftime(DATE_FORMAT))

@@ -58,6 +58,7 @@ MIGRATIONS = (
     "promotion_verification",
     "photo_reports",
     "agencies",
+    "daily_reports",
 )
 
 

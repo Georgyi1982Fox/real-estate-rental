@@ -6,7 +6,7 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bina.infrastructure.db.models import Listing
+from bina.infrastructure.db.models import Listing, ListingStatus
 from bina.infrastructure.db.repositories.listings import ListingsRepository
 
 MAX_PER_PAGE = 50
@@ -82,5 +82,17 @@ async def get_listing_or_404(session: AsyncSession, listing_id: str) -> Listing:
         raise not_found() from exc
     listing = await ListingsRepository(session).get_by_id(uuid)
     if listing is None or listing.is_deleted:
+        raise not_found()
+    return listing
+
+
+async def get_visible_listing_or_404(session: AsyncSession, listing_id: str) -> Listing:
+    """Объявление в поиске: не снято, не скрыто модератором или блокировкой агентства.
+
+    Для контактов (телефон, «Написать»): по старой ссылке скрытое объявление открыть можно,
+    а связаться — нет.
+    """
+    listing = await get_listing_or_404(session, listing_id)
+    if listing.status != ListingStatus.ACTIVE or listing.hidden_at is not None:
         raise not_found()
     return listing

@@ -17,6 +17,8 @@ from bina.application.rent_period import DAILY, MONTHLY
 OWNER_SOURCE = "owner"
 # Столько активных объявлений может быть у одного человека (защита от спама)
 MAX_ACTIVE_LISTINGS = 5
+# Новых объявлений за сутки — сверх лимита в поиске (иначе «снял — разместил заново» без конца)
+EXTRA_NEW_PER_DAY = 5
 MAX_PHOTOS = 10
 MIN_DESCRIPTION = 20
 MAX_DESCRIPTION = 3000
@@ -159,6 +161,7 @@ class OwnerListingError(Exception):
 
 # Коды ошибок
 LIMIT_REACHED = "limit"
+DAILY_LIMIT = "daily_limit"
 NO_CONTACT = "no_contact"
 NOT_FOUND = "not_found"
 TOO_MANY_PHOTOS = "too_many_photos"

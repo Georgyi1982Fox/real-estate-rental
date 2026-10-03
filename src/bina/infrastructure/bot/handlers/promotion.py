@@ -138,6 +138,8 @@ async def activate_promotion(message: Message, user: User, session: AsyncSession
         payment.total_amount,
         datetime.now(UTC),
     )
+    # Звёзды уже списаны: сохраняем сразу, чтобы сбой ответа не откатил оплату
+    await session.commit()
     if result is None:
         logger.error(
             "Promotion paid for unknown listing",

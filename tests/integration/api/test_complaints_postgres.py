@@ -1,9 +1,11 @@
 """Жалобы на объявления (TASK-106) на настоящем PostgreSQL."""
 
 from collections.abc import AsyncIterator
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bina.application.localization import script_of
@@ -11,8 +13,10 @@ from bina.application.ports.scraper import RawListing
 from bina.infrastructure.api.routes import complaints as complaint_routes
 from bina.infrastructure.api.server import create_app
 from bina.infrastructure.api.settings import ApiSettings
-from bina.infrastructure.db.models import Listing
+from bina.infrastructure.db.models import Listing, User
+from bina.infrastructure.db.repositories.admin import AdminRepository
 from bina.infrastructure.db.repositories.listings import ListingsRepository
+from bina.infrastructure.db.repositories.users import UsersRepository
 from tests.support.telegram import sign_init_data
 
 BOT_TOKEN = "123456:TEST-TOKEN"
@@ -52,6 +56,18 @@ async def add(session: AsyncSession, source_id: str) -> Listing:
     return listing
 
 
+async def old_accounts(session: AsyncSession, *telegram_ids: int) -> None:
+    """Аккаунты старше суток — их жалобы считаются для автоскрытия."""
+    for telegram_id in telegram_ids:
+        await UsersRepository(session).create(telegram_id, "en")
+    await session.execute(
+        update(User)
+        .where(User.telegram_id.in_(telegram_ids))
+        .values(created_at=datetime.now(UTC) - timedelta(days=2))
+    )
+    await session.commit()
+
+
 async def search_ids(client: AsyncClient) -> set[str]:
     answer = await client.get("/api/listings", headers=headers(900))
     return {item["id"] for item in answer.json()["items"]}
@@ -68,6 +84,7 @@ async def test_reasons(client: AsyncClient, language: str) -> None:
 async def test_three_people_hide_listing(client: AsyncClient, session: AsyncSession) -> None:
     listing = await add(session, "scam")
     other = await add(session, "fine")
+    await old_accounts(session, 911, 912, 913)
     url = f"/api/listings/{listing.id}/complaints"
     assert await search_ids(client) == {str(listing.id), str(other.id)}
 
@@ -84,6 +101,40 @@ async def test_three_people_hide_listing(client: AsyncClient, session: AsyncSess
     assert await search_ids(client) == {str(other.id)}
     # По прямой ссылке (избранное) объявление открывается
     assert (await client.get(f"/api/listings/{listing.id}")).status_code == 200
+
+
+async def test_fresh_accounts_and_paid_listings_do_not_hide(
+    client: AsyncClient, session: AsyncSession
+) -> None:
+    """Защита от накрутки: одноразовые аккаунты, повтор после решения модератора, «Топ»."""
+    listing = await add(session, "rival")
+    url = f"/api/listings/{listing.id}/complaints"
+    for user in (941, 942, 943):  # аккаунты только что созданы
+        await client.post(url, json={"reason": "fraud"}, headers=headers(user))
+    assert str(listing.id) in await search_ids(client), "свежие аккаунты сами не скрывают"
+
+    await old_accounts(session, 951, 952, 953)
+    for user in (951, 952, 953):
+        await client.post(url, json={"reason": "fraud"}, headers=headers(user))
+    assert str(listing.id) not in await search_ids(client)
+    await AdminRepository(session).restore(listing.id)
+    await session.commit()
+    for user in (951, 952, 953):  # те же люди снова — решение модератора остаётся
+        await client.post(url, json={"reason": "fraud"}, headers=headers(user))
+    assert str(listing.id) in await search_ids(client)
+
+    paid = await add(session, "top")
+    await session.execute(
+        update(Listing)
+        .where(Listing.id == paid.id)
+        .values(promoted_until=datetime.now(UTC) + timedelta(days=3))
+    )
+    await session.commit()
+    for user in (951, 952, 953):
+        await client.post(
+            f"/api/listings/{paid.id}/complaints", json={"reason": "fraud"}, headers=headers(user)
+        )
+    assert str(paid.id) in await search_ids(client), "оплаченное — только модератору"
 
 
 async def test_complaint_errors(

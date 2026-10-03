@@ -24,8 +24,10 @@ MAX_SIDE = 1600
 JPEG_QUALITY = 85
 # Больше не принимаем (телефоны снимают до ~10 МБ)
 MAX_PHOTO_BYTES = 15 * 1024 * 1024
-# Защита от «картинок-бомб»: не больше 50 мегапикселей
-Image.MAX_IMAGE_PIXELS = 50_000_000
+# Защита от «картинок-бомб»: не больше 25 мегапикселей (≈75 МБ памяти на распаковку)
+Image.MAX_IMAGE_PIXELS = 25_000_000
+# Только обычные форматы фото: экзотические декодеры — лишний риск
+FORMATS = ("JPEG", "PNG", "WEBP", "GIF")
 
 
 def media_dir() -> Path:
@@ -38,7 +40,7 @@ def optimize(data: bytes) -> bytes:
     if not data or len(data) > MAX_PHOTO_BYTES:
         raise PhotoError("photo is empty or too large")
     try:
-        with Image.open(io.BytesIO(data)) as image:
+        with Image.open(io.BytesIO(data), formats=FORMATS) as image:
             image.load()
             fixed = ImageOps.exif_transpose(image)
             fixed = fixed.convert("RGB")

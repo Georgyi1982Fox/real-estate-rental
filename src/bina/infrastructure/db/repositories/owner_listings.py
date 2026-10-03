@@ -35,6 +35,15 @@ class OwnerListingsRepository:
         )
         return int((await self._session.execute(query)).scalar_one())
 
+    async def count_created_since(self, user_id: UUID, since: datetime) -> int:
+        """Сколько объявлений человек создал с ``since`` (в том числе снятых и удалённых)."""
+        query = select(func.count()).where(
+            Listing.owner_user_id == user_id,
+            Listing.source_name == OWNER_SOURCE,
+            Listing.created_at > since,
+        )
+        return int((await self._session.execute(query)).scalar_one())
+
     async def list_for_user(self, user_id: UUID) -> list[Listing]:
         """Объявления человека: активные сверху, затем новые."""
         query = (

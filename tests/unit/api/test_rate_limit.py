@@ -1,8 +1,10 @@
 """Защита API от перегрузки (TASK-019)."""
 
 import pytest
+from fastapi import Request
 from httpx import AsyncClient
 
+from bina.infrastructure.api.rate_limit import client_key, is_heavy
 from bina.infrastructure.api.settings import ApiConfigError, ApiSettings
 
 from .conftest import BOT_TOKEN
@@ -43,3 +45,29 @@ def test_settings_from_env() -> None:
     assert ApiSettings.from_env({}).rate_limit == 120
     with pytest.raises(ApiConfigError):
         ApiSettings.from_env({"API_RATE_LIMIT": "many"})
+
+
+def _request(peer: str, headers: dict[str, str], query: str = "") -> Request:
+    return Request(
+        {
+            "type": "http",
+            "method": "GET",
+            "path": "/api/listings",
+            "query_string": query.encode(),
+            "headers": [(k.lower().encode(), v.encode()) for k, v in headers.items()],
+            "client": (peer, 1234),
+        }
+    )
+
+
+def test_cloudflare_ip_trusted_only_from_tunnel() -> None:
+    """Подставленный заголовок с чужого адреса не меняет «кто это» — лимит не обойти."""
+    cf = {"CF-Connecting-IP": "203.0.113.7"}
+    assert client_key(_request("127.0.0.1", cf)) == "203.0.113.7"
+    assert client_key(_request("172.18.0.5", cf)) == "203.0.113.7", "туннель в сети Docker"
+    assert client_key(_request("8.8.8.8", cf)) == "8.8.8.8"
+
+
+def test_smart_search_is_heavy() -> None:
+    assert is_heavy(_request("127.0.0.1", {}, "sort=smart&q=near+metro"))
+    assert not is_heavy(_request("127.0.0.1", {}, "sort=newest"))

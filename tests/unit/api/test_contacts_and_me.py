@@ -1,10 +1,12 @@
 """Телефон, «Написать» и профиль текущего пользователя."""
 
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
 from httpx import AsyncClient
 
+from bina.infrastructure.db.models import ListingStatus
 from tests.support.fakes import Store
 
 URL = "https://www.myhome.ge/ru/nedvizhimost/sdaetsia-kvartira-26173256/"
@@ -28,6 +30,33 @@ async def test_phone(client: AsyncClient, store: Store) -> None:
     response = await client.get(f"/api/listings/{listing.id}/phone")
     assert response.status_code == 200
     assert response.json() == {"phone": "+995555123456"}
+
+
+async def test_owner_phone_needs_login(
+    client: AsyncClient, store: Store, auth: dict[str, str]
+) -> None:
+    """Номера хозяев, разместивших объявление у нас, скриптом без входа не собрать."""
+    listing = store.add_listing(store.add_district("Ваке"), phone="+995555123456")
+    listing.source_name = "owner"
+
+    url = f"/api/listings/{listing.id}/phone"
+    assert (await client.get(url)).status_code == 401
+    assert (await client.get(url, headers=auth)).json() == {"phone": "+995555123456"}
+
+
+async def test_no_contacts_for_hidden_or_rented(client: AsyncClient, store: Store) -> None:
+    district = store.add_district("Ваке")
+    hidden = store.add_listing(district, url=URL, phone="+995555123456")
+    hidden.hidden_at = datetime.now(UTC)
+    rented = store.add_listing(
+        district, url=URL, phone="+995555123456", status=ListingStatus.ARCHIVED
+    )
+
+    for listing in (hidden, rented):
+        assert (await client.get(f"/api/listings/{listing.id}/phone")).status_code == 404
+        assert (await client.post(f"/api/listings/{listing.id}/contact")).status_code == 404
+    # Само объявление по старой ссылке открывается
+    assert (await client.get(f"/api/listings/{hidden.id}")).status_code == 200
 
 
 async def test_phone_missing(client: AsyncClient, store: Store) -> None:

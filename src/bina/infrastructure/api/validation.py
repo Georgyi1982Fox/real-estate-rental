@@ -44,6 +44,12 @@ async def _limit_body_size(
     # Фото объявления и логотип агентства (TASK-100) — большие тела
     path = request.url.path
     limit = MAX_PHOTO_BODY_BYTES if path.endswith(("/photos", "/agency/logo")) else MAX_BODY_BYTES
+    # Тело частями (chunked) без длины обходило бы проверку: такие запросы не принимаем.
+    # Браузер и Telegram всегда присылают Content-Length, а сервер не читает больше него
+    if length is None and "transfer-encoding" in request.headers:
+        return error_response(
+            request, status.HTTP_411_LENGTH_REQUIRED, "Content-Length is required"
+        )
     if length is not None and (not length.isdigit() or int(length) > limit):
         return error_response(
             request,

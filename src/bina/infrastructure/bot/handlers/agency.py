@@ -140,7 +140,7 @@ async def on_phone(
 ) -> None:
     contact = message.contact
     # Только свой номер: кнопка Telegram, а не чужая карточка контакта
-    if contact is None or (contact.user_id is not None and contact.user_id != user.telegram_id):
+    if contact is None or contact.user_id != user.telegram_id:
         await message.answer(t(user.language, "agency_ask_phone"))
         return
     name = str((await state.get_data())["name"])
@@ -476,6 +476,8 @@ async def activate_payment(message: Message, user: User, session: AsyncSession) 
         paid = await use_case.activate_plan(*args)
     else:
         paid = await use_case.activate_bump(*args)
+    # Звёзды уже списаны: сохраняем сразу, чтобы сбой ответа не откатил оплату
+    await session.commit()
     if paid is None:
         logger.error(
             "Agency payment for unknown plan or listing",

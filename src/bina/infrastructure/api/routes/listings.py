@@ -5,7 +5,7 @@ from decimal import Decimal
 from typing import Annotated
 
 import structlog
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request, status
 from pydantic import ValidationError
 
 from bina.application.dtos.listing_search import (
@@ -15,6 +15,7 @@ from bina.application.dtos.listing_search import (
     search_filters,
 )
 from bina.application.listing_details import CONDITIONS, FEATURES
+from bina.application.owner_listings import OWNER_SOURCE
 from bina.application.ports.embeddings import EmbeddingsError, IEmbedder
 from bina.application.risk_report import risk_report
 from bina.application.semantic_search import is_smart_query
@@ -22,11 +23,12 @@ from bina.application.subscriptions import has_premium_access
 from bina.application.use_cases.analyze_price import AnalyzePriceUseCase
 from bina.application.use_cases.search_listings import SearchListingsUseCase
 from bina.application.use_cases.smart_search import SmartSearchUseCase
-from bina.infrastructure.api.dependencies import CurrentUserDep, SessionDep
+from bina.infrastructure.api.dependencies import CurrentUserDep, OptionalUserDep, SessionDep
 from bina.infrastructure.api.routes.common import (
     MAX_PER_PAGE,
     bad_request,
     get_listing_or_404,
+    get_visible_listing_or_404,
     not_found,
     parse_codes,
     parse_decimal,
@@ -260,13 +262,17 @@ async def similar_listings(listing_id: str, session: SessionDep) -> ListingsOut:
 
 
 @router.get("/{listing_id}/phone", response_model=PhoneOut)
-async def listing_phone(listing_id: str, session: SessionDep) -> PhoneOut:
-    """Телефон арендодателя; 404, если его нет.
+async def listing_phone(listing_id: str, user: OptionalUserDep, session: SessionDep) -> PhoneOut:
+    """Телефон арендодателя; 404, если его нет или объявление не в поиске.
 
     Сайты-источники часто скрывают номер (MyHome отдаёт ``591589***``), такие не сохраняются:
     тогда фронтенд показывает кнопку «Написать» (ссылка на объявление на сайте).
+    Номер хозяина, разместившего объявление у нас, — только вошедшим через Telegram (401):
+    иначе номера всех хозяев можно собрать скриптом.
     """
-    listing = await get_listing_or_404(session, listing_id)
+    listing = await get_visible_listing_or_404(session, listing_id)
+    if user is None and listing.source_name == OWNER_SOURCE:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Log in with Telegram to see the phone")
     await ListingStatsRepository(session).record(listing, datetime.now(UTC).date())
     await session.commit()
     if not listing.phone:
@@ -277,7 +283,7 @@ async def listing_phone(listing_id: str, session: SessionDep) -> PhoneOut:
 @router.post("/{listing_id}/contact", response_model=ContactOut)
 async def listing_contact(listing_id: str, session: SessionDep) -> ContactOut:
     """Ссылка для связи с арендодателем: страница объявления на сайте-источнике."""
-    listing = await get_listing_or_404(session, listing_id)
+    listing = await get_visible_listing_or_404(session, listing_id)
     await ListingStatsRepository(session).record(listing, datetime.now(UTC).date())
     await session.commit()
     if not listing.url:

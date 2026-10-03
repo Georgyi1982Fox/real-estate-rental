@@ -2,9 +2,11 @@
 
 Лимиты на посетителя (IP; за Cloudflare — настоящий IP из ``CF-Connecting-IP``):
 общий — ``API_RATE_LIMIT`` запросов в минуту, для «тяжёлых» запросов (PDF, AI,
-оплата, жалобы) — ``API_HEAVY_RATE_LIMIT``. Сверх лимита — 429 с ``Retry-After``.
+оплата, жалобы, загрузка фото, умный поиск) — ``API_HEAVY_RATE_LIMIT``.
+Сверх лимита — 429 с ``Retry-After``.
 """
 
+import ipaddress
 import math
 from collections.abc import Awaitable, Callable
 
@@ -24,19 +26,39 @@ HEAVY = (
     ("POST", "/api/subscription/invoice"),
     ("POST", "/complaints"),
     ("POST", "/api/referral/apply"),
+    # Загрузка фото и логотипа: большие тела и обработка картинок
+    ("POST", "/photos"),
+    ("POST", "/agency/logo"),
 )
 
 
 def client_key(request: Request) -> str:
-    """Кто прислал запрос: IP посетителя (Cloudflare передаёт его в заголовке)."""
+    """Кто прислал запрос: IP посетителя.
+
+    Заголовку Cloudflare (``CF-Connecting-IP``) верим, только если запрос пришёл с этого же
+    компьютера или из сети Docker (туннель Cloudflare). Иначе его подставил бы кто угодно и
+    обходил лимиты, меняя «свой IP» в каждом запросе.
+    """
+    peer = request.client.host if request.client else "unknown"
     forwarded = request.headers.get("cf-connecting-ip", "").strip()
-    if forwarded:
+    if forwarded and _local(peer):
         return forwarded
-    return request.client.host if request.client else "unknown"
+    return peer
+
+
+def _local(host: str) -> bool:
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        # Тестовый клиент и unix-сокет — не IP
+        return True
+    return address.is_loopback or address.is_private
 
 
 def is_heavy(request: Request) -> bool:
     path = request.url.path
+    if request.method == "GET" and request.query_params.get("sort") == "smart":
+        return True  # умный поиск: запрос к AI на каждый вызов
     return any(request.method == method and path.endswith(end) for method, end in HEAVY)
 
 
