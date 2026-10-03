@@ -565,6 +565,26 @@ _RU: dict[str, str] = {
         "Ждут вашего решения: ⚠️ жалоб {complaints} · 🪪 проверок собственника {verifications}"
     ),
     "owner_error_daily_limit": "Сегодня вы уже разместили много объявлений. Попробуйте завтра.",
+    "account_export": "📦 Скачать мои данные",
+    "account_delete": "🗑 Удалить аккаунт",
+    "account_export_done": (
+        "Всё, что Bina.ai хранит о вас. Файл открывается в любом текстовом редакторе."
+    ),
+    "account_delete_ask": (
+        "⚠️ <b>Удалить аккаунт и все данные?</b>\n"
+        "\n"
+        "Удалятся: избранное, сохранённые поиски, уведомления, напоминания об оплате, "
+        "переписка с хозяевами, ваши объявления с фото, кабинет агентства, жалобы.{paid}\n"
+        "\n"
+        "Вернуть будет нельзя. Сначала можно скачать свои данные кнопкой в профиле."
+    ),
+    "account_delete_paid": "\n\nОплаченный Premium пропадёт, звёзды не возвращаются.",
+    "account_delete_yes": "🗑 Да, удалить всё",
+    "account_delete_no": "Отмена",
+    "account_delete_cancelled": "Ничего не удалено.",
+    "account_deleted": (
+        "Готово: аккаунт и все данные удалены. Если снова напишете боту, начнёте с чистого листа."
+    ),
 }
 
 _EN: dict[str, str] = {
@@ -1157,6 +1177,27 @@ _EN: dict[str, str] = {
     "owner_error_daily_limit": (
         "You have already posted many listings today. Please try tomorrow."
     ),
+    "account_export": "📦 Download my data",
+    "account_delete": "🗑 Delete account",
+    "account_export_done": (
+        "Everything Bina.ai stores about you. The file opens in any text editor."
+    ),
+    "account_delete_ask": (
+        "⚠️ <b>Delete your account and all data?</b>\n"
+        "\n"
+        "This deletes favorites, saved searches, notifications, rent reminders, chats with "
+        "owners, your listings with photos, the agency cabinet and complaints.{paid}\n"
+        "\n"
+        "It cannot be undone. You can download your data first with the button in your profile."
+    ),
+    "account_delete_paid": "\n\nPaid Premium will be lost; stars are not refunded.",
+    "account_delete_yes": "🗑 Yes, delete everything",
+    "account_delete_no": "Cancel",
+    "account_delete_cancelled": "Nothing was deleted.",
+    "account_deleted": (
+        "Done: your account and all data are deleted. If you write to the bot again, you will "
+        "start from scratch."
+    ),
 }
 
 _KA: dict[str, str] = {
@@ -1724,6 +1765,28 @@ _KA: dict[str, str] = {
         "{verifications}"
     ),
     "owner_error_daily_limit": "დღეს უკვე ბევრი განცხადება განათავსეთ. სცადეთ ხვალ.",
+    "account_export": "📦 ჩემი მონაცემების ჩამოტვირთვა",
+    "account_delete": "🗑 ანგარიშის წაშლა",
+    "account_export_done": (
+        "ყველაფერი, რასაც Bina.ai თქვენზე ინახავს. ფაილი ნებისმიერ ტექსტურ რედაქტორში იხსნება."
+    ),
+    "account_delete_ask": (
+        "⚠️ <b>წავშალოთ ანგარიში და ყველა მონაცემი?</b>\n"
+        "\n"
+        "წაიშლება: რჩეულები, შენახული ძიებები, შეტყობინებები, ქირის გადახდის შეხსენებები, "
+        "მიმოწერა მესაკუთრეებთან, თქვენი განცხადებები ფოტოებით, სააგენტოს კაბინეტი, "
+        "საჩივრები.{paid}\n"
+        "\n"
+        "აღდგენა შეუძლებელი იქნება. ჯერ შეგიძლიათ მონაცემების ჩამოტვირთვა პროფილის ღილაკით."
+    ),
+    "account_delete_paid": "\n\nგადახდილი Premium გაქრება, ვარსკვლავები არ ბრუნდება.",
+    "account_delete_yes": "🗑 დიახ, ყველაფრის წაშლა",
+    "account_delete_no": "გაუქმება",
+    "account_delete_cancelled": "არაფერი წაშლილა.",
+    "account_deleted": (
+        "მზადაა: ანგარიში და ყველა მონაცემი წაიშალა. თუ ბოტს ისევ მისწერთ, ყველაფერს თავიდან "
+        "დაიწყებთ."
+    ),
 }
 
 TEXTS: dict[str, dict[str, str]] = {"ru": _RU, "en": _EN, "ka": _KA}

@@ -273,10 +273,10 @@ _PRIVACY_RU = LegalDocument(
         ),
         Section(
             "6. Ваши права",
-            "Вы можете узнать, какие данные о вас хранятся, исправить их или попросить "
-            "удалить всё. Напишите через команду /paysupport — ответим в течение 10 "
-            "рабочих дней. Язык и уведомления можно изменить в /profile, избранное и "
-            "поиски — удалить в самом сервисе.",
+            "В /profile можно скачать все свои данные одним файлом и удалить аккаунт со "
+            "всеми данными — сразу, без писем. Данные об оплатах остаются для бухгалтерии, "
+            "но уже ни с кем не связаны. Исправить данные или задать вопрос — через "
+            "команду /paysupport, ответим в течение 10 рабочих дней.",
         ),
         Section(
             "7. Изменения",
@@ -330,10 +330,10 @@ _PRIVACY_EN = LegalDocument(
         ),
         Section(
             "6. Your rights",
-            "You can find out what data we hold about you, correct it or ask us to delete "
-            "all of it. Contact us via the /paysupport command; we will reply within 10 "
-            "business days. You can change the language and notifications in /profile and "
-            "delete favorites and searches in the service itself.",
+            "In /profile you can download all your data as one file and delete your account "
+            "with all data instantly. Payment records stay for accounting but are no longer "
+            "linked to anyone. To correct data or ask a question, use the /paysupport "
+            "command; we will reply within 10 business days.",
         ),
         Section(
             "7. Changes",
@@ -392,10 +392,10 @@ _PRIVACY_KA = LegalDocument(
         ),
         Section(
             "6. თქვენი უფლებები",
-            "შეგიძლიათ გაიგოთ, რა მონაცემებს ვინახავთ თქვენ შესახებ, შეასწოროთ ისინი ან "
-            "მოითხოვოთ ყველაფრის წაშლა. მოგვწერეთ ბრძანებით /paysupport — ვუპასუხებთ 10 "
-            "სამუშაო დღეში. ენა და შეტყობინებები შეგიძლიათ შეცვალოთ /profile-ში, რჩეულები "
-            "და ძებნები კი წაშალოთ თავად სერვისში.",
+            "/profile-ში შეგიძლიათ ჩამოტვირთოთ ყველა თქვენი მონაცემი ერთი ფაილით და "
+            "წაშალოთ ანგარიში ყველა მონაცემთან ერთად — მაშინვე. გადახდების ჩანაწერები "
+            "ბუღალტერიისთვის რჩება, მაგრამ აღარავისთან არის დაკავშირებული. მონაცემების "
+            "შესწორება ან კითხვა — ბრძანებით /paysupport, ვუპასუხებთ 10 სამუშაო დღეში.",
         ),
         Section(
             "7. ცვლილებები",
