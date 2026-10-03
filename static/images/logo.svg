@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-labelledby="title desc">
+  <title id="title">Bina.ai</title>
+  <desc id="desc">Minimalist Bina.ai logo: home-inspired lowercase b with AI location node.</desc>
+  <circle cx="32" cy="32" r="31" fill="#064E3B"/>
+
+  <!-- Минималистичная форма b / дома -->
+  <path
+    d="M20 15.5a3 3 0 0 1 3 3v8.7c2.8-2.7 6.4-4.2 10.4-4.2 7.7 0 13.8 5.8 13.8 13.5S41.1 50 33.4 50c-4.1 0-7.7-1.5-10.4-4.2V50a3 3 0 0 1-6 0V18.5a3 3 0 0 1 3-3Z"
+    fill="#FFFFFF"/>
+
+  <!-- Внутренний проём -->
+  <circle cx="33.3" cy="36.5" r="8.9" fill="#064E3B"/>
+
+  <!-- Окно -->
+  <rect x="29.5" y="32.5" width="3.2" height="3.2" rx="0.7" fill="#FFFFFF"/>
+  <rect x="33.7" y="32.5" width="3.2" height="3.2" rx="0.7" fill="#FFFFFF"/>
+  <rect x="29.5" y="36.7" width="3.2" height="3.2" rx="0.7" fill="#FFFFFF"/>
+  <rect x="33.7" y="36.7" width="3.2" height="3.2" rx="0.7" fill="#FFFFFF"/>
+
+  <!-- AI / location node -->
+  <circle cx="43.2" cy="39.6" r="4.2" fill="#34D1B0"/>
+  <circle cx="43.2" cy="39.6" r="1.65" fill="#FFFFFF"/>
+</svg>
