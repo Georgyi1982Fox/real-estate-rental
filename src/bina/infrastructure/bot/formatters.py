@@ -87,6 +87,9 @@ def format_listing(listing: Listing, index: int, language: str) -> str:
     # TASK-114: ремонт по фото (AI)
     if repair := level_label(listing.repair_level, language):
         details.append(f"🛠 {repair}")
+    # TASK-100: Premium-объявление агентства
+    if is_promoted(listing.bump_until, datetime.now(UTC)):
+        details.append("⭐")
     # TASK-097: оплачено продвижение
     if is_promoted(listing.promoted_until, datetime.now(UTC)):
         details.append("🔥")

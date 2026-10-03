@@ -159,5 +159,6 @@ def create_router() -> Router:
     router.message.register(cmd_admin, Command("admin"))
     # Проверку собственника (VERIFY_*) обрабатывает handlers/promotion.py
     actions = {AdminAction.STATS, AdminAction.COMPLAINTS, AdminAction.HIDE, AdminAction.RESTORE}
+    # Блокировку агентства (AGENCY_BLOCK) обрабатывает handlers/agency.py
     router.callback_query.register(on_admin, AdminCallback.filter(F.action.in_(actions)))
     return router

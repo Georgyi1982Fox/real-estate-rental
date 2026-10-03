@@ -1,5 +1,6 @@
 """Модули для работы с моделями БД."""
 
+from .agencies import Agency, ListingStat
 from .ai_usage import AIUsage
 from .base import Base, SoftDeleteMixin, TimestampMixin
 from .chat import ChatMessage, Conversation, Viewing
@@ -18,6 +19,7 @@ from .verifications import Verification
 
 __all__ = [
     "AIUsage",
+    "Agency",
     "Base",
     "ChatMessage",
     "Complaint",
@@ -26,6 +28,7 @@ __all__ = [
     "Embedding",
     "Favorite",
     "Listing",
+    "ListingStat",
     "ListingStatus",
     "Notification",
     "NotificationType",

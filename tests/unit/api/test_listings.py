@@ -52,6 +52,8 @@ async def test_listing_shape(client: AsyncClient, seeded: Store) -> None:
         "district": str(listing.district_id),
         "is_verified": False,
         "repair_level": None,
+        "is_premium_listing": False,
+        "agency": None,
         "is_promoted": False,
         "images": ["/img/900.jpg"],
         "has_phone": False,

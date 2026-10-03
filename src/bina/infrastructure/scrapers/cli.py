@@ -13,6 +13,7 @@ import structlog
 from bina.application.health_monitor import Alert, HealthMonitor
 from bina.application.ports.embeddings import EmbeddingsError
 from bina.application.ports.scraper import BaseScraper
+from bina.application.use_cases.agencies import run_bumps
 from bina.application.use_cases.analyze_photos import AnalyzePhotosUseCase, PhotoStats
 from bina.application.use_cases.check_fraud import CheckFraudUseCase, FraudStats
 from bina.application.use_cases.embed_listings import EmbedListingsUseCase, EmbedStats
@@ -37,6 +38,7 @@ from bina.application.use_cases.translate_listings import (
     TranslationStats,
 )
 from bina.infrastructure.db.locks import FRAUD_LOCK, TRANSLATE_LOCK, advisory_lock
+from bina.infrastructure.db.repositories.agencies import AgenciesRepository
 from bina.infrastructure.db.repositories.listings import ListingsRepository
 from bina.infrastructure.db.repositories.notifications import (
     NotificationsRepository,
@@ -442,6 +444,22 @@ async def analyze_photos(limit: int) -> PhotoStats:
         await db.dispose()
 
 
+async def bump_listings() -> int:
+    """Поднять Premium-объявления агентств, у которых подошло время (TASK-100)."""
+    db = DatabaseManager()
+    try:
+        async with db.session_factory() as session:
+            bumped = await run_bumps(AgenciesRepository(session), datetime.now(UTC))
+            await session.commit()
+        return bumped
+    finally:
+        await db.dispose()
+
+
+def _echo_bumps(bumped: int) -> None:
+    click.echo(f"premium-объявления: поднято {bumped}")
+
+
 def _echo_photos(stats: PhotoStats) -> None:
     click.echo(f"фото: разобрано объявлений {stats.analyzed}, отложено {stats.failed}")
 
@@ -833,6 +851,8 @@ def schedule(
         # После перевода: в отпечаток идёт английский текст (TASK-012)
         if embeddings_configured():
             await step("embeddings", lambda: _echo_async(_echo_embed, embed(EMBED_BATCH)))
+        # TASK-100: до уведомлений — поднятые объявления уже наверху
+        await step("bumps", lambda: _echo_async(_echo_bumps, bump_listings()))
         await step("rent", lambda: _echo_async(_echo_rent, rent_reminders()))
         await step("premium", lambda: _echo_async(_echo_premium, premium_reminders()))
         await step("notify", notify_step)

@@ -46,6 +46,7 @@ from bina.infrastructure.api.schemas import (
 )
 from bina.infrastructure.api.validation import clean_text
 from bina.infrastructure.db.models import Listing
+from bina.infrastructure.db.repositories.agencies import ListingStatsRepository
 from bina.infrastructure.db.repositories.listings import ListingsRepository
 from bina.infrastructure.llm.llm_factory import LLMFactory, embeddings_configured
 
@@ -187,6 +188,9 @@ def get_embedder(request: Request) -> IEmbedder | None:
 async def get_listing(listing_id: str, session: SessionDep) -> ListingOut:
     """Одно объявление; 404, если его нет или оно удалено."""
     listing = await get_listing_or_404(session, listing_id)
+    # TASK-100: просмотр — в статистику хозяина / агентства
+    await ListingStatsRepository(session).record(listing, datetime.now(UTC).date(), view=True)
+    await session.commit()
     out = ListingOut.from_model(listing)
     # TASK-090: ссылки на ту же квартиру на других сайтах
     links = await ListingsRepository(session).same_apartment_links(listing)
@@ -263,6 +267,8 @@ async def listing_phone(listing_id: str, session: SessionDep) -> PhoneOut:
     тогда фронтенд показывает кнопку «Написать» (ссылка на объявление на сайте).
     """
     listing = await get_listing_or_404(session, listing_id)
+    await ListingStatsRepository(session).record(listing, datetime.now(UTC).date())
+    await session.commit()
     if not listing.phone:
         raise not_found("Phone not available")
     return PhoneOut(phone=listing.phone)
@@ -272,6 +278,8 @@ async def listing_phone(listing_id: str, session: SessionDep) -> PhoneOut:
 async def listing_contact(listing_id: str, session: SessionDep) -> ContactOut:
     """Ссылка для связи с арендодателем: страница объявления на сайте-источнике."""
     listing = await get_listing_or_404(session, listing_id)
+    await ListingStatsRepository(session).record(listing, datetime.now(UTC).date())
+    await session.commit()
     if not listing.url:
         raise not_found("Contact not available")
     return ContactOut(url=listing.url)

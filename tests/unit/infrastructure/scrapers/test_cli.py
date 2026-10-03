@@ -123,6 +123,8 @@ def run_schedule(monkeypatch: pytest.MonkeyPatch, args: list[str]) -> Any:
         monkeypatch.setattr(scrape_cli, "send_owner_alerts", AsyncMock(return_value=None))
     if not isinstance(getattr(scrape_cli, "embed"), AsyncMock):
         monkeypatch.setattr(scrape_cli, "embed", AsyncMock(return_value=NO_EMBED))
+    if not isinstance(getattr(scrape_cli, "bump_listings"), AsyncMock):
+        monkeypatch.setattr(scrape_cli, "bump_listings", AsyncMock(return_value=0))
     if not isinstance(getattr(scrape_cli, "analyze_photos"), AsyncMock):
         monkeypatch.setattr(
             scrape_cli, "analyze_photos", AsyncMock(return_value=PhotoStats(analyzed=0, failed=0))

@@ -10,6 +10,7 @@
 Фото отдаются по адресу из ``images`` (``/api/media/...``).
 """
 
+from dataclasses import replace
 from datetime import UTC, datetime
 from typing import NoReturn
 from uuid import UUID
@@ -18,6 +19,7 @@ import structlog
 from aiogram import Bot
 from fastapi import APIRouter, HTTPException, Request, status
 
+from bina.application.agencies import load_agency_plans
 from bina.application.owner_listings import (
     LIMIT_REACHED,
     MAX_ACTIVE_LISTINGS,
@@ -28,6 +30,7 @@ from bina.application.owner_listings import (
     clean_phone,
     telegram_contact,
 )
+from bina.application.use_cases.agencies import AgencyUseCase
 from bina.application.use_cases.owner_listings import OwnerListingsUseCase
 from bina.infrastructure.api.dependencies import (
     CurrentUserDep,
@@ -45,7 +48,8 @@ from bina.infrastructure.api.schemas import (
 )
 from bina.infrastructure.api.settings import ApiSettings
 from bina.infrastructure.bot.owner_alerts import notify_admins
-from bina.infrastructure.db.models import Listing, User
+from bina.infrastructure.db.models import Agency, Listing, User
+from bina.infrastructure.db.repositories.agencies import AgenciesRepository
 from bina.infrastructure.db.repositories.owner_listings import OwnerListingsRepository
 from bina.infrastructure.storage.photos import MAX_PHOTO_BYTES, LocalPhotoStorage
 
@@ -58,13 +62,22 @@ def _use_case(session: SessionDep) -> OwnerListingsUseCase:
     return OwnerListingsUseCase(OwnerListingsRepository(session), LocalPhotoStorage())
 
 
-def _raise(error: OwnerListingError) -> NoReturn:
+async def _limit(session: SessionDep, user_id: UUID) -> tuple[int, Agency | None]:
+    """Сколько объявлений можно держать в поиске (хозяин — 5, агентство — по пакету)."""
+    agencies = AgenciesRepository(session)
+    limit = await AgencyUseCase(agencies, load_agency_plans()).active_limit(
+        user_id, datetime.now(UTC)
+    )
+    return limit, await agencies.for_user(user_id)
+
+
+def _raise(error: OwnerListingError, limit: int = MAX_ACTIVE_LISTINGS) -> NoReturn:
     if error.code == NOT_FOUND:
         raise not_found() from error
     if error.code == LIMIT_REACHED:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"At most {MAX_ACTIVE_LISTINGS} active listings: take one down first",
+            detail=f"At most {limit} active listings: take one down first",
         ) from error
     if error.code == NO_CONTACT:
         raise bad_request("phone is required when you have no Telegram username") from error
@@ -75,9 +88,8 @@ def _raise(error: OwnerListingError) -> NoReturn:
 async def list_my_listings(user: CurrentUserDep, session: SessionDep) -> MyListingsOut:
     """Свои объявления: активные сверху."""
     listings = await OwnerListingsRepository(session).list_for_user(user.id)
-    return MyListingsOut(
-        items=[MyListingOut.build(item) for item in listings], limit=MAX_ACTIVE_LISTINGS
-    )
+    limit, _ = await _limit(session, user.id)
+    return MyListingsOut(items=[MyListingOut.build(item) for item in listings], limit=limit)
 
 
 @router.post("", response_model=MyListingOut, status_code=status.HTTP_201_CREATED)
@@ -108,6 +120,9 @@ async def create_listing(
         contact_url=telegram_contact(username),
         features=body.features,
     )
+    limit, agency = await _limit(session, user.id)
+    if agency is not None:
+        draft = replace(draft, agency_name=agency.name)
     try:
         listing = await _use_case(session).publish(
             user.id,
@@ -115,9 +130,10 @@ async def create_listing(
             [],
             datetime.now(UTC),
             bot_username=await _bot_username(request, settings),
+            max_active=limit,
         )
     except OwnerListingError as exc:
-        _raise(exc)
+        _raise(exc, limit)
     await session.commit()
     await _alert(settings, listing, user)
     return MyListingOut.build(listing)
@@ -140,15 +156,18 @@ async def update_listing(
 ) -> MyListingOut:
     use_case = _use_case(session)
     now = datetime.now(UTC)
+    limit, _ = await _limit(session, user.id)
     try:
         listing = await use_case.owned(user.id, listing_id)
         if body.price is not None:
             currency = body.currency or listing.currency
             listing = await use_case.update_price(user.id, listing_id, body.price, currency, now)
         if body.active is not None:
-            listing = await use_case.set_active(user.id, listing_id, body.active, now)
+            listing = await use_case.set_active(
+                user.id, listing_id, body.active, now, max_active=limit
+            )
     except OwnerListingError as exc:
-        _raise(exc)
+        _raise(exc, limit)
     await session.commit()
     return MyListingOut.build(listing)
 
