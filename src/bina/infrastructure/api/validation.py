@@ -41,7 +41,9 @@ async def _limit_body_size(
 ) -> Response:
     length = request.headers.get("content-length")
     # TASK-096: фото собственника — большое тело, но только на этот адрес
-    limit = MAX_PHOTO_BODY_BYTES if request.url.path.endswith("/photos") else MAX_BODY_BYTES
+    # Фото объявления и логотип агентства (TASK-100) — большие тела
+    path = request.url.path
+    limit = MAX_PHOTO_BODY_BYTES if path.endswith(("/photos", "/agency/logo")) else MAX_BODY_BYTES
     if length is not None and (not length.isdigit() or int(length) > limit):
         return error_response(
             request,

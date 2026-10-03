@@ -52,6 +52,8 @@ class OwnerListingDraft:
     # Ссылка для связи: t.me/<username> (имя в Telegram), если оно есть
     contact_url: str | None = None
     features: list[str] = field(default_factory=list)
+    # TASK-100: размещает агентство — «Кто сдаёт: агентство» и его название
+    agency_name: str | None = None
 
 
 def parse_area(text: str) -> Decimal | None:
@@ -111,10 +113,11 @@ def owner_raw_listing(
         url=draft.contact_url or "",
         photos=list(photos),
         phone=draft.phone,
+        owner_name=draft.agency_name,
         floor=draft.floor,
         total_floors=draft.total_floors,
         features=list(draft.features),
-        owner_type="owner",
+        owner_type="agent" if draft.agency_name else "owner",
         published_at=now,
         updated_at=now,
         has_details=True,

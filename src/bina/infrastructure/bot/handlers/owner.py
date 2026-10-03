@@ -12,6 +12,7 @@
 
 import asyncio
 from collections import defaultdict
+from dataclasses import replace
 from datetime import UTC, datetime
 from decimal import Decimal
 from html import escape
@@ -33,6 +34,7 @@ from aiogram.types import (
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from bina.application.agencies import load_agency_plans
 from bina.application.cities import CITIES, city_name
 from bina.application.listing_titles import format_area
 from bina.application.owner_listings import (
@@ -49,9 +51,12 @@ from bina.application.owner_listings import (
 )
 from bina.application.rent_period import DAILY, MONTHLY
 from bina.application.rent_reminders import format_amount, parse_amount
+from bina.application.use_cases.agencies import AgencyUseCase
 from bina.application.use_cases.owner_listings import OwnerListingsUseCase
 from bina.infrastructure.bot.formatters import format_listing, listing_price, listing_title
 from bina.infrastructure.bot.keyboards.callbacks import (
+    AgencyAction,
+    AgencyCallback,
     OwnerAction,
     OwnerCallback,
 )
@@ -59,7 +64,8 @@ from bina.infrastructure.bot.keyboards.menu import main_menu, with_home
 from bina.infrastructure.bot.owner_alerts import notify_admins
 from bina.infrastructure.bot.settings import BotSettings
 from bina.infrastructure.bot.texts import all_variants, t
-from bina.infrastructure.db.models import Listing, ListingStatus, User
+from bina.infrastructure.db.models import Agency, Listing, ListingStatus, User
+from bina.infrastructure.db.repositories.agencies import AgenciesRepository
 from bina.infrastructure.db.repositories.owner_listings import OwnerListingsRepository
 from bina.infrastructure.db.repositories.verifications import VerificationsRepository
 from bina.infrastructure.storage.photos import LocalPhotoStorage
@@ -105,6 +111,16 @@ def _use_case(session: AsyncSession) -> OwnerListingsUseCase:
     return OwnerListingsUseCase(OwnerListingsRepository(session), LocalPhotoStorage())
 
 
+async def owner_limit(session: AsyncSession, user: User) -> tuple[int, Agency | None]:
+    """Сколько объявлений можно держать в поиске (хозяин — 5, агентство — по пакету)."""
+    agencies = AgenciesRepository(session)
+    agency = await agencies.for_user(user.id)
+    limit = await AgencyUseCase(agencies, load_agency_plans()).active_limit(
+        user.id, datetime.now(UTC)
+    )
+    return limit, agency
+
+
 def _button(text: str, action: OwnerAction, **values: Any) -> tuple[str, OwnerCallback]:
     return text, OwnerCallback(action=action, **values)
 
@@ -135,10 +151,13 @@ def _status(language: str, listing: Listing, pending: frozenset[UUID] = frozense
 
 
 def render_list(
-    language: str, listings: list[Listing], pending: frozenset[UUID] = frozenset()
+    language: str,
+    listings: list[Listing],
+    pending: frozenset[UUID] = frozenset(),
+    limit: int = MAX_ACTIVE_LISTINGS,
 ) -> str:
     if not listings:
-        return t(language, "owner_list_empty", limit=MAX_ACTIVE_LISTINGS)
+        return t(language, "owner_list_empty", limit=limit)
     lines = [
         t(
             language,
@@ -154,7 +173,10 @@ def render_list(
 
 
 def list_keyboard(
-    language: str, listings: list[Listing], pending: frozenset[UUID] = frozenset()
+    language: str,
+    listings: list[Listing],
+    pending: frozenset[UUID] = frozenset(),
+    agency: Agency | None = None,
 ) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     rows: list[int] = []
@@ -196,7 +218,12 @@ def list_keyboard(
     builder.button(
         text=t(language, "owner_new"), callback_data=OwnerCallback(action=OwnerAction.NEW)
     )
-    builder.adjust(*rows, 1)
+    # TASK-100: кабинет агентства (или регистрация риелтора)
+    builder.button(
+        text=t(language, "agency_cabinet" if agency else "agency_join"),
+        callback_data=AgencyCallback(action=AgencyAction.CABINET if agency else AgencyAction.JOIN),
+    )
+    builder.adjust(*rows, 1, 1)
     return with_home(builder.as_markup(), language)
 
 
@@ -207,9 +234,10 @@ async def cmd_mylistings(
     await state.clear()
     listings = await OwnerListingsRepository(session).list_for_user(user.id)
     pending = frozenset(await VerificationsRepository(session).pending_listing_ids(user.id))
+    limit, agency = await owner_limit(session, user)
     await message.answer(
-        render_list(user.language, listings, pending),
-        reply_markup=list_keyboard(user.language, listings, pending),
+        render_list(user.language, listings, pending, limit),
+        reply_markup=list_keyboard(user.language, listings, pending, agency),
         disable_web_page_preview=True,
     )
 
@@ -221,10 +249,9 @@ async def on_new(
     callback: CallbackQuery, user: User, session: AsyncSession, state: FSMContext
 ) -> None:
     language = user.language
-    if await OwnerListingsRepository(session).count_active(user.id) >= MAX_ACTIVE_LISTINGS:
-        await callback.answer(
-            t(language, "owner_error_limit", limit=MAX_ACTIVE_LISTINGS), show_alert=True
-        )
+    limit, _ = await owner_limit(session, user)
+    if await OwnerListingsRepository(session).count_active(user.id) >= limit:
+        await callback.answer(t(language, "owner_error_limit", limit=limit), show_alert=True)
         return
     await state.clear()
     buttons = [
@@ -516,13 +543,17 @@ async def on_publish(
     await callback.answer()
     data = await state.get_data()
     photos = await download_photos(bot, list(data.get("photos") or []))
+    limit, agency = await owner_limit(session, user)
+    draft = draft_from(data)
+    if agency is not None:
+        draft = replace(draft, agency_name=agency.name)
     try:
         me = await bot.me()
         listing = await _use_case(session).publish(
-            user.id, draft_from(data), photos, datetime.now(UTC), bot_username=me.username
+            user.id, draft, photos, datetime.now(UTC), bot_username=me.username, max_active=limit
         )
     except OwnerListingError as exc:
-        await message.answer(t(user.language, f"owner_error_{exc.code}", limit=MAX_ACTIVE_LISTINGS))
+        await message.answer(t(user.language, f"owner_error_{exc.code}", limit=limit))
         return
     await session.commit()
     await state.clear()
@@ -562,14 +593,14 @@ async def on_toggle(
         await callback.answer()
         return
     active = callback_data.action == OwnerAction.ON
+    limit, _ = await owner_limit(session, user)
     try:
         await _use_case(session).set_active(
-            user.id, callback_data.listing, active, datetime.now(UTC)
+            user.id, callback_data.listing, active, datetime.now(UTC), max_active=limit
         )
     except OwnerListingError as exc:
         await callback.answer(
-            t(user.language, f"owner_error_{exc.code}", limit=MAX_ACTIVE_LISTINGS),
-            show_alert=True,
+            t(user.language, f"owner_error_{exc.code}", limit=limit), show_alert=True
         )
         return
     await callback.answer(t(user.language, "owner_turned_on" if active else "owner_turned_off"))

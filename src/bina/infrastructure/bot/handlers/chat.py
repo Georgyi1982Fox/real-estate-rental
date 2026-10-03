@@ -46,6 +46,7 @@ from bina.infrastructure.bot.keyboards.callbacks import ChatAction, ChatCallback
 from bina.infrastructure.bot.keyboards.menu import with_home
 from bina.infrastructure.bot.texts import t
 from bina.infrastructure.db.models import Listing, User
+from bina.infrastructure.db.repositories.agencies import ListingStatsRepository
 from bina.infrastructure.db.repositories.chat import ChatRepository
 
 logger = structlog.get_logger(__name__)
@@ -174,6 +175,8 @@ async def show_listing(
     except ChatError as exc:
         await message.answer(error_text(user.language, exc.code))
         return
+    # TASK-100: открыли карточку — просмотр в статистику хозяина / агентства
+    await ListingStatsRepository(session).record(listing, _now().date(), view=True)
     await message.answer(
         t(
             user.language,

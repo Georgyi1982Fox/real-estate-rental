@@ -57,6 +57,7 @@ MIGRATIONS = (
     "chat_viewings",
     "promotion_verification",
     "photo_reports",
+    "agencies",
 )
 
 

@@ -102,6 +102,8 @@ class AdminAction(StrEnum):
     # Проверка собственника (TASK-098): request — заявка
     VERIFY_OK = "vok"
     VERIFY_NO = "vno"
+    # Блокировка агентства (TASK-100): request — агентство
+    AGENCY_BLOCK = "ablk"
 
 
 class AdminCallback(CallbackData, prefix="adm"):
@@ -181,3 +183,19 @@ class ChatCallback(CallbackData, prefix="ch"):
     id: UUID
     day: int = 0
     hour: int = 0
+
+
+class AgencyAction(StrEnum):
+    """Кабинет риелтора / агентства (TASK-100)."""
+
+    JOIN = "j"  # «💼 Я риелтор / агентство» — регистрация
+    CABINET = "c"  # кабинет: пакет, лимит, статистика
+    PLANS = "p"  # пакеты объявлений
+    BUY = "b"  # value — пакет: счёт в звёздах
+    BUMP = "u"  # listing — «⭐ Premium-объявление»
+
+
+class AgencyCallback(CallbackData, prefix="ag"):
+    action: AgencyAction
+    value: str | None = None
+    listing: UUID | None = None

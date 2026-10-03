@@ -30,6 +30,20 @@ CityCode = Literal["tbilisi", "batumi"]
 RentPeriod = Literal["monthly", "daily"]
 
 
+class AgencyBriefOut(BaseModel):
+    """Агентство в карточке объявления: ссылка на его страницу."""
+
+    id: UUID
+    name: str
+    logo_url: str | None = None
+
+    @classmethod
+    def build(cls, agency: Any) -> "AgencyBriefOut | None":
+        if agency is None or agency.blocked_at is not None:
+            return None
+        return cls(id=agency.id, name=agency.name, logo_url=agency.logo_url)
+
+
 def _repair_level(value: str | None) -> Any:
     return value if value in REPAIR_LEVELS else None
 
@@ -60,6 +74,12 @@ class ListingOut(BaseModel):
     is_verified: bool
     repair_level: Literal["excellent", "good", "needs_repair"] | None = Field(
         default=None, description="Ремонт по фото (AI, TASK-114); None — фото ещё не разобраны"
+    )
+    is_premium_listing: bool = Field(
+        default=False, description="«⭐ Premium-объявление» агентства: поднимается раз в сутки"
+    )
+    agency: "AgencyBriefOut | None" = Field(
+        default=None, description="Агентство, разместившее объявление (TASK-100)"
     )
     is_promoted: bool = Field(default=False, description="Оплачено продвижение «🔥 Топ» (TASK-097)")
     images: list[str] = Field(default_factory=list)
@@ -115,6 +135,9 @@ class ListingOut(BaseModel):
             district=listing.district_id,
             is_verified=listing.is_verified,
             repair_level=_repair_level(listing.repair_level),
+            is_premium_listing=is_promoted(listing.bump_until, datetime.now(UTC)),
+            # Только если уже загружено (в выборках — сразу): иначе асинхронная догрузка упадёт
+            agency=AgencyBriefOut.build(listing.__dict__.get("owner_agency")),
             is_promoted=is_promoted(listing.promoted_until, datetime.now(UTC)),
             images=list(listing.images or []),
             has_phone=bool(listing.phone),

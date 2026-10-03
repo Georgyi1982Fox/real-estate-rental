@@ -462,6 +462,85 @@ _RU: dict[str, str] = {
     ),
     "voice_too_long": "🎙 Голосовое длинновато — уложитесь, пожалуйста, в {seconds} секунд.",
     "voice_unavailable": "🎙 Голосовые сейчас не распознаются. Напишите, пожалуйста, текстом.",
+    "agency_join": "💼 Я риелтор / агентство",
+    "agency_cabinet": "💼 Кабинет агентства",
+    "agency_ask_name": (
+        "💼 <b>Кабинет риелтора</b>\n"
+        "\n"
+        "До {free} объявлений бесплатно, статистика просмотров и обращений, ⭐ "
+        "Premium-объявления.\n"
+        "\n"
+        "Напишите название агентства или ваше имя — так его увидят арендаторы.\n"
+        "\n"
+        "Передумали — нажмите «🏠 Главное меню»."
+    ),
+    "agency_bad_name": "Название — от 2 до 80 знаков. Напишите ещё раз.",
+    "agency_ask_phone": (
+        "📱 Нажмите кнопку ниже — Telegram передаст ваш номер. Так арендаторы будут знать, что "
+        "номер настоящий."
+    ),
+    "agency_phone_button": "📱 Поделиться номером",
+    "agency_registered": (
+        "✅ <b>Кабинет «{name}» готов!</b>\n"
+        "Можно размещать до {limit} объявлений. Объявления — кнопкой «✍️ Разместить квартиру»."
+    ),
+    "agency_exists": "У вас уже есть кабинет агентства.",
+    "agency_card": (
+        "💼 <b>{name}</b>\n"
+        "{plan}\n"
+        "В поиске: {active} из {limit} объявлений.\n"
+        "\n"
+        "<b>Статистика за 30 дней</b>\n"
+        "{stats}"
+    ),
+    "agency_plan_free": "Пакет: бесплатный",
+    "agency_plan_paid": "Пакет: {listings} объявлений, до {date}",
+    "agency_plan_testing": "Пакет: всё бесплатно (тестовый режим)",
+    "agency_stats_item": (
+        "<b>{n}. {title}</b>{premium}\n"
+        "👁 {views} · 💬 {contacts} · ✉️ {chats} · 📅 {viewings} · ❤️ {favorites}"
+    ),
+    "agency_stats_empty": "Объявлений пока нет.",
+    "agency_stats_legend": (
+        "👁 открыли · 💬 нажали «Написать» или «Телефон» · ✉️ переписка · 📅 просмотр · ❤️ в избранном"
+    ),
+    "agency_premium_mark": " · ⭐ до {date}",
+    "agency_plans_button": "💳 Пакеты объявлений",
+    "agency_bump_button": "⭐ Premium {n}",
+    "agency_plans": (
+        "💳 <b>Пакеты на {days} дней</b>\n"
+        "Бесплатно — {free} объявлений.\n"
+        "\n"
+        "{plans}\n"
+        "\n"
+        "⭐ <b>Premium-объявление</b> — {bump} ⭐ в месяц: раз в сутки само поднимается наверх "
+        "поиска."
+    ),
+    "agency_plan_line": "• {listings} объявлений — {price} ⭐",
+    "agency_buy_button": "{listings} объявлений — {price} ⭐",
+    "agency_invoice_title": "Пакет: {listings} объявлений",
+    "agency_invoice_description": (
+        "{listings} объявлений в поиске Bina.ai на {days} дней, статистика просмотров и обращений."
+    ),
+    "agency_plan_activated": "✅ <b>Пакет оплачен:</b> {listings} объявлений до {date}.",
+    "agency_bump_title": "⭐ Premium-объявление",
+    "agency_bump_description": (
+        "{days} дней объявление раз в сутки само поднимается наверх поиска и отмечено ⭐."
+    ),
+    "agency_bump_activated": (
+        "⭐ <b>Готово!</b> Объявление «{title}» — Premium до {date}: раз в сутки поднимается "
+        "наверх."
+    ),
+    "agency_payment_problem": (
+        "Оплата прошла, но кабинет или объявление не найдены. Напишите в поддержку: /paysupport"
+    ),
+    "agency_invoice_outdated": (
+        "Пакет или объявление изменились. Откройте кабинет и попробуйте снова."
+    ),
+    "agency_blocked": ("Кабинет агентства заблокирован. Если это ошибка — напишите в /paysupport."),
+    "agency_admin_new": "💼 <b>Новый риелтор / агентство</b>\n{name}\n📱 {phone}",
+    "agency_admin_block": "🚫 Заблокировать",
+    "agency_admin_blocked": "🚫 Агентство «{name}» заблокировано, скрыто объявлений: {hidden}.",
 }
 
 _EN: dict[str, str] = {
@@ -942,6 +1021,89 @@ _EN: dict[str, str] = {
     "voice_unavailable": (
         "🎙 Voice messages are not recognized right now. Please type your request."
     ),
+    "agency_join": "💼 I'm a realtor / agency",
+    "agency_cabinet": "💼 Agency account",
+    "agency_ask_name": (
+        "💼 <b>Realtor account</b>\n"
+        "\n"
+        "Up to {free} listings for free, statistics of views and contacts, ⭐ Premium "
+        "listings.\n"
+        "\n"
+        "Write the name of your agency or your name — tenants will see it.\n"
+        "\n"
+        "Changed your mind? Press «🏠 Main menu»."
+    ),
+    "agency_bad_name": "The name should be 2 to 80 characters. Please write it again.",
+    "agency_ask_phone": (
+        "📱 Press the button below — Telegram will share your number. This way tenants know "
+        "the number is real."
+    ),
+    "agency_phone_button": "📱 Share my number",
+    "agency_registered": (
+        "✅ <b>The «{name}» account is ready!</b>\n"
+        "You can post up to {limit} listings. Post them with «✍️ Post an apartment»."
+    ),
+    "agency_exists": "You already have an agency account.",
+    "agency_card": (
+        "💼 <b>{name}</b>\n"
+        "{plan}\n"
+        "In search: {active} of {limit} listings.\n"
+        "\n"
+        "<b>Statistics for 30 days</b>\n"
+        "{stats}"
+    ),
+    "agency_plan_free": "Plan: free",
+    "agency_plan_paid": "Plan: {listings} listings, until {date}",
+    "agency_plan_testing": "Plan: everything free (test mode)",
+    "agency_stats_item": (
+        "<b>{n}. {title}</b>{premium}\n"
+        "👁 {views} · 💬 {contacts} · ✉️ {chats} · 📅 {viewings} · ❤️ {favorites}"
+    ),
+    "agency_stats_empty": "No listings yet.",
+    "agency_stats_legend": (
+        "👁 opened · 💬 pressed «Message» or «Phone» · ✉️ chat · 📅 viewing · ❤️ in favorites"
+    ),
+    "agency_premium_mark": " · ⭐ until {date}",
+    "agency_plans_button": "💳 Listing plans",
+    "agency_bump_button": "⭐ Premium {n}",
+    "agency_plans": (
+        "💳 <b>Plans for {days} days</b>\n"
+        "Free — {free} listings.\n"
+        "\n"
+        "{plans}\n"
+        "\n"
+        "⭐ <b>Premium listing</b> — {bump} ⭐ a month: once a day it rises to the top of "
+        "search by itself."
+    ),
+    "agency_plan_line": "• {listings} listings — {price} ⭐",
+    "agency_buy_button": "{listings} listings — {price} ⭐",
+    "agency_invoice_title": "Plan: {listings} listings",
+    "agency_invoice_description": (
+        "{listings} listings in Bina.ai search for {days} days, statistics of views and contacts."
+    ),
+    "agency_plan_activated": "✅ <b>Plan paid:</b> {listings} listings until {date}.",
+    "agency_bump_title": "⭐ Premium listing",
+    "agency_bump_description": (
+        "For {days} days the listing rises to the top of search once a day by itself and is "
+        "marked ⭐."
+    ),
+    "agency_bump_activated": (
+        "⭐ <b>Done!</b> The listing «{title}» is Premium until {date}: it rises to the top "
+        "once a day."
+    ),
+    "agency_payment_problem": (
+        "The payment went through, but the account or listing was not found. Please contact "
+        "support: /paysupport"
+    ),
+    "agency_invoice_outdated": (
+        "The plan or the listing has changed. Open the account and try again."
+    ),
+    "agency_blocked": (
+        "The agency account is blocked. If this is a mistake, write to /paysupport."
+    ),
+    "agency_admin_new": "💼 <b>New realtor / agency</b>\n{name}\n📱 {phone}",
+    "agency_admin_block": "🚫 Block",
+    "agency_admin_blocked": "🚫 Agency «{name}» blocked, listings hidden: {hidden}.",
 }
 
 _KA: dict[str, str] = {
@@ -1402,6 +1564,86 @@ _KA: dict[str, str] = {
     ),
     "voice_too_long": "🎙 ხმოვანი ცოტა გრძელია — გთხოვთ, ჩაეტიეთ {seconds} წამში.",
     "voice_unavailable": "🎙 ხმოვანი შეტყობინებები ახლა არ ამოიცნობა. გთხოვთ, დაწერეთ ტექსტით.",
+    "agency_join": "💼 რიელტორი / სააგენტო ვარ",
+    "agency_cabinet": "💼 სააგენტოს კაბინეტი",
+    "agency_ask_name": (
+        "💼 <b>რიელტორის კაბინეტი</b>\n"
+        "\n"
+        "უფასოდ {free} განცხადებამდე, ნახვებისა და მიმართვების სტატისტიკა, ⭐ "
+        "Premium-განცხადებები.\n"
+        "\n"
+        "დაწერეთ სააგენტოს სახელი ან თქვენი სახელი — მას დამქირავებლები დაინახავენ.\n"
+        "\n"
+        "გადაიფიქრეთ? დააჭირეთ «🏠 მთავარი მენიუ»."
+    ),
+    "agency_bad_name": "სახელი უნდა იყოს 2-დან 80 სიმბოლომდე. დაწერეთ თავიდან.",
+    "agency_ask_phone": (
+        "📱 დააჭირეთ ქვემოთ ღილაკს — Telegram გადმოგვცემს თქვენს ნომერს. ასე დამქირავებლებმა "
+        "ეცოდინებათ, რომ ნომერი ნამდვილია."
+    ),
+    "agency_phone_button": "📱 ნომრის გაზიარება",
+    "agency_registered": (
+        "✅ <b>კაბინეტი «{name}» მზადაა!</b>\n"
+        "შეგიძლიათ განათავსოთ {limit} განცხადებამდე. განცხადება — ღილაკით «✍️ ბინის "
+        "განთავსება»."
+    ),
+    "agency_exists": "სააგენტოს კაბინეტი უკვე გაქვთ.",
+    "agency_card": (
+        "💼 <b>{name}</b>\n"
+        "{plan}\n"
+        "ძებნაში: {active} / {limit} განცხადება.\n"
+        "\n"
+        "<b>სტატისტიკა 30 დღის</b>\n"
+        "{stats}"
+    ),
+    "agency_plan_free": "პაკეტი: უფასო",
+    "agency_plan_paid": "პაკეტი: {listings} განცხადება, {date}-მდე",
+    "agency_plan_testing": "პაკეტი: ყველაფერი უფასოა (სატესტო რეჟიმი)",
+    "agency_stats_item": (
+        "<b>{n}. {title}</b>{premium}\n"
+        "👁 {views} · 💬 {contacts} · ✉️ {chats} · 📅 {viewings} · ❤️ {favorites}"
+    ),
+    "agency_stats_empty": "განცხადებები ჯერ არ არის.",
+    "agency_stats_legend": (
+        "👁 გახსნეს · 💬 დააჭირეს «მიწერას» ან «ტელეფონს» · ✉️ მიმოწერა · 📅 ნახვა · ❤️ რჩეულებში"
+    ),
+    "agency_premium_mark": " · ⭐ {date}-მდე",
+    "agency_plans_button": "💳 განცხადებების პაკეტები",
+    "agency_bump_button": "⭐ Premium {n}",
+    "agency_plans": (
+        "💳 <b>პაკეტები {days} დღით</b>\n"
+        "უფასოდ — {free} განცხადება.\n"
+        "\n"
+        "{plans}\n"
+        "\n"
+        "⭐ <b>Premium-განცხადება</b> — {bump} ⭐ თვეში: დღეში ერთხელ თავისით ადის ძებნის "
+        "თავში."
+    ),
+    "agency_plan_line": "• {listings} განცხადება — {price} ⭐",
+    "agency_buy_button": "{listings} განცხადება — {price} ⭐",
+    "agency_invoice_title": "პაკეტი: {listings} განცხადება",
+    "agency_invoice_description": (
+        "{listings} განცხადება Bina.ai-ის ძებნაში {days} დღით, ნახვებისა და მიმართვების სტატისტიკა."
+    ),
+    "agency_plan_activated": "✅ <b>პაკეტი გადახდილია:</b> {listings} განცხადება {date}-მდე.",
+    "agency_bump_title": "⭐ Premium-განცხადება",
+    "agency_bump_description": (
+        "{days} დღე განცხადება დღეში ერთხელ თავისით ადის ძებნის თავში და მონიშნულია ⭐-ით."
+    ),
+    "agency_bump_activated": (
+        "⭐ <b>მზადაა!</b> განცხადება «{title}» Premium-ია {date}-მდე: დღეში ერთხელ ადის თავში."
+    ),
+    "agency_payment_problem": (
+        "გადახდა შესრულდა, მაგრამ კაბინეტი ან განცხადება ვერ მოიძებნა. მიწერეთ მხარდაჭერას: "
+        "/paysupport"
+    ),
+    "agency_invoice_outdated": (
+        "პაკეტი ან განცხადება შეიცვალა. გახსენით კაბინეტი და სცადეთ თავიდან."
+    ),
+    "agency_blocked": "სააგენტოს კაბინეტი დაბლოკილია. თუ ეს შეცდომაა, მიწერეთ /paysupport.",
+    "agency_admin_new": "💼 <b>ახალი რიელტორი / სააგენტო</b>\n{name}\n📱 {phone}",
+    "agency_admin_block": "🚫 დაბლოკვა",
+    "agency_admin_blocked": "🚫 სააგენტო «{name}» დაიბლოკა, დამალული განცხადებები: {hidden}.",
 }
 
 TEXTS: dict[str, dict[str, str]] = {"ru": _RU, "en": _EN, "ka": _KA}

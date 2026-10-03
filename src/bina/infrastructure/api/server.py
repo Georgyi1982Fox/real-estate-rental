@@ -19,6 +19,7 @@ from bina.infrastructure.api.errors import REQUEST_ID_HEADER, install_error_hand
 from bina.infrastructure.api.rate_limit import install_rate_limit
 from bina.infrastructure.api.routes import (
     acceptance,
+    agency,
     assistant,
     cities,
     compare,
@@ -107,6 +108,7 @@ def create_app(
     app.include_router(referral.router)
     app.include_router(legal.router)
     app.include_router(my_listings.router)
+    app.include_router(agency.router)
     # TASK-096: фото собственников (папка MEDIA_DIR); отдаются как обычные файлы
     app.mount("/api/media", StaticFiles(directory=media_dir(), check_dir=False), name="media")
     return app

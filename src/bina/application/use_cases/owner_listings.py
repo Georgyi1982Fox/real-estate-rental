@@ -68,6 +68,7 @@ class OwnerListingsUseCase:
         photos: Sequence[bytes],
         now: datetime,
         bot_username: str | None = None,
+        max_active: int = MAX_ACTIVE_LISTINGS,
     ) -> Listing:
         """Новое объявление — сразу в поиске.
 
@@ -77,7 +78,7 @@ class OwnerListingsUseCase:
         Raises:
             OwnerListingError: лимит объявлений, нет контакта, слишком много фото.
         """
-        if await self._repository.count_active(user_id) >= MAX_ACTIVE_LISTINGS:
+        if await self._repository.count_active(user_id) >= max_active:
             raise OwnerListingError(LIMIT_REACHED)
         if not draft.phone and not draft.contact_url:
             raise OwnerListingError(NO_CONTACT)
@@ -104,11 +105,16 @@ class OwnerListingsUseCase:
         return listing
 
     async def set_active(
-        self, user_id: UUID, listing_id: UUID, active: bool, now: datetime
+        self,
+        user_id: UUID,
+        listing_id: UUID,
+        active: bool,
+        now: datetime,
+        max_active: int = MAX_ACTIVE_LISTINGS,
     ) -> Listing:
         listing = await self.owned(user_id, listing_id)
         if active and listing.status != ListingStatus.ACTIVE:
-            if await self._repository.count_active(user_id) >= MAX_ACTIVE_LISTINGS:
+            if await self._repository.count_active(user_id) >= max_active:
                 raise OwnerListingError(LIMIT_REACHED)
         await self._repository.set_active(listing, active, now)
         return listing

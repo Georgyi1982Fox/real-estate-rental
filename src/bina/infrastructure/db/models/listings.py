@@ -11,6 +11,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base, SoftDeleteMixin, value_enum
 
 if TYPE_CHECKING:
+    from .agencies import Agency
     from .districts import District
 
     # TASK-007: Favorite импортировался из .users, где его нет; Embedding не импортировался.
@@ -123,6 +124,17 @@ class Listing(Base, SoftDeleteMixin):
     # TASK-114: уровень ремонта по фото (AI) — excellent / good / needs_repair; разбор —
     # bina_photo_reports
     repair_level: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    # TASK-100: «⭐ Premium-объявление» агентства — поднимается раз в сутки до этого времени
+    bump_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    bumped_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # TASK-100: агентство, разместившее объявление (по owner_user_id); у остальных — None
+    owner_agency: Mapped["Agency | None"] = relationship(
+        "Agency",
+        primaryjoin="foreign(Listing.owner_user_id) == Agency.user_id",
+        viewonly=True,
+        lazy="selectin",
+        uselist=False,
+    )
     # TASK-097: платное продвижение — до этого времени объявление вверху поиска («🔥 Топ»)
     promoted_until: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True, index=True
