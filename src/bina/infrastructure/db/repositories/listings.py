@@ -412,9 +412,12 @@ class ListingsRepository(IListingsRepository):
 
     async def add_skips(self, source_name: str, source_ids: list[str]) -> None:
         """Запомнить пропущенные объявления (повторно разбирать не нужно)."""
-        if not source_ids:
+        # Один ID дважды в одном INSERT … ON CONFLICT PostgreSQL не принимает
+        # («cannot affect row a second time»): объявление бывает в выдаче дважды
+        unique_ids = list(dict.fromkeys(source_ids))
+        if not unique_ids:
             return
-        rows = [{"source_name": source_name, "source_id": item} for item in source_ids]
+        rows = [{"source_name": source_name, "source_id": item} for item in unique_ids]
         await self._session.execute(
             pg_insert(ScrapeSkip)
             .values(rows)
