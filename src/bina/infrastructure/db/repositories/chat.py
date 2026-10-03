@@ -35,6 +35,8 @@ class ChatRepository:
                 Listing.owner_user_id.is_not(None),
                 Listing.status == ListingStatus.ACTIVE,
                 Listing.is_deleted.is_(False),
+                # Скрытое модератором или блокировкой агентства — не для переписки
+                Listing.hidden_at.is_(None),
             )
         )
         return (await self._session.execute(query)).scalar_one_or_none()

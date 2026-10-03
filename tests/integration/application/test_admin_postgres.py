@@ -34,6 +34,12 @@ def raw(source_id: str, source: str = "ss", district: str = "Ваке") -> RawLi
 async def test_stats_and_complaints(session: AsyncSession) -> None:
     now = datetime.now(UTC)
     users = [await UsersRepository(session).create(700 + i, "ru") for i in range(4)]
+    # Жалобы аккаунтов старше суток считаются для автоскрытия
+    await session.execute(
+        update(User)
+        .where(User.id.in_([user.id for user in users[1:]]))
+        .values(created_at=now - timedelta(days=2))
+    )
     await session.execute(
         update(User)
         .where(User.id == users[0].id)

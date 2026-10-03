@@ -2,7 +2,7 @@
 
 Больше ``limit`` сообщений и нажатий за ``window`` секунд от одного человека —
 лишние апдейты отбрасываются до обращения к базе. Предупреждение — один раз
-за окно, на языке из Telegram.
+за окно, на языке из Telegram. Оплаты (проверка счёта и успешный платёж) проходят всегда.
 """
 
 from collections.abc import Awaitable, Callable
@@ -11,7 +11,7 @@ from typing import Any
 import structlog
 from aiogram import BaseMiddleware, Bot
 from aiogram.dispatcher.middlewares.user_context import EVENT_FROM_USER_KEY
-from aiogram.types import TelegramObject
+from aiogram.types import Message, PreCheckoutQuery, TelegramObject, Update
 from aiogram.types import User as TelegramUser
 
 from bina.infrastructure.bot.texts import t
@@ -35,7 +35,7 @@ class ThrottlingMiddleware(BaseMiddleware):
         data: dict[str, Any],
     ) -> Any:
         user: TelegramUser | None = data.get(EVENT_FROM_USER_KEY)
-        if user is None:
+        if user is None or _is_payment(event):
             return await handler(event, data)
         key = str(user.id)
         if self._limiter.hit(key) is None:
@@ -48,3 +48,14 @@ class ThrottlingMiddleware(BaseMiddleware):
             except Exception as exc:  # noqa: BLE001 - предупреждение не обязательно
                 logger.info("Throttle warning not sent", error=str(exc))
         return None
+
+
+def _is_payment(event: TelegramObject) -> bool:
+    """Оплату не отбрасываем никогда: Telegram не пришлёт её второй раз, а звёзды уже списаны."""
+    if isinstance(event, Update):
+        return event.pre_checkout_query is not None or (
+            event.message is not None and event.message.successful_payment is not None
+        )
+    if isinstance(event, PreCheckoutQuery):
+        return True
+    return isinstance(event, Message) and event.successful_payment is not None

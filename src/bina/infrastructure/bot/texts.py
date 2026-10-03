@@ -564,6 +564,7 @@ _RU: dict[str, str] = {
         "\n"
         "Ждут вашего решения: ⚠️ жалоб {complaints} · 🪪 проверок собственника {verifications}"
     ),
+    "owner_error_daily_limit": "Сегодня вы уже разместили много объявлений. Попробуйте завтра.",
 }
 
 _EN: dict[str, str] = {
@@ -1153,6 +1154,9 @@ _EN: dict[str, str] = {
         "Waiting for your decision: ⚠️ complaints {complaints} · 🪪 owner checks "
         "{verifications}"
     ),
+    "owner_error_daily_limit": (
+        "You have already posted many listings today. Please try tomorrow."
+    ),
 }
 
 _KA: dict[str, str] = {
@@ -1719,6 +1723,7 @@ _KA: dict[str, str] = {
         "თქვენს გადაწყვეტილებას ელოდება: ⚠️ საჩივრები {complaints} · 🪪 მესაკუთრის შემოწმება "
         "{verifications}"
     ),
+    "owner_error_daily_limit": "დღეს უკვე ბევრი განცხადება განათავსეთ. სცადეთ ხვალ.",
 }
 
 TEXTS: dict[str, dict[str, str]] = {"ru": _RU, "en": _EN, "ka": _KA}

@@ -1,6 +1,7 @@
 """Единый формат ошибок, X-Request-ID, лимит тела и очистка текста (TASK-017/018)."""
 
 import logging
+from collections.abc import AsyncIterator
 from typing import Any, cast
 from unittest.mock import MagicMock
 
@@ -72,6 +73,18 @@ async def test_body_too_large(client: AsyncClient) -> None:
         headers={"Content-Type": "application/json"},
     )
     assert (response.status_code, error(response)["code"]) == (413, "payload_too_large")
+
+
+async def test_chunked_body_without_length_is_refused(client: AsyncClient) -> None:
+    """Тело частями без Content-Length обошло бы проверку размера."""
+
+    async def chunks() -> AsyncIterator[bytes]:
+        yield b"x" * 1024
+
+    response = await client.post(
+        "/api/favorites", content=chunks(), headers={"Content-Type": "application/json"}
+    )
+    assert response.status_code == 411
 
 
 async def test_unhandled_error_hides_details(caplog: pytest.LogCaptureFixture) -> None:

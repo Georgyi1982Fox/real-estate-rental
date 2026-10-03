@@ -2,7 +2,7 @@
 
 import uuid
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Protocol
 from uuid import UUID
@@ -12,6 +12,8 @@ import structlog
 from bina.application.chat import chat_link
 from bina.application.owner_listings import (
     BAD_PHOTO,
+    DAILY_LIMIT,
+    EXTRA_NEW_PER_DAY,
     LIMIT_REACHED,
     MAX_ACTIVE_LISTINGS,
     MAX_PHOTOS,
@@ -29,6 +31,8 @@ logger = structlog.get_logger(__name__)
 
 class IOwnerListingsRepository(Protocol):
     async def count_active(self, user_id: UUID) -> int: ...
+
+    async def count_created_since(self, user_id: UUID, since: datetime) -> int: ...
 
     async def list_for_user(self, user_id: UUID) -> list[Listing]: ...
 
@@ -80,6 +84,9 @@ class OwnerListingsUseCase:
         """
         if await self._repository.count_active(user_id) >= max_active:
             raise OwnerListingError(LIMIT_REACHED)
+        created = await self._repository.count_created_since(user_id, now - timedelta(days=1))
+        if created >= max_active + EXTRA_NEW_PER_DAY:
+            raise OwnerListingError(DAILY_LIMIT)
         if not draft.phone and not draft.contact_url:
             raise OwnerListingError(NO_CONTACT)
         if len(photos) > MAX_PHOTOS:

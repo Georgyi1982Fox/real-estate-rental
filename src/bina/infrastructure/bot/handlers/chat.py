@@ -335,8 +335,15 @@ async def on_day(
     if day is None:
         await callback.answer(t(user.language, "message_outdated"), show_alert=True)
         return
+    use_case = _use_case(session)
+    try:
+        # Занятые часы — только по объявлению, которое можно смотреть (не чужое расписание)
+        await use_case.listing_for(callback_data.id, user)
+    except ChatError as exc:
+        await callback.answer(error_text(user.language, exc.code), show_alert=True)
+        return
     now = _now()
-    busy = await _use_case(session).busy_hours(callback_data.id, day)
+    busy = await use_case.busy_hours(callback_data.id, day)
     hours = [hour for hour in viewing_hours(day, now) if hour not in busy]
     if not hours:
         await callback.answer(t(user.language, "view_no_hours"), show_alert=True)

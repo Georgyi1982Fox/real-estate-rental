@@ -57,6 +57,21 @@ async def get_current_user(
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
 
 
+async def get_optional_user(
+    session: SessionDep,
+    settings: SettingsDep,
+    init_data: Annotated[str | None, Header(alias=INIT_DATA_HEADER)] = None,
+    user_id: Annotated[int | None, Query()] = None,
+) -> User | None:
+    """Пользователь запроса или ``None`` для гостя сайта (без initData)."""
+    if init_data is None and user_id is None:
+        return None
+    return await get_current_user(session, settings, init_data, user_id)
+
+
+OptionalUserDep = Annotated[User | None, Depends(get_optional_user)]
+
+
 def get_telegram_username(
     settings: SettingsDep,
     init_data: Annotated[str | None, Header(alias=INIT_DATA_HEADER)] = None,

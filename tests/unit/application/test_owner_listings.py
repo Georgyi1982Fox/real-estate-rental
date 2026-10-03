@@ -9,6 +9,7 @@ import pytest
 
 from bina.application.listing_titles import listing_titles
 from bina.application.owner_listings import (
+    EXTRA_NEW_PER_DAY,
     MAX_ACTIVE_LISTINGS,
     MAX_PHOTOS,
     OwnerListingDraft,
@@ -99,6 +100,9 @@ class FakeRepository:
 
     async def count_active(self, user_id: UUID) -> int:
         return sum(1 for item in self.listings if item.status == ListingStatus.ACTIVE)
+
+    async def count_created_since(self, user_id: UUID, since: datetime) -> int:
+        return len(self.listings)
 
     async def list_for_user(self, user_id: UUID) -> list[Listing]:
         return self.listings
@@ -198,6 +202,15 @@ async def test_publish_needs_contact_and_respects_limit(
     await use_case.publish(repository.user, draft(), [], NOW)
     with pytest.raises(OwnerListingError, match="limit"):
         await use_case.set_active(repository.user, first.id, True, NOW)
+
+    # «Снял — разместил заново» без конца нельзя: не больше 5 + 5 новых за сутки
+    for _ in range(EXTRA_NEW_PER_DAY - 1):
+        listing = repository.listings[-1]
+        await use_case.set_active(repository.user, listing.id, False, NOW)
+        await use_case.publish(repository.user, draft(), [], NOW)
+    await use_case.set_active(repository.user, repository.listings[-1].id, False, NOW)
+    with pytest.raises(OwnerListingError, match="daily_limit"):
+        await use_case.publish(repository.user, draft(), [], NOW)
 
 
 async def test_photos_and_price(

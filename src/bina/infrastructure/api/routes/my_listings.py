@@ -21,6 +21,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 
 from bina.application.agencies import load_agency_plans
 from bina.application.owner_listings import (
+    DAILY_LIMIT,
     LIMIT_REACHED,
     MAX_ACTIVE_LISTINGS,
     NO_CONTACT,
@@ -79,6 +80,11 @@ def _raise(error: OwnerListingError, limit: int = MAX_ACTIVE_LISTINGS) -> NoRetu
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"At most {limit} active listings: take one down first",
+        ) from error
+    if error.code == DAILY_LIMIT:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many new listings today: try again tomorrow",
         ) from error
     if error.code == NO_CONTACT:
         raise bad_request("phone is required when you have no Telegram username") from error
