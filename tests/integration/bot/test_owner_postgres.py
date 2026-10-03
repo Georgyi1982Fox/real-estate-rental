@@ -16,6 +16,7 @@ from aiogram.types import (
     Chat,
     Contact,
     InlineKeyboardMarkup,
+    Location,
     Message,
     PhotoSize,
     Update,
@@ -119,7 +120,8 @@ def make_owner(
     telegram: FakeTelegramSession,
     username: str | None = "nino_home",
 ) -> Owner:
-    settings = BotSettings(token=TOKEN, admin_ids=(ADMIN_ID,))
+    # Мастер — много сообщений подряд; защиту от флуда проверяют отдельные тесты
+    settings = BotSettings(token=TOKEN, admin_ids=(ADMIN_ID,), rate_limit=100)
     dispatcher = create_dispatcher(settings, session_factory)
     return Owner(dispatcher, Bot(token=TOKEN, session=telegram), username)
 
@@ -133,6 +135,7 @@ async def walk_to_photos(owner: Owner) -> None:
     await owner.press(OwnerCallback(action=OwnerAction.NEW).pack())
     await owner.press(OwnerCallback(action=OwnerAction.CITY, value="tbilisi").pack())
     await owner.send("Ваке")
+    await owner.send("ул. Чавчавадзе, 10")
     await owner.press(OwnerCallback(action=OwnerAction.PERIOD, value="monthly").pack())
     await owner.press(OwnerCallback(action=OwnerAction.ROOMS, value="2").pack())
     await owner.send("5")  # слишком маленькая площадь — переспросит
@@ -181,6 +184,8 @@ async def test_owner_posts_apartment(
         "monthly",
     )
     assert (listing.floor, listing.total_floors, listing.phone) == (5, 9, "+995555123456")
+    assert listing.address == "ул. Чавчавадзе, 10", "точку найдёт шаг geocode"
+    assert any("Где именно квартира" in text for text in sent)
     assert listing.url == f"https://t.me/{BOT_USERNAME}?start=chat_{listing.id}"
     assert (listing.title_ru, listing.title_en) == (
         "2-комн. квартира, Ваке, 60 м²",
@@ -267,3 +272,29 @@ async def test_album_photos_arrive_together(
     await walk_to_photos(owner)
     await asyncio.gather(*(owner.photo(f"p{n}") for n in range(4)))
     assert any("Фото 4/10" in text for text in texts(telegram))
+
+
+async def test_location_point_and_skip(
+    session_factory: async_sessionmaker[AsyncSession],
+    telegram: FakeTelegramSession,
+) -> None:
+    owner = make_owner(session_factory, telegram)
+    await owner.send("🏠 Сдать квартиру")
+    await owner.press(OwnerCallback(action=OwnerAction.NEW).pack())
+    await owner.press(OwnerCallback(action=OwnerAction.CITY, value="tbilisi").pack())
+    await owner.send("Ваке")
+    await owner.send("ул")  # слишком короткий адрес — переспросит
+    assert "улицу и номер дома" in texts(telegram)[-1]
+    await owner._message(location=Location(latitude=48.85, longitude=2.35))  # Париж
+    assert "не в Грузии" in texts(telegram)[-1]
+    await owner._message(location=Location(latitude=41.7105, longitude=44.7590))
+    assert "Как сдаёте" in texts(telegram)[-1]
+    state = await owner.dispatcher.fsm.get_context(owner.bot, CHAT_ID, CHAT_ID).get_data()
+    assert (state["latitude"], state["longitude"]) == (41.7105, 44.759)
+
+    # Пропустить тоже можно
+    await owner.press(OwnerCallback(action=OwnerAction.NEW).pack())
+    await owner.press(OwnerCallback(action=OwnerAction.CITY, value="tbilisi").pack())
+    await owner.send("Сабуртало")
+    await owner.press(OwnerCallback(action=OwnerAction.SKIP_LOCATION).pack())
+    assert "Как сдаёте" in texts(telegram)[-1]

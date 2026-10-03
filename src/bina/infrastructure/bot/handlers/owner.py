@@ -43,7 +43,9 @@ from bina.application.owner_listings import (
     ROOM_CHOICES,
     OwnerListingDraft,
     OwnerListingError,
+    clean_address,
     clean_phone,
+    in_georgia,
     parse_area,
     parse_floor,
     telegram_contact,
@@ -97,6 +99,7 @@ _photo_locks: defaultdict[int, asyncio.Lock] = defaultdict(asyncio.Lock)
 
 class OwnerStates(StatesGroup):
     district = State()
+    location = State()
     area = State()
     price = State()
     floor = State()
@@ -285,8 +288,47 @@ async def on_district(message: Message, user: User, state: FSMContext) -> None:
         await message.answer(t(user.language, "owner_bad_district"))
         return
     await state.update_data(district=district)
+    await state.set_state(OwnerStates.location)
+    await message.answer(
+        t(user.language, "owner_ask_location"),
+        reply_markup=_markup(_button(t(user.language, "owner_skip"), OwnerAction.SKIP_LOCATION)),
+    )
+
+
+async def on_location(message: Message, user: User, state: FSMContext) -> None:
+    """Точка на карте (📎 → «Геопозиция», можно с адресом места)."""
+    point = message.location
+    assert point is not None
+    if not in_georgia(point.latitude, point.longitude):
+        await message.answer(t(user.language, "owner_bad_location"))
+        return
+    address = clean_address(message.venue.address) if message.venue else None
+    await state.update_data(latitude=point.latitude, longitude=point.longitude, address=address)
+    await _ask_period(message, user.language, state)
+
+
+async def on_address(message: Message, user: User, state: FSMContext) -> None:
+    """Адрес текстом — точку на карте найдёт шаг «geocode» после публикации."""
+    address = clean_address(message.text)
+    if address is None:
+        await message.answer(t(user.language, "owner_bad_address"))
+        return
+    await state.update_data(address=address)
+    await _ask_period(message, user.language, state)
+
+
+async def on_skip_location(callback: CallbackQuery, user: User, state: FSMContext) -> None:
+    if await state.get_state() != OwnerStates.location.state or not isinstance(
+        callback.message, Message
+    ):
+        await callback.answer()
+        return
+    await callback.answer()
+    await _ask_period(callback.message, user.language, state)
+
+
+async def _ask_period(message: Message, language: str, state: FSMContext) -> None:
     await state.set_state(None)
-    language = user.language
     await message.answer(
         t(language, "owner_ask_period"),
         reply_markup=_markup(
@@ -491,6 +533,9 @@ def draft_from(data: dict[str, Any]) -> OwnerListingDraft:
         total_floors=data.get("total_floors"),
         phone=data.get("phone"),
         contact_url=data.get("contact_url"),
+        address=data.get("address"),
+        latitude=data.get("latitude"),
+        longitude=data.get("longitude"),
     )
 
 
@@ -506,7 +551,7 @@ def render_preview(language: str, data: dict[str, Any]) -> str:
         language,
         "owner_preview",
         city=city_name(draft.city, language),
-        district=escape(draft.district),
+        district=escape(_with_location(language, draft)),
         rooms=draft.rooms,
         area=format_area(draft.area),
         price=price,
@@ -516,6 +561,15 @@ def render_preview(language: str, data: dict[str, Any]) -> str:
         telegram=escape(draft.contact_url or "—"),
         description=escape(draft.description[:500]),
     )
+
+
+def _with_location(language: str, draft: OwnerListingDraft) -> str:
+    """«Ваке · 📍 ул. Чавчавадзе, 10» или «Ваке · 📍 точка на карте»."""
+    if draft.address:
+        return f"{draft.district} · 📍 {draft.address}"
+    if draft.latitude is not None:
+        return f"{draft.district} · 📍 {t(language, 'owner_location_point')}"
+    return draft.district
 
 
 async def download_photos(bot: Bot, file_ids: list[str]) -> list[bytes]:
@@ -652,6 +706,8 @@ def create_router() -> Router:
     router.message.register(cmd_mylistings, Command("mylistings"))
     router.message.register(cmd_mylistings, F.text.in_(all_variants("menu_owner")))
     router.message.register(on_district, StateFilter(OwnerStates.district), ANSWER)
+    router.message.register(on_location, StateFilter(OwnerStates.location), F.location)
+    router.message.register(on_address, StateFilter(OwnerStates.location), ANSWER)
     router.message.register(on_area, StateFilter(OwnerStates.area), ANSWER)
     router.message.register(on_price, StateFilter(OwnerStates.price), ANSWER)
     router.message.register(on_floor, StateFilter(OwnerStates.floor), ANSWER)
@@ -666,6 +722,7 @@ def create_router() -> Router:
     router.callback_query.register(on_period, _action(OwnerAction.PERIOD))
     router.callback_query.register(on_rooms, _action(OwnerAction.ROOMS))
     router.callback_query.register(on_skip_floor, _action(OwnerAction.SKIP_FLOOR))
+    router.callback_query.register(on_skip_location, _action(OwnerAction.SKIP_LOCATION))
     router.callback_query.register(on_photos_done, _action(OwnerAction.PHOTOS_DONE))
     router.callback_query.register(on_publish, _action(OwnerAction.PUBLISH))
     router.callback_query.register(on_cancel, _action(OwnerAction.CANCEL))

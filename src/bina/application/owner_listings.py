@@ -52,6 +52,10 @@ class OwnerListingDraft:
     # Ссылка для связи: t.me/<username> (имя в Telegram), если оно есть
     contact_url: str | None = None
     features: list[str] = field(default_factory=list)
+    # Где квартира: точка на карте и/или адрес (адрес без точки найдёт шаг «geocode»)
+    address: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
     # TASK-100: размещает агентство — «Кто сдаёт: агентство» и его название
     agency_name: str | None = None
 
@@ -90,6 +94,23 @@ def telegram_contact(username: str | None) -> str | None:
     return None
 
 
+# Грузия с запасом: точка не отсюда — ошибка (или не та квартира)
+GEORGIA_BOUNDS = ((41.0, 43.7), (39.9, 46.8))
+MIN_ADDRESS = 3
+MAX_ADDRESS = 150
+
+
+def in_georgia(latitude: float, longitude: float) -> bool:
+    (lat_min, lat_max), (lon_min, lon_max) = GEORGIA_BOUNDS
+    return lat_min <= latitude <= lat_max and lon_min <= longitude <= lon_max
+
+
+def clean_address(text: str | None) -> str | None:
+    """Адрес одной строкой; слишком короткий или длинный — None."""
+    address = " ".join((text or "").split())
+    return address if MIN_ADDRESS <= len(address) <= MAX_ADDRESS else None
+
+
 def valid_description(text: str) -> bool:
     return MIN_DESCRIPTION <= len(text.strip()) <= MAX_DESCRIPTION
 
@@ -114,6 +135,9 @@ def owner_raw_listing(
         photos=list(photos),
         phone=draft.phone,
         owner_name=draft.agency_name,
+        address=draft.address,
+        latitude=draft.latitude,
+        longitude=draft.longitude,
         floor=draft.floor,
         total_floors=draft.total_floors,
         features=list(draft.features),

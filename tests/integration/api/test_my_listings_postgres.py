@@ -143,3 +143,18 @@ async def test_limits_and_contact(client: AsyncClient) -> None:
         "/api/my/listings", json={**BODY, "description": "<b>коротко</b>"}, headers=headers(OWNER)
     )
     assert bad.status_code == 422
+
+
+async def test_post_with_map_point(client: AsyncClient) -> None:
+    body = {**BODY, "address": " ул. Руставели,  5 ", "latitude": 41.6505, "longitude": 41.6362}
+    created = await client.post("/api/my/listings", json=body, headers=headers(OWNER))
+    assert created.status_code == 201, created.text
+    location = (
+        await client.get(f"/api/listings/{created.json()['id']}/location", headers=headers(OWNER))
+    ).json()
+    assert (location["precision"], location["latitude"]) == ("exact", 41.6505)
+    assert location["address"] == "ул. Руставели, 5"
+
+    outside = {**BODY, "latitude": 48.85, "longitude": 2.35}
+    response = await client.post("/api/my/listings", json=outside, headers=headers(OWNER))
+    assert response.status_code == 422

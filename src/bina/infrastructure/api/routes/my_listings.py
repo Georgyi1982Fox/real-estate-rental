@@ -27,6 +27,7 @@ from bina.application.owner_listings import (
     NOT_FOUND,
     OwnerListingDraft,
     OwnerListingError,
+    clean_address,
     clean_phone,
     telegram_contact,
 )
@@ -119,6 +120,9 @@ async def create_listing(
         phone=phone,
         contact_url=telegram_contact(username),
         features=body.features,
+        address=clean_address(body.address) if body.address else None,
+        latitude=body.latitude,
+        longitude=body.longitude,
     )
     limit, agency = await _limit(session, user.id)
     if agency is not None:

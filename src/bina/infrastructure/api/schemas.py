@@ -11,7 +11,7 @@ from bina.application.dtos.pagination import Page
 from bina.application.fraud import fraud_level
 from bina.application.listing_details import CONDITIONS, FEATURES, clean_features
 from bina.application.localization import localize_address, localize_name
-from bina.application.owner_listings import MIN_DESCRIPTION
+from bina.application.owner_listings import MIN_DESCRIPTION, in_georgia
 from bina.application.photo_analysis import REPAIR_LEVELS
 from bina.application.price_analysis import PriceAnalysis, PriceLevel
 from bina.application.promotion import is_promoted
@@ -767,6 +767,20 @@ class OwnerListingIn(BaseModel):
     description: str = Field(min_length=20, max_length=3000)
     phone: str | None = Field(default=None, max_length=20, description="Если нет — только Telegram")
     features: list[str] = Field(default_factory=list, description="Коды удобств")
+    address: str | None = Field(
+        default=None, max_length=150, description="Улица и дом; точку найдёт сервер"
+    )
+    latitude: float | None = Field(default=None, description="Точка квартиры (вместе с longitude)")
+    longitude: float | None = None
+
+    @model_validator(mode="after")
+    def _check_point(self) -> "OwnerListingIn":
+        if (self.latitude is None) != (self.longitude is None):
+            raise ValueError("latitude and longitude go together")
+        if self.latitude is not None and self.longitude is not None:
+            if not in_georgia(self.latitude, self.longitude):
+                raise ValueError("the point is not in Georgia")
+        return self
 
     @field_validator("district")
     @classmethod
