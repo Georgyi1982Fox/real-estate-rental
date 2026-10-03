@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { useFavorites } from '../hooks/useFavorites';
 import { useUnreadCount } from '../hooks/useNotificationFeed';
 import { useSubscription } from '../hooks/useSubscription';
 import type { Strings } from '../i18n/strings';
@@ -19,6 +20,11 @@ interface TileConfig {
   to?: string;
   /** Раздел, который работает только в боте */
   href?: string;
+  /**
+   * Класс периодической анимации иконки (main.css). Сердце бьётся само (.heart-beat в Icon),
+   * остальным иконкам анимации добавляются сюда по одной
+   */
+  motion?: string;
 }
 
 interface GroupConfig {
@@ -39,7 +45,8 @@ const GROUPS: GroupConfig[] = [
       { key: 'smart', icon: 'sparkles', to: '/smart' },
       { key: 'favorites', icon: 'heart', to: '/favorites' },
       { key: 'searches', icon: 'bookmark', to: '/searches' },
-      { key: 'notifications', icon: 'bell', to: '/notifications' },
+      // Колокольчик качается всегда, а не только при непрочитанных (в шапке — только при них)
+      { key: 'notifications', icon: 'bell', to: '/notifications', motion: 'bell-ring' },
     ],
   },
   {
@@ -73,12 +80,8 @@ const GROUPS: GroupConfig[] = [
   },
 ];
 
-/** Ширина группы на компьютере (в колонках) по числу плиток; 3 и больше — во всю ширину */
-function desktopLayout(tiles: number): { span: string; columns: string } {
-  if (tiles <= 1) return { span: 'lg:col-span-1', columns: 'lg:grid-cols-1' };
-  if (tiles === 2) return { span: 'lg:col-span-2', columns: 'lg:grid-cols-2' };
-  return { span: 'lg:col-span-4', columns: 'lg:grid-cols-4' };
-}
+const NOTIFICATIONS_BADGE_MAX = 9;
+const FAVORITES_BADGE_MAX = 99;
 
 /** Главное меню: две крупные плитки поиска и сетка разделов по группам */
 export default function HubMenu() {
@@ -86,6 +89,7 @@ export default function HubMenu() {
   const ht = t.hub;
   const baseId = useId();
   const unread = useUnreadCount();
+  const { count: favorites } = useFavorites();
   const { subscription } = useSubscription();
 
   const premiumUntil =
@@ -97,59 +101,76 @@ export default function HubMenu() {
   const tileText = (key: TileKey): string =>
     key === 'premium' && premiumUntil ? fill(ht.premium_until, premiumUntil) : ht.tiles[key].text;
 
-  const renderTile = (tile: TileConfig, tone: HubTone, large = false) => (
-    <HubTile
-      icon={tile.icon}
-      title={ht.tiles[tile.key].title}
-      text={tileText(tile.key)}
-      tone={tone}
-      to={tile.to}
-      href={tile.href}
-      large={large}
-      badge={tile.key === 'notifications' ? unread : 0}
-      label={
-        tile.key === 'notifications' && unread > 0
-          ? fill(t.header.notifications_count, unread)
-          : undefined
-      }
-    />
-  );
+  /** Счётчик на иконке: непрочитанные уведомления и число квартир в избранном */
+  const tileBadge = (key: TileKey): { count: number; max: number; label?: string } => {
+    if (key === 'notifications') {
+      return {
+        count: unread,
+        max: NOTIFICATIONS_BADGE_MAX,
+        label: unread > 0 ? fill(t.header.notifications_count, unread) : undefined,
+      };
+    }
+    if (key === 'favorites') {
+      return {
+        count: favorites,
+        max: FAVORITES_BADGE_MAX,
+        label: favorites > 0 ? fill(t.header.favorites_count, favorites) : undefined,
+      };
+    }
+    return { count: 0, max: 0 };
+  };
+
+  const renderTile = (tile: TileConfig, tone: HubTone, large = false) => {
+    const badge = tileBadge(tile.key);
+    return (
+      <HubTile
+        icon={tile.icon}
+        title={ht.tiles[tile.key].title}
+        text={tileText(tile.key)}
+        tone={tone}
+        to={tile.to}
+        href={tile.href}
+        large={large}
+        badge={badge.count}
+        badgeMax={badge.max}
+        iconClass={tile.motion}
+        label={badge.label}
+      />
+    );
+  };
 
   return (
     <nav className="hub-menu flex flex-col gap-4" aria-label={ht.menu}>
       <ul className="hub-menu__heroes grid grid-cols-2 gap-2" aria-label={ht.groups.main}>
-        <li className="min-w-0">{renderTile(SEARCH_TILE, 'search', true)}</li>
-        <li className="min-w-0">{renderTile(DAILY_TILE, 'daily', true)}</li>
+        <li className="min-w-0">{renderTile(SEARCH_TILE, 'hero', true)}</li>
+        <li className="min-w-0">{renderTile(DAILY_TILE, 'hero', true)}</li>
       </ul>
 
-      {/* На компьютере группы стоят рядом в сетке из 4 колонок, каждая шириной в свои плитки */}
-      <div className="hub-menu__groups flex flex-col gap-4 lg:grid lg:grid-cols-4 lg:gap-x-2">
-        {GROUPS.map((group) => {
-          const titleId = `${baseId}-${group.key}`;
-          const layout = desktopLayout(group.tiles.length);
-          return (
-            <section
-              key={group.key}
-              className={`hub-menu__group flex min-w-0 flex-col gap-1 ${layout.span}`}
-              aria-labelledby={titleId}
+      {/* Каждая группа — с новой строки, и на телефоне, и на компьютере */}
+      {GROUPS.map((group) => {
+        const titleId = `${baseId}-${group.key}`;
+        return (
+          <section
+            key={group.key}
+            className="hub-menu__group flex min-w-0 flex-col gap-1"
+            aria-labelledby={titleId}
+          >
+            <h2
+              id={titleId}
+              className="hub-menu__group-title px-1 text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]"
             >
-              <h2
-                id={titleId}
-                className="hub-menu__group-title px-1 text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]"
-              >
-                {ht.groups[group.key]}
-              </h2>
-              <ul className={`grid grid-cols-2 gap-2 ${layout.columns}`}>
-                {group.tiles.map((tile) => (
-                  <li key={tile.key} className="min-w-0">
-                    {renderTile(tile, group.tone)}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          );
-        })}
-      </div>
+              {ht.groups[group.key]}
+            </h2>
+            <ul className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+              {group.tiles.map((tile) => (
+                <li key={tile.key} className="min-w-0">
+                  {renderTile(tile, group.tone)}
+                </li>
+              ))}
+            </ul>
+          </section>
+        );
+      })}
     </nav>
   );
 }

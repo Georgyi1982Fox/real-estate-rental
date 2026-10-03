@@ -334,7 +334,8 @@ interface IconProps {
 export default function Icon({ name, className = 'size-5' }: IconProps) {
   return (
     <svg
-      className={`icon shrink-0 ${className}`}
+      // Сердце избранного бьётся везде, где встречается (.heart-beat в main.css)
+      className={`icon shrink-0 ${name === 'heart' ? 'heart-beat' : ''} ${className}`}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

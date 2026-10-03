@@ -12,7 +12,7 @@ import Icon from './Icon';
 import LanguageSwitcher from './LanguageSwitcher';
 
 interface HeaderProps {
-  /** Нижняя панель вкладок: «Избранное» и «Профиль» уже есть в ней — в шапке их не повторяем */
+  /** Нижняя панель вкладок: «Избранное» уже есть в ней — в шапке его не повторяем */
   nav: NavMode;
 }
 
@@ -73,10 +73,10 @@ export default function Header({ nav }: HeaderProps) {
               <CountBadge count={unread} max={9} />
             </Link>
           )}
-          {inNav ? null : user ? (
+          {user ? (
             <Link
               to="/profile"
-              className={`app-header__avatar inline-grid min-h-10 min-w-10 place-items-center rounded-full hover:opacity-85 active:scale-[0.97] ${navHidden}`}
+              className="app-header__avatar inline-grid min-h-10 min-w-10 place-items-center rounded-full hover:opacity-85 active:scale-[0.97]"
               aria-label={fill(t.header.profile, user.first_name || user.username || '')}
             >
               <Avatar user={user} className="medallion size-8 text-sm" />
@@ -84,13 +84,13 @@ export default function Header({ nav }: HeaderProps) {
           ) : loading ? (
             // Ждём /api/auth/me — место под аватар, чтобы шапка не прыгала
             <span
-              className={`app-header__avatar-skeleton mx-1 size-8 animate-pulse rounded-full bg-[var(--surface-hover)] ${navHidden}`}
+              className="app-header__avatar-skeleton mx-1 size-8 animate-pulse rounded-full bg-[var(--surface-hover)]"
               aria-hidden="true"
             />
           ) : (
             <Link
               to="/auth"
-              className={`app-icon-button app-header__login ${navHidden}`}
+              className="app-icon-button app-header__login"
               aria-label={t.header.login}
             >
               {/* Lucide «circle-user» */}
