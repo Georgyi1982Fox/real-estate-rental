@@ -1,17 +1,17 @@
 """Города (TASK-079)."""
 
-from typing import get_args
-
 import pytest
 
 from bina.application.cities import CITIES, city_name, city_of, in_city, parse_cities
 from bina.application.district_guide import guide_for, minutes_to_center
 from bina.infrastructure.api.routes.searches import default_search_name
-from bina.infrastructure.api.schemas import CityCode, SearchFiltersIn
+from bina.infrastructure.api.schemas import SearchFiltersIn
 
 
-def test_api_city_codes_match_cities() -> None:
-    assert set(get_args(CityCode)) == set(CITIES)
+def test_all_georgian_cities_present() -> None:
+    # Главные города плюс курорты (TASK-079: вся Грузия)
+    for code in ("tbilisi", "batumi", "kutaisi", "rustavi", "kobuleti", "gori"):
+        assert code in CITIES
 
 
 @pytest.mark.parametrize(
@@ -21,8 +21,11 @@ def test_api_city_codes_match_cities() -> None:
         ("ბათუმი", "batumi"),
         ("batumi", "batumi"),
         ("Тбилиси", "tbilisi"),
-        ("Кутаиси", None),
+        ("Кутаиси", "kutaisi"),
+        ("ქუთაისი", "kutaisi"),
+        ("Рустави", "rustavi"),
         ("", None),
+        ("Париж", None),
     ],
 )
 def test_city_of(name: str, expected: str | None) -> None:
@@ -48,9 +51,12 @@ def test_bounds_and_center() -> None:
 
 def test_parse_cities() -> None:
     assert parse_cities("tbilisi, Batumi") == ("tbilisi", "batumi")
-    assert parse_cities("") == ("tbilisi",)
-    with pytest.raises(ValueError, match="kutaisi"):
-        parse_cities("tbilisi,kutaisi")
+    # Пусто или "all" — все города Грузии (TASK-079)
+    assert parse_cities("") == tuple(CITIES)
+    assert parse_cities("all") == tuple(CITIES)
+    assert parse_cities("tbilisi,kutaisi") == ("tbilisi", "kutaisi")
+    with pytest.raises(ValueError, match="paris"):
+        parse_cities("tbilisi,paris")
 
 
 def test_saved_search_name_with_city() -> None:

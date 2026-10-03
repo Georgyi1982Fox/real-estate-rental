@@ -75,7 +75,7 @@ class MyHomeSelectors:
 
 # Города, объявления которых собираем (TASK-079): коды из bina.application.cities
 # (пустая переменная в .env — как не заданная)
-CITIES: tuple[str, ...] = parse_cities(os.getenv("SCRAPE_CITIES") or "tbilisi,batumi")
+CITIES: tuple[str, ...] = parse_cities(os.getenv("SCRAPE_CITIES") or "all")
 
 
 class MyHomeSettings:

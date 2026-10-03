@@ -164,8 +164,10 @@ class FakeDistrictsRepository:
         return next((d for d in self._store.districts if d.id == district_id), None)
 
     async def cities(self) -> list[str]:
+        from bina.application.cities import CITIES
+
         found = {d.city for d in self._store.districts}
-        return [code for code in ("tbilisi", "batumi") if code in found]
+        return [code for code in CITIES if code in found]
 
     async def list_all(self, city: str | None = None) -> list[District]:
         districts = [d for d in self._store.districts if city is None or d.city == city]

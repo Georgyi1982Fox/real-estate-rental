@@ -50,6 +50,12 @@ PROMOTED_FLAGS = ("is_super_vip", "is_vip_plus", "is_vip")
 PAGE_ID_RE = re.compile(r"-(\d+)/?$")
 
 
+def _drop_cities_filter(query: str) -> str:
+    """Убрать из запроса фильтр по городу (``cities=...``): берём все города Грузии."""
+    parts = [part for part in query.split("&") if not part.startswith("cities=")]
+    return "&".join(parts)
+
+
 class LivoScraper(BaseWebsiteScraper):
     """Объявления Livo.ge из API сайта: список, затем объявление целиком."""
 
@@ -72,12 +78,16 @@ class LivoScraper(BaseWebsiteScraper):
         # Русский: заголовки и районы на том же языке, что у MyHome.ge
         self.headers = {"X-Website-Key": website_key, "locale": "ru", "Accept": "application/json"}
         self.cities = cities
-        city_ids = [
-            str(CITY_INFO[code].tnet_city_id)
-            for code in cities
-            if code in CITY_INFO and CITY_INFO[code].tnet_city_id is not None
-        ]
-        self.search_query = search_query.replace("{cities}", ",".join(city_ids))
+        # Номер города есть не у всех: если выбран хоть один без номера или выбраны все
+        # города, фильтр по городу в запросе убираем — берём всю Грузию и отсеиваем лишнее
+        # уже у себя (``scrape_listings``). Иначе фильтруем на стороне API (меньше трафика).
+        ids = {code: CITY_INFO[code].tnet_city_id for code in cities if code in CITY_INFO}
+        all_known = ids and all(value is not None for value in ids.values())
+        if all_known and set(cities) != set(CITY_INFO):
+            city_ids = ",".join(str(value) for value in ids.values())
+            self.search_query = search_query.replace("{cities}", city_ids)
+        else:
+            self.search_query = _drop_cities_filter(search_query)
         self.max_pages = max_pages
         self.fetch_details = fetch_details
         self.dump_dir = dump_dir

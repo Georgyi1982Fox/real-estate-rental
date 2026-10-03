@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bina.infrastructure.api import dependencies
 from bina.infrastructure.api.routes import (
+    cities,
     common,
     districts,
     favorites,
@@ -47,6 +48,7 @@ def store(monkeypatch: pytest.MonkeyPatch) -> Store:
     monkeypatch.setattr(common, "ListingsRepository", fake(FakeListingsRepository))
     monkeypatch.setattr(listings, "ListingsRepository", fake(FakeListingsRepository))
     monkeypatch.setattr(districts, "DistrictsRepository", fake(FakeDistrictsRepository))
+    monkeypatch.setattr(cities, "DistrictsRepository", fake(FakeDistrictsRepository))
     monkeypatch.setattr(favorites, "ListingsRepository", fake(FakeListingsRepository))
     monkeypatch.setattr(favorites, "FavoritesRepository", fake(FakeFavoritesRepository))
     monkeypatch.setattr(me, "FavoritesRepository", fake(FakeFavoritesRepository))

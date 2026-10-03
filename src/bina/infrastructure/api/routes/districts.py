@@ -16,7 +16,7 @@ from bina.application.district_guide import (
 )
 from bina.infrastructure.api.delivery import ui_language
 from bina.infrastructure.api.dependencies import CurrentUserDep, SessionDep
-from bina.infrastructure.api.routes.common import not_found
+from bina.infrastructure.api.routes.common import not_found, valid_city
 from bina.infrastructure.api.schemas import (
     CityCode,
     DistrictOut,
@@ -82,6 +82,7 @@ async def list_districts(
     ] = None,
 ) -> DistrictsOut:
     """Районы (для фильтра и названий в карточках)."""
+    valid_city(city)
     districts = await DistrictsRepository(session).list_all(city)
     return DistrictsOut(items=[DistrictOut.from_model(district) for district in districts])
 
