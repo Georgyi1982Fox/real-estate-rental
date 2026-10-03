@@ -39,13 +39,18 @@
   --success-bg: #ecfdf5;
   --success-text: #065f46;
 
-  /* Иконки главного меню (FRONTEND-034): у каждой группы плиток свой цвет */
-  --tone-search: #5f7358;
-  --tone-daily: #c2410c;
-  --tone-owner: #2563eb;
-  --tone-benefit: #b45309;
-  --tone-housing: #7c3aed;
-  --tone-more: #64748b;
+  /* Иконки главного меню (FRONTEND-034): пастельные, у каждой группы плиток свой цвет */
+  --tone-search: #7fb89a;
+  --tone-owner: #7aaee8;
+  --tone-benefit: #e3b341;
+  --tone-housing: #a892e6;
+  --tone-more: #94a3b8;
+  /* Две большие плитки сверху: «Поиск» и «Посуточно» */
+  --tone-hero: #f0976b;
+
+  /* Счётчики на иконках (избранное, уведомления) */
+  --badge: var(--danger);
+  --badge-text: #ffffff;
 
   /* Высота нижней панели вкладок без safe-area */
   --bottom-nav-height: 3.5rem;
@@ -100,12 +105,12 @@
     --danger-text: #fecaca;
     --success-bg: rgba(16, 185, 129, 0.16);
     --success-text: #a7f3d0;
-    --tone-search: #a7c49d;
-    --tone-daily: #fdba74;
-    --tone-owner: #93c5fd;
-    --tone-benefit: #fcd34d;
-    --tone-housing: #c4b5fd;
+    --tone-search: #b5dcc3;
+    --tone-owner: #b3d1f7;
+    --tone-benefit: #f7dc8e;
+    --tone-housing: #cfc3f5;
     --tone-more: #cbd5e1;
+    --tone-hero: #fbc4a4;
   }
 }
 
@@ -125,10 +130,10 @@
   --danger-text: #fecaca;
   --success-bg: rgba(16, 185, 129, 0.16);
   --success-text: #a7f3d0;
-  --tone-search: #a7c49d;
-  --tone-daily: #fdba74;
-  --tone-owner: #93c5fd;
-  --tone-benefit: #fcd34d;
-  --tone-housing: #c4b5fd;
+  --tone-search: #b5dcc3;
+  --tone-owner: #b3d1f7;
+  --tone-benefit: #f7dc8e;
+  --tone-housing: #cfc3f5;
   --tone-more: #cbd5e1;
+  --tone-hero: #fbc4a4;
 }

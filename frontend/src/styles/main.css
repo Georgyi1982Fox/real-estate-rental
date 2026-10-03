@@ -208,9 +208,32 @@
       transform: rotate(-2deg);
     }
   }
+  /* Сердце избранного «бьётся» раз в 13 с: два удара подряд. Период не кратен 11, 20 и 24 с —
+     с колокольчиком и медальонами почти не совпадает */
+  .heart-beat {
+    transform-origin: 50% 55%;
+    animation: heart-beat 13s ease-in-out 5s infinite;
+  }
+  @keyframes heart-beat {
+    0%,
+    9%,
+    100% {
+      transform: scale(1);
+    }
+    2% {
+      transform: scale(1.3);
+    }
+    4% {
+      transform: scale(1);
+    }
+    6% {
+      transform: scale(1.3);
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
     .medallion,
-    .bell-ring {
+    .bell-ring,
+    .heart-beat {
       animation: none;
     }
   }

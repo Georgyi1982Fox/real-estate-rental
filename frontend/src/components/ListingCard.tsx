@@ -75,7 +75,7 @@ export default function ListingCard({
               className={`text-xl leading-none transition-transform duration-200 ${isFavorite ? 'scale-110' : 'scale-100'}`}
               aria-hidden="true"
             >
-              ♥
+              <span className="heart-beat inline-block">♥</span>
             </span>
           </button>
         </div>

@@ -24,7 +24,7 @@ export default function FavoriteButton({ listingId }: FavoriteButtonProps) {
         className={`text-lg leading-none transition-transform duration-200 ${isFavorite ? 'scale-110 text-[var(--danger)]' : 'text-[var(--text-secondary)]'}`}
         aria-hidden="true"
       >
-        ♥
+        <span className="heart-beat inline-block">♥</span>
       </span>
       <span>{isFavorite ? t.listing.favorite_saved : t.listing.favorite_add}</span>
     </button>
