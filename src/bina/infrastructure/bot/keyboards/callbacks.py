@@ -121,6 +121,7 @@ class OwnerAction(StrEnum):
     PERIOD = "per"
     ROOMS = "rooms"
     SKIP_FLOOR = "nofl"
+    SKIP_LOCATION = "noloc"
     PHOTOS_DONE = "phok"
     PUBLISH = "pub"
     CANCEL = "cncl"

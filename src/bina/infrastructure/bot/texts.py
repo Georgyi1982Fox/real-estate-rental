@@ -541,6 +541,16 @@ _RU: dict[str, str] = {
     "agency_admin_new": "💼 <b>Новый риелтор / агентство</b>\n{name}\n📱 {phone}",
     "agency_admin_block": "🚫 Заблокировать",
     "agency_admin_blocked": "🚫 Агентство «{name}» заблокировано, скрыто объявлений: {hidden}.",
+    "owner_ask_location": (
+        "📍 <b>Где именно квартира?</b>\n"
+        "Отправьте точку на карте: 📎 → «Геопозиция» → передвиньте метку на дом.\n"
+        "Или напишите адрес: <i>ул. Чавчавадзе, 10</i>.\n"
+        "\n"
+        "Тогда арендаторы увидят квартиру на карте. Можно пропустить."
+    ),
+    "owner_bad_location": "Эта точка не в Грузии. Отправьте точку квартиры или напишите адрес.",
+    "owner_bad_address": "Напишите адрес: улицу и номер дома (от 3 до 150 знаков).",
+    "owner_location_point": "точка на карте",
 }
 
 _EN: dict[str, str] = {
@@ -1104,6 +1114,18 @@ _EN: dict[str, str] = {
     "agency_admin_new": "💼 <b>New realtor / agency</b>\n{name}\n📱 {phone}",
     "agency_admin_block": "🚫 Block",
     "agency_admin_blocked": "🚫 Agency «{name}» blocked, listings hidden: {hidden}.",
+    "owner_ask_location": (
+        "📍 <b>Where exactly is the apartment?</b>\n"
+        "Send a point on the map: 📎 → «Location» → move the pin to the building.\n"
+        "Or type the address: <i>10 Chavchavadze Ave</i>.\n"
+        "\n"
+        "Then tenants will see the apartment on the map. You can skip this."
+    ),
+    "owner_bad_location": (
+        "This point is not in Georgia. Send the apartment's location or type the address."
+    ),
+    "owner_bad_address": "Type the address: street and building number (3 to 150 characters).",
+    "owner_location_point": "point on the map",
 }
 
 _KA: dict[str, str] = {
@@ -1644,6 +1666,18 @@ _KA: dict[str, str] = {
     "agency_admin_new": "💼 <b>ახალი რიელტორი / სააგენტო</b>\n{name}\n📱 {phone}",
     "agency_admin_block": "🚫 დაბლოკვა",
     "agency_admin_blocked": "🚫 სააგენტო «{name}» დაიბლოკა, დამალული განცხადებები: {hidden}.",
+    "owner_ask_location": (
+        "📍 <b>სად არის ზუსტად ბინა?</b>\n"
+        "გამოგზავნეთ წერტილი რუკაზე: 📎 → «მდებარეობა» → გადაიტანეთ ნიშნული სახლზე.\n"
+        "ან დაწერეთ მისამართი: <i>ჭავჭავაძის გამზ. 10</i>.\n"
+        "\n"
+        "მაშინ დამქირავებლები ბინას რუკაზე დაინახავენ. შეგიძლიათ გამოტოვოთ."
+    ),
+    "owner_bad_location": (
+        "ეს წერტილი საქართველოში არ არის. გამოგზავნეთ ბინის მდებარეობა ან დაწერეთ მისამართი."
+    ),
+    "owner_bad_address": "დაწერეთ მისამართი: ქუჩა და სახლის ნომერი (3-დან 150 სიმბოლომდე).",
+    "owner_location_point": "წერტილი რუკაზე",
 }
 
 TEXTS: dict[str, dict[str, str]] = {"ru": _RU, "en": _EN, "ka": _KA}
