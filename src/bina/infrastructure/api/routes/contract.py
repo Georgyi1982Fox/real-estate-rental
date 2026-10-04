@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from bina.application.cities import city
 from bina.application.contract import ContractData, Utilities
+from bina.application.signing import DocumentKind
 from bina.application.subscriptions import has_premium_access
 from bina.infrastructure.api.delivery import (
     LANGUAGE_NAMES,
@@ -28,6 +29,7 @@ from bina.infrastructure.api.delivery import (
 )
 from bina.infrastructure.api.dependencies import CurrentUserDep, SessionDep, SettingsDep
 from bina.infrastructure.api.routes.common import get_listing_or_404, payment_required
+from bina.infrastructure.api.routes.documents import SigningStartedOut, start_signing
 from bina.infrastructure.api.validation import clean_text
 from bina.infrastructure.db.models import Listing
 from bina.infrastructure.documents.contract_pdf import render_contract
@@ -93,9 +95,12 @@ def contract_data(body: ContractIn, listing: Listing, city_code: str = "tbilisi"
     )
 
 
+CONTRACT_TITLES = {"ru": "Договор аренды", "en": "Lease agreement", "ka": "ქირავნობის ხელშეკრულება"}
+
+
 @router.post(
     "/{listing_id}/contract",
-    response_model=DocumentSentOut,
+    response_model=DocumentSentOut | SigningStartedOut,
     responses={200: {"content": {"application/pdf": {}}}},
 )
 async def make_contract(
@@ -105,8 +110,8 @@ async def make_contract(
     user: CurrentUserDep,
     session: SessionDep,
     settings: SettingsDep,
-) -> DocumentSentOut | Response:
-    """Договор аренды в PDF (Premium): в чат с ботом или файлом в ответе."""
+) -> DocumentSentOut | SigningStartedOut | Response:
+    """Договор аренды в PDF (Premium): в чат, файлом или на подпись (``delivery=sign``)."""
     if not has_premium_access(user, datetime.now(UTC)):
         raise payment_required("contract", 0)
     listing = await get_listing_or_404(session, listing_id)
@@ -118,12 +123,27 @@ async def make_contract(
         )
     second = second_language(user, body.second_language)
     language = ui_language(user)
+    pdf = render_contract(contract_data(body, listing, city_code), second)
+    filename = f"bina-contract-{body.start_date:%Y-%m-%d}.pdf"
+    if body.delivery == "sign":
+        # TASK-115: сохранить и отправить на подпись обеим сторонам
+        return await start_signing(
+            request,
+            settings,
+            session,
+            user,
+            kind=DocumentKind.CONTRACT,
+            title=f"{CONTRACT_TITLES[language]}: {body.landlord_name} — {body.tenant_name}",
+            filename=filename,
+            pdf=pdf,
+            listing_id=listing.id,
+        )
     return await deliver_pdf(
         request,
         settings,
         user,
-        pdf=render_contract(contract_data(body, listing, city_code), second),
-        filename=f"bina-contract-{body.start_date:%Y-%m-%d}.pdf",
+        pdf=pdf,
+        filename=filename,
         caption=CAPTIONS[language].format(lang=LANGUAGE_NAMES[language][second]),
         delivery=body.delivery,
     )

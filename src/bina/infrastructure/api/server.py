@@ -27,6 +27,7 @@ from bina.infrastructure.api.routes import (
     contract,
     costs,
     districts,
+    documents,
     favorites,
     legal,
     listings,
@@ -97,6 +98,7 @@ def create_app(
     app.include_router(photo_report.router)
     app.include_router(contract.router)
     app.include_router(acceptance.router)
+    app.include_router(documents.router)
     app.include_router(costs.router)
     app.include_router(complaints.router)
     app.include_router(location.router)

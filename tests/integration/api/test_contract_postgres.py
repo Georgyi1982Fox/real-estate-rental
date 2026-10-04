@@ -181,3 +181,65 @@ async def test_premium_for_all_opens_contract(
     )
     assert answer.status_code == 200
     assert len(sender.sent) == 1
+
+
+async def test_contract_for_signing(
+    client: AsyncClient, session: AsyncSession, sender: FakeSender
+) -> None:
+    """TASK-115: договор на подпись — сохранён, создателю в чат со ссылкой для второй стороны."""
+    listing = await ListingsRepository(session).create_or_update_from_raw(
+        RawListing(
+            source_id="sign-1",
+            source_name="ss",
+            title="Квартира",
+            description="",
+            price=1500,
+            currency="GEL",
+            rooms=2,
+            area=60,
+            district="Ваке",
+            url="https://ss.example/sign-1",
+            address="ул. Чавчавадзе, 10",
+        )
+    )
+    await session.commit()
+    client_app = client._transport.app  # type: ignore[attr-defined]
+    client_app.state.bot_username = "bina_bot"
+    await client.get("/api/me", headers=headers("ru"))
+    await make_premium(session)
+
+    answer = await client.post(
+        f"/api/listings/{listing.id}/contract",
+        json={**BODY, "delivery": "sign"},
+        headers=headers("ru"),
+    )
+    assert answer.status_code == 200, answer.text
+    body = answer.json()
+    assert body["sent"] is True
+    assert body["invite_url"].startswith("https://t.me/bina_bot?start=sign_")
+    [(chat_id, filename, content, caption)] = sender.sent
+    assert filename.startswith("bina-contract-")
+    assert chat_id == 778 and content.startswith(b"%PDF") and body["invite_url"] in caption
+
+    documents = (await client.get("/api/documents", headers=headers("ru"))).json()["items"]
+    [document] = documents
+    assert document["status"] == "pending" and document["invite_url"] == body["invite_url"]
+    assert document["title"].startswith("Договор аренды: Giorgi Beridze — Anna Smith")
+
+    file = await client.get(
+        f"/api/documents/{document['id']}/file", params={"delivery": "file"}, headers=headers("ru")
+    )
+    assert file.status_code == 200 and file.content == content
+    certificate = await client.get(
+        f"/api/documents/{document['id']}/file",
+        params={"part": "certificate", "delivery": "file"},
+        headers=headers("ru"),
+    )
+    assert certificate.status_code == 409, "сертификат — только когда подписали оба"
+    stranger = {
+        "X-Telegram-Init-Data": sign_init_data(
+            BOT_TOKEN, {"id": 999, "first_name": "X", "language_code": "ru"}
+        )
+    }
+    other = await client.get(f"/api/documents/{document['id']}/file", headers=stranger)
+    assert other.status_code == 404, "чужой документ не отдаём"

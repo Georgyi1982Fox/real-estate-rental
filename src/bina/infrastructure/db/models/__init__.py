@@ -7,6 +7,7 @@ from .chat import ChatMessage, Conversation, Viewing
 from .complaints import Complaint
 from .daily_reports import DailyReportRecord
 from .districts import District
+from .documents import DocumentSignature, SignedDocument
 from .embeddings import Embedding
 from .favorites import Favorite
 from .listings import Listing, ListingStatus
@@ -27,6 +28,7 @@ __all__ = [
     "Conversation",
     "DailyReportRecord",
     "District",
+    "DocumentSignature",
     "Embedding",
     "Favorite",
     "Listing",
@@ -39,6 +41,7 @@ __all__ = [
     "RentReminder",
     "SavedSearch",
     "ScrapeSkip",
+    "SignedDocument",
     "SoftDeleteMixin",
     "TimestampMixin",
     "User",

@@ -597,6 +597,36 @@ _RU: dict[str, str] = {
     ),
     "rec_need_favorites": "Добавьте пару квартир в избранное ☆ — и я подберу похожие.",
     "rec_none": "Пока похожих квартир нет. Загляните позже — новые появляются каждый час.",
+    "doc_card": (
+        "📄 <b>{title}</b>\n"
+        "Статус: {status}\n"
+        "Подписали: {signers}\n"
+        "Отпечаток файла: <code>{sha}…</code>"
+    ),
+    "doc_status_pending": "ждёт подписей",
+    "doc_status_signed": "подписан обеими сторонами",
+    "doc_status_declined": "отклонён",
+    "doc_nobody": "пока никто",
+    "doc_sign_button": "✍️ Подписать",
+    "doc_decline_button": "❌ Отказаться",
+    "doc_invite": (
+        "Перешлите эту ссылку второй стороне — она откроет документ в боте и подпишет:\n{link}"
+    ),
+    "doc_signed_you": "✅ Вы подписали документ.",
+    "doc_signed_other": "✍️ {name} подписал(а) «{title}». Откройте и подпишите: {link}",
+    "doc_completed": ("🎉 «{title}» подписан обеими сторонами. Сертификат подписи — файлом ниже."),
+    "doc_declined_you": "Вы отказались подписывать документ.",
+    "doc_declined_other": "❌ {name} отказался(ась) подписывать «{title}».",
+    "doc_error_not_found": "Документ не найден. Возможно, ссылка неполная.",
+    "doc_error_closed": "Этот документ уже подписан обеими сторонами или отклонён.",
+    "doc_error_already_signed": "Вы уже подписали этот документ.",
+    "doc_error_taken": "Этот документ уже подписала другая сторона.",
+    "my_docs_button": "📄 Мои документы",
+    "my_docs_header": "📄 <b>Мои документы</b>\n⏳ ждёт подписей · ✅ подписан · ❌ отклонён",
+    "my_docs_empty": (
+        "Документов пока нет. Договор аренды и акт приёмки можно составить в приложении и "
+        "отправить на подпись."
+    ),
 }
 
 _EN: dict[str, str] = {
@@ -1223,6 +1253,40 @@ _EN: dict[str, str] = {
         "Add a couple of apartments to favorites ☆ and I will find similar ones."
     ),
     "rec_none": "No similar apartments yet. Check back later: new ones arrive every hour.",
+    "doc_card": (
+        "📄 <b>{title}</b>\n"
+        "Status: {status}\n"
+        "Signed by: {signers}\n"
+        "File fingerprint: <code>{sha}…</code>"
+    ),
+    "doc_status_pending": "waiting for signatures",
+    "doc_status_signed": "signed by both parties",
+    "doc_status_declined": "declined",
+    "doc_nobody": "nobody yet",
+    "doc_sign_button": "✍️ Sign",
+    "doc_decline_button": "❌ Decline",
+    "doc_invite": (
+        "Forward this link to the other party: they will open the document in the bot and sign "
+        "it:\n"
+        "{link}"
+    ),
+    "doc_signed_you": "✅ You signed the document.",
+    "doc_signed_other": "✍️ {name} signed «{title}». Open it and sign too: {link}",
+    "doc_completed": (
+        "🎉 «{title}» is signed by both parties. The signature certificate is below."
+    ),
+    "doc_declined_you": "You declined to sign the document.",
+    "doc_declined_other": "❌ {name} declined to sign «{title}».",
+    "doc_error_not_found": "Document not found. The link may be incomplete.",
+    "doc_error_closed": "This document is already signed by both parties or declined.",
+    "doc_error_already_signed": "You have already signed this document.",
+    "doc_error_taken": "The other party has already signed this document.",
+    "my_docs_button": "📄 My documents",
+    "my_docs_header": "📄 <b>My documents</b>\n⏳ waiting · ✅ signed · ❌ declined",
+    "my_docs_empty": (
+        "No documents yet. You can draw up a lease agreement or a handover report in the app "
+        "and send it for signing."
+    ),
 }
 
 _KA: dict[str, str] = {
@@ -1824,6 +1888,38 @@ _KA: dict[str, str] = {
     ),
     "rec_need_favorites": "დაამატეთ რამდენიმე ბინა რჩეულებში ☆ და მსგავსებს შეგირჩევთ.",
     "rec_none": ("მსგავსი ბინები ჯერ არ არის. შემოიარეთ მოგვიანებით: ახლები ყოველ საათში ჩნდება."),
+    "doc_card": (
+        "📄 <b>{title}</b>\n"
+        "სტატუსი: {status}\n"
+        "ხელი მოაწერა: {signers}\n"
+        "ფაილის ანაბეჭდი: <code>{sha}…</code>"
+    ),
+    "doc_status_pending": "ხელმოწერებს ელოდება",
+    "doc_status_signed": "ორივე მხარის მიერ ხელმოწერილია",
+    "doc_status_declined": "უარყოფილია",
+    "doc_nobody": "ჯერ არავინ",
+    "doc_sign_button": "✍️ ხელმოწერა",
+    "doc_decline_button": "❌ უარის თქმა",
+    "doc_invite": (
+        "გაუგზავნეთ ეს ბმული მეორე მხარეს: ის დოკუმენტს ბოტში გახსნის და ხელს მოაწერს:\n{link}"
+    ),
+    "doc_signed_you": "✅ თქვენ ხელი მოაწერეთ დოკუმენტს.",
+    "doc_signed_other": "✍️ {name}-მა ხელი მოაწერა «{title}»-ს. გახსენით და მოაწერეთ: {link}",
+    "doc_completed": (
+        "🎉 «{title}» ორივე მხარემ ხელმოწერა. ხელმოწერის სერტიფიკატი — ფაილად ქვემოთ."
+    ),
+    "doc_declined_you": "თქვენ უარი თქვით დოკუმენტზე ხელის მოწერაზე.",
+    "doc_declined_other": "❌ {name}-მა უარი თქვა «{title}»-ზე ხელის მოწერაზე.",
+    "doc_error_not_found": "დოკუმენტი ვერ მოიძებნა. შესაძლოა ბმული არასრულია.",
+    "doc_error_closed": "ეს დოკუმენტი უკვე ორივე მხარემ ხელმოწერა ან უარყოფილია.",
+    "doc_error_already_signed": "თქვენ უკვე მოაწერეთ ხელი ამ დოკუმენტს.",
+    "doc_error_taken": "ამ დოკუმენტს მეორე მხარემ უკვე მოაწერა ხელი.",
+    "my_docs_button": "📄 ჩემი დოკუმენტები",
+    "my_docs_header": ("📄 <b>ჩემი დოკუმენტები</b>\n⏳ ელოდება · ✅ ხელმოწერილია · ❌ უარყოფილია"),
+    "my_docs_empty": (
+        "დოკუმენტები ჯერ არ არის. ქირავნობის ხელშეკრულება და მიღება-ჩაბარების აქტი შეგიძლიათ "
+        "აპლიკაციაში შეადგინოთ და ხელმოსაწერად გაგზავნოთ."
+    ),
 }
 
 TEXTS: dict[str, dict[str, str]] = {"ru": _RU, "en": _EN, "ka": _KA}

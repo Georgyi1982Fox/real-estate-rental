@@ -204,6 +204,7 @@ def test_flip_favorite_button_changes_only_target() -> None:
 def test_language_keyboard_marks_current() -> None:
     assert texts(language_keyboard("ka")) == [
         ["Русский", "English", "✅ ქართული"],
+        ["📄 ჩემი დოკუმენტები"],
         ["📦 ჩემი მონაცემების ჩამოტვირთვა"],
         ["🗑 ანგარიშის წაშლა"],
     ]

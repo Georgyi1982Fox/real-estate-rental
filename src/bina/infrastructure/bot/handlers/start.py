@@ -10,8 +10,9 @@ from bina.application.chat import listing_from_start
 from bina.application.ports.embeddings import IEmbedder
 from bina.application.referrals import FRIEND_DISCOUNT_PERCENT, code_from_start
 from bina.application.sharing import listing_from_share
+from bina.application.signing import token_from_start
 from bina.application.subscriptions import Plan
-from bina.infrastructure.bot.handlers import chat, listing_card, menu
+from bina.infrastructure.bot.handlers import chat, documents, listing_card, menu
 from bina.infrastructure.bot.keyboards.menu import main_menu
 from bina.infrastructure.bot.settings import BotSettings
 from bina.infrastructure.bot.texts import t
@@ -49,6 +50,10 @@ async def cmd_start(
             )
     if (listing_id := _listing_id(command.args)) is not None:
         await chat.show_listing(message, user, session, listing_id)
+        return
+    # TASK-115: документ на подпись
+    if (token := token_from_start(command.args)) is not None:
+        await documents.open_by_token(message, user, session, bot, token)
         return
     # TASK-073: ссылка «Поделиться квартирой»
     if (shared := listing_from_share(command.args)) is not None:
