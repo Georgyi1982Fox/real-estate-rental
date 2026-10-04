@@ -217,3 +217,17 @@ class AccountCallback(CallbackData, prefix="acc"):
 
 class RecommendCallback(CallbackData, prefix="rec"):
     """«✨ Вам может понравиться» под избранным (TASK-076)."""
+
+
+class SignAction(StrEnum):
+    """Подпись документов (TASK-115)."""
+
+    SIGN = "s"
+    DECLINE = "d"
+    OPEN = "o"  # прислать свой документ ещё раз (и сертификат, если подписан)
+    LIST = "l"  # «📄 Мои документы» в профиле
+
+
+class SignCallback(CallbackData, prefix="sg"):
+    action: SignAction
+    id: UUID | None = None

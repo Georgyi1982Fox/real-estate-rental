@@ -17,12 +17,14 @@ from bina.infrastructure.db.models import (
     ChatMessage,
     Complaint,
     Conversation,
+    DocumentSignature,
     Favorite,
     Listing,
     Notification,
     Payment,
     RentReminder,
     SavedSearch,
+    SignedDocument,
     User,
     Verification,
     Viewing,
@@ -31,7 +33,7 @@ from bina.infrastructure.db.models.base import Base
 from bina.infrastructure.db.models.users import SubscriptionTier, UserRole
 
 # Служебные поля, которые человеку ничего не говорят
-_SKIP = frozenset({"user_id", "updated_at", "is_deleted", "deleted_at"})
+_SKIP = frozenset({"user_id", "updated_at", "is_deleted", "deleted_at", "content", "token"})
 _LISTING_FIELDS = (
     "id",
     "title_ru",
@@ -123,6 +125,9 @@ class AccountRepository:
             "complaints": await self._all(Complaint, Complaint.user_id == uid),
             "owner_verifications": await self._all(Verification, Verification.user_id == uid),
             "ai_requests_by_day": await self._all(AIUsage, AIUsage.user_id == uid),
+            # TASK-115: документы на подпись (без самих файлов — их можно скачать в профиле)
+            "documents_created": await self._all(SignedDocument, SignedDocument.creator_id == uid),
+            "signatures": await self._all(DocumentSignature, DocumentSignature.user_id == uid),
         }
 
     async def erase(self, user: User, now: datetime) -> list[str]:
@@ -168,7 +173,10 @@ class AccountRepository:
         await self._session.execute(
             delete(Viewing).where(or_(Viewing.tenant_id == uid, Viewing.owner_id == uid))
         )
+        # TASK-115: свои документы и подписи (вторая сторона уже получила файл в Telegram)
+        await self._session.execute(delete(SignedDocument).where(SignedDocument.creator_id == uid))
         for model in (
+            DocumentSignature,
             Favorite,
             Notification,
             SavedSearch,

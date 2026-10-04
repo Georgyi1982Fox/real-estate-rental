@@ -23,6 +23,7 @@ from bina.application.acceptance import (
     ItemStatus,
 )
 from bina.application.cities import city
+from bina.application.signing import DocumentKind
 from bina.application.subscriptions import has_premium_access
 from bina.infrastructure.api.delivery import (
     LANGUAGE_NAMES,
@@ -34,6 +35,7 @@ from bina.infrastructure.api.delivery import (
 )
 from bina.infrastructure.api.dependencies import CurrentUserDep, SessionDep, SettingsDep
 from bina.infrastructure.api.routes.common import get_listing_or_404, payment_required
+from bina.infrastructure.api.routes.documents import SigningStartedOut, start_signing
 from bina.infrastructure.api.validation import clean_text
 from bina.infrastructure.documents.acceptance_pdf import render_acceptance
 
@@ -143,9 +145,12 @@ async def acceptance_checklist(user: CurrentUserDep) -> ChecklistOut:
     )
 
 
+ACCEPTANCE_TITLES = {"ru": "Акт приёмки", "en": "Handover report", "ka": "მიღება-ჩაბარების აქტი"}
+
+
 @router.post(
     "/acceptance",
-    response_model=DocumentSentOut,
+    response_model=DocumentSentOut | SigningStartedOut,
     responses={200: {"content": {"application/pdf": {}}}},
 )
 async def make_acceptance(
@@ -154,14 +159,16 @@ async def make_acceptance(
     user: CurrentUserDep,
     session: SessionDep,
     settings: SettingsDep,
-) -> DocumentSentOut | Response:
-    """Акт приёмки в PDF (Premium): в чат с ботом или файлом в ответе."""
+) -> DocumentSentOut | SigningStartedOut | Response:
+    """Акт приёмки в PDF (Premium): в чат, файлом или на подпись (``delivery=sign``)."""
     if not has_premium_access(user, datetime.now(UTC)):
         raise payment_required("acceptance", 0)
     address = body.address
     city_code = "tbilisi"
+    listing_id = None
     if body.listing_id:
         listing = await get_listing_or_404(session, body.listing_id)
+        listing_id = listing.id
         await session.refresh(listing, attribute_names=["district"])
         city_code = listing.district.city if listing.district else city_code
         address = address or listing.address or ""
@@ -185,12 +192,27 @@ async def make_acceptance(
     )
     second = second_language(user, body.second_language)
     language = ui_language(user)
+    pdf = render_acceptance(data, second, today=handover)
+    filename = f"bina-acceptance-{handover:%Y-%m-%d}.pdf"
+    if body.delivery == "sign":
+        # TASK-115: сохранить и отправить на подпись обеим сторонам
+        return await start_signing(
+            request,
+            settings,
+            session,
+            user,
+            kind=DocumentKind.ACCEPTANCE,
+            title=f"{ACCEPTANCE_TITLES[language]}: {address}",
+            filename=filename,
+            pdf=pdf,
+            listing_id=listing_id,
+        )
     return await deliver_pdf(
         request,
         settings,
         user,
-        pdf=render_acceptance(data, second, today=handover),
-        filename=f"bina-acceptance-{handover:%Y-%m-%d}.pdf",
+        pdf=pdf,
+        filename=filename,
         caption=CAPTIONS[language].format(lang=LANGUAGE_NAMES[language][second]),
         delivery=body.delivery,
     )

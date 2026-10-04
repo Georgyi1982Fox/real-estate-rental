@@ -298,6 +298,7 @@ async def test_profile(harness: BotHarness) -> None:
     assert "С нами с 01.09.2026" in text
     assert buttons(harness.last_markup()) == [
         ["✅ Русский", "English", "ქართული"],
+        ["📄 Мои документы"],
         ["📦 Скачать мои данные"],
         ["🗑 Удалить аккаунт"],
         ["🏠 Главное меню"],

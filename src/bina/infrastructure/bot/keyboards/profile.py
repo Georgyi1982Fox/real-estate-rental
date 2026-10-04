@@ -8,6 +8,8 @@ from bina.infrastructure.bot.keyboards.callbacks import (
     AccountAction,
     AccountCallback,
     LanguageCallback,
+    SignAction,
+    SignCallback,
 )
 from bina.infrastructure.bot.texts import LANGUAGE_NAMES, t
 
@@ -22,6 +24,10 @@ def language_keyboard(current: str) -> InlineKeyboardMarkup:
             callback_data=LanguageCallback(code=code),
         )
     builder.button(
+        text=t(current, "my_docs_button"),
+        callback_data=SignCallback(action=SignAction.LIST),
+    )
+    builder.button(
         text=t(current, "account_export"),
         callback_data=AccountCallback(action=AccountAction.EXPORT),
     )
@@ -29,7 +35,7 @@ def language_keyboard(current: str) -> InlineKeyboardMarkup:
         text=t(current, "account_delete"),
         callback_data=AccountCallback(action=AccountAction.ASK_DELETE),
     )
-    builder.adjust(len(SUPPORTED_LANGUAGES), 1, 1)
+    builder.adjust(len(SUPPORTED_LANGUAGES), 1, 1, 1)
     return builder.as_markup()
 
 

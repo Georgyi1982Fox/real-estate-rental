@@ -17,7 +17,8 @@ from pydantic import BaseModel
 from bina.infrastructure.api.settings import ApiSettings
 from bina.infrastructure.db.models import User
 
-Delivery = Literal["chat", "file"]
+# sign — сохранить на подпись (TASK-115): договор и акт, см. routes/documents.py
+Delivery = Literal["chat", "file", "sign"]
 
 # Название второго языка документа — на языке пользователя
 LANGUAGE_NAMES = {
