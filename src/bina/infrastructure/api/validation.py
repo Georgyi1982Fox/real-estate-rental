@@ -7,10 +7,9 @@ HTML-тегов и управляющих символов. Фронтенд (Re
 
 import re
 import unicodedata
-from collections.abc import Awaitable, Callable
 
 from fastapi import FastAPI, Request, status
-from starlette.responses import Response
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from bina.infrastructure.api.errors import error_response
 
@@ -36,29 +35,72 @@ def clean_text(value: str) -> str:
     return _SPACES_RE.sub(" ", printable).strip()
 
 
-async def _limit_body_size(
-    request: Request, call_next: Callable[[Request], Awaitable[Response]]
-) -> Response:
-    length = request.headers.get("content-length")
-    # TASK-096: фото собственника — большое тело, но только на этот адрес
-    # Фото объявления и логотип агентства (TASK-100) — большие тела
-    path = request.url.path
-    limit = MAX_PHOTO_BODY_BYTES if path.endswith(("/photos", "/agency/logo")) else MAX_BODY_BYTES
-    # Тело частями (chunked) без длины обходило бы проверку: такие запросы не принимаем.
-    # Браузер и Telegram всегда присылают Content-Length, а сервер не читает больше него
-    if length is None and "transfer-encoding" in request.headers:
-        return error_response(
-            request, status.HTTP_411_LENGTH_REQUIRED, "Content-Length is required"
-        )
-    if length is not None and (not length.isdigit() or int(length) > limit):
-        return error_response(
-            request,
+def _limit_for(path: str) -> int:
+    # TASK-096, TASK-100: фото объявления и логотип агентства — большие тела, только тут
+    return MAX_PHOTO_BODY_BYTES if path.endswith(("/photos", "/agency/logo")) else MAX_BODY_BYTES
+
+
+class BodyLimitMiddleware:
+    """Тело запроса не больше лимита (413).
+
+    Длину из ``Content-Length`` проверяем сразу. Тело частями (``Transfer-Encoding: chunked``,
+    без длины — так прокси сайта отправляет даже пустой POST) считаем по мере чтения и
+    обрываем, как только лимит превышен: обойти проверку так нельзя.
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        limit = _limit_for(scope["path"])
+        headers = dict(scope["headers"])
+        length = headers.get(b"content-length")
+        if length is not None and (not length.isdigit() or int(length) > limit):
+            await self._too_large(scope, receive, send, limit)
+            return
+
+        received = 0
+        started = rejected = False
+
+        async def counting_receive() -> Message:
+            nonlocal received, rejected
+            message = await receive()
+            if message["type"] == "http.request" and not rejected:
+                received += len(message.get("body", b""))
+                if received > limit:
+                    # Отвечаем 413 сами и дальше тело не читаем: приложению — «клиент ушёл»
+                    rejected = True
+                    if not started:
+                        await self._too_large(scope, receive, send, limit)
+                    return {"type": "http.disconnect"}
+            return message
+
+        async def tracking_send(message: Message) -> None:
+            nonlocal started
+            if rejected:
+                return  # ответ 413 уже отправлен
+            if message["type"] == "http.response.start":
+                started = True
+            await send(message)
+
+        try:
+            await self.app(scope, counting_receive, tracking_send)
+        except Exception:
+            if not rejected:
+                raise
+
+    async def _too_large(self, scope: Scope, receive: Receive, send: Send, limit: int) -> None:
+        response = error_response(
+            Request(scope),
             status.HTTP_413_CONTENT_TOO_LARGE,
             f"Request body is larger than {limit} bytes",
         )
-    return await call_next(request)
+        await response(scope, receive, send)
 
 
 def install_body_limit(app: FastAPI) -> None:
     """Отклонять запросы с телом больше ``MAX_BODY_BYTES`` (413)."""
-    app.middleware("http")(_limit_body_size)
+    app.add_middleware(BodyLimitMiddleware)
