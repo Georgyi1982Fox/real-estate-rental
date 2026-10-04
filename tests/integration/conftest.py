@@ -59,6 +59,7 @@ MIGRATIONS = (
     "photo_reports",
     "agencies",
     "daily_reports",
+    "translation_failed",
 )
 
 

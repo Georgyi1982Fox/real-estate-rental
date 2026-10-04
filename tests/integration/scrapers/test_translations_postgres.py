@@ -157,3 +157,38 @@ async def test_only_one_translation_at_a_time(
     # Блокировка снята — перевод запускается
     stats = await scrape_cli.translate(10)
     assert stats.checked == 0
+
+
+async def test_wrong_language_texts_are_fixed(session: AsyncSession) -> None:
+    """Русское описание с грузинским названием района не попадает в грузинскую колонку;
+    старый такой текст переносится на место, а грузинский перевод делается заново."""
+    repository = ListingsRepository(session)
+    mixed = await repository.create_or_update_from_raw(
+        raw("mix", "Квартира", "Светлая квартира в районе ვაკე, рядом парк и метро")
+    )
+    assert mixed.description_ru.startswith("Светлая") and not mixed.description_ka
+
+    broken = await repository.create_or_update_from_raw(raw("old", "Квартира", "Описание"))
+    broken.description_ka = "Русский текст, который по ошибке лежит в грузинском поле"
+    broken.description_ru = ""
+    broken.title_ka = "ბინა ვაკეში"
+    await session.commit()
+
+    assert await repository.fix_wrong_languages(100) == 1
+    await session.commit()
+    await session.refresh(broken)
+    assert broken.description_ka == "", "чужой текст убран — его переведёт AI"
+    assert broken.description_ru.startswith("Русский текст"), "текст перенесён на свой язык"
+    assert broken.title_ka == "ბინა ვაკეში", "правильный текст не трогаем"
+    assert await repository.fix_wrong_languages(100) == 0
+
+
+async def test_failed_translation_waits_a_day(session: AsyncSession) -> None:
+    repository = ListingsRepository(session)
+    hard = await repository.create_or_update_from_raw(raw("hard", "Квартира"))
+    easy = await repository.create_or_update_from_raw(raw("easy", "Квартира"))
+    await session.commit()
+
+    await repository.mark_translation_failed(hard.id)
+    await session.commit()
+    assert [item.id for item in await repository.list_untranslated(10)] == [easy.id]
