@@ -262,6 +262,7 @@ async def test_favorites_list_and_pagination(harness: BotHarness) -> None:
     assert buttons(harness.last_markup()) == [
         ["★ 1", "★ 2", "★ 3"],
         ["1/2", "▶️"],
+        ["✨ Вам может понравиться"],
         ["🏠 Главное меню"],
     ]
 

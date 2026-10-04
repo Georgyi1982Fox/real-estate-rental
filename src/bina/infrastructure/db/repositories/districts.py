@@ -54,6 +54,13 @@ class DistrictsRepository(IDistrictsRepository):
         found = set((await self._session.execute(query)).scalars().all())
         return [code for code in CITIES if code in found]
 
+    async def cities_of(self, district_ids: list[UUID]) -> dict[UUID, str]:
+        """Город каждого района (TASK-076)."""
+        if not district_ids:
+            return {}
+        query = select(District.id, District.city).where(District.id.in_(district_ids))
+        return {row.id: row.city for row in await self._session.execute(query)}
+
     async def create_district(self, name: str, city: str = DEFAULT_CITY) -> District:
         """Создать новый район."""
         # Названия на трёх языках: словарь районов Тбилиси, иначе транслитерация (TASK-019);

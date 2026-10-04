@@ -35,6 +35,7 @@ from bina.infrastructure.api.routes import (
     my_listings,
     notifications,
     photo_report,
+    recommendations,
     referral,
     searches,
     subscription,
@@ -90,6 +91,7 @@ def create_app(
 
     # До listings: иначе «compare» примется за ID объявления
     app.include_router(compare.router)
+    app.include_router(recommendations.router)
     app.include_router(listings.router)
     app.include_router(assistant.router)
     app.include_router(photo_report.router)
