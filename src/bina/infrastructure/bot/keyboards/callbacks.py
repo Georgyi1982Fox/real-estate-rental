@@ -213,3 +213,7 @@ class AccountAction(StrEnum):
 
 class AccountCallback(CallbackData, prefix="acc"):
     action: AccountAction
+
+
+class RecommendCallback(CallbackData, prefix="rec"):
+    """«✨ Вам может понравиться» под избранным (TASK-076)."""

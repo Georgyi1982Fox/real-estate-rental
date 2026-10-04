@@ -8,6 +8,7 @@
 
 from datetime import UTC, datetime
 
+import structlog
 from aiogram import Bot
 from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, Field
@@ -26,6 +27,8 @@ from bina.infrastructure.api.dependencies import CurrentUserDep, SessionDep, Set
 from bina.infrastructure.api.routes.common import bad_request
 from bina.infrastructure.api.settings import ApiSettings
 from bina.infrastructure.db.repositories.referrals import ReferralsRepository
+
+logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/api/referral", tags=["referral"])
 
@@ -66,6 +69,17 @@ async def bot_username(request: Request, settings: ApiSettings) -> str:
         await bot.session.close()
     request.app.state.bot_username = me.username or ""
     return request.app.state.bot_username  # type: ignore[no-any-return]
+
+
+async def bot_username_or_none(request: Request, settings: ApiSettings) -> str | None:
+    """Имя бота или ``None``, если бот не настроен или Telegram недоступен."""
+    try:
+        return await bot_username(request, settings) or None
+    except HTTPException:
+        return None
+    except Exception as exc:  # noqa: BLE001 - нет связи с Telegram: работаем без ссылки на бота
+        logger.warning("Bot username not resolved", error=str(exc))
+        return None
 
 
 @router.get("", response_model=ReferralOut)

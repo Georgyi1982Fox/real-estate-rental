@@ -585,6 +585,18 @@ _RU: dict[str, str] = {
     "account_deleted": (
         "Готово: аккаунт и все данные удалены. Если снова напишете боту, начнёте с чистого листа."
     ),
+    "shared_card": "🏠 <b>{title}</b>\n💰 {price} · 🚪 {rooms} · 📐 {area}\n📍 {district}",
+    "card_favorite": "В избранное",
+    "card_open_app": "📱 Подробнее в приложении",
+    "card_open_site": "🌐 Открыть на сайте",
+    "share_button": "📤 Поделиться",
+    "rec_button": "✨ Вам может понравиться",
+    "rec_header": (
+        "✨ <b>Вам может понравиться</b>\n"
+        "Подобрал по вашему избранному: город, районы, комнаты и цена."
+    ),
+    "rec_need_favorites": "Добавьте пару квартир в избранное ☆ — и я подберу похожие.",
+    "rec_none": "Пока похожих квартир нет. Загляните позже — новые появляются каждый час.",
 }
 
 _EN: dict[str, str] = {
@@ -1198,6 +1210,19 @@ _EN: dict[str, str] = {
         "Done: your account and all data are deleted. If you write to the bot again, you will "
         "start from scratch."
     ),
+    "shared_card": "🏠 <b>{title}</b>\n💰 {price} · 🚪 {rooms} · 📐 {area}\n📍 {district}",
+    "card_favorite": "Add to favorites",
+    "card_open_app": "📱 More in the app",
+    "card_open_site": "🌐 Open on the website",
+    "share_button": "📤 Share",
+    "rec_button": "✨ You may like",
+    "rec_header": (
+        "✨ <b>You may like</b>\nPicked from your favorites: city, districts, rooms and price."
+    ),
+    "rec_need_favorites": (
+        "Add a couple of apartments to favorites ☆ and I will find similar ones."
+    ),
+    "rec_none": "No similar apartments yet. Check back later: new ones arrive every hour.",
 }
 
 _KA: dict[str, str] = {
@@ -1787,6 +1812,18 @@ _KA: dict[str, str] = {
         "მზადაა: ანგარიში და ყველა მონაცემი წაიშალა. თუ ბოტს ისევ მისწერთ, ყველაფერს თავიდან "
         "დაიწყებთ."
     ),
+    "shared_card": "🏠 <b>{title}</b>\n💰 {price} · 🚪 {rooms} · 📐 {area}\n📍 {district}",
+    "card_favorite": "რჩეულებში",
+    "card_open_app": "📱 დეტალურად აპლიკაციაში",
+    "card_open_site": "🌐 საიტზე გახსნა",
+    "share_button": "📤 გაზიარება",
+    "rec_button": "✨ შეიძლება მოგეწონოთ",
+    "rec_header": (
+        "✨ <b>შეიძლება მოგეწონოთ</b>\n"
+        "შევარჩიე თქვენი რჩეულების მიხედვით: ქალაქი, უბნები, ოთახები და ფასი."
+    ),
+    "rec_need_favorites": "დაამატეთ რამდენიმე ბინა რჩეულებში ☆ და მსგავსებს შეგირჩევთ.",
+    "rec_none": ("მსგავსი ბინები ჯერ არ არის. შემოიარეთ მოგვიანებით: ახლები ყოველ საათში ჩნდება."),
 }
 
 TEXTS: dict[str, dict[str, str]] = {"ru": _RU, "en": _EN, "ka": _KA}
