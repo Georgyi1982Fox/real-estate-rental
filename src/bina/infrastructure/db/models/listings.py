@@ -207,6 +207,11 @@ class Listing(Base, SoftDeleteMixin):
     fraud_checked_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # Перевод не удался (AI ответил не на том языке): сутки не пробуем, чтобы одно
+    # «трудное» объявление не останавливало перевод остальных
+    translation_failed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     # TASK-007: value_enum: хранить значения enum, как в миграции
     status: Mapped[ListingStatus] = mapped_column(
         value_enum(ListingStatus, "listingstatus"),

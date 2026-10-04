@@ -4,7 +4,7 @@ from datetime import UTC, date, datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, ClassVar
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from click.testing import CliRunner
@@ -373,6 +373,10 @@ async def test_translate_commits_in_batches(monkeypatch: pytest.MonkeyPatch) -> 
         staticmethod(lambda: provider),
     )
     monkeypatch.setattr(scrape_cli, "TranslateListingsUseCase", FakeUseCase)
+    fixer = AsyncMock(return_value=2)
+    monkeypatch.setattr(
+        scrape_cli, "ListingsRepository", lambda session: Mock(fix_wrong_languages=fixer)
+    )
 
     @asynccontextmanager
     async def free_lock(engine: Any, key: int) -> AsyncIterator[bool]:
@@ -392,6 +396,8 @@ async def test_translate_commits_in_batches(monkeypatch: pytest.MonkeyPatch) -> 
     assert stats == TranslationStats(checked=23, translated=19, failed=4)
     assert all(session.commit.await_count == 1 for session in db.sessions)
     provider.close.assert_awaited_once()
+    # Сначала текст не на своём языке — на место (перевод потом заполнит пустое)
+    fixer.assert_awaited_once_with(scrape_cli.LANGUAGE_FIX_BATCH)
 
 
 def test_notify_command(monkeypatch: pytest.MonkeyPatch) -> None:

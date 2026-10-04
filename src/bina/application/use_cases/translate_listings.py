@@ -130,6 +130,9 @@ class TranslateListingsUseCase:
                 logger.warning(
                     "Listing translation failed", listing_id=str(listing.id), error=str(result)
                 )
+                await self._repository.mark_translation_failed(listing.id)
+                if self._after_save is not None:
+                    await self._after_save()
                 continue
             texts = result
             await self._repository.save_texts(listing.id, texts)

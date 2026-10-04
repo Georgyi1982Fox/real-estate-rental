@@ -13,6 +13,7 @@ import httpx
 import structlog
 from pydantic import BaseModel, ValidationError
 
+from bina.application.localization import in_language
 from bina.application.ports.llm_provider import LLMProvider
 from bina.application.ports.translator import (
     IMessageTranslator,
@@ -80,6 +81,11 @@ def parse_response(raw: str, targets: Sequence[str]) -> dict[str, ListingText]:
             raise ValueError(f"missing or invalid {code!r} translation") from exc
         if not item.title.strip():
             raise ValueError(f"empty {code!r} title")
+        # Модель иногда оставляет текст на языке оригинала: такой «перевод» не сохраняем,
+        # иначе грузин навсегда увидит русское описание
+        for part in (item.title, item.description):
+            if not in_language(part, code):
+                raise ValueError(f"{code!r} translation is not in {LANGUAGE_NAMES[code]}")
         result[code] = ListingText(item.title.strip(), item.description.strip())
     return result
 
@@ -116,7 +122,10 @@ class LLMTranslator(ITranslator):
             except ValueError as exc:
                 last_error = str(exc)
                 logger.warning("Bad translation response", attempt=attempt, error=last_error)
-                prompt += "\n\nYour previous reply was not valid. Reply with the JSON object only."
+                prompt += (
+                    f"\n\nYour previous reply was not valid ({last_error}). Every value must "
+                    "be written in its target language and script. Reply with the JSON object only."
+                )
         raise TranslationError(f"invalid LLM response: {last_error}")
 
 
@@ -169,9 +178,10 @@ class LLMMessageTranslator(IMessageTranslator):
                 logger.warning("Bad message translation", attempt=attempt, error=last_error)
                 prompt += "\n\nYour previous reply was not valid. Reply with the JSON object only."
                 continue
-            if result.text.strip():
+            if result.text.strip() and in_language(result.text, target):
                 return result.text.strip()
-            last_error = "empty translation"
+            last_error = "empty translation" if not result.text.strip() else "wrong language"
+            prompt += f"\n\nReply in {LANGUAGE_NAMES[target]} only."
         raise TranslationError(f"invalid LLM response: {last_error}")
 
     async def close(self) -> None:

@@ -17,3 +17,7 @@ class IListingTranslationsRepository(Protocol):
     async def save_texts(self, listing_id: UUID, texts: dict[str, ListingText]) -> None:
         """Записать заголовок и описание для каждого языка из ``texts``."""
         ...
+
+    async def mark_translation_failed(self, listing_id: UUID) -> None:
+        """Перевод не удался: следующие сутки объявление не брать."""
+        ...

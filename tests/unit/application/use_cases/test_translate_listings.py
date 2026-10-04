@@ -44,6 +44,7 @@ class FakeRepository:
         self.listings = listings
         self.saved: dict[UUID, dict[str, ListingText]] = {}
         self.limits: list[int] = []
+        self.failed: list[UUID] = []
 
     async def list_untranslated(self, limit: int) -> list[Listing]:
         self.limits.append(limit)
@@ -51,6 +52,9 @@ class FakeRepository:
 
     async def save_texts(self, listing_id: UUID, texts: dict[str, ListingText]) -> None:
         self.saved[listing_id] = texts
+
+    async def mark_translation_failed(self, listing_id: UUID) -> None:
+        self.failed.append(listing_id)
 
 
 def test_source_and_missing_languages() -> None:
@@ -95,3 +99,5 @@ async def test_failure_does_not_stop_other_listings() -> None:
 
     assert (stats.checked, stats.translated, stats.failed) == (4, 1, 1)
     assert list(repository.saved) == [good.id]
+    # Неудачное отложено на сутки — не загораживает остальные в следующих запусках
+    assert repository.failed == [broken.id]

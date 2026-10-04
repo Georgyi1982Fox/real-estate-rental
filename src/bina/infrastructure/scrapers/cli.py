@@ -79,6 +79,8 @@ SOURCES = ("myhome", "ss", "livo", "korter")
 TELEGRAM = "telegram"
 # Перевод коммитится пачками: сбой посередине не теряет уже сделанное
 TRANSLATE_BATCH = 20
+# Сколько объявлений с текстом не на своём языке исправлять за запуск
+LANGUAGE_FIX_BATCH = 5000
 # Сколько объявлений AI переводит/проверяет одновременно (LLM_CONCURRENCY)
 LLM_CONCURRENCY = max(1, int(os.getenv("LLM_CONCURRENCY", "") or 5))
 # Отправка уведомлений пачками (коммит после каждой)
@@ -226,6 +228,13 @@ async def translate(limit: int) -> TranslationStats:
         async with advisory_lock(db.engine, TRANSLATE_LOCK) as acquired:
             if not acquired:
                 raise TranslationBusyError("translation is already running")
+            # Сначала текст не на своём языке (русский в грузинской колонке) — на место:
+            # освободившиеся языки переведутся ниже в этом же запуске
+            async with db.session_factory() as session:
+                fixed = await ListingsRepository(session).fix_wrong_languages(LANGUAGE_FIX_BATCH)
+                await session.commit()
+            if fixed:
+                logger.info("Texts in a wrong language fixed", listings=fixed)
             provider = LLMFactory.create_provider()
             try:
                 while checked < limit:

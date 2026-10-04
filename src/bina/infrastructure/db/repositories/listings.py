@@ -27,7 +27,7 @@ from bina.application.duplicates import candidate_bounds
 from bina.application.fraud import HIDE_SCORE
 from bina.application.listing_details import clean_features
 from bina.application.listing_titles import listing_titles
-from bina.application.localization import district_names, script_of
+from bina.application.localization import MIN_LETTERS, district_names, dominant_script
 from bina.application.ports.scraper import RawListing
 from bina.application.ports.translator import LANGUAGES, ListingText
 from bina.application.price_analysis import ROOMS_GROUP_MAX
@@ -517,12 +517,22 @@ class ListingsRepository(IListingsRepository):
                 _untranslated(),
                 # Скрытые дубликаты не показываются — переводить их незачем (TASK-090)
                 not_hidden_duplicate(),
+                # Неудачный перевод — повтор через сутки, остальные не ждут
+                or_(
+                    Listing.translation_failed_at.is_(None),
+                    Listing.translation_failed_at < func.now() - literal_column("interval '1 day'"),
+                ),
             )
             .order_by(Listing.created_at.desc())
             .limit(limit)
         )
         result = await self._session.execute(query)
         return list(result.scalars().all())
+
+    async def mark_translation_failed(self, listing_id: UUID) -> None:
+        await self._session.execute(
+            update(Listing).where(Listing.id == listing_id).values(translation_failed_at=func.now())
+        )
 
     async def language_coverage(self) -> tuple[int, int]:
         """Активных объявлений всего и сколько из них ещё ждут перевода."""
@@ -537,6 +547,44 @@ class ListingsRepository(IListingsRepository):
         )
         total, missing = (await self._session.execute(query)).one()
         return int(total), int(missing)
+
+    async def fix_wrong_languages(self, limit: int) -> int:
+        """Текст не на своём языке (русское описание в грузинской колонке) — исправить.
+
+        Текст переносится в колонку своего языка, если она пуста, а из чужой колонки
+        удаляется: перевод на этот язык затем сделает шаг перевода. Возвращает, сколько
+        объявлений исправлено.
+        """
+        wrong = [
+            _wrong_language(getattr(Listing, f"{kind}_{language}"), language)
+            for kind in TEXT_KINDS
+            for language in LANGUAGES
+        ]
+        query = (
+            select(Listing)
+            .where(Listing.is_deleted.is_(False), or_(*wrong))
+            .order_by(Listing.created_at.desc())
+            .limit(limit)
+        )
+        listings = list((await self._session.execute(query)).scalars().all())
+        fixed = 0
+        for listing in listings:
+            changed = False
+            for kind in TEXT_KINDS:
+                for language in LANGUAGES:
+                    column = f"{kind}_{language}"
+                    text = getattr(listing, column) or ""
+                    actual = dominant_script(text)
+                    if actual is None or actual == language:
+                        continue
+                    target = f"{kind}_{actual}"
+                    if not (getattr(listing, target) or "").strip():
+                        setattr(listing, target, text)
+                    setattr(listing, column, "")
+                    changed = True
+            fixed += changed
+        await self._session.flush()
+        return fixed
 
     async def save_texts(self, listing_id: UUID, texts: dict[str, ListingText]) -> None:
         """Записать переводы только в пустые поля.
@@ -757,6 +805,24 @@ class ListingsRepository(IListingsRepository):
         return await districts_repo.create_district(district_name, city)
 
 
+# Буквы каждого языка для подсчёта в PostgreSQL (как ``dominant_script``)
+_SCRIPT_CLASSES = {"ka": "\u10a0-\u10ff", "ru": "\u0400-\u04ff", "en": "A-Za-z"}
+TEXT_KINDS = ("title", "description")
+
+
+def _letters(column: Any, language: str) -> ColumnElement[int]:
+    """Сколько в тексте букв языка ``language``."""
+    pattern = f"[^{_SCRIPT_CLASSES[language]}]"
+    return func.length(func.regexp_replace(func.coalesce(column, ""), pattern, "", "g"))
+
+
+def _wrong_language(column: Any, language: str) -> ColumnElement[bool]:
+    """Текст в колонке языка ``language`` написан на другом языке (по большинству букв)."""
+    own = _letters(column, language)
+    others = [_letters(column, other) for other in LANGUAGES if other != language]
+    return or_(*(and_(other >= MIN_LETTERS, other > own) for other in others))
+
+
 def _untranslated() -> ColumnElement[bool]:
     """Нет заголовка на каком-то языке или нет описания (при том что на другом оно есть)."""
     descriptions = [getattr(Listing, f"description_{language}") for language in LANGUAGES]
@@ -795,13 +861,14 @@ def source_texts(raw: RawListing) -> dict[str, str]:
     языках (SS.ge), занимают свободные языки.
     """
     default = "ka" if raw.language == "ka" else "ru"
-    title_lang = script_of(raw.title) if raw.title.strip() else default
+    title_lang = (dominant_script(raw.title) or default) if raw.title.strip() else default
     texts: dict[str, str] = {}
     if raw.title.strip():
         texts[f"title_{title_lang}"] = raw.title
     for text in (raw.description, *raw.descriptions.values()):
         if text and text.strip():
-            column = f"description_{script_of(text)}"
+            # По большинству букв: русский текст с грузинским названием района — русский
+            column = f"description_{dominant_script(text) or default}"
             texts.setdefault(column, text)
     return texts
 

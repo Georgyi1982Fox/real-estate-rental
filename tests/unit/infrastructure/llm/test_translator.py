@@ -61,6 +61,23 @@ def test_parse_response_rejects_incomplete(raw: str) -> None:
         parse_response(raw, ["ka", "en"])
 
 
+def test_parse_response_rejects_wrong_language() -> None:
+    """«Грузинский» перевод на русском не сохраняем (так и появлялся русский текст у грузин)."""
+    russian_as_ka = {**GOOD, "ka": {"title": TEXT.title, "description": TEXT.description}}
+    with pytest.raises(ValueError, match="Georgian"):
+        parse_response(json.dumps(russian_as_ka, ensure_ascii=False), ["ka", "en"])
+
+
+async def test_translate_retries_wrong_language() -> None:
+    russian_as_ka = {**GOOD, "ka": {"title": TEXT.title, "description": TEXT.description}}
+    provider = FakeProvider(
+        [json.dumps(russian_as_ka, ensure_ascii=False), json.dumps(GOOD, ensure_ascii=False)]
+    )
+    result = await LLMTranslator(provider).translate(TEXT, "ru", ["ka", "en"])
+    assert result["ka"].title == GOOD["ka"]["title"]
+    assert "target language" in provider.prompts[1]
+
+
 async def test_translate_retries_after_bad_reply() -> None:
     provider = FakeProvider(["no json here", json.dumps(GOOD, ensure_ascii=False)])
 

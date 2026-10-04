@@ -73,6 +73,32 @@ def script_of(text: str) -> str:
     return "en"
 
 
+_LATIN_RE = re.compile("[A-Za-z]")
+# Меньше букв — язык не определить (номер дома, «2+1»): такой текст не проверяем
+MIN_LETTERS = 3
+
+
+def dominant_script(text: str) -> str | None:
+    """Язык текста по большинству букв: ``ka``, ``ru`` или ``en``; ``None`` — букв почти нет.
+
+    В отличие от :func:`script_of`, одно грузинское слово в русском тексте («район ვაკე»)
+    не делает его грузинским: решает то, каких букв больше.
+    """
+    counts = {
+        "ka": len(_GEORGIAN_RE.findall(text)),
+        "ru": len(_CYRILLIC_RE.findall(text)),
+        "en": len(_LATIN_RE.findall(text)),
+    }
+    language, letters = max(counts.items(), key=lambda item: item[1])
+    return language if letters >= MIN_LETTERS else None
+
+
+def in_language(text: str, language: str) -> bool:
+    """Написан ли текст на ``language`` (короткий текст без букв — да)."""
+    found = dominant_script(text)
+    return found is None or found == language
+
+
 def _map_chars(text: str, table: dict[str, str]) -> str:
     result: list[str] = []
     for char in text:
