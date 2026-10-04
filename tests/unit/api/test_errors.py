@@ -75,16 +75,23 @@ async def test_body_too_large(client: AsyncClient) -> None:
     assert (response.status_code, error(response)["code"]) == (413, "payload_too_large")
 
 
-async def test_chunked_body_without_length_is_refused(client: AsyncClient) -> None:
-    """Тело частями без Content-Length обошло бы проверку размера."""
+async def test_chunked_body_is_limited_while_reading(client: AsyncClient) -> None:
+    """Тело частями без Content-Length: большое — 413, пустое (так прокси сайта шлёт POST
+    «прочитано» в уведомлениях) проходит."""
 
-    async def chunks() -> AsyncIterator[bytes]:
-        yield b"x" * 1024
+    async def chunks(size: int, parts: int) -> AsyncIterator[bytes]:
+        for _ in range(parts):
+            yield b"x" * size
 
-    response = await client.post(
-        "/api/favorites", content=chunks(), headers={"Content-Type": "application/json"}
+    big = await client.post(
+        "/api/favorites",
+        content=chunks(16 * 1024, 8),
+        headers={"Content-Type": "application/json"},
     )
-    assert response.status_code == 411
+    assert (big.status_code, error(big)["code"]) == (413, "payload_too_large")
+
+    empty = await client.post("/api/favorites", content=chunks(0, 1))
+    assert empty.status_code not in (411, 413), "пустое тело частями не отклоняется"
 
 
 async def test_unhandled_error_hides_details(caplog: pytest.LogCaptureFixture) -> None:
