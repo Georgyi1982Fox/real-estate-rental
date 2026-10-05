@@ -48,7 +48,7 @@ npm run build      # tsc + vite build → dist/
 
 | Метод | Путь | Ответ |
 |---|---|---|
-| GET | `/api/listings?page=&per_page=&district=&min_price=&max_price=&rooms=` | `{items, total, page, pages}` |
+| GET | `/api/listings?page=&per_page=&q=&district=&min_price=&max_price=&rooms=&min_area=&max_area=&floor_min=&floor_max=&not_first_floor=&not_last_floor=&bedrooms=&bathrooms=&features=&condition=&owner_only=&city=&rent_period=` | `{items, total, page, pages}` |
 | GET | `/api/listings/{id}` | объект квартиры (без телефона и Telegram владельца), 404 если нет |
 | GET | `/api/listings/{id}/similar` | `{items}` — до 3 похожих |
 | GET | `/api/listings/{id}/phone` | `{phone}`, 404 если номера нет |
@@ -86,7 +86,7 @@ npm run build      # tsc + vite build → dist/
 | PATCH | `/api/searches/{id}` | `{name?, notify?}` | `SavedSearch`; 404 — нет такого |
 | DELETE | `/api/searches/{id}` | — | 204; 404 — нет такого |
 
-`SavedSearch`: `{id, name, filters: {district?, min_price?, max_price?, rooms?}, notify, new_count, created_at}`.
+`SavedSearch`: `{id, name, filters, notify, new_count, created_at}`. `filters` — все фильтры поиска (FRONTEND-017): `district` / `districts[]`, `min_price`, `max_price`, `rooms`, `min_area`, `max_area`, `q`, `floor_min`, `floor_max`, `not_first_floor`, `not_last_floor`, `bedrooms`, `bathrooms`, `features[]`, `condition[]`, `owner_only`, `city`, `rent_period`. В ответе незаданные поля — `null` / `[]` / `false`, `rent_period` — `monthly`; фронт их отбрасывает. `features` и `condition` в адресе и в `/api/listings` — через запятую.
 `rooms=4` — «4 и больше» (и в `/api/listings`). Фильтры главной хранятся в адресе: `/?district=..&min_price=..&max_price=..&rooms=..&page=..`.
 
 Тексты с бэкенда (`title`, `description`, `address`, `owner.name`, `district.name`) — объект `{ka, ru, en}` или строка.

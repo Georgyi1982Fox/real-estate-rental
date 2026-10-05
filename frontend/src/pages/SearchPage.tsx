@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { ListingsPage } from '../api/types';
 import EmptyState from '../components/EmptyState';
 import ErrorState from '../components/ErrorState';
@@ -17,7 +17,13 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useSearchFilters } from '../hooks/useSearchFilters';
 import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
 import { fill } from '../lib/format';
-import { countFilters, filterDistricts, hasFilters, searchToQuery } from '../lib/searchFilters';
+import {
+  countFilters,
+  filterDistricts,
+  hasFilters,
+  searchToQuery,
+  withQuery,
+} from '../lib/searchFilters';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 
@@ -46,6 +52,8 @@ export default function SearchPage() {
   // Стабильная ссылка: Modal перезапускает эффект (фокус) при смене onClose
   const closeFilters = useCallback(() => setFiltersOpen(false), []);
   const searchQuery = searchToQuery(filters, query);
+  // Поиск сохраняется целиком: фильтры + текст из строки поиска
+  const savedFilters = useMemo(() => withQuery(filters, query), [filters, query]);
   const { data, error, loading, reload } = useApi<ListingsPage>(
     `/api/listings?page=${page}&per_page=${LISTINGS_PER_PAGE}${searchQuery ? `&${searchQuery}` : ''}`,
   );
@@ -82,7 +90,7 @@ export default function SearchPage() {
         </SearchBar>
         <FilterChips filters={filters} districtNames={names} onRemove={setFilters} />
         <div className="search-page__filter-actions flex flex-wrap items-center gap-3">
-          <SaveSearchButton filters={filters} />
+          <SaveSearchButton filters={savedFilters} />
           {narrowed && (
             <button
               type="button"

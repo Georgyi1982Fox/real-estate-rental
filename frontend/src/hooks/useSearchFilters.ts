@@ -13,13 +13,14 @@ import {
 /** Записать фильтры в параметры адреса вместо прежних; страница сбрасывается на первую */
 function writeFilters(params: URLSearchParams, filters: SearchFilters): void {
   FILTER_KEYS.forEach((key) => params.delete(key));
-  filterEntries(filters).forEach(([key, value]) => params.set(key, value));
+  // Текст поиска (q) в адресе меняет только setQuery
+  filterEntries({ ...filters, q: undefined }).forEach(([key, value]) => params.set(key, value));
   params.delete('page');
 }
 
 /**
  * Поиск, фильтры и страница главной живут в адресе:
- * ?q=<текст>&district=<id>,<id>&min_price=..&max_price=..&rooms=..&page=..
+ * ?q=<текст>&district=<id>,<id>&min_price=..&rooms=..&features=<код>,<код>&owner_only=true&page=..
  * Такую ссылку можно открыть заново или сохранить как поиск.
  */
 export function useSearchFilters() {

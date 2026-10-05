@@ -212,13 +212,35 @@ export interface SearchFilters {
   max_price?: number;
   /** 4 = «4 и больше» */
   rooms?: number;
+  min_area?: number;
+  max_area?: number;
+  /** Поиск по словам (строка поиска) */
+  q?: string;
+  floor_min?: number;
+  floor_max?: number;
+  not_first_floor?: boolean;
+  not_last_floor?: boolean;
+  bedrooms?: number;
+  bathrooms?: number;
+  /** Коды удобств (FeatureCode): в квартире должны быть все */
+  features?: string[];
+  /** Коды состояния (ConditionCode): подходит любое из выбранных */
+  condition?: string[];
+  owner_only?: boolean;
+  /** Город (TASK-079): сервер отдаёт в сохранённых поисках, передаём как есть */
+  city?: string;
+  /** Срок аренды (TASK-092); 'monthly' — то же, что поле не задано */
+  rent_period?: RentPeriod;
 }
+
+export type RentPeriod = 'monthly' | 'daily';
 
 /** Сохранённый поиск (/api/searches, нужен X-Telegram-Init-Data, иначе 401) */
 export interface SavedSearch {
   id: string;
   /** Если не передать при создании, сервер соберёт из фильтров: «Ваке, 2 комн., до 2000 ₾» */
   name: string;
+  /** Сервер отдаёт незаданные поля как null — useSavedSearches их убирает (cleanFilters) */
   filters: SearchFilters;
   /** Присылать уведомления о новых квартирах */
   notify: boolean;

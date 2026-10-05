@@ -7,7 +7,7 @@ import type {
   SearchFilters,
   UpdateSavedSearchRequest,
 } from '../api/types';
-import { sameFilters, toSavedFilters } from '../lib/searchFilters';
+import { cleanFilters, sameFilters, toSavedFilters } from '../lib/searchFilters';
 import { haptic } from '../lib/telegram';
 import { useAuth } from '../providers/AuthProvider';
 import { useI18n } from '../providers/I18nProvider';
@@ -60,6 +60,11 @@ function isSavedSearch(value: unknown): value is SavedSearch {
   if (typeof value !== 'object' || value === null) return false;
   const item = value as Partial<SavedSearch>;
   return typeof item.id === 'string' && typeof item.filters === 'object' && item.filters !== null;
+}
+
+/** Сервер отдаёт незаданные фильтры как null — в приложении таких полей просто нет */
+function normalize(search: SavedSearch): SavedSearch {
+  return { ...search, filters: cleanFilters(search.filters) };
 }
 
 function loadLocal(): SavedSearch[] {
@@ -115,7 +120,7 @@ export function useSavedSearches() {
     const controller = new AbortController();
     setState((current) => ({ ...current, loading: true, error: undefined }));
     apiGet<ListResponse<SavedSearch>>(API_PATH, controller.signal).then(
-      ({ items }) => setState({ searches: items, loading: false }),
+      ({ items }) => setState({ searches: items.map(normalize), loading: false }),
       (error: unknown) => {
         if (controller.signal.aborted) return;
         if (shouldFallback(error)) {
@@ -157,7 +162,7 @@ export function useSavedSearches() {
 
   const save = useCallback(
     async (searchFilters: SearchFilters, name?: string): Promise<SavedSearch | null> => {
-      // Один район — поле district, несколько — массив districts
+      // Все выбранные фильтры и текст поиска; один район — поле district, несколько — districts
       const filters = toSavedFilters(searchFilters);
       const body: CreateSavedSearchRequest = { filters, notify: true };
       if (name) body.name = name;
@@ -171,7 +176,7 @@ export function useSavedSearches() {
               new_count: 0,
               created_at: new Date().toISOString(),
             }
-          : await apiPost<SavedSearch>(API_PATH, body);
+          : normalize(await apiPost<SavedSearch>(API_PATH, body));
         update((list) => [created, ...list]);
         return created;
       } catch (error) {
@@ -193,7 +198,9 @@ export function useSavedSearches() {
     async (search: SavedSearch, body: UpdateSavedSearchRequest): Promise<SavedSearch> =>
       localMode
         ? { ...search, ...body }
-        : apiPatch<SavedSearch>(`${API_PATH}/${encodeURIComponent(search.id)}`, body),
+        : normalize(
+            await apiPatch<SavedSearch>(`${API_PATH}/${encodeURIComponent(search.id)}`, body),
+          ),
     [],
   );
 

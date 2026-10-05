@@ -2,7 +2,7 @@ import { useId } from 'react';
 import { Link } from 'react-router-dom';
 import type { SavedSearch } from '../api/types';
 import { fill } from '../lib/format';
-import { describeFilters, filtersToQuery } from '../lib/searchFilters';
+import { describeFilters, extraFilterChips, filtersToQuery } from '../lib/searchFilters';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 import Icon from './Icon';
@@ -25,7 +25,10 @@ interface SavedSearchCardProps {
   onDelete: () => void;
 }
 
-/** Карточка сохранённого поиска: название, фильтры словами, «+N новых», уведомления, действия */
+/**
+ * Карточка сохранённого поиска: название, фильтры словами, дополнительные фильтры чипами,
+ * «+N новых», уведомления, действия
+ */
 export default function SavedSearchCard({
   search,
   districtName,
@@ -34,9 +37,10 @@ export default function SavedSearchCard({
   onRename,
   onDelete,
 }: SavedSearchCardProps) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const st = t.searches;
   const titleId = useId();
+  const chips = extraFilterChips(search.filters, t, lang);
   const description = describeFilters(search.filters, districtName, st);
   // Без своего названия (mock) заголовком служат сами фильтры
   const title = search.name.trim() || description;
@@ -66,6 +70,18 @@ export default function SavedSearchCard({
             <span className="saved-search__filters text-sm text-[var(--text-secondary)]">
               {description}
             </span>
+          )}
+          {chips.length > 0 && (
+            <ul className="saved-search__chips mt-1 flex list-none flex-wrap gap-1.5 p-0">
+              {chips.map((chip) => (
+                <li
+                  key={chip.key}
+                  className="saved-search__chip max-w-full truncate rounded-full bg-[var(--surface-hover)] px-2.5 py-1 text-xs font-medium text-[var(--text-primary)]"
+                >
+                  {chip.label}
+                </li>
+              ))}
+            </ul>
           )}
         </div>
         {search.new_count > 0 && (

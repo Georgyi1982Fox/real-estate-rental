@@ -1,14 +1,16 @@
+import { useState } from 'react';
 import ErrorState from '../components/ErrorState';
 import Icon from '../components/Icon';
 import OpenInTelegram from '../components/OpenInTelegram';
 import PlanComparison from '../components/PlanComparison';
+import PlanPicker from '../components/PlanPicker';
 import UsageMeter from '../components/UsageMeter';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useSubscription } from '../hooks/useSubscription';
 import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
 import { useTelegramMainButton } from '../hooks/useTelegramMainButton';
 import { fill, formatDate } from '../lib/format';
-import { FREE_LIMITS, PREMIUM_LIMITS, premiumPlan } from '../lib/premium';
+import { FREE_LIMITS, PREMIUM_LIMITS, premiumPlans } from '../lib/premium';
 import { canPay, isInTelegram } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 
@@ -23,21 +25,28 @@ export default function PremiumPage() {
   useDocumentTitle(`${pt.page_title} — Bina.ai`);
   useTelegramBackButton('/profile');
 
-  const plan = premiumPlan(subscription?.plans);
+  const plans = premiumPlans(subscription?.plans);
+  const [selectedId, setSelectedId] = useState<string>();
+  // Пока пользователь не выбрал сам — самый короткий тариф (7 дней)
+  const plan = plans.find((item) => item.id === selectedId) ?? plans[0];
   const isPremium = subscription?.is_premium;
   // Бэкенд отдаёт лимиты только текущего тарифа — вторая колонка из констант
   const freeLimits = isPremium === false && subscription ? subscription.limits : FREE_LIMITS;
   const premiumLimits = isPremium && subscription ? subscription.limits : PREMIUM_LIMITS;
   const expires = subscription?.expires_at ? formatDate(subscription.expires_at, lang) : '';
   const payable = !unauthorized && canPay();
-  const buyText = buying ? pt.paying : fill(isPremium ? pt.renew : pt.buy, plan.price_stars);
-  const startPurchase = () => void buy(plan.id);
+  const buyText = buying
+    ? pt.paying
+    : fill(isPremium ? pt.renew : pt.buy, plan?.price_stars ?? '');
+  const startPurchase = () => {
+    if (plan) void buy(plan.id);
+  };
 
   // В Telegram «Купить» — нативная MainButton внизу экрана, в браузере платить нельзя
   const nativeBuy = useTelegramMainButton({
     text: buyText,
     onClick: startPurchase,
-    visible: payable && subscription !== undefined,
+    visible: payable && subscription !== undefined && plan !== undefined,
     loading: buying,
   });
 
@@ -55,7 +64,7 @@ export default function PremiumPage() {
         {pt.update_telegram}
       </p>
     );
-  } else if (!nativeBuy && subscription) {
+  } else if (!nativeBuy && subscription && plan) {
     action = (
       <button
         type="button"
@@ -91,7 +100,12 @@ export default function PremiumPage() {
 
       {error && <ErrorState compact onRetry={reload} />}
 
-      <PlanComparison free={freeLimits} premium={premiumLimits} plan={plan} isPremium={isPremium} />
+      <PlanComparison
+        free={freeLimits}
+        premium={premiumLimits}
+        plans={plans}
+        isPremium={isPremium}
+      />
 
       {!unauthorized && (loading || subscription) && (
         <section className={`premium__usage ${CARD_CLASS}`} aria-labelledby="premium-usage-title">
@@ -122,6 +136,15 @@ export default function PremiumPage() {
             </ul>
           )}
         </section>
+      )}
+
+      {payable && subscription && plan && (
+        <PlanPicker
+          plans={plans}
+          selectedId={plan.id}
+          onSelect={setSelectedId}
+          disabled={buying}
+        />
       )}
 
       {action}

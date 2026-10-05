@@ -1,7 +1,13 @@
 import type { SearchFilters } from '../api/types';
 import type { DistrictNames } from '../hooks/useDistricts';
 import { fill } from '../lib/format';
-import { districtsLabel, filterDistricts, filterLabels } from '../lib/searchFilters';
+import {
+  districtsLabel,
+  extraFilterChips,
+  filterDistricts,
+  filterLabels,
+  type FilterChip,
+} from '../lib/searchFilters';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 import Icon from './Icon';
@@ -13,13 +19,10 @@ interface FilterChipsProps {
   onRemove: (patch: SearchFilters) => void;
 }
 
-interface Chip {
-  key: string;
-  label: string;
-  patch: SearchFilters;
-}
-
-/** Чипы выбранных фильтров под строкой поиска: «Ваке, Сабуртало», «до 2 000 ₾», «2 комн.» */
+/**
+ * Чипы выбранных фильтров под строкой поиска: «Ваке, Сабуртало», «до 2 000 ₾», «2 комн.»,
+ * затем дополнительные — «Не последний этаж», «Кондиционер», «Только собственник»
+ */
 export default function FilterChips({ filters, districtNames, onRemove }: FilterChipsProps) {
   const { lang, t } = useI18n();
   const ht = t.home;
@@ -30,7 +33,7 @@ export default function FilterChips({ filters, districtNames, onRemove }: Filter
     (ids.length > 0 ? `${ht.districts}: ${ids.length}` : '');
   const labels = filterLabels(filters, districts, t.searches);
 
-  const chips: Chip[] = [];
+  const chips: FilterChip[] = [];
   if (labels.districts) {
     chips.push({
       key: 'districts',
@@ -48,6 +51,7 @@ export default function FilterChips({ filters, districtNames, onRemove }: Filter
   if (labels.rooms) {
     chips.push({ key: 'rooms', label: labels.rooms, patch: { rooms: undefined } });
   }
+  chips.push(...extraFilterChips(filters, t, lang));
 
   if (chips.length === 0) return null;
 

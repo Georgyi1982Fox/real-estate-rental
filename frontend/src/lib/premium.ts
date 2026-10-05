@@ -8,14 +8,28 @@ export const FREE_LIMITS: SubscriptionLimits = { favorites: null, searches: 1 };
 
 export const PREMIUM_LIMITS: SubscriptionLimits = { favorites: null, searches: 20 };
 
-export const DEFAULT_PLAN: Plan = {
-  id: 'premium_month',
-  tier: 'nomad',
-  days: 30,
-  price_stars: 250,
-};
+/** На бесплатном тарифе уведомление о новой квартире приходит с такой задержкой (TASK-085) */
+export const FREE_NOTIFY_DELAY_HOURS = 3;
 
-/** План для покупки: первый платный из ответа бэкенда, иначе план по умолчанию */
-export function premiumPlan(plans: Plan[] | undefined): Plan {
-  return plans?.find((plan) => plan.tier !== 'free' && plan.price_stars > 0) ?? DEFAULT_PLAN;
+/** Тарифы для гостя без API — те же, что отдаёт бэкенд (TASK-084) */
+export const DEFAULT_PLANS: Plan[] = [
+  { id: 'premium_month', tier: 'nomad', days: 30, price_stars: 250 },
+  { id: 'premium_week', tier: 'nomad', days: 7, price_stars: 100 },
+];
+
+/** Платные тарифы из ответа бэкенда, от короткого к длинному; без ответа — тарифы по умолчанию */
+export function premiumPlans(plans: Plan[] | undefined): Plan[] {
+  const paid = (plans ?? []).filter((plan) => plan.tier !== 'free' && plan.price_stars > 0);
+  return [...(paid.length > 0 ? paid : DEFAULT_PLANS)].sort((a, b) => a.days - b.days);
+}
+
+/**
+ * Тариф с самой низкой ценой за день — ему ставим подпись «выгоднее».
+ * undefined — тариф один или цена за день у всех одинаковая.
+ */
+export function bestValuePlan(plans: Plan[]): Plan | undefined {
+  const perDay = (plan: Plan) => plan.price_stars / plan.days;
+  const sorted = [...plans].sort((a, b) => perDay(a) - perDay(b));
+  const [best, next] = sorted;
+  return best && next && perDay(best) < perDay(next) ? best : undefined;
 }
