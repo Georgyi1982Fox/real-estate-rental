@@ -14,8 +14,8 @@ from bina.application.district_guide import (
     guide_for,
     minutes_to_center,
 )
-from bina.infrastructure.api.delivery import ui_language
-from bina.infrastructure.api.dependencies import CurrentUserDep, SessionDep
+from bina.infrastructure.api.delivery import viewer_language
+from bina.infrastructure.api.dependencies import OptionalUserDep, SessionDep
 from bina.infrastructure.api.routes.common import not_found, valid_city
 from bina.infrastructure.api.schemas import (
     CityCode,
@@ -89,7 +89,10 @@ async def list_districts(
 
 @router.get("/{district_id}", response_model=DistrictInfoOut)
 async def district_info(
-    district_id: str, user: CurrentUserDep, session: SessionDep
+    district_id: str,
+    user: OptionalUserDep,
+    session: SessionDep,
+    lang: Annotated[str | None, Query(pattern="^(ka|ru|en)$")] = None,
 ) -> DistrictInfoOut:
     """Где район, есть ли метро, какой он, сколько объявлений и обычные цены."""
     try:
@@ -99,7 +102,7 @@ async def district_info(
     district = await DistrictsRepository(session).get_by_id(uuid)
     if district is None or district.is_deleted:
         raise not_found("District not found")
-    language = ui_language(user)
+    language = viewer_language(user, lang)
     names = {"ka": district.name_ka, "ru": district.name_ru, "en": district.name_en}
     stats = await ListingsRepository(session).district_stats(district.id)
     guide = guide_for(district.name_en, district.city)

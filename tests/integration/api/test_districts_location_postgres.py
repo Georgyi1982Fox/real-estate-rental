@@ -113,6 +113,10 @@ async def test_location(client: AsyncClient, session: AsyncSession) -> None:
     assert none["precision"] == "none"
     assert none["links"] is None
 
+    # Гость сайта (без входа) тоже видит карту; язык — из ?lang
+    guest = await client.get(f"/api/listings/{approximate.id}/location", params={"lang": "ru"})
+    assert guest.status_code == 200 and guest.json()["district"] == "Ваке"
+
 
 async def test_geocode_queue(session: AsyncSession) -> None:
     repository = ListingsRepository(session)

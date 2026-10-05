@@ -7,14 +7,14 @@
 Ссылки открывают точку в Google Maps, Яндекс Картах и OpenStreetMap.
 """
 
-from typing import Literal
+from typing import Annotated, Literal
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from pydantic import BaseModel
 
 from bina.application.district_guide import guide_for
-from bina.infrastructure.api.delivery import ui_language
-from bina.infrastructure.api.dependencies import CurrentUserDep, SessionDep
+from bina.infrastructure.api.delivery import viewer_language
+from bina.infrastructure.api.dependencies import OptionalUserDep, SessionDep
 from bina.infrastructure.api.routes.common import get_listing_or_404
 
 router = APIRouter(prefix="/api/listings", tags=["listings"])
@@ -54,14 +54,19 @@ def map_links(latitude: float, longitude: float, exact: bool) -> MapLinksOut:
 
 @router.get("/{listing_id}/location", response_model=LocationOut)
 async def listing_location(
-    listing_id: str, user: CurrentUserDep, session: SessionDep
+    listing_id: str,
+    user: OptionalUserDep,
+    session: SessionDep,
+    lang: Annotated[str | None, Query(pattern="^(ka|ru|en)$")] = None,
 ) -> LocationOut:
-    """Точка для карты в карточке объявления."""
+    """Точка для карты в карточке объявления (и гостю сайта: язык — ``lang``)."""
     listing = await get_listing_or_404(session, listing_id)
     await session.refresh(listing, attribute_names=["district"])
     district = listing.district
     district_name = (
-        {"ka": district.name_ka, "ru": district.name_ru, "en": district.name_en}[ui_language(user)]
+        {"ka": district.name_ka, "ru": district.name_ru, "en": district.name_en}[
+            viewer_language(user, lang)
+        ]
         if district
         else None
     )
