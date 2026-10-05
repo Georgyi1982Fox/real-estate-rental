@@ -400,6 +400,36 @@ async def test_translate_commits_in_batches(monkeypatch: pytest.MonkeyPatch) -> 
     fixer.assert_awaited_once_with(scrape_cli.LANGUAGE_FIX_BATCH)
 
 
+async def test_translate_reports_ai_outage(monkeypatch: pytest.MonkeyPatch) -> None:
+    """AI не отвечает — шаг падает с понятной причиной (владелец получит сообщение)."""
+    db = FakeDb()
+    monkeypatch.setattr(scrape_cli, "DatabaseManager", lambda: db)
+    monkeypatch.setattr(
+        "bina.infrastructure.scrapers.cli.LLMFactory.create_provider",
+        staticmethod(lambda: AsyncMock()),
+    )
+    monkeypatch.setattr(scrape_cli, "TranslateListingsUseCase", FakeUseCase)
+    monkeypatch.setattr(
+        scrape_cli,
+        "ListingsRepository",
+        lambda session: Mock(fix_wrong_languages=AsyncMock(return_value=0)),
+    )
+
+    @asynccontextmanager
+    async def free_lock(engine: Any, key: int) -> AsyncIterator[bool]:
+        yield True
+
+    monkeypatch.setattr(scrape_cli, "advisory_lock", free_lock)
+    FakeUseCase.limits.clear()
+    FakeUseCase.batches[:] = [
+        TranslationStats(
+            checked=5, translated=0, failed=5, unavailable=5, error="AI не отвечает: HTTP 402"
+        )
+    ]
+    with pytest.raises(scrape_cli.TranslatorDownError, match="HTTP 402"):
+        await scrape_cli.translate(20)
+
+
 def test_notify_command(monkeypatch: pytest.MonkeyPatch) -> None:
     notify = AsyncMock(
         return_value=(

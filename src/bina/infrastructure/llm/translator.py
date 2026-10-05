@@ -20,6 +20,7 @@ from bina.application.ports.translator import (
     ITranslator,
     ListingText,
     TranslationError,
+    TranslatorUnavailable,
 )
 
 logger = structlog.get_logger(__name__)
@@ -90,6 +91,20 @@ def parse_response(raw: str, targets: Sequence[str]) -> dict[str, ListingText]:
     return result
 
 
+def _describe(exc: httpx.HTTPError) -> str:
+    """Понятная причина сбоя AI (для сообщения владельцу)."""
+    if isinstance(exc, httpx.HTTPStatusError):
+        code = exc.response.status_code
+        hint = {
+            401: "неверный ключ LLM_API_KEY",
+            402: "закончился баланс",
+            403: "доступ запрещён",
+            429: "слишком много запросов или закончился баланс",
+        }.get(code, "ошибка сервиса")
+        return f"AI не отвечает: HTTP {code} ({hint})"
+    return f"AI не отвечает: нет связи ({type(exc).__name__})"
+
+
 class LLMTranslator(ITranslator):
     """:class:`ITranslator` поверх :class:`LLMProvider`."""
 
@@ -115,7 +130,9 @@ class LLMTranslator(ITranslator):
         for attempt in range(1, self._attempts + 1):
             try:
                 raw = await self._provider.complete(prompt)
-            except (httpx.HTTPError, KeyError, ValueError) as exc:
+            except httpx.HTTPError as exc:
+                raise TranslatorUnavailable(_describe(exc)) from exc
+            except (KeyError, ValueError) as exc:
                 raise TranslationError(f"LLM request failed: {exc}") from exc
             try:
                 return parse_response(raw, targets)

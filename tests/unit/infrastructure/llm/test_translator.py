@@ -7,7 +7,7 @@ import httpx
 import pytest
 
 from bina.application.ports.llm_provider import LLMProvider
-from bina.application.ports.translator import ListingText, TranslationError
+from bina.application.ports.translator import ListingText, TranslationError, TranslatorUnavailable
 from bina.infrastructure.llm.translator import LLMTranslator, build_prompt, parse_response
 
 TEXT = ListingText("Сдается 2 комнатная квартира в ваке", "Ремонт, 60 м², 1500 ₾")
@@ -94,10 +94,17 @@ async def test_translate_gives_up() -> None:
         await LLMTranslator(provider).translate(TEXT, "ru", ["ka"])
 
 
-async def test_http_error_becomes_translation_error() -> None:
+async def test_http_error_means_ai_unavailable() -> None:
+    """Нет связи или кончился баланс — «AI не отвечает», с понятной причиной."""
     provider = FakeProvider([httpx.ConnectError("offline")])
-    with pytest.raises(TranslationError, match="LLM request failed"):
+    with pytest.raises(TranslatorUnavailable, match="нет связи"):
         await LLMTranslator(provider).translate(TEXT, "ru", ["en"])
+    request = httpx.Request("POST", "https://api.example/chat")
+    no_money = httpx.HTTPStatusError(
+        "402", request=request, response=httpx.Response(402, request=request)
+    )
+    with pytest.raises(TranslatorUnavailable, match=r"HTTP 402.*баланс"):
+        await LLMTranslator(FakeProvider([no_money])).translate(TEXT, "ru", ["en"])
 
 
 async def test_unknown_language_and_no_targets() -> None:

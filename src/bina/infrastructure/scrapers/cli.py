@@ -223,7 +223,8 @@ async def translate(limit: int) -> TranslationStats:
         TranslationBusyError: перевод уже запущен в другом процессе.
     """
     db = DatabaseManager()
-    checked = translated = failed = 0
+    checked = translated = failed = unavailable = 0
+    error = ""
     try:
         async with advisory_lock(db.engine, TRANSLATE_LOCK) as acquired:
             if not acquired:
@@ -250,6 +251,8 @@ async def translate(limit: int) -> TranslationStats:
                     checked += stats.checked
                     translated += stats.translated
                     failed += stats.failed
+                    unavailable += stats.unavailable
+                    error = stats.error or error
                     # Больше нечего переводить или вся пачка не перевелась (не крутим одни и те же)
                     if stats.checked == 0 or stats.translated == 0:
                         break
@@ -259,7 +262,20 @@ async def translate(limit: int) -> TranslationStats:
                     await close()
     finally:
         await db.dispose()
-    return TranslationStats(checked=checked, translated=translated, failed=failed)
+    if unavailable and not translated:
+        # Шаг «translate» в расписании упадёт — владелец получит сообщение в Telegram
+        raise TranslatorDownError(error)
+    return TranslationStats(
+        checked=checked,
+        translated=translated,
+        failed=failed,
+        unavailable=unavailable,
+        error=error,
+    )
+
+
+class TranslatorDownError(RuntimeError):
+    """AI не отвечает: перевод не идёт (баланс, ключ, связь)."""
 
 
 BUSY_MESSAGE = (
@@ -623,6 +639,8 @@ def translate_command(limit: int) -> None:
         _echo_translation(asyncio.run(translate(limit)))
     except TranslationBusyError as exc:
         raise click.ClickException(BUSY_MESSAGE) from exc
+    except TranslatorDownError as exc:
+        raise click.ClickException(str(exc)) from exc
 
 
 async def language_status() -> tuple[int, int]:
