@@ -63,6 +63,13 @@ def ui_language(user: User) -> str:
     return user.language if user.language in LANGUAGE_NAMES else "en"
 
 
+def viewer_language(user: User | None, lang: str | None) -> str:
+    """Язык для вошедшего — его, для гостя сайта — ``lang`` из запроса (по умолчанию ru)."""
+    if user is not None:
+        return ui_language(user)
+    return lang if lang in LANGUAGE_NAMES else "ru"
+
+
 def second_language(user: User, chosen: str | None) -> str:
     """Второй язык документа (первый — грузинский): выбранный или язык пользователя."""
     if chosen:

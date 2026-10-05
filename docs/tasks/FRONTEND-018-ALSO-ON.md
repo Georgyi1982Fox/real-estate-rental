@@ -1,8 +1,8 @@
 # FRONTEND-018: «Также на другом сайте» в объявлении
 
 ## Контекст
-Бэкенд (TASK-090) склеивает одну квартиру с SS.ge и MyHome.ge: в списке она одна, а в
-`GET /api/listings/{id}` есть поле:
+Бэкенд (TASK-090) склеивает одну квартиру с разных сайтов (SS.ge, MyHome.ge, Livo.ge,
+Korter.ge, Telegram-каналы): в списке она одна, а в `GET /api/listings/{id}` есть поле:
 
 ```json
 "also_on": [{"source": "myhome", "url": "https://www.myhome.ge/ru/…"}]
@@ -11,7 +11,9 @@
 Пустой список — других сайтов нет. В списке объявлений (`GET /api/listings`) поле всегда `[]`.
 
 ## Что сделать
-1. `Listing` (`src/api/types.ts`): `also_on?: { source: 'ss' | 'myhome'; url: string }[]`.
+1. `Listing` (`src/api/types.ts`): `also_on?: { source: string; url: string }[]`.
+   `source` — `ss`, `myhome`, `livo`, `korter`, `telegram` (названия сайтов:
+   SS.ge, MyHome.ge, Livo.ge, Korter.ge, Telegram).
 2. Страница объявления: рядом с кнопкой «Открыть на …» — строка «Также на: MyHome.ge» со
    ссылкой (открывать через `Telegram.WebApp.openLink`, как исходный сайт).
 3. Тексты ka / ru / en.
