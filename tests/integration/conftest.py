@@ -62,6 +62,7 @@ MIGRATIONS = (
     "translation_failed",
     "documents",
     "history_notes",
+    "retry_translations",
 )
 
 

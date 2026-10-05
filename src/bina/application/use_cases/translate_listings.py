@@ -16,6 +16,7 @@ from bina.application.ports.translator import (
     ITranslator,
     ListingText,
     TranslationError,
+    TranslatorUnavailable,
 )
 from bina.application.repositories.translations import IListingTranslationsRepository
 from bina.infrastructure.db.models import Listing
@@ -30,6 +31,9 @@ class TranslationStats:
     checked: int
     translated: int
     failed: int
+    # AI не отвечал вовсе (нет связи, баланс, ключ) — объявления не откладывались
+    unavailable: int = 0
+    error: str = ""
 
 
 def listing_text(listing: Listing, language: str) -> ListingText:
@@ -104,7 +108,8 @@ class TranslateListingsUseCase:
         Сам не коммитит: транзакцией управляет вызывающий код (см. ``after_save``).
         """
         listings = await self._repository.list_untranslated(limit)
-        translated = failed = 0
+        translated = failed = unavailable = 0
+        error = ""
         jobs = [
             (listing, source, targets)
             for listing in listings
@@ -125,6 +130,13 @@ class TranslateListingsUseCase:
         # Сохраняем по мере готовности, по одному: сессия БД не для параллельной работы
         for finished in asyncio.as_completed([run(*job) for job in jobs]):
             listing, source, targets, result = await finished
+            if isinstance(result, TranslatorUnavailable):
+                # Сбой AI, а не объявления: не откладываем, попробуем в следующий запуск
+                failed += 1
+                unavailable += 1
+                error = str(result)
+                logger.warning("Translator unavailable", error=error)
+                continue
             if isinstance(result, TranslationError):
                 failed += 1
                 logger.warning(
@@ -146,7 +158,13 @@ class TranslateListingsUseCase:
         logger.info(
             "Translation finished", checked=len(listings), translated=translated, failed=failed
         )
-        return TranslationStats(checked=len(listings), translated=translated, failed=failed)
+        return TranslationStats(
+            checked=len(listings),
+            translated=translated,
+            failed=failed,
+            unavailable=unavailable,
+            error=error,
+        )
 
     async def _translate(
         self, listing: Listing, title_lang: str, targets: list[str]

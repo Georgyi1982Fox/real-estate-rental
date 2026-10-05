@@ -5,7 +5,12 @@ from types import SimpleNamespace
 from typing import Any, cast
 from uuid import UUID, uuid4
 
-from bina.application.ports.translator import ITranslator, ListingText, TranslationError
+from bina.application.ports.translator import (
+    ITranslator,
+    ListingText,
+    TranslationError,
+    TranslatorUnavailable,
+)
 from bina.application.use_cases.translate_listings import (
     TranslateListingsUseCase,
     missing_languages,
@@ -101,3 +106,24 @@ async def test_failure_does_not_stop_other_listings() -> None:
     assert list(repository.saved) == [good.id]
     # Неудачное отложено на сутки — не загораживает остальные в следующих запусках
     assert repository.failed == [broken.id]
+
+
+class DownTranslator(ITranslator):
+    """AI не отвечает (кончился баланс)."""
+
+    async def translate(
+        self, text: ListingText, source: str, targets: Sequence[str]
+    ) -> dict[str, ListingText]:
+        raise TranslatorUnavailable("AI не отвечает: HTTP 402 (закончился баланс)")
+
+
+async def test_ai_outage_does_not_postpone_listings() -> None:
+    """Сбой AI — не вина объявления: не откладываем на сутки, сообщаем причину."""
+    item = listing(title_ru="Квартира")
+    repository = FakeRepository([item])
+
+    stats = await TranslateListingsUseCase(DownTranslator(), cast(Any, repository)).execute(5)
+
+    assert (stats.translated, stats.failed, stats.unavailable) == (0, 1, 1)
+    assert "баланс" in stats.error
+    assert repository.failed == [], "после пополнения баланса переведётся сразу"
