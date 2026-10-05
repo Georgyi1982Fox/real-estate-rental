@@ -2,6 +2,7 @@
 // Отдельным файлом, а не в strings.ts — чтобы не пересекаться с параллельными правками словаря.
 // Неизвестный код не показывается (а не выводится как есть по-английски).
 
+import type { FeatureCode } from '../api/types';
 import type { Lang } from './strings';
 
 const FEATURES: Record<Lang, Record<string, string>> = {
@@ -69,6 +70,28 @@ const FEATURES: Record<Lang, Record<string, string>> = {
     security: 'Security',
   },
 };
+
+/** Удобства для фильтра — в том же порядке, что на странице объявления */
+export const FEATURE_CODES = [
+  'furniture',
+  'kitchen_appliances',
+  'air_conditioning',
+  'heating',
+  'hot_water',
+  'washing_machine',
+  'dishwasher',
+  'fridge',
+  'tv',
+  'internet',
+  'gas',
+  'elevator',
+  'parking',
+  'balcony',
+  'storage',
+  'pool',
+  'pets_allowed',
+  'security',
+] as const satisfies readonly FeatureCode[];
 
 /** Название удобства на языке интерфейса; undefined — код неизвестен */
 export function featureName(code: string, lang: Lang): string | undefined {

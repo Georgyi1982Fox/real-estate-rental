@@ -2,6 +2,8 @@
 
 import type { District, SearchFilters } from '../api/types';
 import type { DistrictNames } from '../hooks/useDistricts';
+import { conditionName } from '../i18n/conditions';
+import { featureName } from '../i18n/features';
 import type { Lang, Strings } from '../i18n/strings';
 import { fill, formatPrice, tr } from './format';
 
@@ -14,10 +16,44 @@ export const DISTRICTS_MAX = 20;
 /** В названии поиска по районам — первые два, остальные числом: «Ваке, Сабуртало +1» */
 const DISTRICT_NAMES_SHOWN = 2;
 
-/** Параметры адреса страницы; несколько районов — district=a,b через запятую */
-export const FILTER_KEYS = ['district', 'min_price', 'max_price', 'rooms'] as const;
+export const AREA_MAX = 1000;
+export const FLOOR_MAX = 100;
+/** Последнее значение в спальнях и санузлах означает «и больше», как в комнатах */
+export const BEDROOMS_MAX = 4;
+export const BATHROOMS_MAX = 3;
+/** Столько кодов удобств или состояний берём из адреса */
+const CODES_MAX = 30;
+const CITY_MAX = 64;
 
-/** Поиск по словам: параметр адреса и запроса к API. В фильтры (и сохранённые поиски) не входит */
+const NUMBER_KEYS = [
+  'min_price',
+  'max_price',
+  'rooms',
+  'min_area',
+  'max_area',
+  'floor_min',
+  'floor_max',
+  'bedrooms',
+  'bathrooms',
+] as const;
+const FLAG_KEYS = ['not_first_floor', 'not_last_floor', 'owner_only'] as const;
+/** Списки кодов: в адресе через запятую, как районы */
+const LIST_KEYS = ['features', 'condition'] as const;
+
+/** Параметры адреса страницы; несколько районов — district=a,b через запятую */
+export const FILTER_KEYS = [
+  'district',
+  ...NUMBER_KEYS,
+  ...FLAG_KEYS,
+  ...LIST_KEYS,
+  'city',
+  'rent_period',
+] as const;
+
+/**
+ * Поиск по словам: параметр адреса и запроса к API. На странице поиска живёт отдельно
+ * от фильтров (useSearchFilters().query), в сохранённом поиске — поле filters.q
+ */
 export const QUERY_KEY = 'q';
 /** Столько символов принимает бэкенд в q */
 export const QUERY_MAX = 100;
@@ -32,11 +68,24 @@ function parseInteger(raw: string | null, min: number, max: number): number | un
   return value >= min && value <= max ? value : undefined;
 }
 
-/** Уникальные непустые ID в исходном порядке, не больше DISTRICTS_MAX */
-function uniqueIds(ids: string[]): string[] {
+/** Уникальные непустые ID в исходном порядке, не больше limit */
+function uniqueIds(ids: string[], limit = DISTRICTS_MAX): string[] {
   const clean = ids.map((id) => id.trim()).filter(Boolean);
-  return [...new Set(clean)].slice(0, DISTRICTS_MAX);
+  return [...new Set(clean)].slice(0, limit);
 }
+
+/** Границы чисел из адреса; верхнее значение комнат, спален и санузлов — «и больше» */
+const NUMBER_LIMITS: Record<(typeof NUMBER_KEYS)[number], [min: number, max: number]> = {
+  min_price: [0, PRICE_MAX],
+  max_price: [0, PRICE_MAX],
+  rooms: [1, ROOMS_MAX],
+  min_area: [0, AREA_MAX],
+  max_area: [0, AREA_MAX],
+  floor_min: [1, FLOOR_MAX],
+  floor_max: [1, FLOOR_MAX],
+  bedrooms: [1, BEDROOMS_MAX],
+  bathrooms: [1, BATHROOMS_MAX],
+};
 
 /**
  * Районы фильтра одним списком. Старые сохранённые поиски и ответы сервера
@@ -46,19 +95,58 @@ export function filterDistricts(filters: SearchFilters): string[] {
   return uniqueIds([...(filters.districts ?? []), ...(filters.district ? [filters.district] : [])]);
 }
 
-/** Фильтры из адреса страницы; мусорные значения отбрасываются. Районы — всегда в districts */
+/** Значения параметра списком: и ?key=a,b, и ?key=a&key=b */
+function listParam(params: URLSearchParams, key: string, limit?: number): string[] {
+  return uniqueIds(
+    params.getAll(key).flatMap((value) => value.split(',')),
+    limit,
+  );
+}
+
+/**
+ * Фильтры из адреса страницы; мусорные значения отбрасываются. Районы — всегда в districts.
+ * Текст поиска (q) сюда не входит — см. QUERY_KEY
+ */
 export function parseFilters(params: URLSearchParams): SearchFilters {
   const filters: SearchFilters = {};
-  // И ?district=a,b, и старое ?district=a&district=b
-  const districts = uniqueIds(params.getAll('district').flatMap((value) => value.split(',')));
+  const districts = listParam(params, 'district');
   if (districts.length > 0) filters.districts = districts;
-  const minPrice = parseInteger(params.get('min_price'), 0, PRICE_MAX);
-  if (minPrice !== undefined) filters.min_price = minPrice;
-  const maxPrice = parseInteger(params.get('max_price'), 0, PRICE_MAX);
-  if (maxPrice !== undefined) filters.max_price = maxPrice;
-  const rooms = parseInteger(params.get('rooms'), 1, ROOMS_MAX);
-  if (rooms !== undefined) filters.rooms = rooms;
+  NUMBER_KEYS.forEach((key) => {
+    const [min, max] = NUMBER_LIMITS[key];
+    const value = parseInteger(params.get(key), min, max);
+    if (value !== undefined) filters[key] = value;
+  });
+  FLAG_KEYS.forEach((key) => {
+    const value = params.get(key);
+    if (value === 'true' || value === '1') filters[key] = true;
+  });
+  LIST_KEYS.forEach((key) => {
+    const codes = listParam(params, key, CODES_MAX);
+    if (codes.length > 0) filters[key] = codes;
+  });
+  const city = (params.get('city') ?? '').trim().slice(0, CITY_MAX);
+  if (city) filters.city = city;
+  // 'monthly' — значение по умолчанию, в адресе его не держим
+  if (params.get('rent_period') === 'daily') filters.rent_period = 'daily';
   return filters;
+}
+
+/** Фильтры, как их отдаёт /api/searches: незаданные поля — null */
+type RawFilters = { [Key in keyof SearchFilters]?: SearchFilters[Key] | null };
+
+/**
+ * Убирает незаданные поля из ответа сервера: null, пустые строки и списки, false.
+ * Остальное (в т. ч. city и rent_period) остаётся как есть.
+ */
+export function cleanFilters(raw: RawFilters): SearchFilters {
+  const filled = Object.entries(raw).filter(
+    ([, value]) =>
+      value != null &&
+      value !== false &&
+      value !== '' &&
+      !(Array.isArray(value) && value.length === 0),
+  );
+  return Object.fromEntries(filled) as SearchFilters;
 }
 
 /** Текст поиска без пробелов по краям, не длиннее QUERY_MAX */
@@ -67,16 +155,33 @@ export function cleanQuery(raw: string | null): string {
 }
 
 /**
- * Только заполненные фильтры, в постоянном порядке ключей. Районы отсортированы:
+ * Только заполненные фильтры, в постоянном порядке ключей. Списки отсортированы:
  * «Ваке, Сабуртало» и «Сабуртало, Ваке» — один и тот же поиск.
+ * Незаданным считается и то, что сервер отдаёт вместо пропуска: null, [], false,
+ * rent_period: 'monthly'.
  */
 export function filterEntries(filters: SearchFilters): [string, string][] {
+  const entries: [string, string][] = [];
+  const query = cleanQuery(filters.q ?? null);
+  if (query) entries.push([QUERY_KEY, query]);
   const districts = filterDistricts(filters).sort();
-  return FILTER_KEYS.flatMap((key): [string, string][] => {
-    if (key === 'district') return districts.length > 0 ? [[key, districts.join(',')]] : [];
+  if (districts.length > 0) entries.push(['district', districts.join(',')]);
+  NUMBER_KEYS.forEach((key) => {
     const value = filters[key];
-    return value === undefined ? [] : [[key, String(value)]];
+    if (value != null) entries.push([key, String(value)]);
   });
+  FLAG_KEYS.forEach((key) => {
+    if (filters[key]) entries.push([key, 'true']);
+  });
+  LIST_KEYS.forEach((key) => {
+    const codes = uniqueIds(filters[key] ?? [], CODES_MAX).sort();
+    if (codes.length > 0) entries.push([key, codes.join(',')]);
+  });
+  if (filters.city) entries.push(['city', filters.city]);
+  if (filters.rent_period && filters.rent_period !== 'monthly') {
+    entries.push(['rent_period', filters.rent_period]);
+  }
+  return entries;
 }
 
 /** 'district=vake,saburtalo&rooms=2' — пустые значения не попадают в строку */
@@ -90,9 +195,12 @@ export function filtersToQuery(filters: SearchFilters): string {
  * sort не передаём — при q сервер сам ставит сверху самые подходящие.
  */
 export function searchToQuery(filters: SearchFilters, query: string): string {
-  const filterQuery = filtersToQuery(filters);
-  const textQuery = query ? new URLSearchParams({ [QUERY_KEY]: query }).toString() : '';
-  return [textQuery, filterQuery].filter(Boolean).join('&');
+  return filtersToQuery(withQuery(filters, query));
+}
+
+/** Фильтры страницы вместе с текстом поиска — в таком виде поиск сохраняется */
+export function withQuery(filters: SearchFilters, query: string): SearchFilters {
+  return { ...filters, q: query || undefined };
 }
 
 export function hasFilters(filters: SearchFilters): boolean {
@@ -103,11 +211,21 @@ export function sameFilters(a: SearchFilters, b: SearchFilters): boolean {
   return filtersToQuery(a) === filtersToQuery(b);
 }
 
-/** Сколько фильтров выбрано: район(ы), цена, комнаты — каждый считается один раз */
+/** Фильтры, которые в счётчике идут за один: границы цены, площади, всё про этаж */
+const COUNT_GROUPS: string[][] = [
+  ['min_price', 'max_price'],
+  ['min_area', 'max_area'],
+  ['floor_min', 'floor_max', 'not_first_floor', 'not_last_floor'],
+];
+
+/**
+ * Сколько фильтров выбрано: районы, удобства и состояния — по одному на список,
+ * группы COUNT_GROUPS — по одному на группу. Текст поиска не считается
+ */
 export function countFilters(filters: SearchFilters): number {
-  const price = filters.min_price !== undefined || filters.max_price !== undefined;
-  return [filterDistricts(filters).length > 0, price, filters.rooms !== undefined].filter(Boolean)
-    .length;
+  const keys = filterEntries(filters).flatMap(([key]) => (key === QUERY_KEY ? [] : [key]));
+  const groupOf = (key: string) => COUNT_GROUPS.find((group) => group.includes(key))?.[0] ?? key;
+  return new Set(keys.map(groupOf)).size;
 }
 
 /**
@@ -189,7 +307,10 @@ export function filterLabels(
   return labels;
 }
 
-/** «Ваке, Сабуртало · 2 комн. · 800–2 000 ₾»; без фильтров — «Все квартиры» */
+/**
+ * «Ваке, Сабуртало · 2 комн. · 800–2 000 ₾»; без фильтров — «Все квартиры».
+ * Выбраны только дополнительные фильтры (они показаны чипами) — «Поиск по фильтрам»
+ */
 export function describeFilters(
   filters: SearchFilters,
   districtNames: string,
@@ -197,5 +318,116 @@ export function describeFilters(
 ): string {
   const { districts, rooms, price } = filterLabels(filters, districtNames, st);
   const parts = [districts, rooms, price].filter(Boolean);
-  return parts.length > 0 ? parts.join(' · ') : st.all;
+  if (parts.length > 0) return parts.join(' · ');
+  return hasFilters(filters) ? st.custom : st.all;
+}
+
+/** Чип выбранного фильтра; patch убирает этот фильтр (нужные поля — undefined) */
+export interface FilterChip {
+  key: string;
+  label: string;
+  patch: SearchFilters;
+}
+
+/** «50–80 м²», «от 50 м²», «до 80 м²»; обе границы пустые — undefined */
+function rangeText(
+  min: number | undefined,
+  max: number | undefined,
+  st: Strings['searches'],
+  unit = '',
+): string | undefined {
+  const withUnit = (value: number) => (unit ? `${value} ${unit}` : String(value));
+  if (min != null && max != null) return `${min}–${withUnit(max)}`;
+  if (min != null) return fill(st.price_from, withUnit(min));
+  if (max != null) return fill(st.price_to, withUnit(max));
+  return undefined;
+}
+
+/** «3» или «4+» для полей, где верхнее значение — «и больше» */
+export function countText(value: number, top: number): string {
+  return value >= top ? `${top}+` : String(value);
+}
+
+/**
+ * Чипы дополнительных фильтров — всего, кроме районов, цены и комнат (filterLabels):
+ * текст поиска, площадь, спальни, санузлы, этаж, состояние, удобства, собственник,
+ * посуточно, город. Неизвестный код удобства или состояния показывается как есть.
+ */
+export function extraFilterChips(filters: SearchFilters, t: Strings, lang: Lang): FilterChip[] {
+  const ft = t.filters;
+  const chips: FilterChip[] = [];
+  const query = cleanQuery(filters.q ?? null);
+  if (query) {
+    chips.push({ key: 'q', label: fill(t.searches.query, query), patch: { q: undefined } });
+  }
+  const area = rangeText(filters.min_area, filters.max_area, t.searches, t.card.sqm);
+  if (area) {
+    chips.push({ key: 'area', label: area, patch: { min_area: undefined, max_area: undefined } });
+  }
+  if (filters.bedrooms != null) {
+    chips.push({
+      key: 'bedrooms',
+      label: `${ft.bedrooms}: ${countText(filters.bedrooms, BEDROOMS_MAX)}`,
+      patch: { bedrooms: undefined },
+    });
+  }
+  if (filters.bathrooms != null) {
+    chips.push({
+      key: 'bathrooms',
+      label: `${ft.bathrooms}: ${countText(filters.bathrooms, BATHROOMS_MAX)}`,
+      patch: { bathrooms: undefined },
+    });
+  }
+  const floor = rangeText(filters.floor_min, filters.floor_max, t.searches);
+  if (floor) {
+    chips.push({
+      key: 'floor',
+      label: `${ft.floor}: ${floor}`,
+      patch: { floor_min: undefined, floor_max: undefined },
+    });
+  }
+  if (filters.not_first_floor) {
+    chips.push({
+      key: 'not_first_floor',
+      label: ft.not_first_floor,
+      patch: { not_first_floor: undefined },
+    });
+  }
+  if (filters.not_last_floor) {
+    chips.push({
+      key: 'not_last_floor',
+      label: ft.not_last_floor,
+      patch: { not_last_floor: undefined },
+    });
+  }
+  // Чип на каждый код: убирается по одному
+  const without = (codes: string[], code: string) => {
+    const rest = codes.filter((item) => item !== code);
+    return rest.length > 0 ? rest : undefined;
+  };
+  const conditions = uniqueIds(filters.condition ?? [], CODES_MAX);
+  conditions.forEach((code) => {
+    chips.push({
+      key: `condition:${code}`,
+      label: conditionName(code, lang) ?? code,
+      patch: { condition: without(conditions, code) },
+    });
+  });
+  const features = uniqueIds(filters.features ?? [], CODES_MAX);
+  features.forEach((code) => {
+    chips.push({
+      key: `features:${code}`,
+      label: featureName(code, lang) ?? code,
+      patch: { features: without(features, code) },
+    });
+  });
+  if (filters.owner_only) {
+    chips.push({ key: 'owner_only', label: ft.owner_only, patch: { owner_only: undefined } });
+  }
+  if (filters.rent_period === 'daily') {
+    chips.push({ key: 'rent_period', label: ft.daily, patch: { rent_period: undefined } });
+  }
+  // Названий городов в словаре пока нет (выбор города — FRONTEND-030)
+  if (filters.city) chips.push({ key: 'city', label: filters.city, patch: { city: undefined } });
+  return chips;
 }

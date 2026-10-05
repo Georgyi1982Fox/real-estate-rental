@@ -1,21 +1,29 @@
-import { useId } from 'react';
+import { useId, type ReactNode } from 'react';
 import type { Plan, SubscriptionLimits } from '../api/types';
-import { fill, fillVars } from '../lib/format';
+import { fill, fillVars, plural } from '../lib/format';
+import { FREE_NOTIFY_DELAY_HOURS } from '../lib/premium';
 import { useI18n } from '../providers/I18nProvider';
 
 interface PlanComparisonProps {
   free: SubscriptionLimits;
   premium: SubscriptionLimits;
-  plan: Plan;
+  /** Тарифы от короткого к длинному — все попадают в строку «Цена» */
+  plans: Plan[];
   /** Подсветить колонку текущего тарифа; undefined — тариф неизвестен (гость) */
   isPremium?: boolean;
 }
 
 const CELL = 'px-3 py-3 align-top sm:px-4';
 
-/** Таблица «Бесплатно / Premium»: лимиты избранного, сохранённых поисков и цена */
-export default function PlanComparison({ free, premium, plan, isPremium }: PlanComparisonProps) {
-  const { t } = useI18n();
+interface Row {
+  label: string;
+  free: ReactNode;
+  premium: ReactNode;
+}
+
+/** Таблица «Бесплатно / Premium»: лимиты, уведомления и цена */
+export default function PlanComparison({ free, premium, plans, isPremium }: PlanComparisonProps) {
+  const { t, lang } = useI18n();
   const pt = t.premium;
   const titleId = useId();
 
@@ -25,13 +33,27 @@ export default function PlanComparison({ free, premium, plan, isPremium }: PlanC
     return limit <= 1 ? String(limit) : fill(pt.up_to, limit);
   };
 
-  const rows = [
+  const rows: Row[] = [
     { label: pt.favorites, free: limitText(free.favorites), premium: limitText(premium.favorites) },
     { label: pt.searches, free: limitText(free.searches), premium: limitText(premium.searches) },
     {
+      label: pt.notify_new,
+      free: fill(pt.notify_delay, FREE_NOTIFY_DELAY_HOURS),
+      premium: pt.notify_instant,
+    },
+    { label: pt.price_drop, free: '—', premium: '✓' },
+    {
       label: pt.price,
       free: '—',
-      premium: fillVars(pt.price_value, { price: plan.price_stars, days: plan.days }),
+      // Каждый тариф с новой строки: колонка узкая, «100 ⭐ / 7 дней · 250 ⭐ / 30 дней» не влезет
+      premium: plans.map((plan) => (
+        <span key={plan.id} className="plan-comparison__price block [&+&]:mt-1.5">
+          {fillVars(pt.price_value, {
+            price: plan.price_stars,
+            days: plural(pt.days, plan.days, lang),
+          })}
+        </span>
+      )),
     },
   ];
 
@@ -82,7 +104,8 @@ export default function PlanComparison({ free, premium, plan, isPremium }: PlanC
             <tr key={row.label} className="border-t border-[var(--border)]">
               <th
                 scope="row"
-                className={`${CELL} text-left font-medium text-[var(--text-secondary)]`}
+                // 13px на телефоне: длинные грузинские слова иначе рвутся посреди слова
+                className={`${CELL} text-left text-[13px] font-medium text-[var(--text-secondary)] sm:text-sm`}
               >
                 {row.label}
               </th>

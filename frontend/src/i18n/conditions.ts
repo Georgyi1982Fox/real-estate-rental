@@ -1,6 +1,7 @@
 // Названия состояний квартиры по кодам бэкенда (TASK-018): newly_renovated, white_frame, ...
 // По образцу features.ts: неизвестный код не показывается.
 
+import type { ConditionCode } from '../api/types';
 import type { Lang } from './strings';
 
 const CONDITIONS: Record<Lang, Record<string, string>> = {
@@ -32,6 +33,17 @@ const CONDITIONS: Record<Lang, Record<string, string>> = {
     green_frame: 'Green frame',
   },
 };
+
+/** Состояния для фильтра */
+export const CONDITION_CODES = [
+  'newly_renovated',
+  'renovated',
+  'needs_renovation',
+  'under_renovation',
+  'white_frame',
+  'black_frame',
+  'green_frame',
+] as const satisfies readonly ConditionCode[];
 
 /** Название состояния на языке интерфейса; undefined — кода нет или он неизвестен */
 export function conditionName(code: string | null | undefined, lang: Lang): string | undefined {

@@ -10,11 +10,13 @@ import Modal from './Modal';
 import OpenInTelegram from './OpenInTelegram';
 
 interface SaveSearchButtonProps {
+  /** Всё, что выбрано: фильтры и текст поиска (q) */
   filters: SearchFilters;
 }
 
 /**
- * «Сохранить поиск»: активна, когда выбран хоть один фильтр и такого поиска ещё нет.
+ * «Сохранить поиск»: активна, когда выбран хоть один фильтр или введён текст поиска
+ * и такого поиска ещё нет.
  * Без Telegram (гость, 401) открывает модалку «Откройте в Telegram».
  */
 export default function SaveSearchButton({ filters }: SaveSearchButtonProps) {
