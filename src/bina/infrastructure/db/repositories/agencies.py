@@ -178,9 +178,8 @@ class ListingStatsRepository:
         self._session = session
 
     async def record(self, listing: Listing, day: date, *, view: bool = False) -> None:
-        """+1 просмотр (``view``) или +1 обращение. Объявления с сайтов не считаем."""
-        if listing.owner_user_id is None:
-            return
+        """+1 просмотр (``view``) или +1 обращение (у любого объявления: счётчик просмотров
+        видят все, статистику обращений — хозяин и агентство)."""
         views, contacts = (1, 0) if view else (0, 1)
         statement = pg_insert(ListingStat).values(
             listing_id=listing.id, day=day, views=views, contacts=contacts
@@ -195,3 +194,10 @@ class ListingStatsRepository:
                 },
             )
         )
+
+    async def total_views(self, listing_id: UUID) -> int:
+        """Сколько раз объявление открывали на Bina.ai (сайт, приложение, бот)."""
+        query = select(func.coalesce(func.sum(ListingStat.views), 0)).where(
+            ListingStat.listing_id == listing_id
+        )
+        return int((await self._session.execute(query)).scalar_one())

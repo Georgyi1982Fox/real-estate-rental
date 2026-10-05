@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from html import escape
 
 from aiogram import F, Router
 from aiogram.filters import Command
@@ -99,10 +100,20 @@ async def _render_favorites(
     if not page.items:
         return t(language, "favorites_empty"), None
 
+    start = page.page * page.page_size + 1
     parts = [
         t(language, "favorites_header", total=page.total),
-        format_listings(page.items, page.page * page.page_size + 1, language),
+        format_listings(page.items, start, language),
     ]
+    # TASK-074: свои заметки к квартирам на этой странице
+    notes = await FavoritesRepository(session).notes(user.id, [item.id for item in page.items])
+    if notes:
+        lines = [
+            f"{start + offset}. {escape(notes[item.id])}"
+            for offset, item in enumerate(page.items)
+            if item.id in notes
+        ]
+        parts.append(t(language, "favorites_notes") + "\n" + "\n".join(lines))
     if page.pages > 1:
         parts.append(t(language, "page_counter", page=page.page + 1, pages=page.pages))
     parts.append(f"<i>{t(language, 'fav_hint')}</i>")

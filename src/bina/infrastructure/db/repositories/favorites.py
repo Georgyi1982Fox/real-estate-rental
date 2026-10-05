@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -101,3 +101,24 @@ class FavoritesRepository(IFavoritesRepository):
         )
         result = await self._session.execute(query)
         return int(result.scalar_one())
+
+    # TASK-074: заметки
+
+    async def notes(self, user_id: UUID, listing_ids: list[UUID] | None = None) -> dict[UUID, str]:
+        """Непустые заметки к избранному (все или только для ``listing_ids``)."""
+        query = select(Favorite.listing_id, Favorite.note).where(
+            Favorite.user_id == user_id, Favorite.note != ""
+        )
+        if listing_ids is not None:
+            query = query.where(Favorite.listing_id.in_(listing_ids))
+        return {row.listing_id: row.note for row in await self._session.execute(query)}
+
+    async def set_note(self, user_id: UUID, listing_id: UUID, note: str) -> bool:
+        """Сохранить заметку; ``False`` — квартиры нет в избранном."""
+        result = await self._session.execute(
+            update(Favorite)
+            .where(Favorite.user_id == user_id, Favorite.listing_id == listing_id)
+            .values(note=note)
+            .returning(Favorite.listing_id)
+        )
+        return result.first() is not None

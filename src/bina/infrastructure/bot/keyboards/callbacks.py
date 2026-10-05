@@ -231,3 +231,7 @@ class SignAction(StrEnum):
 class SignCallback(CallbackData, prefix="sg"):
     action: SignAction
     id: UUID | None = None
+
+
+class HistoryCallback(CallbackData, prefix="hist"):
+    """«🕘 Недавно смотрели» под избранным (TASK-075)."""

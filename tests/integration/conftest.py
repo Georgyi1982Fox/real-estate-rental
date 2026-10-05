@@ -61,6 +61,7 @@ MIGRATIONS = (
     "daily_reports",
     "translation_failed",
     "documents",
+    "history_notes",
 )
 
 

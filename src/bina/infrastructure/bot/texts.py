@@ -585,7 +585,9 @@ _RU: dict[str, str] = {
     "account_deleted": (
         "Готово: аккаунт и все данные удалены. Если снова напишете боту, начнёте с чистого листа."
     ),
-    "shared_card": "🏠 <b>{title}</b>\n💰 {price} · 🚪 {rooms} · 📐 {area}\n📍 {district}",
+    "shared_card": (
+        "🏠 <b>{title}</b>\n💰 {price} · 🚪 {rooms} · 📐 {area}\n📍 {district} · 👁 {views}"
+    ),
     "card_favorite": "В избранное",
     "card_open_app": "📱 Подробнее в приложении",
     "card_open_site": "🌐 Открыть на сайте",
@@ -627,6 +629,10 @@ _RU: dict[str, str] = {
         "Документов пока нет. Договор аренды и акт приёмки можно составить в приложении и "
         "отправить на подпись."
     ),
+    "history_button": "🕘 Недавно смотрели",
+    "history_header": "🕘 <b>Недавно смотрели</b>",
+    "history_empty": ("Вы ещё не открывали квартиры. Они появятся здесь, когда вы их посмотрите."),
+    "favorites_notes": "📝 <b>Ваши заметки</b>",
 }
 
 _EN: dict[str, str] = {
@@ -1240,7 +1246,9 @@ _EN: dict[str, str] = {
         "Done: your account and all data are deleted. If you write to the bot again, you will "
         "start from scratch."
     ),
-    "shared_card": "🏠 <b>{title}</b>\n💰 {price} · 🚪 {rooms} · 📐 {area}\n📍 {district}",
+    "shared_card": (
+        "🏠 <b>{title}</b>\n💰 {price} · 🚪 {rooms} · 📐 {area}\n📍 {district} · 👁 {views}"
+    ),
     "card_favorite": "Add to favorites",
     "card_open_app": "📱 More in the app",
     "card_open_site": "🌐 Open on the website",
@@ -1287,6 +1295,10 @@ _EN: dict[str, str] = {
         "No documents yet. You can draw up a lease agreement or a handover report in the app "
         "and send it for signing."
     ),
+    "history_button": "🕘 Recently viewed",
+    "history_header": "🕘 <b>Recently viewed</b>",
+    "history_empty": ("You have not opened any apartments yet. They will appear here once you do."),
+    "favorites_notes": "📝 <b>Your notes</b>",
 }
 
 _KA: dict[str, str] = {
@@ -1876,7 +1888,9 @@ _KA: dict[str, str] = {
         "მზადაა: ანგარიში და ყველა მონაცემი წაიშალა. თუ ბოტს ისევ მისწერთ, ყველაფერს თავიდან "
         "დაიწყებთ."
     ),
-    "shared_card": "🏠 <b>{title}</b>\n💰 {price} · 🚪 {rooms} · 📐 {area}\n📍 {district}",
+    "shared_card": (
+        "🏠 <b>{title}</b>\n💰 {price} · 🚪 {rooms} · 📐 {area}\n📍 {district} · 👁 {views}"
+    ),
     "card_favorite": "რჩეულებში",
     "card_open_app": "📱 დეტალურად აპლიკაციაში",
     "card_open_site": "🌐 საიტზე გახსნა",
@@ -1920,6 +1934,10 @@ _KA: dict[str, str] = {
         "დოკუმენტები ჯერ არ არის. ქირავნობის ხელშეკრულება და მიღება-ჩაბარების აქტი შეგიძლიათ "
         "აპლიკაციაში შეადგინოთ და ხელმოსაწერად გაგზავნოთ."
     ),
+    "history_button": "🕘 ბოლოს ნანახი",
+    "history_header": "🕘 <b>ბოლოს ნანახი</b>",
+    "history_empty": "ბინები ჯერ არ გაგიხსნიათ. აქ გამოჩნდება, როცა მათ ნახავთ.",
+    "favorites_notes": "📝 <b>თქვენი შენიშვნები</b>",
 }
 
 TEXTS: dict[str, dict[str, str]] = {"ru": _RU, "en": _EN, "ka": _KA}

@@ -3,7 +3,11 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from bina.application.dtos.pagination import Page
-from bina.infrastructure.bot.keyboards.callbacks import FavoritesPageCallback, RecommendCallback
+from bina.infrastructure.bot.keyboards.callbacks import (
+    FavoritesPageCallback,
+    HistoryCallback,
+    RecommendCallback,
+)
 from bina.infrastructure.bot.keyboards.listings import (
     chat_buttons,
     favorite_buttons,
@@ -35,6 +39,14 @@ def favorites_keyboard(
         [
             InlineKeyboardButton(
                 text=t(language, "rec_button"), callback_data=RecommendCallback().pack()
+            )
+        ]
+    )
+    # TASK-075: недавно смотрели
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text=t(language, "history_button"), callback_data=HistoryCallback().pack()
             )
         ]
     )

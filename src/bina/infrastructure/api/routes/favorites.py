@@ -9,6 +9,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Query, Response, status
+from pydantic import BaseModel, Field
 
 from bina.application.errors import LimitReachedError, ListingNotFoundError
 from bina.application.subscriptions import limits_for
@@ -25,6 +26,7 @@ from bina.infrastructure.api.schemas import (
     FavoriteOut,
     ListingsPageOut,
 )
+from bina.infrastructure.api.validation import clean_text
 from bina.infrastructure.db.repositories.favorites import FavoritesRepository
 from bina.infrastructure.db.repositories.listings import ListingsRepository
 
@@ -78,3 +80,39 @@ async def remove_favorite(listing_id: UUID, user: CurrentUserDep, session: Sessi
     await RemoveFavoriteUseCase(FavoritesRepository(session)).execute(user.id, listing_id)
     await session.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# --- TASK-074: заметки к избранному
+
+MAX_NOTE = 300
+
+
+class NotesOut(BaseModel):
+    notes: dict[UUID, str] = Field(description="ID квартиры → заметка (только непустые)")
+
+
+class NoteIn(BaseModel):
+    note: str = Field(max_length=MAX_NOTE, description="Пустая строка — удалить заметку")
+
+
+class NoteOut(BaseModel):
+    listing_id: UUID
+    note: str
+
+
+@router.get("/notes", response_model=NotesOut)
+async def favorite_notes(user: CurrentUserDep, session: SessionDep) -> NotesOut:
+    """Свои заметки ко всему избранному."""
+    return NotesOut(notes=await FavoritesRepository(session).notes(user.id))
+
+
+@router.put("/{listing_id}/note", response_model=NoteOut)
+async def set_favorite_note(
+    listing_id: UUID, body: NoteIn, user: CurrentUserDep, session: SessionDep
+) -> NoteOut:
+    """Заметка к квартире в избранном; 404 — квартиры нет в избранном."""
+    note = clean_text(body.note)
+    if not await FavoritesRepository(session).set_note(user.id, listing_id, note):
+        raise not_found("Listing is not in favorites")
+    await session.commit()
+    return NoteOut(listing_id=listing_id, note=note)

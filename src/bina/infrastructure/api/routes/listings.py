@@ -51,6 +51,7 @@ from bina.infrastructure.api.validation import clean_text
 from bina.infrastructure.db.models import Listing
 from bina.infrastructure.db.repositories.agencies import ListingStatsRepository
 from bina.infrastructure.db.repositories.listings import ListingsRepository
+from bina.infrastructure.db.repositories.view_history import ViewHistoryRepository
 from bina.infrastructure.llm.llm_factory import LLMFactory, embeddings_configured
 
 router = APIRouter(prefix="/api/listings", tags=["listings"])
@@ -189,13 +190,19 @@ def get_embedder(request: Request) -> IEmbedder | None:
 
 
 @router.get("/{listing_id}", response_model=ListingOut)
-async def get_listing(listing_id: str, session: SessionDep) -> ListingOut:
+async def get_listing(listing_id: str, user: OptionalUserDep, session: SessionDep) -> ListingOut:
     """Одно объявление; 404, если его нет или оно удалено."""
     listing = await get_listing_or_404(session, listing_id)
+    now = datetime.now(UTC)
     # TASK-100: просмотр — в статистику хозяина / агентства
-    await ListingStatsRepository(session).record(listing, datetime.now(UTC).date(), view=True)
+    await ListingStatsRepository(session).record(listing, now.date(), view=True)
+    # TASK-075: «Недавно смотрели» — для вошедших
+    if user is not None:
+        await ViewHistoryRepository(session).record(user.id, listing.id, now)
     await session.commit()
     out = ListingOut.from_model(listing)
+    # Счётчик просмотров («👁 123») — вместе с этим просмотром
+    out.views = await ListingStatsRepository(session).total_views(listing.id)
     # TASK-090: ссылки на ту же квартиру на других сайтах
     links = await ListingsRepository(session).same_apartment_links(listing)
     out.also_on = [

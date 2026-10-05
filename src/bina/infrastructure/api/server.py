@@ -29,6 +29,7 @@ from bina.infrastructure.api.routes import (
     districts,
     documents,
     favorites,
+    history,
     legal,
     listings,
     location,
@@ -105,6 +106,7 @@ def create_app(
     app.include_router(districts.router)
     app.include_router(cities.router)
     app.include_router(favorites.router)
+    app.include_router(history.router)
     app.include_router(me.router)
     app.include_router(searches.router)
     app.include_router(notifications.router)

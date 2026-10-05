@@ -22,6 +22,10 @@ class Store:
     districts: list[District] = field(default_factory=list)
     listings: list[Listing] = field(default_factory=list)
     favorites: list[tuple[UUID, UUID]] = field(default_factory=list)
+    # TASK-074: заметки к избранному (пользователь, квартира) → текст
+    notes: dict[tuple[UUID, UUID], str] = field(default_factory=dict)
+    # Счётчики просмотров объявлений
+    views: dict[UUID, int] = field(default_factory=dict)
     # (user_id, charge_id, amount, plan)
     payments: list[tuple[UUID, str, Decimal, str]] = field(default_factory=list)
     # Служебные уведомления: (user_id, тексты по языкам)
@@ -279,6 +283,13 @@ class FakeFavoritesRepository:
     async def count_by_user(self, user_id: UUID) -> int:
         return len(self._user_listings(user_id))
 
+    async def notes(self, user_id: UUID, listing_ids: Any = None) -> dict[UUID, str]:
+        return {
+            lid: note
+            for (uid, lid), note in self._store.notes.items()
+            if uid == user_id and note and (listing_ids is None or lid in listing_ids)
+        }
+
     async def list_ids(self, user_id: UUID, limit: int) -> list[UUID]:
         return [listing.id for listing in self._user_listings(user_id)][:limit]
 
@@ -442,3 +453,17 @@ class FakeAdminRepository:
 
     async def restore(self, listing_id: UUID, now: datetime | None = None) -> None:
         self._store.admin_actions.append(("restore", listing_id))
+
+
+class FakeListingStatsRepository:
+    """In-memory счётчики просмотров (TASK-100): ``Store.views``."""
+
+    def __init__(self, store: Store) -> None:
+        self._store = store
+
+    async def record(self, listing: Listing, day: Any, *, view: bool = False) -> None:
+        if view:
+            self._store.views[listing.id] = self._store.views.get(listing.id, 0) + 1
+
+    async def total_views(self, listing_id: UUID) -> int:
+        return self._store.views.get(listing_id, 0)

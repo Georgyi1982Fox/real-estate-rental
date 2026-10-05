@@ -263,6 +263,7 @@ async def test_favorites_list_and_pagination(harness: BotHarness) -> None:
         ["★ 1", "★ 2", "★ 3"],
         ["1/2", "▶️"],
         ["✨ Вам может понравиться"],
+        ["🕘 Недавно смотрели"],
         ["🏠 Главное меню"],
     ]
 
