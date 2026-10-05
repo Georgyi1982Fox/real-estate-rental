@@ -166,6 +166,30 @@ class TranslateListingsUseCase:
             error=error,
         )
 
+    async def translate_one(self, listing: Listing) -> bool:
+        """Перевести одно объявление сразу (его открыли, а перевода на язык нет).
+
+        ``True`` — перевод сохранён. Ошибки — :class:`TranslationError` (неудачный перевод
+        откладывается, как в фоновом шаге).
+        """
+        source = title_language(listing)
+        targets = missing_languages(listing)
+        if source is None or not targets:
+            return False
+        try:
+            texts = await self._translate(listing, source, targets)
+        except TranslatorUnavailable:
+            raise
+        except TranslationError:
+            await self._repository.mark_translation_failed(listing.id)
+            if self._after_save is not None:
+                await self._after_save()
+            raise
+        await self._repository.save_texts(listing.id, texts)
+        if self._after_save is not None:
+            await self._after_save()
+        return True
+
     async def _translate(
         self, listing: Listing, title_lang: str, targets: list[str]
     ) -> dict[str, ListingText]:

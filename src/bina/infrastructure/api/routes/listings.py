@@ -47,6 +47,7 @@ from bina.infrastructure.api.schemas import (
     RiskOut,
     SourceLinkOut,
 )
+from bina.infrastructure.api.translation import request_language, translate_if_missing
 from bina.infrastructure.api.validation import clean_text
 from bina.infrastructure.db.models import Listing
 from bina.infrastructure.db.repositories.agencies import ListingStatsRepository
@@ -190,9 +191,23 @@ def get_embedder(request: Request) -> IEmbedder | None:
 
 
 @router.get("/{listing_id}", response_model=ListingOut)
-async def get_listing(listing_id: str, user: OptionalUserDep, session: SessionDep) -> ListingOut:
-    """Одно объявление; 404, если его нет или оно удалено."""
+async def get_listing(
+    listing_id: str,
+    request: Request,
+    user: OptionalUserDep,
+    session: SessionDep,
+    lang: Annotated[
+        str | None, Query(pattern="^(ka|ru|en)$", description="Язык гостя (без входа)")
+    ] = None,
+) -> ListingOut:
+    """Одно объявление; 404, если его нет или оно удалено.
+
+    Описания на языке зрителя ещё нет — переводим сразу (``api/translation.py``).
+    """
     listing = await get_listing_or_404(session, listing_id)
+    await translate_if_missing(
+        request, session, listing, request_language(request, user.language if user else lang)
+    )
     now = datetime.now(UTC)
     # TASK-100: просмотр — в статистику хозяина / агентства
     await ListingStatsRepository(session).record(listing, now.date(), view=True)
