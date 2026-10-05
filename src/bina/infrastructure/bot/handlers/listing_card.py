@@ -44,6 +44,7 @@ from bina.infrastructure.bot.keyboards.menu import with_home
 from bina.infrastructure.bot.settings import BotSettings
 from bina.infrastructure.bot.texts import t
 from bina.infrastructure.db.models import Listing, ListingStatus, User
+from bina.infrastructure.db.repositories.agencies import ListingStatsRepository
 from bina.infrastructure.db.repositories.districts import DistrictsRepository
 from bina.infrastructure.db.repositories.favorites import FavoritesRepository
 from bina.infrastructure.db.repositories.listings import ListingsRepository
@@ -122,7 +123,11 @@ async def show_card(
         await chat.show_listing(message, user, session, listing.id)
         return
     language = user.language
-    await ViewHistoryRepository(session).record(user.id, listing.id, datetime.now(UTC))
+    now = datetime.now(UTC)
+    await ViewHistoryRepository(session).record(user.id, listing.id, now)
+    stats = ListingStatsRepository(session)
+    await stats.record(listing, now.date(), view=True)
+    views = await stats.total_views(listing.id)
     district = await DistrictsRepository(session).get_by_id(listing.district_id)
     text = t(
         language,
@@ -132,6 +137,7 @@ async def show_card(
         rooms=t(language, "listing_rooms", n=listing.rooms),
         area=t(language, "listing_area", area=format_number(listing.area)),
         district=escape(district_name(district, language)) if district else "—",
+        views=views,
     )
     is_favorite = await FavoritesRepository(session).exists(user.id, listing.id)
     username = (await bot.me()).username

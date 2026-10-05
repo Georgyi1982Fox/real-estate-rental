@@ -89,6 +89,10 @@ class ListingOut(BaseModel):
         default=False, description="Есть ли телефон (GET /api/listings/{id}/phone)"
     )
     source_url: str | None = Field(default=None, description="Объявление на сайте-источнике")
+    views: int | None = Field(
+        default=None,
+        description="Сколько раз открывали на Bina.ai (только в GET /api/listings/{id})",
+    )
     also_on: list["SourceLinkOut"] = Field(
         default_factory=list,
         description="TASK-090: та же квартира на других сайтах (только в GET /api/listings/{id})",

@@ -22,3 +22,9 @@
 `db/repositories/favorites.py` (`notes`, `set_note`), `api/routes/history.py`,
 `api/routes/favorites.py`, `bot/handlers/listing_card.py`, миграция `history_notes`.
 Фронтенд — FRONTEND-043.
+
+## Счётчик просмотров
+Каждое открытие квартиры (сайт, приложение, карточка в боте) — +1 в счётчик объявления
+(раньше считались только объявления хозяев и агентств, для их статистики). Число видно:
+- в боте — в карточке квартиры «👁 123»;
+- на сайте — `views` в `GET /api/listings/{id}` (FRONTEND-043, п. 3).

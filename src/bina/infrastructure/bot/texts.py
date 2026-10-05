@@ -585,7 +585,9 @@ _RU: dict[str, str] = {
     "account_deleted": (
         "Готово: аккаунт и все данные удалены. Если снова напишете боту, начнёте с чистого листа."
     ),
-    "shared_card": "🏠 <b>{title}</b>\n💰 {price} · 🚪 {rooms} · 📐 {area}\n📍 {district}",
+    "shared_card": (
+        "🏠 <b>{title}</b>\n💰 {price} · 🚪 {rooms} · 📐 {area}\n📍 {district} · 👁 {views}"
+    ),
     "card_favorite": "В избранное",
     "card_open_app": "📱 Подробнее в приложении",
     "card_open_site": "🌐 Открыть на сайте",
@@ -1244,7 +1246,9 @@ _EN: dict[str, str] = {
         "Done: your account and all data are deleted. If you write to the bot again, you will "
         "start from scratch."
     ),
-    "shared_card": "🏠 <b>{title}</b>\n💰 {price} · 🚪 {rooms} · 📐 {area}\n📍 {district}",
+    "shared_card": (
+        "🏠 <b>{title}</b>\n💰 {price} · 🚪 {rooms} · 📐 {area}\n📍 {district} · 👁 {views}"
+    ),
     "card_favorite": "Add to favorites",
     "card_open_app": "📱 More in the app",
     "card_open_site": "🌐 Open on the website",
@@ -1884,7 +1888,9 @@ _KA: dict[str, str] = {
         "მზადაა: ანგარიში და ყველა მონაცემი წაიშალა. თუ ბოტს ისევ მისწერთ, ყველაფერს თავიდან "
         "დაიწყებთ."
     ),
-    "shared_card": "🏠 <b>{title}</b>\n💰 {price} · 🚪 {rooms} · 📐 {area}\n📍 {district}",
+    "shared_card": (
+        "🏠 <b>{title}</b>\n💰 {price} · 🚪 {rooms} · 📐 {area}\n📍 {district} · 👁 {views}"
+    ),
     "card_favorite": "რჩეულებში",
     "card_open_app": "📱 დეტალურად აპლიკაციაში",
     "card_open_site": "🌐 საიტზე გახსნა",

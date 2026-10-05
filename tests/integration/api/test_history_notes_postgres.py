@@ -81,3 +81,14 @@ async def test_notes_on_favorites(client: AsyncClient, session: AsyncSession) ->
     assert (await client.get("/api/favorites/notes", headers=headers())).json()["notes"] == {}
     too_long = await client.put(url, json={"note": "x" * 301}, headers=headers())
     assert too_long.status_code == 422
+
+
+async def test_view_counter(client: AsyncClient, session: AsyncSession) -> None:
+    """Счётчик «👁» у любого объявления: каждый просмотр, гостя тоже."""
+    listing = await add(session, "v1")
+    first = (await client.get(f"/api/listings/{listing.id}")).json()
+    assert first["views"] == 1
+    await client.get(f"/api/listings/{listing.id}", headers=headers())
+    assert (await client.get(f"/api/listings/{listing.id}")).json()["views"] == 3
+    in_list = (await client.get("/api/listings")).json()["items"][0]
+    assert in_list["views"] is None, "в списке счётчик не считаем — только на странице"

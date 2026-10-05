@@ -201,6 +201,8 @@ async def get_listing(listing_id: str, user: OptionalUserDep, session: SessionDe
         await ViewHistoryRepository(session).record(user.id, listing.id, now)
     await session.commit()
     out = ListingOut.from_model(listing)
+    # Счётчик просмотров («👁 123») — вместе с этим просмотром
+    out.views = await ListingStatsRepository(session).total_views(listing.id)
     # TASK-090: ссылки на ту же квартиру на других сайтах
     links = await ListingsRepository(session).same_apartment_links(listing)
     out.also_on = [
