@@ -27,6 +27,7 @@ from bina.infrastructure.db.models import (
     SignedDocument,
     User,
     Verification,
+    ViewedListing,
     Viewing,
 )
 from bina.infrastructure.db.models.base import Base
@@ -128,6 +129,7 @@ class AccountRepository:
             # TASK-115: документы на подпись (без самих файлов — их можно скачать в профиле)
             "documents_created": await self._all(SignedDocument, SignedDocument.creator_id == uid),
             "signatures": await self._all(DocumentSignature, DocumentSignature.user_id == uid),
+            "recently_viewed": await self._all(ViewedListing, ViewedListing.user_id == uid),
         }
 
     async def erase(self, user: User, now: datetime) -> list[str]:
@@ -177,6 +179,7 @@ class AccountRepository:
         await self._session.execute(delete(SignedDocument).where(SignedDocument.creator_id == uid))
         for model in (
             DocumentSignature,
+            ViewedListing,
             Favorite,
             Notification,
             SavedSearch,

@@ -6,6 +6,7 @@
 «Просмотр» (TASK-111).
 """
 
+from datetime import UTC, datetime
 from html import escape
 from uuid import UUID
 
@@ -33,7 +34,11 @@ from bina.infrastructure.bot.formatters import (
     listing_title,
 )
 from bina.infrastructure.bot.handlers import chat
-from bina.infrastructure.bot.keyboards.callbacks import FavoriteToggleCallback, RecommendCallback
+from bina.infrastructure.bot.keyboards.callbacks import (
+    FavoriteToggleCallback,
+    HistoryCallback,
+    RecommendCallback,
+)
 from bina.infrastructure.bot.keyboards.listings import FAV_OFF, FAV_ON, favorite_buttons
 from bina.infrastructure.bot.keyboards.menu import with_home
 from bina.infrastructure.bot.settings import BotSettings
@@ -42,6 +47,7 @@ from bina.infrastructure.db.models import Listing, ListingStatus, User
 from bina.infrastructure.db.repositories.districts import DistrictsRepository
 from bina.infrastructure.db.repositories.favorites import FavoritesRepository
 from bina.infrastructure.db.repositories.listings import ListingsRepository
+from bina.infrastructure.db.repositories.view_history import ViewHistoryRepository
 
 logger = structlog.get_logger(__name__)
 
@@ -116,6 +122,7 @@ async def show_card(
         await chat.show_listing(message, user, session, listing.id)
         return
     language = user.language
+    await ViewHistoryRepository(session).record(user.id, listing.id, datetime.now(UTC))
     district = await DistrictsRepository(session).get_by_id(listing.district_id)
     text = t(
         language,
@@ -167,7 +174,38 @@ async def on_recommend(
     await message.answer(text, reply_markup=with_home(markup, language))
 
 
+# --- «Недавно смотрели»
+
+
+async def on_history(
+    callback: CallbackQuery, user: User, session: AsyncSession, settings: BotSettings
+) -> None:
+    language = user.language
+    await callback.answer()
+    message = callback.message
+    if message is None:
+        return
+    rows = await ViewHistoryRepository(session).recent(user.id, settings.page_size)
+    if not rows:
+        await message.answer(t(language, "history_empty"))
+        return
+    items = [listing for listing, _ in rows]
+    favorite = await FavoritesRepository(session).filter_favorite_ids(
+        user.id, [item.id for item in items]
+    )
+    text = "\n\n".join(
+        [
+            t(language, "history_header"),
+            format_listings(items, 1, language),
+            f"<i>{t(language, 'fav_hint')}</i>",
+        ]
+    )
+    markup = InlineKeyboardMarkup(inline_keyboard=favorite_buttons(items, 1, set(favorite)))
+    await message.answer(text, reply_markup=with_home(markup, language))
+
+
 def create_router() -> Router:
     router = Router(name="listing_card")
     router.callback_query.register(on_recommend, RecommendCallback.filter())
+    router.callback_query.register(on_history, HistoryCallback.filter())
     return router

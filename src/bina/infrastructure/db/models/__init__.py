@@ -18,6 +18,7 @@ from .rent_reminders import RentReminder
 from .scrape_skips import ScrapeSkip
 from .users import User
 from .verifications import Verification
+from .view_history import ViewedListing
 
 __all__ = [
     "AIUsage",
@@ -46,5 +47,6 @@ __all__ = [
     "TimestampMixin",
     "User",
     "Verification",
+    "ViewedListing",
     "Viewing",
 ]

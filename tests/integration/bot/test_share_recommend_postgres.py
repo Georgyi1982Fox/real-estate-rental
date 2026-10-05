@@ -114,3 +114,34 @@ async def test_you_may_like_from_favorites(
     assert "Вам может понравиться" in text and "1 550 ₾" in text
     assert "1 500 ₾" not in text, "избранное не предлагаем"
     assert similar.id
+
+
+async def test_recently_viewed_and_notes(
+    person: Person,
+    telegram: FakeTelegramSession,
+    session_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    """TASK-075 / TASK-074: открытая карточка — в «Недавно смотрели», заметка — в избранном."""
+    from bina.infrastructure.bot.keyboards.callbacks import HistoryCallback
+    from bina.infrastructure.db.repositories.favorites import FavoritesRepository
+    from bina.infrastructure.db.repositories.users import UsersRepository
+
+    telegram.calls.clear()
+    await person.press(HistoryCallback().pack())
+    assert "ещё не открывали" in (telegram.of(SendMessage)[-1].text or "")
+
+    listing = await add(session_factory, "seen", 2, 1700)
+    await person.send(f"/start l_{listing.id.hex}")
+    await person.press(HistoryCallback().pack())
+    text = telegram.of(SendMessage)[-1].text or ""
+    assert "Недавно смотрели" in text and "1 700 ₾" in text
+
+    await person.press(FavoriteToggleCallback(listing_id=listing.id).pack())
+    async with session_factory() as session:
+        user = await UsersRepository(session).get_by_telegram_id(USER_ID)
+        assert user is not None
+        await FavoritesRepository(session).set_note(user.id, listing.id, "Позвонить <в пятницу>")
+        await session.commit()
+    await person.send("❤️ Избранное")
+    favorites = telegram.of(SendMessage)[-1].text or ""
+    assert "Ваши заметки" in favorites and "1. Позвонить &lt;в пятницу&gt;" in favorites

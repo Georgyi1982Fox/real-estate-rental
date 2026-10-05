@@ -48,6 +48,7 @@ from bina.infrastructure.bot.texts import t
 from bina.infrastructure.db.models import Listing, User
 from bina.infrastructure.db.repositories.agencies import ListingStatsRepository
 from bina.infrastructure.db.repositories.chat import ChatRepository
+from bina.infrastructure.db.repositories.view_history import ViewHistoryRepository
 
 logger = structlog.get_logger(__name__)
 
@@ -177,6 +178,8 @@ async def show_listing(
         return
     # TASK-100: открыли карточку — просмотр в статистику хозяина / агентства
     await ListingStatsRepository(session).record(listing, _now().date(), view=True)
+    # TASK-075: «Недавно смотрели»
+    await ViewHistoryRepository(session).record(user.id, listing.id, _now())
     await message.answer(
         t(
             user.language,

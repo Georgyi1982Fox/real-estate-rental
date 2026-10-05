@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, UniqueConstraint
+from sqlalchemy import ForeignKey, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -27,6 +27,8 @@ class Favorite(Base):
         ForeignKey("bina_listings.id"),
         primary_key=True,
     )
+    # TASK-074: своя заметка к квартире («звонил, перезвонить в пятницу»)
+    note: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
 
     # Relationships
     listing: Mapped["Listing"] = relationship(
