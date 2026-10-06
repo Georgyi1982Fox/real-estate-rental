@@ -89,6 +89,9 @@ class ListingOut(BaseModel):
         default=False, description="Есть ли телефон (GET /api/listings/{id}/phone)"
     )
     source_url: str | None = Field(default=None, description="Объявление на сайте-источнике")
+    source: str = Field(
+        default="ss", description="Сайт: ss, myhome, livo, korter, telegram или owner"
+    )
     views: int | None = Field(
         default=None,
         description="Сколько раз открывали на Bina.ai (только в GET /api/listings/{id})",
@@ -148,6 +151,7 @@ class ListingOut(BaseModel):
             images=list(listing.images or []),
             has_phone=bool(listing.phone),
             source_url=listing.url or None,
+            source=listing.source_name or "ss",
             owner_name=listing.owner_name or None,
             fraud_level=fraud_level(listing.fraud_score or 0).value,
             fraud_reasons=list(listing.fraud_reasons or []),
