@@ -91,7 +91,8 @@ export default function FilterPanel({ districts, filters, onChange }: FilterPane
     [ht],
   );
   const conditionOptions = useMemo(
-    () => CONDITION_CODES.map((code) => ({ value: code, label: conditionName(code, lang) ?? code })),
+    () =>
+      CONDITION_CODES.map((code) => ({ value: code, label: conditionName(code, lang) ?? code })),
     [lang],
   );
   const featureOptions = useMemo(
