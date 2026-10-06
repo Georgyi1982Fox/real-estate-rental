@@ -97,6 +97,40 @@ export interface Listing {
   fraud_level: FraudLevel;
   /** Коды причин (prepayment, off_platform, …); неизвестные коды не показываем */
   fraud_reasons: string[];
+  /**
+   * Та же квартира на других сайтах (TASK-090). Только в GET /api/listings/{id};
+   * в списке объявлений — всегда []
+   */
+  also_on?: ListingSourceLink[];
+}
+
+/** Ссылка на объявление на сайте: source — ss, myhome, livo, korter, telegram */
+export interface ListingSourceLink {
+  source: string;
+  url: string;
+}
+
+/** Цена относительно рынка; unknown — данных мало, плашку не показываем */
+export type PriceLevel = 'below' | 'fair' | 'above' | 'unknown';
+
+/** С чем сравнивали: похожие квартиры в районе или цена за м² в районе */
+export type PriceBasis = 'district_rooms' | 'district_m2';
+
+/**
+ * GET /api/listings/{id}/price (нужен X-Telegram-Init-Data, иначе 401).
+ * Без Premium числа — null, а premium_required: true
+ */
+export interface PriceEstimate {
+  level: PriceLevel;
+  /** Отрицательный — дешевле рынка */
+  diff_percent: number | null;
+  /** Обычная цена всей квартиры (не за м²) */
+  typical_price: number | null;
+  currency: Currency | string;
+  /** По скольким объявлениям посчитано */
+  sample: number | null;
+  basis: PriceBasis | null;
+  premium_required: boolean;
 }
 
 export interface District {
@@ -316,4 +350,66 @@ export interface LegalDocument {
   version_label?: string | null;
   intro?: string | null;
   sections: LegalSection[];
+}
+
+/** Причина подозрения: без Premium title и explanation — null, остаётся только код */
+export interface RiskReason {
+  code: string;
+  title: string | null;
+  explanation: string | null;
+}
+
+/**
+ * GET /api/listings/{id}/risk (нужен X-Telegram-Init-Data, иначе 401).
+ * Тексты уже на языке пользователя. Без Premium checklist пустой, premium_required: true
+ */
+export interface ListingRisk {
+  level: FraudLevel;
+  reasons: RiskReason[];
+  /** «Что проверить до встречи»; у level: none — «Как безопасно снять квартиру» */
+  checklist: string[];
+  premium_required: boolean;
+}
+
+/** exact — точка известна; district — только район (показываем круг); none — карты нет */
+export type LocationPrecision = 'exact' | 'district' | 'none';
+
+/** GET /api/listings/{id}/location?lang= — работает и без входа */
+export interface ListingLocation {
+  precision: LocationPrecision;
+  latitude: number | null;
+  longitude: number | null;
+  /** Название района на языке запроса */
+  district: string | null;
+  address: string | null;
+  links?: {
+    google?: string | null;
+    yandex?: string | null;
+    osm?: string | null;
+  } | null;
+}
+
+/** «Обычно: 1-комн. ~1 100 ₾» */
+export interface DistrictTypicalPrice {
+  rooms: number;
+  price: number;
+}
+
+/**
+ * GET /api/districts/{id}?lang= — справка о районе, работает и без входа.
+ * Имена полей согласовать с бэкендом: в задаче FRONTEND-026 перечислено только содержимое
+ */
+export interface DistrictInfo {
+  id: string;
+  /** Название на языке запроса */
+  name: string;
+  minutes_to_center?: number | null;
+  has_metro?: boolean | null;
+  tags?: string[] | null;
+  description?: string | null;
+  listings_count?: number | null;
+  /** Список по комнатам или словарь { "1": 1100, "2": 1650 } */
+  typical_prices?: DistrictTypicalPrice[] | Record<string, number> | null;
+  currency?: Currency | string | null;
+  note?: string | null;
 }

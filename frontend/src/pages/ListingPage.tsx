@@ -1,7 +1,15 @@
+import { useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import type { ListResponse, Listing } from '../api/types';
+import type {
+  ListResponse,
+  Listing,
+  ListingId,
+  ListingLocation as LocationData,
+} from '../api/types';
+import AlsoOn from '../components/AlsoOn';
 import BookViewingButton from '../components/BookViewingButton';
 import ContactButton from '../components/ContactButton';
+import DistrictAbout from '../components/DistrictAbout';
 import ErrorState from '../components/ErrorState';
 import ExternalLink from '../components/ExternalLink';
 import FavoriteButton from '../components/FavoriteButton';
@@ -9,8 +17,10 @@ import FraudWarning from '../components/FraudWarning';
 import Gallery from '../components/Gallery';
 import ListingDates from '../components/ListingDates';
 import ListingDescription from '../components/ListingDescription';
+import ListingLocation, { hasMapPoint } from '../components/ListingLocation';
 import ListingSkeleton from '../components/ListingSkeleton';
 import ListingSpecs from '../components/ListingSpecs';
+import MarketPriceBadge from '../components/MarketPriceBadge';
 import PhoneReveal from '../components/PhoneReveal';
 import SimilarListings from '../components/SimilarListings';
 import { useApi } from '../hooks/useApi';
@@ -21,6 +31,8 @@ import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
 import { useTelegramMainButton } from '../hooks/useTelegramMainButton';
 import { fill, formatPrice, tr } from '../lib/format';
 import { fraudLevel } from '../lib/fraud';
+import { haptic } from '../lib/telegram';
+import { alsoOnLinks, siteName } from '../lib/sources';
 import { useI18n } from '../providers/I18nProvider';
 import NotFoundPage from './NotFoundPage';
 
@@ -40,6 +52,13 @@ export default function ListingPage() {
   const similar = useApi<ListResponse<Listing>>(
     listingId !== null ? `/api/listings/${listingId}/similar` : null,
   );
+  // Точность точки (exact / district / none) знает только /location; работает и без входа
+  const location = useApi<LocationData>(
+    listingId !== null ? `/api/listings/${listingId}/location?lang=${lang}` : null,
+  );
+  const locationRef = useRef<HTMLElement>(null);
+  // /phone ответил 404: объявление скрыто или снято (ID — см. useContact)
+  const [phoneGoneId, setPhoneGoneId] = useState<ListingId | null>(null);
 
   useTelegramBackButton('/search');
 
@@ -50,17 +69,25 @@ export default function ListingPage() {
   const chatUrl = byOwner ? (listing?.source_url ?? '') : '';
 
   // «Написать»: в Telegram — нативная MainButton внизу экрана, в браузере — обычная кнопка
-  const { contact, loading: contactLoading } = useContact(listing?.id ?? null, listing?.source_url);
+  const {
+    contact,
+    loading: contactLoading,
+    gone: contactGone,
+  } = useContact(listing?.id ?? null, listing?.source_url);
+  // Объявление больше не в поиске: вместо кнопок связи — одна строка
+  const gone = contactGone || (phoneGoneId !== null && phoneGoneId === listing?.id);
   const nativeContact = useTelegramMainButton({
     text: writeLabel,
     onClick: contact,
-    visible: Boolean(listing),
+    visible: Boolean(listing) && !gone,
     loading: contactLoading,
   });
 
   const title = listing ? tr(listing.title, lang) : '';
   // Сайт-источник для ссылки «Открыть на …»: myhome.ge, home.ss.ge → ss.ge
-  const sourceSite = listing?.source_url && !byOwner ? siteName(listing.source_url) : '';
+  const sourceSite =
+    listing?.source_url && !byOwner ? siteName(listing.source, listing.source_url) : '';
+  const alsoOn = listing ? alsoOnLinks(listing) : [];
   // Кнопки связи: «Написать» (в браузере), «На просмотр», телефон, избранное.
   // Три — в один ряд на планшете, иначе по две
   const contactButtons = [!nativeContact, Boolean(chatUrl), listing?.has_phone, true].filter(
@@ -74,7 +101,6 @@ export default function ListingPage() {
   const district = listing ? (districtEntry ? tr(districtEntry, lang) : listing.district) : '';
   const ownerName = tr(listing?.owner?.name, lang) || listing?.owner_name || '';
   const address = tr(listing?.address, lang);
-  const mapUrl = listing ? googleMapsUrl(listing.latitude, listing.longitude) : '';
 
   return (
     <>
@@ -118,13 +144,20 @@ export default function ListingPage() {
                       <span aria-hidden="true">📍</span>
                       {address ? `${address}, ${district}` : district}
                     </span>
-                    {mapUrl && (
-                      <ExternalLink
-                        href={mapUrl}
+                    {hasMapPoint(location.data) && (
+                      <button
+                        type="button"
                         className="listing-summary__map rounded-[var(--radius-sm)] font-semibold text-[var(--text-primary)] underline underline-offset-2 transition-colors hover:text-[var(--primary)]"
+                        onClick={() => {
+                          haptic('light');
+                          locationRef.current?.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start',
+                          });
+                        }}
                       >
-                        {lt.on_map} ↗
-                      </ExternalLink>
+                        {lt.on_map} ↓
+                      </button>
                     )}
                     {typeof listing.rating === 'number' && (
                       <span className="inline-flex items-center gap-1">
@@ -147,6 +180,8 @@ export default function ListingPage() {
                   </span>
                 </p>
 
+                <MarketPriceBadge listingId={listing.id} />
+
                 {ownerName && (
                   <p className="listing-summary__owner text-sm text-[var(--text-secondary)]">
                     {lt.owner}:{' '}
@@ -154,37 +189,66 @@ export default function ListingPage() {
                   </p>
                 )}
 
-                <FraudWarning level={fraudLevel(listing)} reasons={listing.fraud_reasons ?? []} />
+                <FraudWarning
+                  listingId={listing.id}
+                  level={fraudLevel(listing)}
+                  reasons={listing.fraud_reasons ?? []}
+                />
 
                 <section
                   className={`listing-contact grid grid-cols-1 gap-3 lg:grid-cols-1 ${contactButtons === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}
                   aria-label={lt.contact}
                 >
-                  {!nativeContact && (
-                    <ContactButton label={writeLabel} onClick={contact} loading={contactLoading} />
+                  {gone ? (
+                    <p
+                      className="listing-contact__gone col-span-full m-0 rounded-[var(--radius-md)] bg-[var(--surface-hover)] px-4 py-3 text-center text-sm font-medium text-[var(--text-secondary)]"
+                      role="status"
+                    >
+                      {lt.gone}
+                    </p>
+                  ) : (
+                    <>
+                      {!nativeContact && (
+                        <ContactButton
+                          label={writeLabel}
+                          onClick={contact}
+                          loading={contactLoading}
+                        />
+                      )}
+                      {chatUrl && <BookViewingButton href={chatUrl} />}
+                      {/* Кнопка телефона — только если он есть: иначе «Написать» ведёт на сайт-источник */}
+                      {listing.has_phone && (
+                        <PhoneReveal
+                          listingId={listing.id}
+                          onGone={() => setPhoneGoneId(listing.id)}
+                        />
+                      )}
+                    </>
                   )}
-                  {chatUrl && <BookViewingButton href={chatUrl} />}
-                  {/* Кнопка телефона — только если он есть: иначе «Написать» ведёт на сайт-источник */}
-                  {listing.has_phone && <PhoneReveal listingId={listing.id} />}
                   <FavoriteButton listingId={listing.id} />
                 </section>
 
-                {chatUrl && (
+                {chatUrl && !gone && (
                   <p className="listing-contact__hint m-0 text-xs text-[var(--text-secondary)]">
                     {lt.translate_hint}
                   </p>
                 )}
 
-                {listing.source_url && sourceSite && (
-                  <p className="listing-source m-0 text-sm text-[var(--text-secondary)]">
-                    <ExternalLink
-                      href={listing.source_url}
-                      className="listing-source__link font-semibold text-[var(--primary)] underline-offset-2 hover:underline"
-                    >
-                      {fill(lt.open_source, sourceSite)} ↗
-                    </ExternalLink>
-                    {!listing.has_phone && <span className="block">{lt.source_hint}</span>}
-                  </p>
+                {(sourceSite || alsoOn.length > 0) && (
+                  <footer className="listing-source space-y-1.5">
+                    {listing.source_url && sourceSite && (
+                      <p className="listing-source__main text-sm text-[var(--text-secondary)]">
+                        <ExternalLink
+                          href={listing.source_url}
+                          className="listing-source__link font-semibold text-[var(--primary)] underline-offset-2 hover:underline"
+                        >
+                          {fill(lt.open_source, sourceSite)} ↗
+                        </ExternalLink>
+                        {!listing.has_phone && <span className="block">{lt.source_hint}</span>}
+                      </p>
+                    )}
+                    <AlsoOn links={alsoOn} />
+                  </footer>
                 )}
               </div>
             </section>
@@ -193,26 +257,14 @@ export default function ListingPage() {
               <ListingSpecs listing={listing} />
               <ListingDescription text={tr(listing.description, lang).trim()} />
 
-              <section
-                className="listing-location space-y-3 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-5"
-                aria-labelledby="listing-location-title"
-              >
-                <h2 id="listing-location-title" className="text-lg font-semibold">
-                  {lt.location}
-                </h2>
-                <address className="text-sm not-italic text-[var(--text-secondary)]">
-                  {address || district}
-                </address>
-                {/* Заглушка карты: будет заменена на реальную карту */}
-                <figure className="listing-location__map grid aspect-[16/9] w-full place-items-center rounded-[var(--radius-md)] bg-[var(--surface-hover)]">
-                  <figcaption className="flex flex-col items-center gap-2 text-sm text-[var(--text-secondary)]">
-                    <span className="text-3xl" aria-hidden="true">
-                      📍
-                    </span>
-                    {lt.map_soon}
-                  </figcaption>
-                </figure>
-              </section>
+              <ListingLocation
+                ref={locationRef}
+                location={location.data}
+                loading={location.loading}
+                address={address}
+                district={district}
+              />
+              <DistrictAbout districtId={listing.district} />
 
               <ListingDates publishedAt={listing.published_at} updatedAt={listing.updated_at} />
             </div>
@@ -231,23 +283,4 @@ export default function ListingPage() {
       )}
     </>
   );
-}
-
-/** Ссылка «На карте»; координат нет (null, не число) — '' */
-function googleMapsUrl(latitude?: number | null, longitude?: number | null): string {
-  if (typeof latitude !== 'number' || typeof longitude !== 'number') return '';
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return '';
-  return `https://www.google.com/maps?q=${latitude},${longitude}`;
-}
-
-/** Короткое имя сайта для подписи: www.myhome.ge → MyHome.ge, home.ss.ge → SS.ge */
-function siteName(url: string): string {
-  try {
-    const host = new URL(url).hostname.replace(/^(www|home)\./, '');
-    if (host === 'myhome.ge') return 'MyHome.ge';
-    if (host === 'ss.ge') return 'SS.ge';
-    return host;
-  } catch {
-    return '';
-  }
 }

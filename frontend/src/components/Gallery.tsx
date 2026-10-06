@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import type { KeyboardEvent } from 'react';
+import { useCarousel } from '../hooks/useCarousel';
 import { fill } from '../lib/format';
-import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 
 interface GalleryProps {
@@ -10,43 +10,18 @@ interface GalleryProps {
   alt: string;
 }
 
-const SCROLL_DEBOUNCE_MS = 60;
-
 const ARROW_CLASS =
   'gallery__arrow absolute top-1/2 hidden size-10 -translate-y-1/2 place-items-center rounded-full bg-[var(--surface)]/90 text-lg text-[var(--text-primary)] shadow-[var(--shadow-md)] backdrop-blur-sm transition-opacity duration-200 hover:bg-[var(--surface)] disabled:opacity-0 md:grid';
 
-/** Галерея фото: нативный свайп (CSS scroll-snap), стрелки на десктопе, точки-навигация */
+/**
+ * Галерея фото: нативный свайп (CSS scroll-snap), стрелки на десктопе, точки-навигация.
+ * Листается по кругу: после последнего фото снова первое
+ */
 export default function Gallery({ images, alt }: GalleryProps) {
   const { t } = useI18n();
-  const trackRef = useRef<HTMLUListElement>(null);
-  const debounceRef = useRef<number | undefined>(undefined);
-  const [current, setCurrent] = useState(0);
   const [failed, setFailed] = useState<ReadonlySet<number>>(new Set());
   const total = images.length;
-
-  useEffect(() => () => window.clearTimeout(debounceRef.current), []);
-
-  // Индекс текущего фото считаем из позиции прокрутки (свайп пальцем)
-  const handleScroll = () => {
-    window.clearTimeout(debounceRef.current);
-    debounceRef.current = window.setTimeout(() => {
-      const track = trackRef.current;
-      if (!track?.clientWidth) return;
-      setCurrent(Math.round(track.scrollLeft / track.clientWidth));
-    }, SCROLL_DEBOUNCE_MS);
-  };
-
-  const goTo = useCallback(
-    (index: number) => {
-      const track = trackRef.current;
-      if (!track) return;
-      const target = Math.max(0, Math.min(total - 1, index));
-      if (target !== current) haptic('selection');
-      track.scrollTo({ left: target * track.clientWidth, behavior: 'smooth' });
-      setCurrent(target);
-    },
-    [total, current],
-  );
+  const { trackRef, slides, current, onScroll, goTo } = useCarousel(total);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLUListElement>) => {
     if (event.key === 'ArrowRight') {
@@ -82,15 +57,16 @@ export default function Gallery({ images, alt }: GalleryProps) {
         className="gallery__track no-scrollbar flex aspect-[4/3] w-full list-none snap-x snap-mandatory overflow-x-auto overscroll-x-contain rounded-[var(--radius-lg)] bg-[var(--surface-hover)] p-0 sm:aspect-[16/10]"
         tabIndex={0}
         aria-label={t.gallery.label}
-        onScroll={handleScroll}
+        onScroll={onScroll}
         onKeyDown={handleKeyDown}
       >
-        {images.map((src, index) => (
+        {slides.map(({ index, clone }, position) => (
           <li
-            key={src + index}
+            key={position}
             className="gallery__slide relative h-full w-full shrink-0 snap-center"
             aria-roledescription="slide"
             aria-label={`${index + 1} / ${total}`}
+            aria-hidden={clone || undefined}
           >
             {/* Фолбэк под картинкой: виден, если фото не загрузилось */}
             <span className="gallery__fallback absolute inset-0 grid place-items-center text-sm text-[var(--text-secondary)]">
@@ -99,12 +75,12 @@ export default function Gallery({ images, alt }: GalleryProps) {
             {!failed.has(index) && (
               <img
                 className="gallery__image relative h-full w-full select-none object-cover"
-                src={src}
+                src={images[index]}
                 alt={`${alt} — ${index + 1}`}
                 width={800}
                 height={600}
-                loading={index === 0 ? 'eager' : 'lazy'}
-                fetchPriority={index === 0 ? 'high' : undefined}
+                loading={index === 0 && !clone ? 'eager' : 'lazy'}
+                fetchPriority={index === 0 && !clone ? 'high' : undefined}
                 draggable={false}
                 onError={() => setFailed((set) => new Set(set).add(index))}
               />
@@ -126,7 +102,6 @@ export default function Gallery({ images, alt }: GalleryProps) {
             type="button"
             className={`${ARROW_CLASS} gallery__arrow--prev left-3`}
             aria-label={t.gallery.prev}
-            disabled={current === 0}
             onClick={() => goTo(current - 1)}
           >
             <span aria-hidden="true">‹</span>
@@ -135,7 +110,6 @@ export default function Gallery({ images, alt }: GalleryProps) {
             type="button"
             className={`${ARROW_CLASS} gallery__arrow--next right-3`}
             aria-label={t.gallery.next}
-            disabled={current === total - 1}
             onClick={() => goTo(current + 1)}
           >
             <span aria-hidden="true">›</span>
