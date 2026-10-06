@@ -6,6 +6,7 @@ import { formatPrice, tr } from '../lib/format';
 import { fraudLevel } from '../lib/fraud';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
+import CardGallery from './CardGallery';
 import FraudBadge from './FraudBadge';
 import OwnerBadge from './OwnerBadge';
 
@@ -33,7 +34,8 @@ export default function ListingCard({
   const title = tr(listing.title, lang);
   const districtEntry = districtNames?.[listing.district];
   const district = districtEntry ? tr(districtEntry, lang) : listing.district;
-  const image = listing.images?.[0];
+  const images = listing.images ?? [];
+  const image = images[0];
   const hasFloor = typeof listing.floor === 'number';
 
   return (
@@ -43,7 +45,9 @@ export default function ListingCard({
     >
       <figure className="listing-card__figure">
         <div className="listing-card__media relative aspect-[4/3] w-full overflow-hidden bg-[var(--surface-hover)]">
-          {image ? (
+          {images.length > 1 ? (
+            <CardGallery images={images} alt={title} to={`/listing/${listing.id}`} />
+          ) : image ? (
             <img
               className="listing-card__image h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
               src={image}

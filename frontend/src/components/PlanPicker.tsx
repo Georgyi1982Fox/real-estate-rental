@@ -46,7 +46,9 @@ export default function PlanPicker({ plans, selectedId, onSelect, disabled }: Pl
   if (plans.length === 1 && single) {
     return (
       <section className="plan-picker flex" aria-label={pt.choose_plan}>
-        <p className={`${CARD_CLASS} border-[var(--primary)] bg-[var(--surface)]`}>{body(single)}</p>
+        <p className={`${CARD_CLASS} border-[var(--primary)] bg-[var(--surface)]`}>
+          {body(single)}
+        </p>
       </section>
     );
   }
