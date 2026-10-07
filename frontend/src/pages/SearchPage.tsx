@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import type { ListingsPage } from '../api/types';
 import EmptyState from '../components/EmptyState';
 import ErrorState from '../components/ErrorState';
@@ -11,12 +11,13 @@ import Pagination from '../components/Pagination';
 import SaveSearchButton from '../components/SaveSearchButton';
 import SearchBar from '../components/SearchBar';
 import Skeleton from '../components/Skeleton';
+import SortSelect from '../components/SortSelect';
 import { useApi } from '../hooks/useApi';
 import { useDistricts } from '../hooks/useDistricts';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useSearchFilters } from '../hooks/useSearchFilters';
 import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
-import { fill } from '../lib/format';
+import { fill, fillVars, plural, tr } from '../lib/format';
 import {
   countFilters,
   filterDistricts,
@@ -35,27 +36,33 @@ const PRIMARY_BUTTON_CLASS =
 
 /** Лента объявлений с поиском, фильтрами и страницами (помесячная аренда) */
 export default function SearchPage() {
-  const { t } = useI18n();
+  const { lang, t } = useI18n();
   const ht = t.home;
   const {
     filters,
     query,
+    sort,
     page,
     setFilters,
     replaceFilters,
     resetFilters,
     setQuery,
     addDistrict,
+    setSort,
     setPage,
   } = useSearchFilters();
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const openFilters = useCallback(() => setFiltersOpen(true), []);
   // Стабильная ссылка: Modal перезапускает эффект (фокус) при смене onClose
   const closeFilters = useCallback(() => setFiltersOpen(false), []);
-  const searchQuery = searchToQuery(filters, query);
-  // Поиск сохраняется целиком: фильтры + текст из строки поиска
+  const resultsRef = useRef<HTMLElement>(null);
+  const searchQuery = searchToQuery(filters, query, sort);
+  // Поиск сохраняется целиком: фильтры + текст из строки поиска (без сортировки)
   const savedFilters = useMemo(() => withQuery(filters, query), [filters, query]);
+  // remember: «Назад» из объявления сразу показывает тот же список на той же прокрутке
   const { data, error, loading, reload } = useApi<ListingsPage>(
     `/api/listings?page=${page}&per_page=${LISTINGS_PER_PAGE}${searchQuery ? `&${searchQuery}` : ''}`,
+    { remember: true },
   );
   const { districts, names } = useDistricts();
   const filtered = hasFilters(filters);
@@ -64,6 +71,27 @@ export default function SearchPage() {
 
   useDocumentTitle(`${ht.page_title} — Bina.ai`);
   useTelegramBackButton('/');
+
+  const search = (text: string) => {
+    setQuery(text);
+    // На телефоне результаты ниже экрана — показываем их начало
+    if (text && window.matchMedia('(pointer: coarse)').matches) {
+      resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  // Что нашлось: «Найдено 320 квартир по запросу «…»» или «… в районе Чугурети»
+  const districtIds = filterDistricts(filters);
+  const districtEntry = districtIds.length === 1 ? names[districtIds[0] ?? ''] : undefined;
+  let summary = '';
+  if (data && data.total > 0 && narrowed) {
+    if (query) summary = fillVars(plural(ht.found_query, data.total, lang), { q: query });
+    else if (districtEntry) {
+      summary = fillVars(plural(ht.found_district, data.total, lang), {
+        q: tr(districtEntry, lang),
+      });
+    } else summary = plural(ht.found, data.total, lang);
+  }
 
   const changePage = (next: number) => {
     setPage(next);
@@ -83,12 +111,18 @@ export default function SearchPage() {
           query={query}
           districts={districts}
           selectedDistricts={filterDistricts(filters)}
-          onSearch={setQuery}
+          onSearch={search}
           onSelectDistrict={addDistrict}
+          loading={loading}
         >
-          <FilterButton count={countFilters(filters)} onClick={() => setFiltersOpen(true)} />
+          <FilterButton count={countFilters(filters)} onClick={openFilters} />
         </SearchBar>
-        <FilterChips filters={filters} districtNames={names} onRemove={setFilters} />
+        <FilterChips
+          filters={filters}
+          districtNames={names}
+          onRemove={setFilters}
+          onEdit={openFilters}
+        />
         <div className="search-page__filter-actions flex flex-wrap items-center gap-3">
           <SaveSearchButton filters={savedFilters} />
           {narrowed && (
@@ -116,19 +150,27 @@ export default function SearchPage() {
       </section>
 
       <section
-        className="search-page__listings space-y-6"
+        ref={resultsRef}
+        className="search-page__listings scroll-mt-4 space-y-6"
         aria-labelledby="search-listings-title"
         aria-busy={loading}
       >
-        <header className="flex items-baseline justify-between gap-3">
-          <h2 id="search-listings-title" className="text-xl font-bold tracking-tight">
-            {narrowed ? ht.results : ht.featured}
-          </h2>
-          {data && (
-            <span className="text-sm text-[var(--text-secondary)]">
-              {fill(ht.count, data.total)}
-            </span>
-          )}
+        <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0 space-y-1">
+            <h2
+              id="search-listings-title"
+              className="break-words text-xl font-bold tracking-tight"
+              aria-live="polite"
+            >
+              {summary || (narrowed ? ht.results : ht.featured)}
+            </h2>
+            {data && !narrowed && (
+              <p className="m-0 text-sm text-[var(--text-secondary)]">
+                {fill(ht.count, data.total)}
+              </p>
+            )}
+          </div>
+          <SortSelect value={sort} byRelevance={query !== ''} onChange={setSort} />
         </header>
 
         {loading && (

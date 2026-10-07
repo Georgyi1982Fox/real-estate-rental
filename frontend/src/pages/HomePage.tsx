@@ -32,6 +32,8 @@ export default function HomePage() {
   const { districts, names } = useDistricts();
   const { data, error, loading, reload } = useApi<ListingsPage>(
     `/api/listings?page=1&per_page=${NEW_LISTINGS_COUNT}`,
+    // «Назад» из объявления: список сразу на месте, прокрутка восстанавливается
+    { remember: true },
   );
 
   useDocumentTitle(`Bina.ai — ${ht.page_title}`);

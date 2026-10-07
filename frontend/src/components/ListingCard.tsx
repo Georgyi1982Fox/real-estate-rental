@@ -37,6 +37,7 @@ export default function ListingCard({
   const images = listing.images ?? [];
   const image = images[0];
   const hasFloor = typeof listing.floor === 'number';
+  const fraud = fraudLevel(listing);
 
   return (
     <article
@@ -65,8 +66,6 @@ export default function ListingCard({
               {t.card.no_photo}
             </div>
           )}
-
-          {fraudLevel(listing) !== 'none' && <FraudBadge />}
 
           <button
             type="button"
@@ -142,6 +141,11 @@ export default function ListingCard({
           </dl>
         </figcaption>
       </figure>
+
+      {/* Вне фото: подсказка значка шире и выше него, а фото обрезает всё, что выходит за край */}
+      {fraud !== 'none' && (
+        <FraudBadge listingId={listing.id} level={fraud} reasons={listing.fraud_reasons ?? []} />
+      )}
     </article>
   );
 }

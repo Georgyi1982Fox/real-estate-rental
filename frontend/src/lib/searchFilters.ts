@@ -61,6 +61,23 @@ export const QUERY_MAX = 100;
 export const SUGGEST_MIN_CHARS = 2;
 export const SUGGEST_MAX = 6;
 
+/** Сортировка ленты: параметр адреса и запроса к API. В сохранённый поиск не входит */
+export const SORT_KEY = 'sort';
+/** Что умеет GET /api/listings?sort=; без параметра сервер отдаёт newest, а при q — самые подходящие */
+export const SORT_ORDERS = [
+  'newest',
+  'price_asc',
+  'price_desc',
+  'area_desc',
+  'price_per_m2_asc',
+] as const;
+export type SortOrder = (typeof SORT_ORDERS)[number];
+
+/** Сортировка из адреса; незнакомое значение — как будто её нет */
+export function parseSort(raw: string | null): SortOrder | undefined {
+  return SORT_ORDERS.find((order) => order === raw);
+}
+
 /** Целое число из адреса в диапазоне [min, max], иначе undefined */
 function parseInteger(raw: string | null, min: number, max: number): number | undefined {
   if (raw === null || !/^\d+$/.test(raw)) return undefined;
@@ -191,11 +208,13 @@ export function filtersToQuery(filters: SearchFilters): string {
 }
 
 /**
- * Строка запроса для /api/listings: поиск по словам + фильтры.
- * sort не передаём — при q сервер сам ставит сверху самые подходящие.
+ * Строка запроса для /api/listings: поиск по словам + фильтры + сортировка.
+ * Без sort при q сервер сам ставит сверху самые подходящие.
  */
-export function searchToQuery(filters: SearchFilters, query: string): string {
-  return filtersToQuery(withQuery(filters, query));
+export function searchToQuery(filters: SearchFilters, query: string, sort?: SortOrder): string {
+  const search = filtersToQuery(withQuery(filters, query));
+  if (!sort) return search;
+  return `${search}${search ? '&' : ''}${SORT_KEY}=${sort}`;
 }
 
 /** Фильтры страницы вместе с текстом поиска — в таком виде поиск сохраняется */
