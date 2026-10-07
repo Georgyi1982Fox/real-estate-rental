@@ -19,6 +19,8 @@ interface FilterModalProps {
   onClose: () => void;
   /** Применённые фильтры (из адреса) — с них начинается правка в окне */
   filters: SearchFilters;
+  /** Выбранный город: окно его не меняет, но квартиры считаются в нём */
+  city: string | undefined;
   /** Текст поиска (q): окно его не меняет, но квартиры считаются с его учётом */
   query: string;
   districts: District[];
@@ -34,6 +36,7 @@ export default function FilterModal({
   open,
   onClose,
   filters,
+  city,
   query,
   districts,
   onApply,
@@ -52,7 +55,7 @@ export default function FilterModal({
     else setCountQuery(null);
   }
 
-  const draftQuery = searchToQuery(draft, query);
+  const draftQuery = searchToQuery({ ...draft, city }, query);
 
   // Считаем квартиры не на каждое нажатие, а после паузы; при открытии — сразу
   useEffect(() => {

@@ -136,6 +136,17 @@ export interface PriceEstimate {
 export interface District {
   id: string;
   name: Localized;
+  /** Код города района (GET /api/cities) */
+  city?: string;
+}
+
+/** GET /api/cities — только города, где уже есть объявления; список растёт сам */
+export interface City {
+  code: string;
+  name: Localized;
+  /** Центр города — для карты */
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export interface ListResponse<T> {

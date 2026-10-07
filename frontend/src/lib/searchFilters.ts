@@ -1,6 +1,7 @@
 // Фильтры поиска: разбор адреса страницы, строка запроса для API, описание словами
 
 import type { District, SearchFilters } from '../api/types';
+import type { CityNames } from '../hooks/useCity';
 import type { DistrictNames } from '../hooks/useDistricts';
 import { conditionName } from '../i18n/conditions';
 import { featureName } from '../i18n/features';
@@ -24,6 +25,11 @@ export const BATHROOMS_MAX = 3;
 /** Столько кодов удобств или состояний берём из адреса */
 const CODES_MAX = 30;
 const CITY_MAX = 64;
+/**
+ * «Вся Грузия» в адресе страницы (?city=all) и в хранилище выбранного города.
+ * В запросы к API не попадает: без city сервер ищет по всей стране
+ */
+export const ALL_CITIES = 'all';
 
 const NUMBER_KEYS = [
   'min_price',
@@ -222,8 +228,9 @@ export function withQuery(filters: SearchFilters, query: string): SearchFilters 
   return { ...filters, q: query || undefined };
 }
 
+/** Город фильтром не считается: он выбран всегда (см. useCity) */
 export function hasFilters(filters: SearchFilters): boolean {
-  return filterEntries(filters).length > 0;
+  return filterEntries(filters).some(([key]) => key !== 'city');
 }
 
 export function sameFilters(a: SearchFilters, b: SearchFilters): boolean {
@@ -239,10 +246,12 @@ const COUNT_GROUPS: string[][] = [
 
 /**
  * Сколько фильтров выбрано: районы, удобства и состояния — по одному на список,
- * группы COUNT_GROUPS — по одному на группу. Текст поиска не считается
+ * группы COUNT_GROUPS — по одному на группу. Текст поиска и город не считаются
  */
 export function countFilters(filters: SearchFilters): number {
-  const keys = filterEntries(filters).flatMap(([key]) => (key === QUERY_KEY ? [] : [key]));
+  const keys = filterEntries(filters).flatMap(([key]) =>
+    key === QUERY_KEY || key === 'city' ? [] : [key],
+  );
   const groupOf = (key: string) => COUNT_GROUPS.find((group) => group.includes(key))?.[0] ?? key;
   return new Set(keys.map(groupOf)).size;
 }
@@ -370,9 +379,16 @@ export function countText(value: number, top: number): string {
 /**
  * Чипы дополнительных фильтров — всего, кроме районов, цены и комнат (filterLabels):
  * текст поиска, площадь, спальни, санузлы, этаж, состояние, удобства, собственник,
- * посуточно, город. Неизвестный код удобства или состояния показывается как есть.
+ * посуточно. Неизвестный код удобства или состояния показывается как есть.
+ * cityNames — для карточки сохранённого поиска: добавляет чип города («Батуми» или
+ * «Вся Грузия»); на странице поиска город показывает кнопка выбора города.
  */
-export function extraFilterChips(filters: SearchFilters, t: Strings, lang: Lang): FilterChip[] {
+export function extraFilterChips(
+  filters: SearchFilters,
+  t: Strings,
+  lang: Lang,
+  cityNames?: CityNames,
+): FilterChip[] {
   const ft = t.filters;
   const chips: FilterChip[] = [];
   const query = cleanQuery(filters.q ?? null);
@@ -446,7 +462,11 @@ export function extraFilterChips(filters: SearchFilters, t: Strings, lang: Lang)
   if (filters.rent_period === 'daily') {
     chips.push({ key: 'rent_period', label: ft.daily, patch: { rent_period: undefined } });
   }
-  // Названий городов в словаре пока нет (выбор города — FRONTEND-030)
-  if (filters.city) chips.push({ key: 'city', label: filters.city, patch: { city: undefined } });
+  if (cityNames) {
+    // Название города ещё грузится или города уже нет в списке — показываем код
+    const name = filters.city ? cityNames[filters.city] : undefined;
+    const label = filters.city ? (name ? tr(name, lang) : filters.city) : t.city.all;
+    chips.push({ key: 'city', label, patch: { city: undefined } });
+  }
   return chips;
 }

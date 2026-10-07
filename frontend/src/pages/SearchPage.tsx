@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { ListingsPage } from '../api/types';
+import CityPicker from '../components/CityPicker';
 import EmptyState from '../components/EmptyState';
 import ErrorState from '../components/ErrorState';
 import FilterButton from '../components/FilterButton';
@@ -13,7 +14,8 @@ import SearchBar from '../components/SearchBar';
 import Skeleton from '../components/Skeleton';
 import SortSelect from '../components/SortSelect';
 import { useApi } from '../hooks/useApi';
-import { useDistricts } from '../hooks/useDistricts';
+import { cityParam, useCity } from '../hooks/useCity';
+import { useCityDistricts, useDistricts } from '../hooks/useDistricts';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useSearchFilters } from '../hooks/useSearchFilters';
 import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
@@ -40,12 +42,14 @@ export default function SearchPage() {
   const ht = t.home;
   const {
     filters,
+    urlCity,
     query,
     sort,
     page,
     setFilters,
     replaceFilters,
     resetFilters,
+    setCity,
     setQuery,
     addDistrict,
     setSort,
@@ -56,15 +60,23 @@ export default function SearchPage() {
   // Стабильная ссылка: Modal перезапускает эффект (фокус) при смене onClose
   const closeFilters = useCallback(() => setFiltersOpen(false), []);
   const resultsRef = useRef<HTMLElement>(null);
-  const searchQuery = searchToQuery(filters, query, sort);
-  // Поиск сохраняется целиком: фильтры + текст из строки поиска (без сортировки)
-  const savedFilters = useMemo(() => withQuery(filters, query), [filters, query]);
+  const cities = useCity();
+  // Город из ссылки (?city=…) важнее запомненного; undefined — «Вся Грузия»
+  const city = urlCity === undefined ? cities.city : cityParam(urlCity);
+  const searchQuery = searchToQuery({ ...filters, city }, query, sort);
+  // Поиск сохраняется целиком: город + фильтры + текст из строки поиска (без сортировки)
+  const savedFilters = useMemo(
+    () => withQuery({ ...filters, city }, query),
+    [filters, city, query],
+  );
   // remember: «Назад» из объявления сразу показывает тот же список на той же прокрутке
   const { data, error, loading, reload } = useApi<ListingsPage>(
     `/api/listings?page=${page}&per_page=${LISTINGS_PER_PAGE}${searchQuery ? `&${searchQuery}` : ''}`,
     { remember: true },
   );
-  const { districts, names } = useDistricts();
+  // Названия — всех районов (чипы, карточки); в фильтре и подсказках — только районы города
+  const { names } = useDistricts();
+  const districts = useCityDistricts(city);
   const filtered = hasFilters(filters);
   // Есть что сбрасывать: фильтры или текст поиска
   const narrowed = filtered || query !== '';
@@ -107,6 +119,14 @@ export default function SearchPage() {
       </header>
 
       <section className="search-page__filters flex flex-col gap-4" aria-label={ht.filters}>
+        <CityPicker
+          city={city}
+          cities={cities.cities}
+          loading={cities.loading}
+          failed={cities.error !== undefined}
+          onRetry={cities.reload}
+          onChange={setCity}
+        />
         <SearchBar
           query={query}
           districts={districts}
@@ -143,6 +163,7 @@ export default function SearchPage() {
           open={filtersOpen}
           onClose={closeFilters}
           filters={filters}
+          city={city}
           query={query}
           districts={districts}
           onApply={replaceFilters}

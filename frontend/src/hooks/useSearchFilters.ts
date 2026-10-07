@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { SearchFilters } from '../api/types';
 import {
@@ -12,6 +12,7 @@ import {
   SORT_KEY,
   type SortOrder,
 } from '../lib/searchFilters';
+import { cityParam, saveCity } from './useCity';
 
 /** Записать фильтры в параметры адреса вместо прежних; страница сбрасывается на первую */
 function writeFilters(params: URLSearchParams, filters: SearchFilters): void {
@@ -25,12 +26,19 @@ function writeFilters(params: URLSearchParams, filters: SearchFilters): void {
  * Поиск, фильтры, сортировка и страница ленты живут в адресе:
  * ?q=<текст>&district=<id>,<id>&min_price=..&rooms=..&features=<код>,<код>&owner_only=true&sort=..&page=..
  * Такую ссылку можно открыть заново или сохранить как поиск.
+ *
+ * Город в фильтры страницы не входит: он общий для приложения (useCity). Ссылка с
+ * ?city=batumi (или ?city=all — «Вся Грузия») переключает город и запоминает его,
+ * после чего city из адреса убирается; без city действует запомненный город.
  */
 export function useSearchFilters() {
   const { search } = useLocation();
   const navigate = useNavigate();
   // Новый объект только при изменении адреса — на filters можно опираться в эффектах
-  const filters = useMemo(() => parseFilters(new URLSearchParams(search)), [search]);
+  const { filters, urlCity } = useMemo(() => {
+    const { city, ...rest } = parseFilters(new URLSearchParams(search));
+    return { filters: rest, urlCity: city };
+  }, [search]);
   const query = cleanQuery(new URLSearchParams(search).get(QUERY_KEY));
   const sort = parseSort(new URLSearchParams(search).get(SORT_KEY));
   const page = Math.max(
@@ -51,6 +59,32 @@ export function useSearchFilters() {
       navigate({ search: next ? `?${next}` : '' }, { replace, preventScrollReset: keepScroll });
     },
     [search, navigate],
+  );
+
+  // Город из ссылки становится выбранным; в адресе он больше не нужен
+  useEffect(() => {
+    if (urlCity === undefined) return;
+    saveCity(cityParam(urlCity));
+    update((params) => params.delete('city'), true, true);
+  }, [urlCity, update]);
+
+  /** Выбрать город (undefined — «Вся Грузия»): районы прежнего города сбрасываются */
+  const setCity = useCallback(
+    (city: string | undefined) => {
+      saveCity(city);
+      update(
+        (params) =>
+          writeFilters(params, {
+            ...parseFilters(params),
+            district: undefined,
+            districts: undefined,
+            city: undefined,
+          }),
+        true,
+        true,
+      );
+    },
+    [update],
   );
 
   /** Изменить часть фильтров (undefined — убрать фильтр) */
@@ -136,12 +170,15 @@ export function useSearchFilters() {
 
   return {
     filters,
+    /** Город из ссылки, пока он не стал выбранным: в этом рендере он важнее запомненного */
+    urlCity,
     query,
     sort,
     page,
     setFilters,
     replaceFilters,
     resetFilters,
+    setCity,
     setQuery,
     addDistrict,
     setSort,

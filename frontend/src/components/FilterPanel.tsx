@@ -44,6 +44,7 @@ const CONTROL_CLASS =
 const LEGEND_CLASS = 'mb-2 p-0 text-sm font-semibold text-[var(--text-primary)]';
 
 interface FilterPanelProps {
+  /** Районы выбранного города; пусто («Вся Грузия», город без районов) — блока районов нет */
   districts: District[];
   filters: SearchFilters;
   /** Изменить часть фильтров; undefined — убрать фильтр */
@@ -145,52 +146,54 @@ export default function FilterPanel({ districts, filters, onChange }: FilterPane
 
   return (
     <section className="filter-panel flex flex-col gap-6" aria-label={ht.filters}>
-      <fieldset className="filter-panel__districts min-w-0 border-0 p-0">
-        <legend className={LEGEND_CLASS}>{ht.districts}</legend>
-        {districts.length >= DISTRICT_SEARCH_FROM && (
-          <div className="relative mb-3">
-            <label className="sr-only" htmlFor={searchId}>
-              {ht.find_district}
-            </label>
-            <span
-              className="pointer-events-none absolute inset-y-0 left-3 grid place-items-center text-[var(--text-secondary)]"
-              aria-hidden="true"
-            >
-              <Icon name="search" className="size-4" />
-            </span>
-            <input
-              id={searchId}
-              type="search"
-              value={query}
-              placeholder={ht.find_district}
-              autoComplete="off"
-              className={`${CONTROL_CLASS} w-full py-2.5 pl-9 pr-3`}
-              onChange={(event) => setQuery(event.target.value)}
-            />
-          </div>
-        )}
-        {visible.length > 0 ? (
-          <ul className="filter-panel__district-list flex flex-wrap gap-2">
-            {visible.map((district) => {
-              const active = selected.includes(district.id);
-              return (
-                <li key={district.id}>
-                  <button
-                    type="button"
-                    className={pillClass(active)}
-                    aria-pressed={active}
-                    onClick={() => toggleDistrict(district.id)}
-                  >
-                    {district.name}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <p className="text-sm text-[var(--text-secondary)]">{ht.no_districts}</p>
-        )}
-      </fieldset>
+      {districts.length > 0 && (
+        <fieldset className="filter-panel__districts min-w-0 border-0 p-0">
+          <legend className={LEGEND_CLASS}>{ht.districts}</legend>
+          {districts.length >= DISTRICT_SEARCH_FROM && (
+            <div className="relative mb-3">
+              <label className="sr-only" htmlFor={searchId}>
+                {ht.find_district}
+              </label>
+              <span
+                className="pointer-events-none absolute inset-y-0 left-3 grid place-items-center text-[var(--text-secondary)]"
+                aria-hidden="true"
+              >
+                <Icon name="search" className="size-4" />
+              </span>
+              <input
+                id={searchId}
+                type="search"
+                value={query}
+                placeholder={ht.find_district}
+                autoComplete="off"
+                className={`${CONTROL_CLASS} w-full py-2.5 pl-9 pr-3`}
+                onChange={(event) => setQuery(event.target.value)}
+              />
+            </div>
+          )}
+          {visible.length > 0 ? (
+            <ul className="filter-panel__district-list flex flex-wrap gap-2">
+              {visible.map((district) => {
+                const active = selected.includes(district.id);
+                return (
+                  <li key={district.id}>
+                    <button
+                      type="button"
+                      className={pillClass(active)}
+                      aria-pressed={active}
+                      onClick={() => toggleDistrict(district.id)}
+                    >
+                      {district.name}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="text-sm text-[var(--text-secondary)]">{ht.no_districts}</p>
+          )}
+        </fieldset>
+      )}
 
       <PriceRange
         min={filters.min_price}

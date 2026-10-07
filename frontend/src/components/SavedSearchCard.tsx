@@ -1,8 +1,14 @@
 import { useId } from 'react';
 import { Link } from 'react-router-dom';
 import type { SavedSearch } from '../api/types';
+import type { CityNames } from '../hooks/useCity';
 import { fill } from '../lib/format';
-import { describeFilters, extraFilterChips, filtersToQuery } from '../lib/searchFilters';
+import {
+  ALL_CITIES,
+  describeFilters,
+  extraFilterChips,
+  filtersToQuery,
+} from '../lib/searchFilters';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 import Icon from './Icon';
@@ -18,6 +24,7 @@ interface SavedSearchCardProps {
   search: SavedSearch;
   /** Районы поиска словами: «Ваке, Сабуртало +1» */
   districtName: string;
+  cityNames: CityNames;
   /** Переход на главную с фильтрами поиска — новые квартиры считаются просмотренными */
   onOpen: () => void;
   onToggleNotify: () => void;
@@ -32,6 +39,7 @@ interface SavedSearchCardProps {
 export default function SavedSearchCard({
   search,
   districtName,
+  cityNames,
   onOpen,
   onToggleNotify,
   onRename,
@@ -40,13 +48,14 @@ export default function SavedSearchCard({
   const { t, lang } = useI18n();
   const st = t.searches;
   const titleId = useId();
-  const chips = extraFilterChips(search.filters, t, lang);
+  const chips = extraFilterChips(search.filters, t, lang, cityNames);
   const description = describeFilters(search.filters, districtName, st);
   // Без своего названия (mock) заголовком служат сами фильтры
   const title = search.name.trim() || description;
   // Название, которое сервер собрал из фильтров, повторно строкой фильтров не дублируем
   const showDescription = normalize(title) !== normalize(description);
-  const query = filtersToQuery(search.filters);
+  // Поиск открывается в своём городе; без города он сохранён по всей Грузии
+  const query = filtersToQuery({ ...search.filters, city: search.filters.city ?? ALL_CITIES });
 
   return (
     <article
@@ -54,7 +63,7 @@ export default function SavedSearchCard({
       aria-labelledby={titleId}
     >
       <Link
-        to={query ? `/search?${query}` : '/search'}
+        to={`/search?${query}`}
         className="saved-search__open flex items-start gap-3 p-4 hover:bg-[var(--surface-hover)]"
         onClick={() => {
           haptic('light');

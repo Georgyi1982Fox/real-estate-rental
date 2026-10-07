@@ -272,6 +272,15 @@ const ka = {
     range_max_error: 'მაქსიმუმი მინიმუმზე ნაკლები ვერ იქნება',
     range_limit_error: 'მნიშვნელობა არ უნდა აღემატებოდეს {n}-ს',
   },
+  // Выбор города (названия городов приходят из GET /api/cities)
+  city: {
+    title: 'ქალაქი',
+    choose: 'ქალაქის არჩევა, ახლა: {n}',
+    all: 'მთელი საქართველო',
+    default_name: 'თბილისი',
+    find: 'ქალაქის ძებნა',
+    not_found: 'ქალაქი ვერ მოიძებნა',
+  },
   notifications: {
     page_title: 'შეტყობინებები',
     heading: 'შეტყობინებები',
@@ -778,6 +787,14 @@ const ru: Strings = {
     range_max_error: 'Максимум не может быть меньше минимума',
     range_limit_error: 'Значение не может быть больше {n}',
   },
+  city: {
+    title: 'Город',
+    choose: 'Выбрать город, сейчас: {n}',
+    all: 'Вся Грузия',
+    default_name: 'Тбилиси',
+    find: 'Найти город',
+    not_found: 'Город не найден',
+  },
   notifications: {
     page_title: 'Уведомления',
     heading: 'Уведомления',
@@ -1280,6 +1297,14 @@ const en: Strings = {
     range_min_error: "The minimum can't be higher than the maximum",
     range_max_error: "The maximum can't be lower than the minimum",
     range_limit_error: "The value can't be higher than {n}",
+  },
+  city: {
+    title: 'City',
+    choose: 'Choose a city, now: {n}',
+    all: 'All of Georgia',
+    default_name: 'Tbilisi',
+    find: 'Find a city',
+    not_found: 'No city found',
   },
   notifications: {
     page_title: 'Notifications',
