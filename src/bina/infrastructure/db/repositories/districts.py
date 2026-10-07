@@ -1,13 +1,13 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bina.application.cities import CITIES, DEFAULT_CITY
-from bina.application.localization import district_names
+from bina.application.localization import district_base, district_names
 from bina.application.repositories.districts import IDistrictsRepository
-from bina.infrastructure.db.models import District
+from bina.infrastructure.db.models import District, Listing, SavedSearch
 
 if TYPE_CHECKING:
     pass
@@ -19,8 +19,10 @@ class DistrictsRepository(IDistrictsRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def get_by_name(self, name: str, city: str = DEFAULT_CITY) -> District | None:
-        """Получить район города по названию на любом языке."""
+    async def get_by_name(
+        self, name: str, city: str = DEFAULT_CITY, *, active_only: bool = False
+    ) -> District | None:
+        """Получить район города по названию на любом языке (``active_only`` — без скрытых)."""
         query = (
             select(District)
             .where(
@@ -31,8 +33,64 @@ class DistrictsRepository(IDistrictsRepository):
             )
             .order_by(District.created_at)
         )
+        if active_only:
+            query = query.where(District.is_deleted.is_(False))
         result = await self._session.execute(query)
         return result.scalars().first()
+
+    async def find(self, name: str, city: str = DEFAULT_CITY) -> District | None:
+        """Район города по названию с сайта: и по словарным написаниям («Старий Тбилиси»)."""
+        for candidate in dict.fromkeys([name, *district_names(name).values()]):
+            district = await self.get_by_name(candidate, city, active_only=True)
+            if district is not None:
+                return district
+        return None
+
+    async def merge_streets(self) -> int:
+        """Склеить «районы» вида «Сабуртало/Картозия» с настоящим районом «Сабуртало».
+
+        Объявления и сохранённые поиски переходят в настоящий район (его нет — создаётся),
+        «район с улицей» скрывается. Возвращает, сколько таких районов склеено.
+        """
+        names = (District.name_ru, District.name_ka, District.name_en)
+        query = select(District).where(
+            District.is_deleted.is_(False),
+            or_(*(column.contains(mark) for column in names for mark in ("/", ","))),
+        )
+        merged = 0
+        for junk in (await self._session.execute(query)).scalars().all():
+            base = next(
+                (
+                    found
+                    for name in (junk.name_ru, junk.name_ka, junk.name_en)
+                    if (found := district_base(name))
+                ),
+                None,
+            )
+            if base is None:
+                continue
+            target = await self.find(base, junk.city)
+            if target is None or target.id == junk.id:
+                target = await self.create_district(base, junk.city)
+            await self._move(junk.id, target.id)
+            junk.is_deleted = True
+            merged += 1
+        await self._session.flush()
+        return merged
+
+    async def _move(self, old_id: UUID, new_id: UUID) -> None:
+        """Перенести объявления и сохранённые поиски из района ``old_id`` в ``new_id``."""
+        await self._session.execute(
+            update(Listing).where(Listing.district_id == old_id).values(district_id=new_id)
+        )
+        await self._session.execute(
+            update(SavedSearch).where(SavedSearch.district_id == old_id).values(district_id=new_id)
+        )
+        await self._session.execute(
+            update(SavedSearch)
+            .where(SavedSearch.district_ids.contains([old_id]))
+            .values(district_ids=func.array_replace(SavedSearch.district_ids, old_id, new_id))
+        )
 
     async def get_by_id(self, district_id: UUID) -> District | None:
         """Получить район по ID."""

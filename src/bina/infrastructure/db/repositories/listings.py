@@ -27,7 +27,7 @@ from bina.application.duplicates import candidate_bounds
 from bina.application.fraud import HIDE_SCORE
 from bina.application.listing_details import clean_features
 from bina.application.listing_titles import listing_titles
-from bina.application.localization import MIN_LETTERS, district_names, dominant_script
+from bina.application.localization import MIN_LETTERS, district_base, dominant_script
 from bina.application.ports.scraper import RawListing
 from bina.application.ports.translator import LANGUAGES, ListingText
 from bina.application.price_analysis import ROOMS_GROUP_MAX
@@ -797,12 +797,12 @@ class ListingsRepository(IListingsRepository):
         from bina.infrastructure.db.repositories.districts import DistrictsRepository
 
         districts_repo = DistrictsRepository(self._session)
-        # Сайты пишут по-разному («Старий Тбилиси»): ищем и по словарным названиям (TASK-019)
-        for candidate in dict.fromkeys([district_name, *district_names(district_name).values()]):
-            district = await districts_repo.get_by_name(candidate, city)
-            if district is not None:
-                return district
-        return await districts_repo.create_district(district_name, city)
+        # «Сабуртало/Картозия» — район «Сабуртало», улица в район не попадает
+        name = district_base(district_name) or district_name
+        district = await districts_repo.find(name, city)
+        if district is not None:
+            return district
+        return await districts_repo.create_district(name, city)
 
 
 # Буквы каждого языка для подсчёта в PostgreSQL (как ``dominant_script``)
