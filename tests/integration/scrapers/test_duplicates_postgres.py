@@ -74,16 +74,16 @@ async def test_same_apartment_shown_once(
             "https://ss.example/A",
         ]
         detail = (await client.get(f"/api/listings/{a.id}")).json()
+        # Повтор на том же сайте (D на SS.ge) — не «другой сайт»
         assert detail["also_on"] == [
             {"source": "myhome", "url": "https://myhome.example/B"},
-            {"source": "ss", "url": "https://ss.example/D"},
         ]
-        # Дубликат открывается по ссылке (из уведомления) и ведёт на основное
+        # Дубликат открывается по ссылке (из уведомления) и ведёт на основное;
+        # с каждого сайта — одна ссылка
         from_b = (await client.get(f"/api/listings/{b.id}")).json()
-        assert {link["url"] for link in from_b["also_on"]} == {
-            "https://ss.example/A",
-            "https://ss.example/D",
-        }
+        assert from_b["also_on"] == [{"source": "ss", "url": "https://ss.example/A"}]
+        from_d = (await client.get(f"/api/listings/{d.id}")).json()
+        assert from_d["also_on"] == [{"source": "myhome", "url": "https://myhome.example/B"}]
 
         # Скрытые дубликаты не переводятся
         untranslated = await repository.list_untranslated(10)

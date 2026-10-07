@@ -221,9 +221,21 @@ async def get_listing(
     # TASK-090: ссылки на ту же квартиру на других сайтах
     links = await ListingsRepository(session).same_apartment_links(listing)
     out.also_on = [
-        SourceLinkOut(source=source, url=url) for source, url in links if url != listing.url
+        SourceLinkOut(source=source, url=url)
+        for source, url in other_sites(links, listing.source_name)
     ]
     return out
+
+
+def other_sites(links: list[tuple[str, str]], own_source: str) -> list[tuple[str, str]]:
+    """По одной ссылке с каждого другого сайта: повтор на том же сайте — не «другой сайт»."""
+    seen = {own_source}
+    result: list[tuple[str, str]] = []
+    for source, url in links:
+        if source not in seen:
+            seen.add(source)
+            result.append((source, url))
+    return result
 
 
 @router.get("/{listing_id}/price", response_model=PriceAnalysisOut)
