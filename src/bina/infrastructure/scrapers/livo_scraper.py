@@ -1,9 +1,11 @@
 """Парсер объявлений Livo.ge (TASK-092).
 
 Livo.ge — сайт TNET (как MyHome.ge), но объявления на нём в основном свои.
-Страницы сайта собираются в браузере, поэтому объявления берутся из того же
-API, что использует сам сайт (``api-statements.tnet.ge``, ключ сайта в
-заголовке ``X-Website-Key``). Формат объявления — как у MyHome.ge
+Список объявлений — со страницы поиска сайта (``livo.ge/ru/s?...&page=N``): с октября
+2026 API списка (``/v1/statements``) без входа отвечает 401, а сервер сайта кладёт те же
+объявления прямо в страницу (данные Next.js ``self.__next_f.push``). Объявление целиком —
+из API сайта (``api-statements.tnet.ge/v1/statements/{id}``, ключ в заголовке
+``X-Website-Key``). Формат объявления — как у MyHome.ge
 (:mod:`bina.infrastructure.scrapers.tnet`).
 
 Собирается помесячная и посуточная аренда квартир Тбилиси и Батуми.
@@ -103,7 +105,8 @@ class LivoScraper(BaseWebsiteScraper):
         for page in range(1, self.max_pages + 1):
             if len(listings) >= limit:
                 break
-            url = f"{self.api_url}/v1/statements?{self.search_query.format(page=page)}"
+            # Русская версия страницы: заголовки и районы по-русски, как у MyHome.ge
+            url = f"{self.base_url}/ru/s?{self.search_query.format(page=page)}"
             try:
                 body = await self._fetch_page(url)
             except httpx.HTTPError as exc:
@@ -115,7 +118,7 @@ class LivoScraper(BaseWebsiteScraper):
                 continue
             failures = 0
             if page == 1:
-                self._dump("livo_list.json", body)
+                self._dump("livo_list.html", body)
 
             items = list_items(body)
             if not items:
@@ -220,13 +223,53 @@ def _json(body: str) -> Any:
 
 
 def list_items(body: str) -> list[dict[str, Any]]:
-    """Объявления из ответа ``/v1/statements`` (``data.data``)."""
+    """Объявления страницы поиска сайта или ответа API ``/v1/statements`` (``data.data``)."""
+    if not body.lstrip().startswith("{"):
+        return page_statements(body)
     data = _json(body)
     page = data.get("data") if isinstance(data, dict) else None
     items = page.get("data") if isinstance(page, dict) else None
     if not isinstance(items, list):
         return []
     return [item for item in items if isinstance(item, dict) and "id" in item]
+
+
+# Куски данных Next.js в странице: self.__next_f.push([1,"<строка JSON>"])
+_FLIGHT_RE = re.compile(r'self\.__next_f\.push\(\[1,"((?:[^"\\]|\\.)*)"\]\)')
+_DEAL_TYPE_RE = re.compile(r'"deal_type_id"')
+# Сколько скобок «{» назад пробовать, ища начало объявления вокруг поля
+_MAX_BRACES_BACK = 300
+
+
+def page_statements(html: str) -> list[dict[str, Any]]:
+    """Объявления из данных Next.js в странице поиска (по порядку, без повторов).
+
+    Объявление — объект с ``id`` и ``deal_type_id`` (тот же формат, что у API). Для каждого
+    поля ``deal_type_id`` берётся ближайший объект вокруг него — порядок ключей и
+    переводы строк в описаниях разбору не мешают.
+    """
+    try:
+        text = "".join(json.loads(f'"{chunk}"') for chunk in _FLIGHT_RE.findall(html))
+    except json.JSONDecodeError:
+        logger.warning("Livo page data is broken")
+        return []
+    decoder = json.JSONDecoder(strict=False)
+    found: dict[Any, dict[str, Any]] = {}
+    for match in _DEAL_TYPE_RE.finditer(text):
+        position = match.start()
+        for _ in range(_MAX_BRACES_BACK):
+            position = text.rfind("{", 0, position)
+            if position < 0:
+                break
+            try:
+                item, end = decoder.raw_decode(text, position)
+            except json.JSONDecodeError:
+                continue
+            if end > match.start() and isinstance(item, dict) and "deal_type_id" in item:
+                if "id" in item:
+                    found.setdefault(item["id"], item)
+                break
+    return list(found.values())
 
 
 def detail_statement(body: str) -> dict[str, Any] | None:

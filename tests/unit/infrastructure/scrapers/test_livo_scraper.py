@@ -9,7 +9,7 @@ import httpx
 import pytest
 
 from bina.application.ports.scraper import RawListing
-from bina.infrastructure.scrapers.livo_scraper import LivoScraper, list_items
+from bina.infrastructure.scrapers.livo_scraper import LivoScraper, list_items, page_statements
 
 DATA = Path(__file__).parent / "test_data"
 LIST_JSON = (DATA / "livo_list.json").read_text(encoding="utf-8")
@@ -131,7 +131,7 @@ async def test_scrape_pages_and_details(monkeypatch: pytest.MonkeyPatch) -> None
     assert len(listings) == 6
     assert all(card.has_details for card in listings)
     list_requests = [url for url in api.requested if "page=" in url]
-    assert list_requests[0].startswith(f"{API}/v1/statements?deal_types=2,7")
+    assert list_requests[0].startswith("https://livo.ge/ru/s?deal_types=2,7")
     assert len(list_requests) == 2, "пустая вторая страница — конец выдачи"
     assert f"{API}/v1/statements/26209012" in api.requested
 
@@ -180,3 +180,38 @@ async def test_recheck_reads_listing_page_through_api(monkeypatch: pytest.Monkey
 
     assert api.requested == [f"{API}/v1/statements/26187474"]
     assert livo.details_from_html(body) is not None
+
+
+def search_page(items: list[dict[str, Any]]) -> str:
+    """Страница поиска сайта: объявления в данных Next.js, разбитые на куски."""
+    payload = json.dumps({"statements": {"data": items, "current_page": 1}})
+    middle = len(payload) // 2
+    chunks = [f"1:{payload[:middle]}", payload[middle:]]
+    pushes = "".join(
+        f"<script>self.__next_f.push([1,{json.dumps(chunk)}])</script>" for chunk in chunks
+    )
+    return f"<!DOCTYPE html><html><body><div>…</div>{pushes}</body></html>"
+
+
+def test_cards_from_search_page() -> None:
+    """С октября 2026 список берётся со страницы сайта: API списка без входа — 401."""
+    items = list_items(LIST_JSON)
+    html = search_page(items)
+
+    found = list_items(html)
+
+    assert [item["id"] for item in found] == [item["id"] for item in items]
+    livo = scraper()
+    assert [livo.card(item) for item in found] == [livo.card(item) for item in items]
+    assert page_statements("<html>no data</html>") == []
+
+
+async def test_scrape_search_pages(monkeypatch: pytest.MonkeyPatch) -> None:
+    livo = scraper(max_pages=5, fetch_details=False)
+    api = FakeApi({"page=1": search_page(list_items(LIST_JSON))}, default=search_page([]))
+    patch_fetch(monkeypatch, api)
+
+    listings = await livo.scrape_listings(limit=100)
+
+    assert len(listings) == 6
+    assert api.requested[0].startswith("https://livo.ge/ru/s?")
