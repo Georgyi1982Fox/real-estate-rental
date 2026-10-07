@@ -29,7 +29,7 @@ def make_scraper(handler: httpx.MockTransport, delay: int = 0) -> _TestScraper:
 @pytest.fixture(autouse=True)
 def no_retry_wait(monkeypatch: pytest.MonkeyPatch) -> None:
     """Без экспоненциального ожидания между повторами (иначе тест идёт секунды)."""
-    monkeypatch.setattr(BaseWebsiteScraper._fetch_page.retry, "wait", wait_none())  # type: ignore[attr-defined]
+    monkeypatch.setattr(BaseWebsiteScraper._fetch_page.retry, "wait", wait_none())  # type: ignore[attr-defined, unused-ignore]
 
 
 async def test_fetch_page_returns_text_with_user_agent() -> None:

@@ -32,7 +32,7 @@ def answer(count: int) -> dict[str, object]:
 
 @pytest.fixture(autouse=True)
 def no_retry_wait(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(OpenAIEmbeddingsProvider._request.retry, "wait", wait_none())  # type: ignore[attr-defined]
+    monkeypatch.setattr(OpenAIEmbeddingsProvider._request.retry, "wait", wait_none())  # type: ignore[attr-defined, unused-ignore]
 
 
 async def test_batch_in_order() -> None:
