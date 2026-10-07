@@ -7,7 +7,10 @@ import {
   filterDistricts,
   filterEntries,
   parseFilters,
+  parseSort,
   QUERY_KEY,
+  SORT_KEY,
+  type SortOrder,
 } from '../lib/searchFilters';
 
 /** Записать фильтры в параметры адреса вместо прежних; страница сбрасывается на первую */
@@ -19,8 +22,8 @@ function writeFilters(params: URLSearchParams, filters: SearchFilters): void {
 }
 
 /**
- * Поиск, фильтры и страница главной живут в адресе:
- * ?q=<текст>&district=<id>,<id>&min_price=..&rooms=..&features=<код>,<код>&owner_only=true&page=..
+ * Поиск, фильтры, сортировка и страница ленты живут в адресе:
+ * ?q=<текст>&district=<id>,<id>&min_price=..&rooms=..&features=<код>,<код>&owner_only=true&sort=..&page=..
  * Такую ссылку можно открыть заново или сохранить как поиск.
  */
 export function useSearchFilters() {
@@ -29,6 +32,7 @@ export function useSearchFilters() {
   // Новый объект только при изменении адреса — на filters можно опираться в эффектах
   const filters = useMemo(() => parseFilters(new URLSearchParams(search)), [search]);
   const query = cleanQuery(new URLSearchParams(search).get(QUERY_KEY));
+  const sort = parseSort(new URLSearchParams(search).get(SORT_KEY));
   const page = Math.max(
     1,
     Number.parseInt(new URLSearchParams(search).get('page') ?? '1', 10) || 1,
@@ -36,14 +40,15 @@ export function useSearchFilters() {
 
   /**
    * Изменить параметры адреса. setSearchParams из React Router кодирует запятую как %2C,
-   * а районы в адресе должны читаться: ?district=vake,saburtalo
+   * а районы в адресе должны читаться: ?district=vake,saburtalo.
+   * keepScroll — страница остаётся на месте (иначе ScrollRestoration прокрутит её наверх)
    */
   const update = useCallback(
-    (change: (params: URLSearchParams) => void, replace: boolean) => {
+    (change: (params: URLSearchParams) => void, replace: boolean, keepScroll = false) => {
       const params = new URLSearchParams(search);
       change(params);
       const next = params.toString().replace(/%2C/gi, ',');
-      navigate({ search: next ? `?${next}` : '' }, { replace });
+      navigate({ search: next ? `?${next}` : '' }, { replace, preventScrollReset: keepScroll });
     },
     [search, navigate],
   );
@@ -63,7 +68,7 @@ export function useSearchFilters() {
     [update],
   );
 
-  /** «Сбросить фильтры» убирает и текст поиска */
+  /** «Сбросить фильтры» убирает и текст поиска; сортировка остаётся */
   const resetFilters = useCallback(
     () =>
       update((params) => {
@@ -76,12 +81,17 @@ export function useSearchFilters() {
   /** Поиск по словам; пустая строка убирает q. Фильтры остаются, страница — первая */
   const setQuery = useCallback(
     (text: string) => {
-      update((params) => {
-        const next = cleanQuery(text);
-        if (next) params.set(QUERY_KEY, next);
-        else params.delete(QUERY_KEY);
-        params.delete('page');
-      }, true);
+      update(
+        (params) => {
+          const next = cleanQuery(text);
+          if (next) params.set(QUERY_KEY, next);
+          else params.delete(QUERY_KEY);
+          params.delete('page');
+        },
+        true,
+        // Куда прокрутить после поиска, решает страница
+        true,
+      );
     },
     [update],
   );
@@ -94,6 +104,22 @@ export function useSearchFilters() {
         writeFilters(params, { ...current, districts: [...filterDistricts(current), id] });
         params.delete(QUERY_KEY);
       }, true);
+    },
+    [update],
+  );
+
+  /** Сортировка; undefined — порядок сервера по умолчанию. Страница — первая */
+  const setSort = useCallback(
+    (next: SortOrder | undefined) => {
+      update(
+        (params) => {
+          if (next) params.set(SORT_KEY, next);
+          else params.delete(SORT_KEY);
+          params.delete('page');
+        },
+        true,
+        true,
+      );
     },
     [update],
   );
@@ -111,12 +137,14 @@ export function useSearchFilters() {
   return {
     filters,
     query,
+    sort,
     page,
     setFilters,
     replaceFilters,
     resetFilters,
     setQuery,
     addDistrict,
+    setSort,
     setPage,
   };
 }

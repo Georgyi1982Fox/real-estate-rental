@@ -17,7 +17,9 @@ interface SearchBarProps {
   onSearch: (text: string) => void;
   /** Выбран район из подсказок */
   onSelectDistrict: (id: string) => void;
-  /** Кнопки рядом с «Найти», например «Фильтры» */
+  /** Идёт запрос результатов: на кнопке «Найти» крутилка */
+  loading?: boolean;
+  /** Кнопки рядом с полем, например «Фильтры» */
   children?: ReactNode;
 }
 
@@ -31,6 +33,7 @@ export default function SearchBar({
   selectedDistricts,
   onSearch,
   onSelectDistrict,
+  loading = false,
   children,
 }: SearchBarProps) {
   const { lang, t } = useI18n();
@@ -145,10 +148,11 @@ export default function SearchBar({
 
   return (
     <search className="search-bar" aria-label={ht.search_label}>
-      <form className="search-bar__form flex flex-col gap-3 sm:flex-row" onSubmit={onSubmit}>
+      <form className="search-bar__form flex gap-2 sm:gap-3" onSubmit={onSubmit}>
         <label className="sr-only" htmlFor="search-input">
           {ht.search_label}
         </label>
+        {/* «Найти» — внутри поля: список подсказок раскрывается ниже и кнопку не закрывает */}
         <div
           ref={fieldRef}
           className="search-bar__field relative min-w-0 flex-1"
@@ -157,9 +161,6 @@ export default function SearchBar({
             if (!event.currentTarget.contains(event.relatedTarget)) close();
           }}
         >
-          <span className="pointer-events-none absolute inset-y-0 left-3 grid place-items-center text-[var(--text-secondary)]">
-            <Icon name="search" className="size-5" />
-          </span>
           <input
             ref={inputRef}
             id="search-input"
@@ -180,7 +181,7 @@ export default function SearchBar({
             aria-activedescendant={
               expanded && active !== NO_OPTION ? suggestionId(listId, active) : undefined
             }
-            className="search-bar__input w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] py-3 pl-10 pr-11 text-sm text-[var(--text-primary)] shadow-[var(--shadow-sm)] placeholder:text-[var(--text-secondary)]"
+            className={`search-bar__input min-h-13 w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] py-3 pl-4 text-sm text-[var(--text-primary)] shadow-[var(--shadow-sm)] placeholder:text-[var(--text-secondary)] ${text ? 'pr-24' : 'pr-14'}`}
             onChange={(event) => {
               setText(event.target.value);
               setOpen(true);
@@ -191,13 +192,25 @@ export default function SearchBar({
           {text && (
             <button
               type="button"
-              className="search-bar__clear absolute inset-y-0 right-1 my-auto grid size-9 place-items-center rounded-full text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] active:scale-[.95]"
+              className="search-bar__clear absolute right-13 top-2 grid size-9 place-items-center rounded-full text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] active:scale-[.95]"
               aria-label={ht.search_clear}
               onClick={clear}
             >
               <Icon name="close" className="size-4" />
             </button>
           )}
+          <button
+            type="submit"
+            className="search-bar__submit absolute right-1 top-1 grid size-11 place-items-center rounded-[var(--radius-sm)] bg-[var(--primary)] text-white shadow-[var(--shadow-sm)] transition-colors duration-200 hover:bg-[var(--primary-hover)] active:scale-[.95]"
+            aria-label={ht.search_button}
+            aria-busy={loading}
+          >
+            {loading ? (
+              <span className="spinner" aria-hidden="true" />
+            ) : (
+              <Icon name="search" className="size-5" />
+            )}
+          </button>
           {expanded && (
             <SearchSuggestions
               id={listId}
@@ -210,15 +223,7 @@ export default function SearchBar({
             />
           )}
         </div>
-        <div className="search-bar__actions flex gap-3">
-          <button
-            type="submit"
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--primary)] px-5 py-3 text-sm font-semibold text-white shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--primary-hover)] sm:flex-none"
-          >
-            {ht.search_button}
-          </button>
-          {children}
-        </div>
+        {children}
       </form>
     </search>
   );

@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import type {
   ListResponse,
   Listing,
@@ -13,6 +13,7 @@ import DistrictAbout from '../components/DistrictAbout';
 import ErrorState from '../components/ErrorState';
 import ExternalLink from '../components/ExternalLink';
 import FavoriteButton from '../components/FavoriteButton';
+import { FRAUD_WARNING_HASH } from '../components/FraudBadge';
 import FraudWarning from '../components/FraudWarning';
 import Gallery from '../components/Gallery';
 import ListingDates from '../components/ListingDates';
@@ -27,7 +28,7 @@ import { useApi } from '../hooks/useApi';
 import { useContact } from '../hooks/useContact';
 import { useDistricts } from '../hooks/useDistricts';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
-import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
+import { useGoBack, useTelegramBackButton } from '../hooks/useTelegramBackButton';
 import { useTelegramMainButton } from '../hooks/useTelegramMainButton';
 import { fill, formatPrice, tr } from '../lib/format';
 import { fraudLevel } from '../lib/fraud';
@@ -61,6 +62,17 @@ export default function ListingPage() {
   const [phoneGoneId, setPhoneGoneId] = useState<ListingId | null>(null);
 
   useTelegramBackButton('/search');
+  // Ссылка «← Назад» ведёт туда же, куда нативная кнопка Telegram: в тот же список
+  const goBack = useGoBack('/search');
+
+  // Пришли по «Подробнее» из подсказки ⚠️ на карточке — показываем блок предупреждения
+  const { hash } = useLocation();
+  const fraudRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (hash === FRAUD_WARNING_HASH && listing) {
+      fraudRef.current?.scrollIntoView({ block: 'center' });
+    }
+  }, [hash, listing]);
 
   // Хозяин разместил объявление сам: source_url — переписка с ним в боте (с AI-переводом),
   // а не сайт-источник
@@ -108,6 +120,13 @@ export default function ListingPage() {
         <Link
           to="/search"
           className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
+          onClick={(event) => {
+            // Новая вкладка (Ctrl/⌘ + щелчок) — обычная ссылка на поиск
+            if (event.metaKey || event.ctrlKey || event.shiftKey) return;
+            event.preventDefault();
+            haptic('light');
+            goBack();
+          }}
         >
           <span aria-hidden="true">←</span> {lt.back}
         </Link>
@@ -190,6 +209,7 @@ export default function ListingPage() {
                 )}
 
                 <FraudWarning
+                  ref={fraudRef}
                   listingId={listing.id}
                   level={fraudLevel(listing)}
                   reasons={listing.fraud_reasons ?? []}
