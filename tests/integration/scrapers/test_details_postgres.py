@@ -176,7 +176,9 @@ class FakeSite(SSScraper):
         super().__init__(delay_seconds=0)
         self.requested: list[str] = []
 
-    async def _fetch_page(self, url: str, expect: str | None = None) -> str:
+    async def _fetch_page(  # type: ignore[override, unused-ignore]
+        self, url: str, expect: str | None = None
+    ) -> str:
         self.requested.append(url)
         if url.endswith("gone"):
             request = httpx.Request("GET", url)
