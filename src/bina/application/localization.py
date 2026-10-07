@@ -270,7 +270,7 @@ _DISTRICTS: tuple[tuple[str, str, str, tuple[str, ...]], ...] = (
     ("Самгори", "Samgori", "სამგორი", ()),
     ("Исани-Самгори", "Isani-Samgori", "ისანი-სამგორი", ()),
     ("Крцаниси", "Krtsanisi", "კრწანისი", ()),
-    ("Авлабари", "Avlabari", "ავლაბარი", ()),
+    ("Авлабари", "Avlabari", "ავლაბარი", ("Авлабар",)),
     ("Ортачала", "Ortachala", "ორთაჭალა", ()),
     ("Абанотубани", "Abanotubani", "აბანოთუბანი", ()),
     ("Варкетили", "Varketili", "ვარკეთილი", ()),
@@ -307,6 +307,19 @@ _DISTRICT_INDEX: dict[str, tuple[str, str, str]] = {}
 for _ru, _en, _ka, _aliases in _DISTRICTS:
     for _alias in (_ru, _en, _ka, *_aliases):
         _DISTRICT_INDEX[_alias.lower()] = (_ru, _en, _ka)
+
+
+# «Сабуртало/Картозия», «Вазисубани, 8-й Легион»: сайт пишет район вместе с улицей
+_DISTRICT_PART_RE = re.compile(r"\s*[/,]\s*")
+
+
+def district_base(name: str) -> str | None:
+    """Район без улицы: «Сабуртало/Картозия» → «Сабуртало»; нет «/» и «,» — ``None``."""
+    clean = re.sub(r"\s+", " ", name or "").strip()
+    parts = _DISTRICT_PART_RE.split(clean, maxsplit=1)
+    if len(parts) < 2 or not parts[0]:
+        return None
+    return parts[0]
 
 
 def district_names(name: str) -> dict[str, str]:

@@ -3,6 +3,7 @@
 import pytest
 
 from bina.application.localization import (
+    district_base,
     district_names,
     localize_address,
     localize_name,
@@ -119,3 +120,19 @@ def test_text_languages_migration_moves_texts() -> None:
         "description_en": "",
     }
     assert module.fixes({"title_ru": "Квартира", "description_ru": "Ремонт"}) == {}
+
+
+@pytest.mark.parametrize(
+    ("name", "base"),
+    [
+        ("Сабуртало/Картозия", "Сабуртало"),
+        ("Ортачала /Надиквари", "Ортачала"),
+        ("Вазисубани, 8-й Легион", "Вазисубани"),
+        ("ჩუგურეტი/ოტარ კაპანადზე", "ჩუგურეტი"),
+        ("Сабуртало", None),
+        ("Дигоми 1-9", None),
+        ("/Картозия", None),
+    ],
+)
+def test_district_base(name: str, base: str | None) -> None:
+    assert district_base(name) == base

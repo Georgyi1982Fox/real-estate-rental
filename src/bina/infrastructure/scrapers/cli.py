@@ -42,6 +42,7 @@ from bina.application.use_cases.translate_listings import (
 from bina.infrastructure.db.locks import FRAUD_LOCK, TRANSLATE_LOCK, advisory_lock
 from bina.infrastructure.db.repositories.admin import AdminRepository
 from bina.infrastructure.db.repositories.agencies import AgenciesRepository
+from bina.infrastructure.db.repositories.districts import DistrictsRepository
 from bina.infrastructure.db.repositories.listings import ListingsRepository
 from bina.infrastructure.db.repositories.notifications import (
     NotificationsRepository,
@@ -133,6 +134,7 @@ async def scrape(
     db = DatabaseManager()
     results: list[ScrapeResult] = []
     try:
+        await _merge_street_districts(db)
         for source in sources:
             scraper = make_scraper(source, details=details, dump_dir=dump_dir)
             try:
@@ -146,6 +148,15 @@ async def scrape(
     finally:
         await db.dispose()
     return results
+
+
+async def _merge_street_districts(db: DatabaseManager) -> None:
+    """«Сабуртало/Картозия» → «Сабуртало»: районы с улицей из старых объявлений."""
+    async with db.session_factory() as session:
+        merged = await DistrictsRepository(session).merge_streets()
+        await session.commit()
+    if merged:
+        logger.info("Street districts merged", districts=merged)
 
 
 @click.group(invoke_without_command=True)
