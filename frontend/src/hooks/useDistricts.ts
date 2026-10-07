@@ -14,3 +14,16 @@ export function useDistricts() {
   );
   return { districts, names };
 }
+
+const NO_DISTRICTS: District[] = [];
+
+/**
+ * Районы одного города — для фильтра и подсказок поиска.
+ * Без города («Вся Грузия») районов нет: запрос не выполняется.
+ */
+export function useCityDistricts(city: string | undefined): District[] {
+  const { data } = useApi<ListResponse<District>>(
+    city ? `/api/districts?city=${encodeURIComponent(city)}` : null,
+  );
+  return data?.items ?? NO_DISTRICTS;
+}

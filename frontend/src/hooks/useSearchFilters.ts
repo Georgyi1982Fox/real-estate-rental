@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { SearchFilters } from '../api/types';
 import {
@@ -7,8 +7,12 @@ import {
   filterDistricts,
   filterEntries,
   parseFilters,
+  parseSort,
   QUERY_KEY,
+  SORT_KEY,
+  type SortOrder,
 } from '../lib/searchFilters';
+import { cityParam, saveCity } from './useCity';
 
 /** Записать фильтры в параметры адреса вместо прежних; страница сбрасывается на первую */
 function writeFilters(params: URLSearchParams, filters: SearchFilters): void {
@@ -19,16 +23,24 @@ function writeFilters(params: URLSearchParams, filters: SearchFilters): void {
 }
 
 /**
- * Поиск, фильтры и страница главной живут в адресе:
- * ?q=<текст>&district=<id>,<id>&min_price=..&rooms=..&features=<код>,<код>&owner_only=true&page=..
+ * Поиск, фильтры, сортировка и страница ленты живут в адресе:
+ * ?q=<текст>&district=<id>,<id>&min_price=..&rooms=..&features=<код>,<код>&owner_only=true&sort=..&page=..
  * Такую ссылку можно открыть заново или сохранить как поиск.
+ *
+ * Город в фильтры страницы не входит: он общий для приложения (useCity). Ссылка с
+ * ?city=batumi (или ?city=all — «Вся Грузия») переключает город и запоминает его,
+ * после чего city из адреса убирается; без city действует запомненный город.
  */
 export function useSearchFilters() {
   const { search } = useLocation();
   const navigate = useNavigate();
   // Новый объект только при изменении адреса — на filters можно опираться в эффектах
-  const filters = useMemo(() => parseFilters(new URLSearchParams(search)), [search]);
+  const { filters, urlCity } = useMemo(() => {
+    const { city, ...rest } = parseFilters(new URLSearchParams(search));
+    return { filters: rest, urlCity: city };
+  }, [search]);
   const query = cleanQuery(new URLSearchParams(search).get(QUERY_KEY));
+  const sort = parseSort(new URLSearchParams(search).get(SORT_KEY));
   const page = Math.max(
     1,
     Number.parseInt(new URLSearchParams(search).get('page') ?? '1', 10) || 1,
@@ -36,16 +48,43 @@ export function useSearchFilters() {
 
   /**
    * Изменить параметры адреса. setSearchParams из React Router кодирует запятую как %2C,
-   * а районы в адресе должны читаться: ?district=vake,saburtalo
+   * а районы в адресе должны читаться: ?district=vake,saburtalo.
+   * keepScroll — страница остаётся на месте (иначе ScrollRestoration прокрутит её наверх)
    */
   const update = useCallback(
-    (change: (params: URLSearchParams) => void, replace: boolean) => {
+    (change: (params: URLSearchParams) => void, replace: boolean, keepScroll = false) => {
       const params = new URLSearchParams(search);
       change(params);
       const next = params.toString().replace(/%2C/gi, ',');
-      navigate({ search: next ? `?${next}` : '' }, { replace });
+      navigate({ search: next ? `?${next}` : '' }, { replace, preventScrollReset: keepScroll });
     },
     [search, navigate],
+  );
+
+  // Город из ссылки становится выбранным; в адресе он больше не нужен
+  useEffect(() => {
+    if (urlCity === undefined) return;
+    saveCity(cityParam(urlCity));
+    update((params) => params.delete('city'), true, true);
+  }, [urlCity, update]);
+
+  /** Выбрать город (undefined — «Вся Грузия»): районы прежнего города сбрасываются */
+  const setCity = useCallback(
+    (city: string | undefined) => {
+      saveCity(city);
+      update(
+        (params) =>
+          writeFilters(params, {
+            ...parseFilters(params),
+            district: undefined,
+            districts: undefined,
+            city: undefined,
+          }),
+        true,
+        true,
+      );
+    },
+    [update],
   );
 
   /** Изменить часть фильтров (undefined — убрать фильтр) */
@@ -63,7 +102,7 @@ export function useSearchFilters() {
     [update],
   );
 
-  /** «Сбросить фильтры» убирает и текст поиска */
+  /** «Сбросить фильтры» убирает и текст поиска; сортировка остаётся */
   const resetFilters = useCallback(
     () =>
       update((params) => {
@@ -76,12 +115,17 @@ export function useSearchFilters() {
   /** Поиск по словам; пустая строка убирает q. Фильтры остаются, страница — первая */
   const setQuery = useCallback(
     (text: string) => {
-      update((params) => {
-        const next = cleanQuery(text);
-        if (next) params.set(QUERY_KEY, next);
-        else params.delete(QUERY_KEY);
-        params.delete('page');
-      }, true);
+      update(
+        (params) => {
+          const next = cleanQuery(text);
+          if (next) params.set(QUERY_KEY, next);
+          else params.delete(QUERY_KEY);
+          params.delete('page');
+        },
+        true,
+        // Куда прокрутить после поиска, решает страница
+        true,
+      );
     },
     [update],
   );
@@ -98,6 +142,22 @@ export function useSearchFilters() {
     [update],
   );
 
+  /** Сортировка; undefined — порядок сервера по умолчанию. Страница — первая */
+  const setSort = useCallback(
+    (next: SortOrder | undefined) => {
+      update(
+        (params) => {
+          if (next) params.set(SORT_KEY, next);
+          else params.delete(SORT_KEY);
+          params.delete('page');
+        },
+        true,
+        true,
+      );
+    },
+    [update],
+  );
+
   const setPage = useCallback(
     (next: number) => {
       update((params) => {
@@ -110,13 +170,18 @@ export function useSearchFilters() {
 
   return {
     filters,
+    /** Город из ссылки, пока он не стал выбранным: в этом рендере он важнее запомненного */
+    urlCity,
     query,
+    sort,
     page,
     setFilters,
     replaceFilters,
     resetFilters,
+    setCity,
     setQuery,
     addDistrict,
+    setSort,
     setPage,
   };
 }

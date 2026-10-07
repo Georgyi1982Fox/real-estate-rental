@@ -8,6 +8,7 @@ import OpenInTelegram from '../components/OpenInTelegram';
 import RenameSearchModal from '../components/RenameSearchModal';
 import SavedSearchCard from '../components/SavedSearchCard';
 import SavedSearchSkeleton from '../components/SavedSearchSkeleton';
+import { useCity } from '../hooks/useCity';
 import { useDistricts } from '../hooks/useDistricts';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useSavedSearches } from '../hooks/useSavedSearches';
@@ -28,6 +29,7 @@ export default function SavedSearchesPage() {
   const st = t.searches;
   const showToast = useToast();
   const { names } = useDistricts();
+  const { names: cityNames } = useCity();
   const { searches, loading, error, unauthorized, reload, rename, toggleNotify, remove, markSeen } =
     useSavedSearches();
   const [dialog, setDialog] = useState<Dialog>(null);
@@ -107,6 +109,7 @@ export default function SavedSearchesPage() {
             <SavedSearchCard
               search={search}
               districtName={districtName(search)}
+              cityNames={cityNames}
               onOpen={() => markSeen(search.id)}
               onToggleNotify={() => void toggleNotify(search.id)}
               onRename={() => setDialog({ kind: 'rename', id: search.id })}

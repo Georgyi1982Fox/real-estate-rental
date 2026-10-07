@@ -1,5 +1,6 @@
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import type { ListingsPage } from '../api/types';
+import CityPicker from '../components/CityPicker';
 import EmptyState from '../components/EmptyState';
 import ErrorState from '../components/ErrorState';
 import HubMenu from '../components/HubMenu';
@@ -7,7 +8,8 @@ import ListingCard from '../components/ListingCard';
 import SearchBar from '../components/SearchBar';
 import Skeleton from '../components/Skeleton';
 import { useApi } from '../hooks/useApi';
-import { useDistricts } from '../hooks/useDistricts';
+import { useCity } from '../hooks/useCity';
+import { useCityDistricts, useDistricts } from '../hooks/useDistricts';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { fill } from '../lib/format';
 import { FILTER_KEYS, QUERY_KEY } from '../lib/searchFilters';
@@ -29,9 +31,15 @@ export default function HomePage() {
   const { user } = useAuth();
   const { search } = useLocation();
   const navigate = useNavigate();
-  const { districts, names } = useDistricts();
+  const cities = useCity();
+  const { city } = cities;
+  // Названия — всех районов (карточки); в подсказках поиска — только районы выбранного города
+  const { names } = useDistricts();
+  const districts = useCityDistricts(city);
   const { data, error, loading, reload } = useApi<ListingsPage>(
-    `/api/listings?page=1&per_page=${NEW_LISTINGS_COUNT}`,
+    `/api/listings?page=1&per_page=${NEW_LISTINGS_COUNT}${city ? `&city=${encodeURIComponent(city)}` : ''}`,
+    // «Назад» из объявления: список сразу на месте, прокрутка восстанавливается
+    { remember: true },
   );
 
   useDocumentTitle(`Bina.ai — ${ht.page_title}`);
@@ -49,6 +57,14 @@ export default function HomePage() {
         <h1 id="home-title" className="text-2xl font-bold tracking-tight sm:text-3xl">
           {name ? fill(ht.greeting, name) : ht.greeting_guest}
         </h1>
+        <CityPicker
+          city={city}
+          cities={cities.cities}
+          loading={cities.loading}
+          failed={cities.error !== undefined}
+          onRetry={cities.reload}
+          onChange={cities.setCity}
+        />
         {/* Поиск с главной открывает ленту /search с этим запросом или районом */}
         <SearchBar
           query=""

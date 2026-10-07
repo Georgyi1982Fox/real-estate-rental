@@ -1,4 +1,5 @@
 import { useId, useState } from 'react';
+import type { Ref } from 'react';
 import { Link } from 'react-router-dom';
 import type { FraudLevel, ListingId, ListingRisk } from '../api/types';
 import { useApi } from '../hooks/useApi';
@@ -9,6 +10,8 @@ import Icon from './Icon';
 import RiskChecklist from './RiskChecklist';
 
 interface FraudWarningProps {
+  /** «Подробнее» в подсказке значка на карточке прокручивает к этому блоку */
+  ref?: Ref<HTMLElement>;
   listingId: ListingId;
   level: FraudLevel;
   reasons: string[];
@@ -21,7 +24,7 @@ interface FraudWarningProps {
  * и ссылка на Premium. Вне Telegram (401) и при ошибке причины показаны списком, как раньше.
  * Объявление без подозрений: для Premium — свёрнутый блок «Как безопасно снять квартиру».
  */
-export default function FraudWarning({ listingId, level, reasons }: FraudWarningProps) {
+export default function FraudWarning({ ref, listingId, level, reasons }: FraudWarningProps) {
   const { lang, t } = useI18n();
   const ft = t.listing.fraud;
   const detailsId = useId();
@@ -59,7 +62,8 @@ export default function FraudWarning({ listingId, level, reasons }: FraudWarning
 
   return (
     <aside
-      className={`fraud-warning fraud-warning--${level} flex gap-3 rounded-[var(--radius-md)] border p-4 text-sm leading-5 ${
+      ref={ref}
+      className={`fraud-warning fraud-warning--${level} flex scroll-mt-20 gap-3 rounded-[var(--radius-md)] border p-4 text-sm leading-5 ${
         isHigh
           ? 'border-[var(--danger-border)] bg-[var(--danger-bg)] text-[var(--danger-text)]'
           : 'border-[var(--warning-border)] bg-[var(--warning-bg)] text-[var(--warning-text)]'

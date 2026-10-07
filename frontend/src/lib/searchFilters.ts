@@ -1,6 +1,7 @@
 // Фильтры поиска: разбор адреса страницы, строка запроса для API, описание словами
 
 import type { District, SearchFilters } from '../api/types';
+import type { CityNames } from '../hooks/useCity';
 import type { DistrictNames } from '../hooks/useDistricts';
 import { conditionName } from '../i18n/conditions';
 import { featureName } from '../i18n/features';
@@ -24,6 +25,11 @@ export const BATHROOMS_MAX = 3;
 /** Столько кодов удобств или состояний берём из адреса */
 const CODES_MAX = 30;
 const CITY_MAX = 64;
+/**
+ * «Вся Грузия» в адресе страницы (?city=all) и в хранилище выбранного города.
+ * В запросы к API не попадает: без city сервер ищет по всей стране
+ */
+export const ALL_CITIES = 'all';
 
 const NUMBER_KEYS = [
   'min_price',
@@ -60,6 +66,23 @@ export const QUERY_MAX = 100;
 /** С такой длины текста появляются подсказки районов */
 export const SUGGEST_MIN_CHARS = 2;
 export const SUGGEST_MAX = 6;
+
+/** Сортировка ленты: параметр адреса и запроса к API. В сохранённый поиск не входит */
+export const SORT_KEY = 'sort';
+/** Что умеет GET /api/listings?sort=; без параметра сервер отдаёт newest, а при q — самые подходящие */
+export const SORT_ORDERS = [
+  'newest',
+  'price_asc',
+  'price_desc',
+  'area_desc',
+  'price_per_m2_asc',
+] as const;
+export type SortOrder = (typeof SORT_ORDERS)[number];
+
+/** Сортировка из адреса; незнакомое значение — как будто её нет */
+export function parseSort(raw: string | null): SortOrder | undefined {
+  return SORT_ORDERS.find((order) => order === raw);
+}
 
 /** Целое число из адреса в диапазоне [min, max], иначе undefined */
 function parseInteger(raw: string | null, min: number, max: number): number | undefined {
@@ -191,11 +214,13 @@ export function filtersToQuery(filters: SearchFilters): string {
 }
 
 /**
- * Строка запроса для /api/listings: поиск по словам + фильтры.
- * sort не передаём — при q сервер сам ставит сверху самые подходящие.
+ * Строка запроса для /api/listings: поиск по словам + фильтры + сортировка.
+ * Без sort при q сервер сам ставит сверху самые подходящие.
  */
-export function searchToQuery(filters: SearchFilters, query: string): string {
-  return filtersToQuery(withQuery(filters, query));
+export function searchToQuery(filters: SearchFilters, query: string, sort?: SortOrder): string {
+  const search = filtersToQuery(withQuery(filters, query));
+  if (!sort) return search;
+  return `${search}${search ? '&' : ''}${SORT_KEY}=${sort}`;
 }
 
 /** Фильтры страницы вместе с текстом поиска — в таком виде поиск сохраняется */
@@ -203,8 +228,9 @@ export function withQuery(filters: SearchFilters, query: string): SearchFilters 
   return { ...filters, q: query || undefined };
 }
 
+/** Город фильтром не считается: он выбран всегда (см. useCity) */
 export function hasFilters(filters: SearchFilters): boolean {
-  return filterEntries(filters).length > 0;
+  return filterEntries(filters).some(([key]) => key !== 'city');
 }
 
 export function sameFilters(a: SearchFilters, b: SearchFilters): boolean {
@@ -220,10 +246,12 @@ const COUNT_GROUPS: string[][] = [
 
 /**
  * Сколько фильтров выбрано: районы, удобства и состояния — по одному на список,
- * группы COUNT_GROUPS — по одному на группу. Текст поиска не считается
+ * группы COUNT_GROUPS — по одному на группу. Текст поиска и город не считаются
  */
 export function countFilters(filters: SearchFilters): number {
-  const keys = filterEntries(filters).flatMap(([key]) => (key === QUERY_KEY ? [] : [key]));
+  const keys = filterEntries(filters).flatMap(([key]) =>
+    key === QUERY_KEY || key === 'city' ? [] : [key],
+  );
   const groupOf = (key: string) => COUNT_GROUPS.find((group) => group.includes(key))?.[0] ?? key;
   return new Set(keys.map(groupOf)).size;
 }
@@ -351,9 +379,16 @@ export function countText(value: number, top: number): string {
 /**
  * Чипы дополнительных фильтров — всего, кроме районов, цены и комнат (filterLabels):
  * текст поиска, площадь, спальни, санузлы, этаж, состояние, удобства, собственник,
- * посуточно, город. Неизвестный код удобства или состояния показывается как есть.
+ * посуточно. Неизвестный код удобства или состояния показывается как есть.
+ * cityNames — для карточки сохранённого поиска: добавляет чип города («Батуми» или
+ * «Вся Грузия»); на странице поиска город показывает кнопка выбора города.
  */
-export function extraFilterChips(filters: SearchFilters, t: Strings, lang: Lang): FilterChip[] {
+export function extraFilterChips(
+  filters: SearchFilters,
+  t: Strings,
+  lang: Lang,
+  cityNames?: CityNames,
+): FilterChip[] {
   const ft = t.filters;
   const chips: FilterChip[] = [];
   const query = cleanQuery(filters.q ?? null);
@@ -427,7 +462,11 @@ export function extraFilterChips(filters: SearchFilters, t: Strings, lang: Lang)
   if (filters.rent_period === 'daily') {
     chips.push({ key: 'rent_period', label: ft.daily, patch: { rent_period: undefined } });
   }
-  // Названий городов в словаре пока нет (выбор города — FRONTEND-030)
-  if (filters.city) chips.push({ key: 'city', label: filters.city, patch: { city: undefined } });
+  if (cityNames) {
+    // Название города ещё грузится или города уже нет в списке — показываем код
+    const name = filters.city ? cityNames[filters.city] : undefined;
+    const label = filters.city ? (name ? tr(name, lang) : filters.city) : t.city.all;
+    chips.push({ key: 'city', label, patch: { city: undefined } });
+  }
   return chips;
 }

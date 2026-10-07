@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getWebApp, haptic } from '../lib/telegram';
 
@@ -57,11 +57,14 @@ export function useTelegramBack(onBack: () => void, enabled = true, priority = 0
   }, [enabled, priority]);
 }
 
-/** Нативная кнопка «Назад» Telegram, пока страница смонтирована; без истории — переход на fallback */
-export function useTelegramBackButton(fallbackPath = '/'): void {
+/**
+ * «Назад» на предыдущий экран приложения — тот же поиск, страница списка и прокрутка.
+ * Истории нет (объявление открыли по ссылке) — переход на fallback.
+ */
+export function useGoBack(fallbackPath = '/'): () => void {
   const navigate = useNavigate();
 
-  useTelegramBack(() => {
+  return useCallback(() => {
     // React Router хранит индекс записи истории в history.state.idx
     const index = (window.history.state as { idx?: number } | null)?.idx ?? 0;
     if (index > 0) {
@@ -69,5 +72,10 @@ export function useTelegramBackButton(fallbackPath = '/'): void {
     } else {
       navigate(fallbackPath, { replace: true });
     }
-  });
+  }, [navigate, fallbackPath]);
+}
+
+/** Нативная кнопка «Назад» Telegram, пока страница смонтирована; без истории — переход на fallback */
+export function useTelegramBackButton(fallbackPath = '/'): void {
+  useTelegramBack(useGoBack(fallbackPath));
 }

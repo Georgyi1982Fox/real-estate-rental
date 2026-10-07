@@ -18,20 +18,22 @@ export default function FilterButton({ count, onClick }: FilterButtonProps) {
   return (
     <button
       type="button"
-      className={`filter-button inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-md)] border px-4 py-3 text-sm font-semibold shadow-[var(--shadow-sm)] transition-colors duration-200 hover:bg-[var(--surface-hover)] active:scale-[.98] ${
+      className={`filter-button inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-[var(--radius-md)] border px-3 py-3 text-sm font-semibold shadow-[var(--shadow-sm)] transition-colors duration-200 hover:bg-[var(--surface-hover)] active:scale-[.98] sm:px-4 ${
         active
           ? 'border-[var(--primary)] bg-[var(--surface)] text-[var(--primary)]'
           : 'border-[var(--border)] bg-[var(--surface)] text-[var(--text-primary)]'
       }`}
       aria-haspopup="dialog"
-      aria-label={active ? fill(ht.filters_count, count) : undefined}
+      aria-label={active ? fill(ht.filters_count, count) : ht.filters}
       onClick={() => {
         haptic('light');
         onClick();
       }}
     >
       <Icon name="sliders" className="size-5" />
-      <span>{active ? `${ht.filters} · ${count}` : ht.filters}</span>
+      {/* На телефоне кнопка стоит в одном ряду с полем поиска: только значок и число */}
+      <span className="hidden sm:inline">{active ? `${ht.filters} · ${count}` : ht.filters}</span>
+      {active && <span className="sm:hidden">{count}</span>}
     </button>
   );
 }
