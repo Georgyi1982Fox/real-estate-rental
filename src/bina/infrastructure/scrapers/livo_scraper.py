@@ -170,7 +170,10 @@ class LivoScraper(BaseWebsiteScraper):
     def detail_url(self, listing_id: str) -> str:
         return f"{self.api_url}/v1/statements/{listing_id}"
 
-    async def _fetch_page(self, url: str, expect: str | None = None) -> str:
+    # tenacity ≥ 9.2 типизирует родительский метод как обёртку @retry
+    async def _fetch_page(  # type: ignore[override, unused-ignore]
+        self, url: str, expect: str | None = None
+    ) -> str:
         """Страницу объявления (перепроверка, TASK-018) читаем через API: у сайта нет HTML."""
         if url.startswith(self.base_url) and (match := PAGE_ID_RE.search(url)):
             url = self.detail_url(match.group(1))
