@@ -77,17 +77,41 @@ def find_statement(data: dict[str, Any]) -> dict[str, Any] | None:
     return None
 
 
+# Примерный курс к лари: только для проверки пересчёта сайта (точный курс — у сайта)
+_ROUGH_GEL_RATE = {"1": 1.0, "2": 2.7, "3": 3.0}
+# Пересчёт сайта в лари расходится с ценой хозяина больше чем на столько — он неверен
+_GEL_MISMATCH = 0.25
+
+
 def statement_price(item: dict[str, Any]) -> tuple[float, str]:
-    """Цена в лари, если она есть, иначе в валюте объявления."""
+    """Цена в лари по пересчёту сайта, если он сходится с ценой хозяина.
+
+    Пересчёт сайта бывает устаревшим: у объявления «750 $» в лари стояло 325 488 ₾ (старая
+    цена продажи). Тогда берём цену в валюте, которую указал хозяин (в лари её переведёт
+    нормализатор).
+    """
     prices = item.get("price")
     if not isinstance(prices, dict):
         return 0.0, "GEL"
     currency_id = str(item.get("statement_currency_id") or item.get("currency_id") or "1")
-    for key in ("1", currency_id):
-        entry = prices.get(key)
-        if isinstance(entry, dict) and entry.get("price_total"):
-            return float(entry["price_total"]), CURRENCY_BY_ID.get(key, "GEL")
+    own = _price_total(prices, currency_id)
+    gel = _price_total(prices, "1")
+    if gel and own and currency_id in _ROUGH_GEL_RATE:
+        expected = own * _ROUGH_GEL_RATE[currency_id]
+        if abs(gel - expected) > expected * _GEL_MISMATCH:
+            return own, CURRENCY_BY_ID.get(currency_id, "GEL")
+    if gel:
+        return gel, "GEL"
+    if own:
+        return own, CURRENCY_BY_ID.get(currency_id, "GEL")
     return 0.0, "GEL"
+
+
+def _price_total(prices: dict[str, Any], key: str) -> float:
+    entry = prices.get(key)
+    if isinstance(entry, dict) and entry.get("price_total"):
+        return float(entry["price_total"])
+    return 0.0
 
 
 def statement_photos(item: dict[str, Any]) -> list[str]:

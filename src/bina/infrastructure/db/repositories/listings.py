@@ -31,7 +31,13 @@ from bina.application.localization import MIN_LETTERS, district_base, dominant_s
 from bina.application.ports.scraper import RawListing
 from bina.application.ports.translator import LANGUAGES, ListingText
 from bina.application.price_analysis import ROOMS_GROUP_MAX
-from bina.application.rent_period import MONTHLY, rent_period_code
+from bina.application.rent_period import (
+    DAILY_PRICE_MAX_GEL,
+    MONTHLY,
+    RENT_MAX_GEL,
+    RENT_PER_M2_MAX_GEL,
+    rent_period_code,
+)
 from bina.application.repositories.listings import IListingsRepository
 from bina.application.repositories.notifications import PriceDrop
 from bina.infrastructure.db.models import (
@@ -374,6 +380,39 @@ class ListingsRepository(IListingsRepository):
                 .where(Listing.id.in_(listing_ids))
                 .values(duplicates_checked_at=datetime.now(UTC))
             )
+
+    async def fix_impossible_prices(self) -> tuple[int, int]:
+        """Цены, ошибочно указанные хозяевами на сайтах (уже сохранённые объявления).
+
+        «Посуточно» дороже ``DAILY_PRICE_MAX_GEL`` в сутки — это цена за месяц: становится
+        помесячным. Аренда дороже ``RENT_PER_M2_MAX_GEL`` за м² в месяц — цена продажи:
+        объявление снимается (сайт исправит цену — объявление вернётся при сборе).
+        Возвращает (сколько стало помесячными, сколько снято).
+        """
+        daily = await self._session.execute(
+            update(Listing)
+            .where(
+                Listing.status == ListingStatus.ACTIVE,
+                Listing.rent_period == "daily",
+                Listing.currency == "GEL",
+                Listing.price > DAILY_PRICE_MAX_GEL,
+            )
+            .values(rent_period="monthly")
+        )
+        sale = await self._session.execute(
+            update(Listing)
+            .where(
+                Listing.status == ListingStatus.ACTIVE,
+                Listing.rent_period == "monthly",
+                Listing.currency == "GEL",
+                or_(
+                    and_(Listing.area > 0, Listing.price > Listing.area * RENT_PER_M2_MAX_GEL),
+                    and_(Listing.area <= 0, Listing.price > RENT_MAX_GEL),
+                ),
+            )
+            .values(status=ListingStatus.ARCHIVED)
+        )
+        return _rowcount(daily), _rowcount(sale)
 
     async def same_apartment_links(self, listing: Listing) -> list[tuple[str, str]]:
         """Сайты и ссылки той же квартиры: основное объявление и его дубликаты (активные)."""
@@ -1017,3 +1056,7 @@ def text_search_query(text: str) -> ColumnElement[Any] | None:
     for query in queries[1:]:
         combined = combined.op("||")(query)
     return combined
+
+
+def _rowcount(result: Any) -> int:
+    return int(getattr(result, "rowcount", 0) or 0)

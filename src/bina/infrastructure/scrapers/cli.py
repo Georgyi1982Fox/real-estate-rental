@@ -151,12 +151,19 @@ async def scrape(
 
 
 async def _merge_street_districts(db: DatabaseManager) -> None:
-    """«Сабуртало/Картозия» → «Сабуртало»: районы с улицей из старых объявлений."""
+    """Чистка сохранённых данных перед сбором.
+
+    «Сабуртало/Картозия» → «Сабуртало»; цены, ошибочно указанные хозяевами на сайтах:
+    «посуточно» с месячной ценой и аренда с ценой продажи.
+    """
     async with db.session_factory() as session:
         merged = await DistrictsRepository(session).merge_streets()
+        to_monthly, sale_prices = await ListingsRepository(session).fix_impossible_prices()
         await session.commit()
     if merged:
         logger.info("Street districts merged", districts=merged)
+    if to_monthly or sale_prices:
+        logger.info("Impossible prices fixed", to_monthly=to_monthly, archived=sale_prices)
 
 
 @click.group(invoke_without_command=True)

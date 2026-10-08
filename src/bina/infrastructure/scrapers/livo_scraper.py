@@ -4,8 +4,8 @@ Livo.ge — сайт TNET (как MyHome.ge), но объявления на н�
 Список объявлений — со страницы поиска сайта (``livo.ge/ru/s?...&page=N``): с октября
 2026 API списка (``/v1/statements``) без входа отвечает 401, а сервер сайта кладёт те же
 объявления прямо в страницу (данные Next.js ``self.__next_f.push``). Объявление целиком —
-из API сайта (``api-statements.tnet.ge/v1/statements/{id}``, ключ в заголовке
-``X-Website-Key``). Формат объявления — как у MyHome.ge
+с его страницы (``livo.ge/ru/udzravi-qoneba/...-<id>``): API объявления
+(``/v1/statements/{id}``) тоже закрыт с октября 2026. Формат объявления — как у MyHome.ge
 (:mod:`bina.infrastructure.scrapers.tnet`).
 
 Собирается помесячная и посуточная аренда квартир Тбилиси и Батуми.
@@ -174,25 +174,30 @@ class LivoScraper(BaseWebsiteScraper):
         return f"{self.api_url}/v1/statements/{listing_id}"
 
     # tenacity ≥ 9.2 типизирует родительский метод как обёртку @retry
+    def ru_page(self, url: str) -> str:
+        """Русская версия страницы сайта: ``livo.ge/...`` → ``livo.ge/ru/...``."""
+        prefix = self.base_url + "/"
+        if url.startswith(prefix) and not url.startswith(prefix + "ru/"):
+            return prefix + "ru/" + url[len(prefix) :]
+        return url
+
     async def _fetch_page(  # type: ignore[override, unused-ignore]
         self, url: str, expect: str | None = None
     ) -> str:
-        """Страницу объявления (перепроверка, TASK-018) читаем через API: у сайта нет HTML."""
-        if url.startswith(self.base_url) and (match := PAGE_ID_RE.search(url)):
-            url = self.detail_url(match.group(1))
-        return await super()._fetch_page(url)
+        """Страницы сайта — в русской версии (объявление целиком тоже лежит в странице)."""
+        return await super()._fetch_page(self.ru_page(url))
 
     async def with_details(self, card: RawListing, *, first: bool = False) -> RawListing:
-        """Дополняет объявление полными данными (при ошибке оставляет как есть)."""
-        if not self.fetch_details:
+        """Дополняет объявление полными данными со страницы (при ошибке оставляет как есть)."""
+        if not self.fetch_details or not card.url:
             return card
         try:
-            body = await self._fetch_page(self.detail_url(card.source_id))
+            body = await self._fetch_page(card.url)
         except (httpx.HTTPError, ListingGoneError) as exc:
             logger.warning("Livo listing failed", source_id=card.source_id, error=str(exc))
             return card
         if first:
-            self._dump("livo_detail.json", body)
+            self._dump("livo_detail.html", body)
         details = self.details_from_html(body)
         if details is None:
             logger.warning("Livo listing not parsed", source_id=card.source_id)
@@ -200,8 +205,8 @@ class LivoScraper(BaseWebsiteScraper):
         return dataclasses.replace(card, **details)
 
     def details_from_html(self, html: str) -> dict[str, Any] | None:
-        """Поля ``RawListing`` из ответа API об объявлении; None — ответ не разобран."""
-        statement = detail_statement(html)
+        """Поля ``RawListing`` со страницы объявления (или из ответа API); None — не разобрано."""
+        statement = detail_statement(html) if html.lstrip().startswith("{") else page_detail(html)
         return statement_details(statement) if statement is not None else None
 
     def _dump(self, filename: str, body: str) -> None:
@@ -270,6 +275,15 @@ def page_statements(html: str) -> list[dict[str, Any]]:
                     found.setdefault(item["id"], item)
                 break
     return list(found.values())
+
+
+def page_detail(html: str) -> dict[str, Any] | None:
+    """Объявление целиком со страницы объявления.
+
+    На странице есть и карточки «похожих» — у объявления целиком полей больше всех.
+    """
+    statements = page_statements(html)
+    return max(statements, key=len) if statements else None
 
 
 def detail_statement(body: str) -> dict[str, Any] | None:

@@ -180,3 +180,16 @@ def test_daily_price_too_high_is_monthly(price: float, period: str) -> None:
     fixed = ListingNormalizer().normalize_listing(card)
 
     assert fixed is not None and fixed.rent_period == period
+
+
+@pytest.mark.parametrize(
+    ("price", "area", "kept"),
+    [(2025.0, 70.0, True), (325488.0, 70.0, False), (13500.0, 70.0, True), (150000.0, 0.0, False)],
+)
+def test_sale_price_in_rent_listing_is_skipped(price: float, area: float, kept: bool) -> None:
+    """325 488 ₾ в месяц за 70 м² — цена продажи, такое объявление не сохраняется."""
+    card = korter_card("Сдается квартира", price=price, area=area)
+
+    fixed = ListingNormalizer().normalize_listing(card)
+
+    assert (fixed is not None) is kept

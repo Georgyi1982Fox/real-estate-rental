@@ -6,12 +6,15 @@ import structlog
 
 from bina.application.cities import CITIES, city_in_text
 from bina.application.ports.scraper import RawListing
+from bina.application.rent_period import (
+    DAILY_PRICE_MAX_GEL,
+    RENT_MAX_GEL,
+    RENT_PER_M2_MAX_GEL,
+)
 from bina.application.text import html_to_text
 
 logger = structlog.get_logger(__name__)
 
-# Дороже этого «за сутки» (лари) — на сайте ошиблись: это цена за месяц
-DAILY_PRICE_MAX_GEL = 1000
 # Сколько первых символов описания смотреть, ища город («Сдаётся квартира в Батуми»)
 CITY_HEAD_CHARS = 200
 
@@ -177,7 +180,26 @@ class ListingNormalizer:
                 if (text := self.clean_multiline(value))
             },
         )
-        return self.fix_rent_period(self.fix_city(normalized))
+        fixed = self.fix_rent_period(self.fix_city(normalized))
+        if not self.rent_price_possible(fixed):
+            logger.warning(
+                "Rent price looks like a sale price, listing skipped",
+                source=fixed.source_name,
+                source_id=fixed.source_id,
+                price=fixed.price,
+                area=fixed.area,
+            )
+            return None
+        return fixed
+
+    @staticmethod
+    def rent_price_possible(listing: RawListing) -> bool:
+        """Цена похожа на аренду: не 325 000 ₾ в месяц за 70 м² (это цена продажи)."""
+        if listing.currency != "GEL" or listing.rent_period != "monthly":
+            return True
+        if listing.area > 0:
+            return listing.price / listing.area <= RENT_PER_M2_MAX_GEL
+        return listing.price <= RENT_MAX_GEL
 
     @staticmethod
     def fix_rent_period(listing: RawListing) -> RawListing:
