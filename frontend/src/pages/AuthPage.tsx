@@ -24,7 +24,7 @@ export default function AuthPage() {
   const navigate = useNavigate();
   const showToast = useToast();
   const [params] = useSearchParams();
-  useDocumentTitle(`${t.auth.page_title} — Bina.ai`);
+  useDocumentTitle(`${t.auth.page_title} — bina.ai`);
 
   // Telegram: пользователь уже известен из initData → mock-токен и на главную
   const autoSignIn = isInTelegram && isAuthenticated;

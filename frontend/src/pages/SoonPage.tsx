@@ -24,7 +24,7 @@ export default function SoonPage({ feature }: SoonPageProps) {
   const { t } = useI18n();
   const title = t.hub.tiles[feature].title;
 
-  useDocumentTitle(`${title} — Bina.ai`);
+  useDocumentTitle(`${title} — bina.ai`);
   useTelegramBackButton('/');
 
   return (

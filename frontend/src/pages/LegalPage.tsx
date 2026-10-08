@@ -25,7 +25,7 @@ export default function LegalPage() {
   // Заголовок с бэкенда важнее; не пришёл — из словаря
   const title = data?.title?.trim() || (docId ? t.legal.titles[docId] : '');
 
-  useDocumentTitle(title ? `${title} — Bina.ai` : 'Bina.ai');
+  useDocumentTitle(title ? `${title} — bina.ai` : 'bina.ai');
   useTelegramBackButton('/');
 
   if (!docId || error?.isNotFound) return <NotFoundPage />;

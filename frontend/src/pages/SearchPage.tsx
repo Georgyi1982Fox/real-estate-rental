@@ -81,7 +81,7 @@ export default function SearchPage() {
   // Есть что сбрасывать: фильтры или текст поиска
   const narrowed = filtered || query !== '';
 
-  useDocumentTitle(`${ht.page_title} — Bina.ai`);
+  useDocumentTitle(`${ht.page_title} — bina.ai`);
   useTelegramBackButton('/');
 
   const search = (text: string) => {

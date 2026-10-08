@@ -24,7 +24,7 @@ export default function Footer({ nav }: FooterProps) {
         className="mx-auto flex max-w-screen-xl items-center justify-between px-4 py-5 text-xs text-[var(--text-secondary)] sm:px-6 lg:px-8"
         aria-label={t.footer.nav}
       >
-        <span>© {new Date().getFullYear()} Bina.ai</span>
+        <span>© {new Date().getFullYear()} bina.ai</span>
         {nav !== 'always' && (
           <Link
             to="/profile"

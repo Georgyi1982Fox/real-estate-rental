@@ -6,12 +6,12 @@ import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
 import { botSectionUrl } from '../lib/config';
 import { useI18n } from '../providers/I18nProvider';
 
-/** Помощь: что умеет Bina.ai и частые вопросы */
+/** Помощь: что умеет bina.ai и частые вопросы */
 export default function HelpPage() {
   const { t } = useI18n();
   const ht = t.help;
 
-  useDocumentTitle(`${ht.page_title} — Bina.ai`);
+  useDocumentTitle(`${ht.page_title} — bina.ai`);
   useTelegramBackButton('/');
 
   return (

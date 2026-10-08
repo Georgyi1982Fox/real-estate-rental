@@ -238,6 +238,32 @@
     }
   }
 
+  /* Барабан-пикер (WheelPicker): фон общий (страницы/секции), края растворяются маской,
+     активная строка — по центру, соседние видны частично (приглушены и чуть меньше) */
+  .wheel-picker {
+    mask-image: linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);
+    -webkit-mask-image: linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);
+  }
+  .wheel-picker__option {
+    transition:
+      opacity 200ms ease,
+      transform 200ms ease,
+      color 200ms ease;
+  }
+  .wheel-picker__option--active {
+    opacity: 1;
+    transform: scale(1);
+  }
+  .wheel-picker__option--peek {
+    opacity: 0.45;
+    transform: scale(0.92);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .wheel-picker__option {
+      transition: none;
+    }
+  }
+
   /* ---------- Premium: полоска использования лимита (<progress>) ---------- */
   .usage-meter__bar {
     appearance: none;

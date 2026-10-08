@@ -25,7 +25,7 @@ export default function NotificationsPage() {
   const feed = useNotificationFeed();
   const { items, unreadCount, filter, loading, error, unauthorized } = feed;
 
-  useDocumentTitle(`${nt.page_title} — Bina.ai`);
+  useDocumentTitle(`${nt.page_title} — bina.ai`);
   useTelegramBackButton('/');
 
   const tabs: { value: NotificationFilter; label: string; count?: number }[] = [
