@@ -2,12 +2,13 @@ import { Link } from 'react-router-dom';
 import type { Listing } from '../api/types';
 import type { DistrictNames } from '../hooks/useDistricts';
 import { useFavorites } from '../hooks/useFavorites';
-import { formatPrice, tr } from '../lib/format';
+import { tr } from '../lib/format';
 import { fraudLevel } from '../lib/fraud';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 import CardGallery from './CardGallery';
 import FraudBadge from './FraudBadge';
+import ListingPrice from './ListingPrice';
 import OwnerBadge from './OwnerBadge';
 
 interface ListingCardProps {
@@ -95,9 +96,11 @@ export default function ListingCard({
               </Link>
             </Heading>
             <div className="listing-card__price-row mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-              <p className="listing-card__price text-lg font-bold leading-6 text-[var(--text-primary)]">
-                {formatPrice(listing.price, listing.currency)}
-              </p>
+              <ListingPrice
+                listing={listing}
+                className="listing-card__price text-lg font-bold leading-6 text-[var(--text-primary)]"
+                periodClassName="text-sm font-medium text-[var(--text-secondary)]"
+              />
               {listing.owner_type === 'owner' && <OwnerBadge />}
             </div>
           </div>

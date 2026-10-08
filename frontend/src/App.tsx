@@ -1,5 +1,6 @@
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import Layout from './components/Layout';
+import { DAILY_SEARCH_PATH } from './lib/searchFilters';
 import AuthPage from './pages/AuthPage';
 import FavoritesPage from './pages/FavoritesPage';
 import FeatureLabPage from './pages/FeatureLabPage';
@@ -29,8 +30,9 @@ const router = createBrowserRouter(
         { path: '/listing/:id', element: <ListingPage /> },
         { path: '/help', element: <HelpPage /> },
         { path: '/legal/:doc', element: <LegalPage /> },
-        // Разделы главного меню без своей страницы — заглушка «Скоро» (FRONTEND-029, 031–033)
-        { path: '/daily', element: <SoonPage feature="daily" /> },
+        // Посуточная аренда — та же лента в режиме «Посуточно»
+        { path: '/daily', element: <Navigate to={DAILY_SEARCH_PATH} replace /> },
+        // Разделы главного меню без своей страницы — заглушка «Скоро» (FRONTEND-029, 031, 033)
         { path: '/smart', element: <SoonPage feature="smart" /> },
         { path: '/my-listings', element: <SoonPage feature="owner" /> },
         { path: '/invite', element: <SoonPage feature="invite" /> },

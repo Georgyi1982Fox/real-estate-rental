@@ -7,10 +7,13 @@ import {
   AREA_MAX,
   BATHROOMS_MAX,
   BEDROOMS_MAX,
+  DAILY_PRICE_PRESETS,
   FLOOR_MAX,
   ROOMS_MAX,
   countText,
   filterDistricts,
+  isDaily,
+  priceLabel,
 } from '../lib/searchFilters';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
@@ -18,6 +21,7 @@ import Icon from './Icon';
 import PillGroup, { pillClass } from './PillGroup';
 import PriceRange from './PriceRange';
 import RangeField from './RangeField';
+import RentPeriodToggle from './RentPeriodToggle';
 import Switch from './Switch';
 
 /** С таким числом районов над списком появляется поиск */
@@ -52,7 +56,7 @@ interface FilterPanelProps {
 }
 
 /**
- * Поля фильтров для окна FilterModal: районы (несколько), цена, комнаты, площадь, спальни,
+ * Поля фильтров для окна FilterModal: срок аренды, районы (несколько), цена, комнаты, площадь, спальни,
  * санузлы, этаж, состояние, удобства, «только собственник»
  */
 export default function FilterPanel({ districts, filters, onChange }: FilterPanelProps) {
@@ -64,6 +68,7 @@ export default function FilterPanel({ districts, filters, onChange }: FilterPane
   const selected = filterDistricts(filters);
   const features = filters.features ?? [];
   const conditions = filters.condition ?? [];
+  const daily = isDaily(filters);
 
   // По алфавиту на языке интерфейса
   const sorted = useMemo(() => {
@@ -146,6 +151,15 @@ export default function FilterPanel({ districts, filters, onChange }: FilterPane
 
   return (
     <section className="filter-panel flex flex-col gap-6" aria-label={ht.filters}>
+      {/* Цена за месяц и за сутки несравнимы — со сроком аренды фильтр цены сбрасывается */}
+      <RentPeriodToggle
+        value={daily ? 'daily' : 'monthly'}
+        onChange={(period) =>
+          onChange({ rent_period: period, min_price: undefined, max_price: undefined })
+        }
+        wide
+      />
+
       {districts.length > 0 && (
         <fieldset className="filter-panel__districts min-w-0 border-0 p-0">
           <legend className={LEGEND_CLASS}>{ht.districts}</legend>
@@ -195,13 +209,40 @@ export default function FilterPanel({ districts, filters, onChange }: FilterPane
         </fieldset>
       )}
 
-      <PriceRange
-        min={filters.min_price}
-        max={filters.max_price}
-        onChange={changePrice}
-        inputClassName={CONTROL_CLASS}
-        labelClassName={LEGEND_CLASS}
-      />
+      <div className="filter-panel__price flex min-w-0 flex-col gap-3">
+        <PriceRange
+          min={filters.min_price}
+          max={filters.max_price}
+          onChange={changePrice}
+          inputClassName={CONTROL_CLASS}
+          labelClassName={LEGEND_CLASS}
+          daily={daily}
+        />
+        {daily && (
+          <ul className="filter-panel__price-presets flex list-none flex-wrap gap-2 p-0">
+            {DAILY_PRICE_PRESETS.map((preset) => {
+              const active = filters.min_price === preset.min && filters.max_price === preset.max;
+              return (
+                <li key={`${preset.min ?? ''}-${preset.max ?? ''}`}>
+                  <button
+                    type="button"
+                    className={pillClass(active)}
+                    aria-pressed={active}
+                    onClick={() => {
+                      haptic('selection');
+                      // Повторное нажатие снимает выбор
+                      if (active) changePrice(undefined, undefined);
+                      else changePrice(preset.min, preset.max);
+                    }}
+                  >
+                    {priceLabel(preset, t.searches)}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
 
       <PillGroup
         className="filter-panel__rooms"

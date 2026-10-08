@@ -96,7 +96,8 @@ export default function FilterModal({
         disabled={!hasFilters(draft)}
         onClick={() => {
           haptic('light');
-          setDraft({});
+          // Срок аренды — режим ленты, «Сбросить» его не трогает
+          setDraft({ rent_period: draft.rent_period });
         }}
       >
         {ht.reset}

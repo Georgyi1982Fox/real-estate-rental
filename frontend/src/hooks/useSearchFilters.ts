@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import type { SearchFilters } from '../api/types';
+import type { RentPeriod, SearchFilters } from '../api/types';
 import {
   cleanQuery,
   FILTER_KEYS,
@@ -24,7 +24,7 @@ function writeFilters(params: URLSearchParams, filters: SearchFilters): void {
 
 /**
  * Поиск, фильтры, сортировка и страница ленты живут в адресе:
- * ?q=<текст>&district=<id>,<id>&min_price=..&rooms=..&features=<код>,<код>&owner_only=true&sort=..&page=..
+ * ?q=<текст>&district=<id>,<id>&min_price=..&rooms=..&features=<код>,<код>&owner_only=true&rent_period=daily&sort=..&page=..
  * Такую ссылку можно открыть заново или сохранить как поиск.
  *
  * Город в фильтры страницы не входит: он общий для приложения (useCity). Ссылка с
@@ -102,13 +102,31 @@ export function useSearchFilters() {
     [update],
   );
 
-  /** «Сбросить фильтры» убирает и текст поиска; сортировка остаётся */
+  /** «Сбросить фильтры» убирает и текст поиска; сортировка и срок аренды остаются */
   const resetFilters = useCallback(
     () =>
       update((params) => {
-        writeFilters(params, {});
+        writeFilters(params, { rent_period: parseFilters(params).rent_period });
         params.delete(QUERY_KEY);
       }, true),
+    [update],
+  );
+
+  /** «Помесячно / Посуточно»: цена за месяц и за сутки несравнимы — фильтр цены сбрасывается */
+  const setRentPeriod = useCallback(
+    (period: RentPeriod) => {
+      update(
+        (params) =>
+          writeFilters(params, {
+            ...parseFilters(params),
+            rent_period: period,
+            min_price: undefined,
+            max_price: undefined,
+          }),
+        true,
+        true,
+      );
+    },
     [update],
   );
 
@@ -179,6 +197,7 @@ export function useSearchFilters() {
     replaceFilters,
     resetFilters,
     setCity,
+    setRentPeriod,
     setQuery,
     addDistrict,
     setSort,

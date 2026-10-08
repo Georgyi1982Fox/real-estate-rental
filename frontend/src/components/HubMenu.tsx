@@ -5,6 +5,7 @@ import { useSubscription } from '../hooks/useSubscription';
 import type { Strings } from '../i18n/strings';
 import { botSectionUrl } from '../lib/config';
 import { fill, formatDate } from '../lib/format';
+import { DAILY_SEARCH_PATH } from '../lib/searchFilters';
 import { useI18n } from '../providers/I18nProvider';
 import HubTile from './HubTile';
 import type { HubTone } from './HubTile';
@@ -34,7 +35,7 @@ interface GroupConfig {
 }
 
 const SEARCH_TILE: TileConfig = { key: 'search', icon: 'search', to: '/search' };
-const DAILY_TILE: TileConfig = { key: 'daily', icon: 'bed', to: '/daily' };
+const DAILY_TILE: TileConfig = { key: 'daily', icon: 'bed', to: DAILY_SEARCH_PATH };
 
 // Группы — как в главном меню бота
 const GROUPS: GroupConfig[] = [

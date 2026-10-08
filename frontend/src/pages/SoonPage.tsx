@@ -6,10 +6,9 @@ import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
 import { useI18n } from '../providers/I18nProvider';
 
 /** Разделы главного меню, у которых ещё нет своей страницы */
-export type SoonFeature = 'daily' | 'smart' | 'owner' | 'invite';
+export type SoonFeature = 'smart' | 'owner' | 'invite';
 
 const ICONS: Record<SoonFeature, IconName> = {
-  daily: 'bed',
   smart: 'sparkles',
   owner: 'home_plus',
   invite: 'gift',

@@ -10,6 +10,22 @@ import { fill, formatPrice, tr } from './format';
 
 export const PRICE_MAX = 10000;
 export const PRICE_STEP = 100;
+/** Посуточная цена на порядок меньше помесячной — и шаг поля мельче */
+export const DAILY_PRICE_STEP = 10;
+/** Быстрый выбор цены за сутки: «до 80 ₾», «80–120 ₾», «120–200 ₾», «от 200 ₾» */
+export const DAILY_PRICE_PRESETS: PriceBounds[] = [
+  { max: 80 },
+  { min: 80, max: 120 },
+  { min: 120, max: 200 },
+  { min: 200 },
+];
+/** Лента в режиме «Посуточно»: плитка главного меню и старый адрес /daily */
+export const DAILY_SEARCH_PATH = '/search?rent_period=daily';
+
+export interface PriceBounds {
+  min?: number;
+  max?: number;
+}
 /** «4» в фильтре означает «4 и больше» */
 export const ROOMS_MAX = 4;
 /** Столько районов принимает бэкенд в одном запросе */
@@ -228,9 +244,16 @@ export function withQuery(filters: SearchFilters, query: string): SearchFilters 
   return { ...filters, q: query || undefined };
 }
 
-/** Город фильтром не считается: он выбран всегда (см. useCity) */
+/** Город и срок аренды — режимы ленты: выбраны всегда, фильтрами не считаются и не сбрасываются */
+const MODE_KEYS = ['city', 'rent_period'];
+
+export function isDaily(filters: SearchFilters): boolean {
+  return filters.rent_period === 'daily';
+}
+
+/** Город (см. useCity) и срок аренды фильтрами не считаются */
 export function hasFilters(filters: SearchFilters): boolean {
-  return filterEntries(filters).some(([key]) => key !== 'city');
+  return filterEntries(filters).some(([key]) => !MODE_KEYS.includes(key));
 }
 
 export function sameFilters(a: SearchFilters, b: SearchFilters): boolean {
@@ -246,11 +269,11 @@ const COUNT_GROUPS: string[][] = [
 
 /**
  * Сколько фильтров выбрано: районы, удобства и состояния — по одному на список,
- * группы COUNT_GROUPS — по одному на группу. Текст поиска и город не считаются
+ * группы COUNT_GROUPS — по одному на группу. Текст поиска, город и срок аренды не считаются
  */
 export function countFilters(filters: SearchFilters): number {
   const keys = filterEntries(filters).flatMap(([key]) =>
-    key === QUERY_KEY || key === 'city' ? [] : [key],
+    key === QUERY_KEY || MODE_KEYS.includes(key) ? [] : [key],
   );
   const groupOf = (key: string) => COUNT_GROUPS.find((group) => group.includes(key))?.[0] ?? key;
   return new Set(keys.map(groupOf)).size;
@@ -313,6 +336,14 @@ export interface FilterLabels {
   price?: string;
 }
 
+/** «800–2 000 ₾», «от 800 ₾», «до 2 000 ₾»; обе границы пустые — undefined */
+export function priceLabel({ min, max }: PriceBounds, st: Strings['searches']): string | undefined {
+  if (min !== undefined && max !== undefined) return `${formatPrice(min, '')}–${formatPrice(max)}`;
+  if (min !== undefined) return fill(st.price_from, formatPrice(min));
+  if (max !== undefined) return fill(st.price_to, formatPrice(max));
+  return undefined;
+}
+
 export function filterLabels(
   filters: SearchFilters,
   districtNames: string,
@@ -324,14 +355,8 @@ export function filterLabels(
     const rooms = filters.rooms >= ROOMS_MAX ? `${ROOMS_MAX}+` : String(filters.rooms);
     labels.rooms = fill(st.rooms, rooms);
   }
-  const { min_price: min, max_price: max } = filters;
-  if (min !== undefined && max !== undefined) {
-    labels.price = `${formatPrice(min, '')}–${formatPrice(max)}`;
-  } else if (min !== undefined) {
-    labels.price = fill(st.price_from, formatPrice(min));
-  } else if (max !== undefined) {
-    labels.price = fill(st.price_to, formatPrice(max));
-  }
+  const price = priceLabel({ min: filters.min_price, max: filters.max_price }, st);
+  if (price) labels.price = price;
   return labels;
 }
 
@@ -378,10 +403,11 @@ export function countText(value: number, top: number): string {
 
 /**
  * Чипы дополнительных фильтров — всего, кроме районов, цены и комнат (filterLabels):
- * текст поиска, площадь, спальни, санузлы, этаж, состояние, удобства, собственник,
- * посуточно. Неизвестный код удобства или состояния показывается как есть.
- * cityNames — для карточки сохранённого поиска: добавляет чип города («Батуми» или
- * «Вся Грузия»); на странице поиска город показывает кнопка выбора города.
+ * текст поиска, площадь, спальни, санузлы, этаж, состояние, удобства, собственник.
+ * Неизвестный код удобства или состояния показывается как есть.
+ * cityNames — для карточки сохранённого поиска: добавляет чипы «Посуточно» и города
+ * («Батуми» или «Вся Грузия»); на странице поиска их показывают переключатель срока
+ * аренды и кнопка выбора города.
  */
 export function extraFilterChips(
   filters: SearchFilters,
@@ -459,10 +485,10 @@ export function extraFilterChips(
   if (filters.owner_only) {
     chips.push({ key: 'owner_only', label: ft.owner_only, patch: { owner_only: undefined } });
   }
-  if (filters.rent_period === 'daily') {
-    chips.push({ key: 'rent_period', label: ft.daily, patch: { rent_period: undefined } });
-  }
   if (cityNames) {
+    if (isDaily(filters)) {
+      chips.push({ key: 'rent_period', label: ft.daily, patch: { rent_period: undefined } });
+    }
     // Название города ещё грузится или города уже нет в списке — показываем код
     const name = filters.city ? cityNames[filters.city] : undefined;
     const label = filters.city ? (name ? tr(name, lang) : filters.city) : t.city.all;
