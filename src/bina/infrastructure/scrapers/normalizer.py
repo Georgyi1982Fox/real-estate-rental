@@ -7,7 +7,11 @@ import structlog
 from bina.application.cities import CITIES, city_in_text
 from bina.application.ports.scraper import RawListing
 from bina.application.rent_period import (
+    AREA_PER_ROOM_FIXED_MAX,
+    AREA_PER_ROOM_MAX,
     DAILY_PRICE_MAX_GEL,
+    MONTHLY_PRICE_MIN_GEL,
+    PRICE_MIN_GEL,
     RENT_MAX_GEL,
     RENT_PER_M2_MAX_GEL,
 )
@@ -180,7 +184,7 @@ class ListingNormalizer:
                 if (text := self.clean_multiline(value))
             },
         )
-        fixed = self.fix_rent_period(self.fix_city(normalized))
+        fixed = self.fix_area(self.fix_rent_period(self.fix_city(normalized)))
         if not self.rent_price_possible(fixed):
             logger.warning(
                 "Rent price looks like a sale price, listing skipped",
@@ -194,8 +198,12 @@ class ListingNormalizer:
 
     @staticmethod
     def rent_price_possible(listing: RawListing) -> bool:
-        """Цена похожа на аренду: не 325 000 ₾ в месяц за 70 м² (это цена продажи)."""
-        if listing.currency != "GEL" or listing.rent_period != "monthly":
+        """Цена похожа на аренду: не 325 000 ₾ в месяц за 70 м² (продажа) и не «1 ₾»."""
+        if listing.currency != "GEL":
+            return True
+        if listing.price < PRICE_MIN_GEL:
+            return False
+        if listing.rent_period != "monthly":
             return True
         if listing.area > 0:
             return listing.price / listing.area <= RENT_PER_M2_MAX_GEL
@@ -203,12 +211,31 @@ class ListingNormalizer:
 
     @staticmethod
     def fix_rent_period(listing: RawListing) -> RawListing:
-        """«Посуточно» за 1 000+ ₾ в сутки — хозяин указал цену за месяц: считаем помесячной."""
-        if listing.rent_period != "daily" or listing.currency != "GEL":
+        """Вид аренды по цене, когда хозяин ошибся на сайте.
+
+        «Посуточно» за 1 000+ ₾ в сутки — цена за месяц; «помесячно» за 20-149 ₾ — цена
+        за сутки (Бакуриани: 60 ₾).
+        """
+        if listing.currency != "GEL":
             return listing
-        if listing.price <= DAILY_PRICE_MAX_GEL:
+        if listing.rent_period == "daily" and listing.price > DAILY_PRICE_MAX_GEL:
+            return dataclasses.replace(listing, rent_period="monthly")
+        if (
+            listing.rent_period == "monthly"
+            and PRICE_MIN_GEL <= listing.price < MONTHLY_PRICE_MIN_GEL
+        ):
+            return dataclasses.replace(listing, rent_period="daily")
+        return listing
+
+    @staticmethod
+    def fix_area(listing: RawListing) -> RawListing:
+        """Лишний ноль в площади: 4 комнаты на 1 400 м² — это 140 м²."""
+        if listing.rooms <= 0 or listing.area <= AREA_PER_ROOM_MAX * listing.rooms:
             return listing
-        return dataclasses.replace(listing, rent_period="monthly")
+        smaller = listing.area / 10
+        if smaller > AREA_PER_ROOM_FIXED_MAX * listing.rooms:
+            return listing  # и без нуля слишком много — оставляем как есть
+        return dataclasses.replace(listing, area=smaller)
 
     @staticmethod
     def fix_city(listing: RawListing) -> RawListing:

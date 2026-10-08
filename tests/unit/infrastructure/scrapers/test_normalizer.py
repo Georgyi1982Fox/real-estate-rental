@@ -193,3 +193,33 @@ def test_sale_price_in_rent_listing_is_skipped(price: float, area: float, kept: 
     fixed = ListingNormalizer().normalize_listing(card)
 
     assert (fixed is not None) is kept
+
+
+@pytest.mark.parametrize(
+    ("price", "period", "expected"),
+    [
+        (1.0, "monthly", None),  # цена не указана
+        (10.0, "daily", None),
+        (60.0, "monthly", "daily"),  # Бакуриани: 60 ₾ — за сутки
+        (150.0, "monthly", "monthly"),
+        (450.0, "monthly", "monthly"),
+    ],
+)
+def test_too_low_prices(price: float, period: str, expected: str | None) -> None:
+    card = korter_card("Сдается квартира", price=price, rent_period=period)
+
+    fixed = ListingNormalizer().normalize_listing(card)
+
+    assert (fixed.rent_period if fixed else None) == expected
+
+
+@pytest.mark.parametrize(
+    ("area", "rooms", "expected"),
+    [(1400.0, 4, 140.0), (700.0, 2, 70.0), (800.0, 7, 800.0), (90.0, 3, 90.0)],
+)
+def test_extra_zero_in_area(area: float, rooms: int, expected: float) -> None:
+    card = korter_card("Сдается квартира", area=area, rooms=rooms, price=3000.0)
+
+    fixed = ListingNormalizer().normalize_listing(card)
+
+    assert fixed is not None and fixed.area == expected

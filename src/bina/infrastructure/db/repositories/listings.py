@@ -32,8 +32,13 @@ from bina.application.ports.scraper import RawListing
 from bina.application.ports.translator import LANGUAGES, ListingText
 from bina.application.price_analysis import ROOMS_GROUP_MAX
 from bina.application.rent_period import (
+    AREA_PER_ROOM_FIXED_MAX,
+    AREA_PER_ROOM_MAX,
+    DAILY,
     DAILY_PRICE_MAX_GEL,
     MONTHLY,
+    MONTHLY_PRICE_MIN_GEL,
+    PRICE_MIN_GEL,
     RENT_MAX_GEL,
     RENT_PER_M2_MAX_GEL,
     rent_period_code,
@@ -381,38 +386,70 @@ class ListingsRepository(IListingsRepository):
                 .values(duplicates_checked_at=datetime.now(UTC))
             )
 
-    async def fix_impossible_prices(self) -> tuple[int, int]:
-        """Цены, ошибочно указанные хозяевами на сайтах (уже сохранённые объявления).
+    async def fix_impossible_prices(self) -> dict[str, int]:
+        """Цены и площади, ошибочно указанные хозяевами на сайтах (сохранённые объявления).
 
-        «Посуточно» дороже ``DAILY_PRICE_MAX_GEL`` в сутки — это цена за месяц: становится
-        помесячным. Аренда дороже ``RENT_PER_M2_MAX_GEL`` за м² в месяц — цена продажи:
-        объявление снимается (сайт исправит цену — объявление вернётся при сборе).
-        Возвращает (сколько стало помесячными, сколько снято).
+        Правила те же, что у нормализатора при сборе: «посуточно» за 1 000+ ₾ — помесячно,
+        «помесячно» за 20-149 ₾ — посуточно; цена продажи или «1 ₾» — объявление снимается
+        (сайт исправит цену — вернётся при сборе); лишний ноль в площади убирается.
+        Возвращает, сколько объявлений исправлено каждым правилом.
         """
-        daily = await self._session.execute(
+        active_gel = (Listing.status == ListingStatus.ACTIVE, Listing.currency == "GEL")
+        to_monthly = await self._session.execute(
             update(Listing)
             .where(
-                Listing.status == ListingStatus.ACTIVE,
-                Listing.rent_period == "daily",
-                Listing.currency == "GEL",
+                *active_gel,
+                Listing.rent_period == DAILY,
                 Listing.price > DAILY_PRICE_MAX_GEL,
             )
-            .values(rent_period="monthly")
+            .values(rent_period=MONTHLY)
         )
-        sale = await self._session.execute(
+        to_daily = await self._session.execute(
             update(Listing)
             .where(
-                Listing.status == ListingStatus.ACTIVE,
-                Listing.rent_period == "monthly",
-                Listing.currency == "GEL",
+                *active_gel,
+                Listing.rent_period == MONTHLY,
+                Listing.price >= PRICE_MIN_GEL,
+                Listing.price < MONTHLY_PRICE_MIN_GEL,
+            )
+            .values(rent_period=DAILY)
+        )
+        archived = await self._session.execute(
+            update(Listing)
+            .where(
+                *active_gel,
                 or_(
-                    and_(Listing.area > 0, Listing.price > Listing.area * RENT_PER_M2_MAX_GEL),
-                    and_(Listing.area <= 0, Listing.price > RENT_MAX_GEL),
+                    Listing.price < PRICE_MIN_GEL,
+                    and_(
+                        Listing.rent_period == MONTHLY,
+                        or_(
+                            and_(
+                                Listing.area > 0,
+                                Listing.price > Listing.area * RENT_PER_M2_MAX_GEL,
+                            ),
+                            and_(Listing.area <= 0, Listing.price > RENT_MAX_GEL),
+                        ),
+                    ),
                 ),
             )
             .values(status=ListingStatus.ARCHIVED)
         )
-        return _rowcount(daily), _rowcount(sale)
+        area = await self._session.execute(
+            update(Listing)
+            .where(
+                Listing.status == ListingStatus.ACTIVE,
+                Listing.rooms > 0,
+                Listing.area > Listing.rooms * AREA_PER_ROOM_MAX,
+                Listing.area / 10 <= Listing.rooms * AREA_PER_ROOM_FIXED_MAX,
+            )
+            .values(area=Listing.area / 10)
+        )
+        return {
+            "to_monthly": _rowcount(to_monthly),
+            "to_daily": _rowcount(to_daily),
+            "archived": _rowcount(archived),
+            "area": _rowcount(area),
+        }
 
     async def same_apartment_links(self, listing: Listing) -> list[tuple[str, str]]:
         """Сайты и ссылки той же квартиры: основное объявление и его дубликаты (активные)."""
