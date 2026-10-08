@@ -105,7 +105,7 @@ export default function ListingPage() {
   const contactButtons = [!nativeContact, Boolean(chatUrl), listing?.has_phone, true].filter(
     Boolean,
   ).length;
-  useDocumentTitle(title ? `${title} — Bina.ai` : 'Bina.ai');
+  useDocumentTitle(title ? `${title} — bina.ai` : 'bina.ai');
 
   if (listingId === null || error?.isNotFound) return <NotFoundPage />;
 

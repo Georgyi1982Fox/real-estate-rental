@@ -73,7 +73,7 @@ export default function ProfileMenu() {
       <Modal open={aboutOpen} title={pt.about} onClose={closeAbout}>
         <p className="text-sm leading-relaxed">{pt.about_text}</p>
         <p className="mt-4 text-xs text-[var(--text-secondary)]">
-          © {new Date().getFullYear()} Bina.ai
+          © {new Date().getFullYear()} bina.ai
         </p>
       </Modal>
     </>

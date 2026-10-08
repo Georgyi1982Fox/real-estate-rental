@@ -42,7 +42,7 @@ export default function HomePage() {
     { remember: true },
   );
 
-  useDocumentTitle(`Bina.ai — ${ht.page_title}`);
+  useDocumentTitle(`bina.ai — ${ht.page_title}`);
 
   const params = new URLSearchParams(search);
   if (SEARCH_PARAMS.some((key) => params.has(key))) {

@@ -45,7 +45,7 @@ export default function Header({ nav }: HeaderProps) {
             width={40}
             height={40}
           />
-          <span className="truncate text-lg font-bold tracking-tight">Bina.ai</span>
+          <span className="truncate text-lg font-bold tracking-tight">bina.ai</span>
         </Link>
         <div className="flex items-center gap-1">
           <LanguageSwitcher />

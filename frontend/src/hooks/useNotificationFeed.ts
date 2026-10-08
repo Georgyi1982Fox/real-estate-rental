@@ -88,9 +88,9 @@ const SEED: AppNotification[] = [
     created_at: ago(3 * 24 * 60),
     is_read: true,
     text: {
-      ka: 'კეთილი იყოს თქვენი მობრძანება Bina.ai-ში! შეინახეთ ძიება და ახალ ბინებს პირველებს გამოგიგზავნით.',
-      ru: 'Добро пожаловать в Bina.ai! Сохраните поиск — и мы первыми пришлём новые квартиры.',
-      en: 'Welcome to Bina.ai! Save a search and we will send you new apartments first.',
+      ka: 'კეთილი იყოს თქვენი მობრძანება bina.ai-ში! შეინახეთ ძიება და ახალ ბინებს პირველებს გამოგიგზავნით.',
+      ru: 'Добро пожаловать в bina.ai! Сохраните поиск — и мы первыми пришлём новые квартиры.',
+      en: 'Welcome to bina.ai! Save a search and we will send you new apartments first.',
     },
   },
   {

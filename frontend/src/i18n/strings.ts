@@ -22,7 +22,7 @@ const ka = {
   },
   header: {
     nav: 'მთავარი ნავიგაცია',
-    home: 'Bina.ai — მთავარი გვერდი',
+    home: 'bina.ai — მთავარი გვერდი',
     language: 'ენის შეცვლა',
     favorites: 'ფავორიტები',
     favorites_count: 'ფავორიტები: {n}',
@@ -74,7 +74,7 @@ const ka = {
       invite: { title: 'მეგობრის მოწვევა', text: 'ფასდაკლება მეგობარს, Premium თქვენ' },
       rent: { title: 'ქირის გადახდა', text: 'შეხსენებები ბოტში' },
       profile: { title: 'პროფილი', text: 'გამოწერა და ენა' },
-      help: { title: 'დახმარება', text: 'რა შეუძლია Bina.ai-ს' },
+      help: { title: 'დახმარება', text: 'რა შეუძლია bina.ai-ს' },
       support: { title: 'მხარდაჭერა', text: 'მოგვწერეთ ბოტში' },
       terms: { title: 'შეთანხმება', text: 'სერვისის წესები' },
       privacy: { title: 'კონფიდენციალურობა', text: 'როგორ ვინახავთ მონაცემებს' },
@@ -87,20 +87,20 @@ const ka = {
   help: {
     page_title: 'დახმარება',
     intro:
-      'Bina.ai გეხმარებათ საქართველოში ქირით ბინის პოვნაში: განცხადებების ძებნას, შემოწმებას და თარგმნას ხელოვნური ინტელექტი აკეთებს.',
+      'bina.ai გეხმარებათ საქართველოში ქირით ბინის პოვნაში: განცხადებების ძებნას, შემოწმებას და თარგმნას ხელოვნური ინტელექტი აკეთებს.',
     faq: 'ხშირი კითხვები',
     no_answer: 'პასუხი ვერ იპოვეთ? მოგვწერეთ — დაგეხმარებით.',
     items: [
       {
-        q: 'რა არის Bina.ai?',
-        a: 'Bina.ai არის საქართველოში ბინის ქირაობის სერვისი, რომელიც ხელოვნურ ინტელექტზე მუშაობს. ხელოვნური ინტელექტი აგროვებს განცხადებებს MyHome.ge-დან, SS.ge-დან, Livo.ge-დან, Korter.ge-დან და Telegram-არხებიდან ერთ ადგილას, თარგმნის მათ ქართულად, რუსულად და ინგლისურად და შლის გამეორებებს.',
+        q: 'რა არის bina.ai?',
+        a: 'bina.ai არის საქართველოში ბინის ქირაობის სერვისი, რომელიც ხელოვნურ ინტელექტზე მუშაობს. ხელოვნური ინტელექტი აგროვებს განცხადებებს MyHome.ge-დან, SS.ge-დან, Livo.ge-დან, Korter.ge-დან და Telegram-არხებიდან ერთ ადგილას, თარგმნის მათ ქართულად, რუსულად და ინგლისურად და შლის გამეორებებს.',
       },
       {
         q: 'როგორ მეხმარება ხელოვნური ინტელექტი ძებნაში?',
         a: 'ჩვეულებრივ ძებნაში ირჩევთ უბანს, ფასს და ოთახებს. ჭკვიან ძებნაში ბინას საკუთარი სიტყვებით აღწერთ, მაგალითად: „ოროთახიანი აივნით მეტროსთან 1500 ლარამდე“. ხელოვნური ინტელექტი აზრს იგებს და პოულობს შესაფერის განცხადებებს, თუნდაც მათში სხვა სიტყვები ეწეროს.',
       },
       {
-        q: 'როგორ მიცავს Bina.ai თაღლითებისგან?',
+        q: 'როგორ მიცავს bina.ai თაღლითებისგან?',
         a: 'ხელოვნური ინტელექტი ყველა განცხადებას ამოწმებს: ზედმეტად დაბალი ფასი, წინასწარი გადახდის მოთხოვნა, „მეპატრონე საზღვარგარეთაა“ და სხვა ნიშნები. საეჭვო განცხადებებს გაფრთხილება აქვს, ყველაზე სახიფათო კი ძებნიდან იმალება. ბინის ნახვამდე ფულს ნუ გადაიხდით.',
       },
       {
@@ -188,7 +188,7 @@ const ka = {
       other: 'ნაპოვნია {n} ბინა, რაიონი: {q}',
     },
     sort: {
-      label: 'სორტირება',
+      label: 'დალაგება',
       relevance: 'შესაბამისობით',
       newest: 'ჯერ ახალი',
       price_asc: 'ჯერ იაფი',
@@ -356,7 +356,7 @@ const ka = {
     help: 'დახმარება',
     about: 'აპლიკაციის შესახებ',
     about_text:
-      'Bina.ai გეხმარებათ, იპოვოთ ბინა ქირით საქართველოში: სხვადასხვა წყაროს განცხადებები ერთ ადგილას.',
+      'bina.ai გეხმარებათ, იპოვოთ ბინა ქირით საქართველოში: სხვადასხვა წყაროს განცხადებები ერთ ადგილას.',
     logout: 'გასვლა',
     fallback: 'პროფილის ჩატვირთვა ვერ მოხერხდა — ნაჩვენებია ნაგულისხმევი მონაცემები.',
   },
@@ -540,7 +540,7 @@ const ru: Strings = {
   },
   header: {
     nav: 'Основная навигация',
-    home: 'Bina.ai — главная',
+    home: 'bina.ai — главная',
     language: 'Сменить язык',
     favorites: 'Избранное',
     favorites_count: 'Избранное: {n}',
@@ -590,7 +590,7 @@ const ru: Strings = {
       invite: { title: 'Пригласить друга', text: 'Скидка другу, Premium вам' },
       rent: { title: 'Оплата аренды', text: 'Напоминания в боте' },
       profile: { title: 'Профиль', text: 'Подписка и язык' },
-      help: { title: 'Помощь', text: 'Что умеет Bina.ai' },
+      help: { title: 'Помощь', text: 'Что умеет bina.ai' },
       support: { title: 'Поддержка', text: 'Напишите нам в боте' },
       terms: { title: 'Соглашение', text: 'Правила сервиса' },
       privacy: { title: 'Конфиденциальность', text: 'Как мы храним данные' },
@@ -603,20 +603,20 @@ const ru: Strings = {
   help: {
     page_title: 'Помощь',
     intro:
-      'Bina.ai помогает найти жильё в аренду в Грузии: поиск, проверку и перевод объявлений делает искусственный интеллект.',
+      'bina.ai помогает найти жильё в аренду в Грузии: поиск, проверку и перевод объявлений делает искусственный интеллект.',
     faq: 'Частые вопросы',
     no_answer: 'Не нашли ответ? Напишите нам — поможем.',
     items: [
       {
-        q: 'Что такое Bina.ai?',
-        a: 'Bina.ai — сервис аренды жилья в Грузии, который работает на искусственном интеллекте. Искусственный интеллект собирает объявления с MyHome.ge, SS.ge, Livo.ge, Korter.ge и Telegram-каналов в одном месте, переводит их на грузинский, русский и английский и убирает повторы.',
+        q: 'Что такое bina.ai?',
+        a: 'bina.ai — сервис аренды жилья в Грузии, который работает на искусственном интеллекте. Искусственный интеллект собирает объявления с MyHome.ge, SS.ge, Livo.ge, Korter.ge и Telegram-каналов в одном месте, переводит их на грузинский, русский и английский и убирает повторы.',
       },
       {
         q: 'Как искусственный интеллект помогает искать?',
         a: 'В обычном поиске вы выбираете район, цену и число комнат. В умном поиске описываете квартиру своими словами, например: «двушка с балконом у метро до 1500 лари». Искусственный интеллект понимает смысл и находит подходящие объявления, даже если в них другие слова.',
       },
       {
-        q: 'Как Bina.ai защищает от мошенников?',
+        q: 'Как bina.ai защищает от мошенников?',
         a: 'Искусственный интеллект проверяет каждое объявление: слишком низкая цена, просьба о предоплате, «хозяин за границей» и другие признаки. Подозрительные объявления помечены предупреждением, самые опасные скрыты из поиска. Не платите до просмотра квартиры.',
       },
       {
@@ -870,7 +870,7 @@ const ru: Strings = {
     help: 'Помощь',
     about: 'О приложении',
     about_text:
-      'Bina.ai помогает найти квартиру в аренду в Грузии: объявления из разных источников в одном месте.',
+      'bina.ai помогает найти квартиру в аренду в Грузии: объявления из разных источников в одном месте.',
     logout: 'Выйти',
     fallback: 'Не удалось загрузить профиль — показаны данные по умолчанию.',
   },
@@ -1051,7 +1051,7 @@ const en: Strings = {
   },
   header: {
     nav: 'Main navigation',
-    home: 'Bina.ai home',
+    home: 'bina.ai home',
     language: 'Change language',
     favorites: 'Favorites',
     favorites_count: 'Favorites: {n}',
@@ -1101,7 +1101,7 @@ const en: Strings = {
       invite: { title: 'Invite a friend', text: 'A discount for them, Premium for you' },
       rent: { title: 'Rent payments', text: 'Reminders in the bot' },
       profile: { title: 'Profile', text: 'Subscription and language' },
-      help: { title: 'Help', text: 'What Bina.ai can do' },
+      help: { title: 'Help', text: 'What bina.ai can do' },
       support: { title: 'Support', text: 'Message us in the bot' },
       terms: { title: 'Terms', text: 'Service rules' },
       privacy: { title: 'Privacy', text: 'How we handle your data' },
@@ -1114,20 +1114,20 @@ const en: Strings = {
   help: {
     page_title: 'Help',
     intro:
-      'Bina.ai helps you find a rental home in Georgia: artificial intelligence searches, checks and translates the listings.',
+      'bina.ai helps you find a rental home in Georgia: artificial intelligence searches, checks and translates the listings.',
     faq: 'Frequently asked questions',
     no_answer: "Didn't find an answer? Message us and we'll help.",
     items: [
       {
-        q: 'What is Bina.ai?',
-        a: 'Bina.ai is a rental service for Georgia powered by artificial intelligence. The AI collects listings from MyHome.ge, SS.ge, Livo.ge, Korter.ge and Telegram channels in one place, translates them into Georgian, Russian and English, and removes duplicates.',
+        q: 'What is bina.ai?',
+        a: 'bina.ai is a rental service for Georgia powered by artificial intelligence. The AI collects listings from MyHome.ge, SS.ge, Livo.ge, Korter.ge and Telegram channels in one place, translates them into Georgian, Russian and English, and removes duplicates.',
       },
       {
         q: 'How does artificial intelligence help me search?',
         a: 'In the regular search you pick a district, a price and the number of rooms. In smart search you describe the apartment in your own words, for example: “2 rooms with a balcony near the metro up to 1500 GEL”. The AI understands the meaning and finds matching listings, even if they use different words.',
       },
       {
-        q: 'How does Bina.ai protect me from scammers?',
+        q: 'How does bina.ai protect me from scammers?',
         a: 'The AI checks every listing: a price that is too low, a request for prepayment, “the owner is abroad” and other signs. Suspicious listings carry a warning, and the most dangerous ones are hidden from search. Never pay before you view the apartment.',
       },
       {
@@ -1380,7 +1380,7 @@ const en: Strings = {
     help: 'Help',
     about: 'About the app',
     about_text:
-      'Bina.ai helps you find an apartment to rent in Georgia: listings from many sources in one place.',
+      'bina.ai helps you find an apartment to rent in Georgia: listings from many sources in one place.',
     logout: 'Sign out',
     fallback: 'Could not load the profile — showing default data.',
   },

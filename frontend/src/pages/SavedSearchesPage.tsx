@@ -37,7 +37,7 @@ export default function SavedSearchesPage() {
   // Стабильная ссылка: Modal перезапускает эффект (фокус) при смене onClose
   const closeDialog = useCallback(() => setDialog(null), []);
 
-  useDocumentTitle(`${st.page_title} — Bina.ai`);
+  useDocumentTitle(`${st.page_title} — bina.ai`);
   useTelegramBackButton('/');
 
   const districtName = (search: SavedSearch) =>
