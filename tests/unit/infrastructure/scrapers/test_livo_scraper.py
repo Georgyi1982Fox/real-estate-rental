@@ -18,6 +18,14 @@ EMPTY_JSON = json.dumps({"result": True, "data": {"data": []}})
 API = "https://api-statements.tnet.ge"
 
 
+def detail_page() -> str:
+    """Страница объявления: объявление целиком и карточки «похожих» в данных Next.js."""
+    statement = json.loads(DETAIL_JSON)["data"]["statement"]
+    similar = list_items(LIST_JSON)[:2]
+    payload = json.dumps({"statement": statement, "similar": similar})
+    return f"<html><script>self.__next_f.push([1,{json.dumps('5:' + payload)}])</script></html>"
+
+
 class FakeApi:
     """Подменяет ``BaseWebsiteScraper._fetch_page``: URL → ответ; записывает запросы."""
 
@@ -123,7 +131,7 @@ def test_detail_inactive_and_junk() -> None:
 
 async def test_scrape_pages_and_details(monkeypatch: pytest.MonkeyPatch) -> None:
     livo = scraper(max_pages=5)
-    api = FakeApi({"page=1": LIST_JSON, "/v1/statements/": DETAIL_JSON})
+    api = FakeApi({"page=1": LIST_JSON, "/ru/udzravi-qoneba/": detail_page()})
     patch_fetch(monkeypatch, api)
 
     listings = await livo.scrape_listings(limit=100)
@@ -133,7 +141,9 @@ async def test_scrape_pages_and_details(monkeypatch: pytest.MonkeyPatch) -> None
     list_requests = [url for url in api.requested if "page=" in url]
     assert list_requests[0].startswith("https://livo.ge/ru/s?deal_types=2,7")
     assert len(list_requests) == 2, "пустая вторая страница — конец выдачи"
-    assert f"{API}/v1/statements/26209012" in api.requested
+    # API объявления закрыт: подробности — со страницы объявления (русская версия)
+    assert any(url.startswith("https://livo.ge/ru/udzravi-qoneba/") for url in api.requested)
+    assert not any("/v1/statements/" in url for url in api.requested)
 
 
 async def test_known_regular_listings_stop_scraping(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -162,15 +172,15 @@ async def test_failed_pages_stop_after_three(monkeypatch: pytest.MonkeyPatch) ->
 async def test_detail_failure_keeps_card(monkeypatch: pytest.MonkeyPatch) -> None:
     livo = scraper()
     card = livo.card(list_items(LIST_JSON)[0])
-    patch_fetch(monkeypatch, FakeApi({"/v1/statements/": httpx.ConnectError("down")}))
+    patch_fetch(monkeypatch, FakeApi({"/udzravi-qoneba/": httpx.ConnectError("down")}))
 
     assert await livo.with_details(card) is card
 
 
-async def test_recheck_reads_listing_page_through_api(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Перепроверка старых объявлений (TASK-018) открывает адрес сайта — читается API."""
+async def test_recheck_reads_russian_listing_page(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Перепроверка старых объявлений (TASK-018) открывает страницу сайта (русскую)."""
     livo = scraper()
-    api = FakeApi({"/v1/statements/26187474": DETAIL_JSON})
+    api = FakeApi({"/ru/udzravi-qoneba/": detail_page()})
     patch_fetch(monkeypatch, api)
 
     body = await livo._fetch_page(
@@ -178,8 +188,12 @@ async def test_recheck_reads_listing_page_through_api(monkeypatch: pytest.Monkey
         expect="26187474",
     )
 
-    assert api.requested == [f"{API}/v1/statements/26187474"]
-    assert livo.details_from_html(body) is not None
+    assert api.requested == [
+        "https://livo.ge/ru/udzravi-qoneba/sdaetsia-kvartira/sdaetsia-kvartira-26187474"
+    ]
+    details = livo.details_from_html(body)
+    assert details is not None
+    assert details["title"] == "Сдается 2 комнатная квартира в ведзиси", "объявление, не «похожее»"
 
 
 def search_page(items: list[dict[str, Any]]) -> str:
