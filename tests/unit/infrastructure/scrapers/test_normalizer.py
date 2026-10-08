@@ -113,3 +113,70 @@ def test_normalize_listing_complete() -> None:
     assert normalized.price > 1000.0  # Должно быть конвертировано в GEL
     assert normalized.currency == "GEL"
     assert normalized.district == "Vake"
+
+
+def korter_card(description: str, **fields: object) -> RawListing:
+    values: dict[str, object] = {
+        "source_id": "936575",
+        "source_name": "korter",
+        "title": "1-комн. квартира, Ваке, 33 м²",
+        "description": description,
+        "price": 800.0,
+        "currency": "GEL",
+        "rooms": 1,
+        "area": 33.0,
+        "district": "Ваке",
+        "url": "https://korter.ge/ru/a/936575",
+        "city": "tbilisi",
+        "latitude": 41.71,
+        "longitude": 44.75,
+    }
+    values.update(fields)
+    return RawListing(**values)  # type: ignore[arg-type]
+
+
+def test_listing_moves_to_city_named_in_text() -> None:
+    """Korter.ge: батумская квартира в разделе Тбилиси — переносится в Батуми."""
+    normalizer = ListingNormalizer()
+    card = korter_card("🏠 Сдается 1-комнатная квартира в Батуми — Orbi City, Блок C")
+
+    fixed = normalizer.normalize_listing(card)
+
+    assert fixed is not None
+    assert (fixed.city, fixed.district) == ("batumi", "Батуми")
+    assert (fixed.latitude, fixed.longitude) == (None, None)
+
+
+@pytest.mark.parametrize(
+    "description",
+    [
+        "Сдается квартира в Тбилиси, Ваке",
+        "Квартира на улице Батуми, рядом метро",
+        "Квартира в Тбилиси. Есть и в Батуми",
+        "Уютная квартира. " + "Тихий двор. " * 20 + "Удобный выезд в Мцхета.",
+    ],
+)
+def test_listing_keeps_its_city(description: str) -> None:
+    fixed = ListingNormalizer().normalize_listing(korter_card(description))
+
+    assert fixed is not None
+    assert (fixed.city, fixed.district, fixed.latitude) == ("tbilisi", "Ваке", 41.71)
+
+
+def test_georgian_text_names_city() -> None:
+    card = korter_card("ქირავდება 1 ოთახიანი ბინა ბათუმში, შერიფ ხიმშიაშვილის ქუჩა")
+
+    fixed = ListingNormalizer().normalize_listing(card)
+
+    assert fixed is not None and fixed.city == "batumi"
+
+
+@pytest.mark.parametrize(
+    ("price", "period"), [(150.0, "daily"), (1000.0, "daily"), (4860.0, "monthly")]
+)
+def test_daily_price_too_high_is_monthly(price: float, period: str) -> None:
+    card = korter_card("Сдается квартира посуточно", rent_period="daily", price=price)
+
+    fixed = ListingNormalizer().normalize_listing(card)
+
+    assert fixed is not None and fixed.rent_period == period

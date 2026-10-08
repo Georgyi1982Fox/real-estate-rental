@@ -4,10 +4,16 @@ from typing import ClassVar
 
 import structlog
 
+from bina.application.cities import CITIES, city_in_text
 from bina.application.ports.scraper import RawListing
 from bina.application.text import html_to_text
 
 logger = structlog.get_logger(__name__)
+
+# Дороже этого «за сутки» (лари) — на сайте ошиблись: это цена за месяц
+DAILY_PRICE_MAX_GEL = 1000
+# Сколько первых символов описания смотреть, ища город («Сдаётся квартира в Батуми»)
+CITY_HEAD_CHARS = 200
 
 
 # Символы валют → коды
@@ -158,7 +164,7 @@ class ListingNormalizer:
         normalized_district = self.normalize_district(listing.district)
 
         # Остальные поля (фото, телефон, имя, язык) сохраняются как есть
-        return dataclasses.replace(
+        normalized = dataclasses.replace(
             listing,
             title=normalized_title,
             description=normalized_description,
@@ -170,4 +176,44 @@ class ListingNormalizer:
                 for code, value in listing.descriptions.items()
                 if (text := self.clean_multiline(value))
             },
+        )
+        return self.fix_rent_period(self.fix_city(normalized))
+
+    @staticmethod
+    def fix_rent_period(listing: RawListing) -> RawListing:
+        """«Посуточно» за 1 000+ ₾ в сутки — хозяин указал цену за месяц: считаем помесячной."""
+        if listing.rent_period != "daily" or listing.currency != "GEL":
+            return listing
+        if listing.price <= DAILY_PRICE_MAX_GEL:
+            return listing
+        return dataclasses.replace(listing, rent_period="monthly")
+
+    @staticmethod
+    def fix_city(listing: RawListing) -> RawListing:
+        """Квартира в другом городе, чем раздел сайта: «Сдаётся квартира в Батуми» в Тбилиси.
+
+        Агентства выкладывают объявления не в тот город (Korter.ge: батумские квартиры в
+        разделе Тбилиси). Если текст называет ровно один другой город — квартира переносится
+        туда: район — сам город, точка на карте (она в чужом городе) убирается.
+        """
+        # Только начало описаний («Сдаётся квартира в …»): дальше бывает «выезд в Мцхета»
+        heads = [
+            text[:CITY_HEAD_CHARS] for text in [listing.description, *listing.descriptions.values()]
+        ]
+        named = city_in_text("\n".join([listing.title, *heads]))
+        if named is None or named == listing.city:
+            return listing
+        logger.info(
+            "Listing moved to the city named in its text",
+            source=listing.source_name,
+            source_id=listing.source_id,
+            from_city=listing.city,
+            to_city=named,
+        )
+        return dataclasses.replace(
+            listing,
+            city=named,
+            district=CITIES[named].names["ru"],
+            latitude=None,
+            longitude=None,
         )
