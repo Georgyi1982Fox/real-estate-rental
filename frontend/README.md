@@ -1,4 +1,4 @@
-# Bina.ai — Frontend
+# bina.ai — Frontend
 
 Telegram Mini App для аренды недвижимости в Грузии. React 19 + TypeScript + Vite + Tailwind CSS 4.
 

@@ -6,10 +6,9 @@ import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
 import { useI18n } from '../providers/I18nProvider';
 
 /** Разделы главного меню, у которых ещё нет своей страницы */
-export type SoonFeature = 'daily' | 'smart' | 'owner' | 'invite';
+export type SoonFeature = 'smart' | 'owner' | 'invite';
 
 const ICONS: Record<SoonFeature, IconName> = {
-  daily: 'bed',
   smart: 'sparkles',
   owner: 'home_plus',
   invite: 'gift',
@@ -24,7 +23,7 @@ export default function SoonPage({ feature }: SoonPageProps) {
   const { t } = useI18n();
   const title = t.hub.tiles[feature].title;
 
-  useDocumentTitle(`${title} — Bina.ai`);
+  useDocumentTitle(`${title} — bina.ai`);
   useTelegramBackButton('/');
 
   return (

@@ -23,7 +23,7 @@ export default function FavoritesPage() {
   const newestFirst = [...ids].reverse();
   const { listings, error, loading, reload } = useFavoriteListings(newestFirst);
 
-  useDocumentTitle(`${ft.page_title} — Bina.ai`);
+  useDocumentTitle(`${ft.page_title} — bina.ai`);
   useTelegramBackButton('/');
 
   const isEmpty = ids.length === 0 || (!loading && !error && listings.length === 0);

@@ -19,6 +19,7 @@ import Gallery from '../components/Gallery';
 import ListingDates from '../components/ListingDates';
 import ListingDescription from '../components/ListingDescription';
 import ListingLocation, { hasMapPoint } from '../components/ListingLocation';
+import ListingPrice from '../components/ListingPrice';
 import ListingSkeleton from '../components/ListingSkeleton';
 import ListingSpecs from '../components/ListingSpecs';
 import MarketPriceBadge from '../components/MarketPriceBadge';
@@ -30,7 +31,7 @@ import { useDistricts } from '../hooks/useDistricts';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useGoBack, useTelegramBackButton } from '../hooks/useTelegramBackButton';
 import { useTelegramMainButton } from '../hooks/useTelegramMainButton';
-import { fill, formatPrice, tr } from '../lib/format';
+import { fill, tr } from '../lib/format';
 import { fraudLevel } from '../lib/fraud';
 import { haptic } from '../lib/telegram';
 import { alsoOnLinks, siteName } from '../lib/sources';
@@ -105,7 +106,7 @@ export default function ListingPage() {
   const contactButtons = [!nativeContact, Boolean(chatUrl), listing?.has_phone, true].filter(
     Boolean,
   ).length;
-  useDocumentTitle(title ? `${title} — Bina.ai` : 'Bina.ai');
+  useDocumentTitle(title ? `${title} — bina.ai` : 'bina.ai');
 
   if (listingId === null || error?.isNotFound) return <NotFoundPage />;
 
@@ -192,12 +193,12 @@ export default function ListingPage() {
                   </p>
                 </header>
 
-                <p className="listing-summary__price text-3xl font-bold tracking-tight">
-                  {formatPrice(listing.price, listing.currency)}{' '}
-                  <span className="text-base font-medium text-[var(--text-secondary)]">
-                    {lt.per_month}
-                  </span>
-                </p>
+                <ListingPrice
+                  listing={listing}
+                  className="listing-summary__price text-3xl font-bold tracking-tight"
+                  periodClassName="text-base font-medium text-[var(--text-secondary)]"
+                  monthly
+                />
 
                 <MarketPriceBadge listingId={listing.id} />
 

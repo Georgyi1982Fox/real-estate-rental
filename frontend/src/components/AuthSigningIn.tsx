@@ -17,7 +17,7 @@ export default function AuthSigningIn() {
         <img
           className="auth-signing__image relative size-20 rounded-full shadow-[var(--shadow-lg)]"
           src={LOGO_URL}
-          alt="Bina.ai"
+          alt="bina.ai"
           width={80}
           height={80}
         />

@@ -31,7 +31,7 @@ const TEST_LISTINGS: Listing[] = [
 ];
 
 export default function TestCardPage() {
-  useDocumentTitle('Тест карточки — Bina.ai');
+  useDocumentTitle('Тест карточки — bina.ai');
 
   return (
     <section aria-labelledby="test-card-title" className="mx-auto w-full max-w-6xl">

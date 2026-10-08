@@ -22,7 +22,7 @@ export default function PremiumPage() {
   const pt = t.premium;
   const { subscription, loading, error, unauthorized, reload, buy, buying } = useSubscription();
 
-  useDocumentTitle(`${pt.page_title} — Bina.ai`);
+  useDocumentTitle(`${pt.page_title} — bina.ai`);
   useTelegramBackButton('/profile');
 
   const plans = premiumPlans(subscription?.plans);

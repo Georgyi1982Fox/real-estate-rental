@@ -56,6 +56,8 @@ export interface Listing {
   description?: Localized;
   price: number;
   currency: Currency | string;
+  /** За что цена (TASK-092): 'daily' — за сутки; нет поля или 'monthly' — за месяц */
+  rent_period?: RentPeriod | null;
   rooms: number;
   bedrooms?: number | null;
   bathrooms?: number | null;

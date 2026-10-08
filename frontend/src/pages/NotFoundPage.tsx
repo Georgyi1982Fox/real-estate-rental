@@ -4,7 +4,7 @@ import { useI18n } from '../providers/I18nProvider';
 
 export default function NotFoundPage() {
   const { t } = useI18n();
-  useDocumentTitle(`${t.common.not_found_title} — Bina.ai`);
+  useDocumentTitle(`${t.common.not_found_title} — bina.ai`);
 
   return (
     <section

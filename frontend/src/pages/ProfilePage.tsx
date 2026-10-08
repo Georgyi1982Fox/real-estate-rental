@@ -26,7 +26,7 @@ export default function ProfilePage() {
   const { me, error, loading, reload, setLanguage } = useMe();
   const showToast = useToast();
 
-  useDocumentTitle(`${pt.page_title} — Bina.ai`);
+  useDocumentTitle(`${pt.page_title} — bina.ai`);
   useTelegramBackButton('/');
 
   const logoutButton = (

@@ -9,6 +9,7 @@ import FilterModal from '../components/FilterModal';
 import Icon from '../components/Icon';
 import ListingCard from '../components/ListingCard';
 import Pagination from '../components/Pagination';
+import RentPeriodToggle from '../components/RentPeriodToggle';
 import SaveSearchButton from '../components/SaveSearchButton';
 import SearchBar from '../components/SearchBar';
 import Skeleton from '../components/Skeleton';
@@ -24,6 +25,7 @@ import {
   countFilters,
   filterDistricts,
   hasFilters,
+  isDaily,
   searchToQuery,
   withQuery,
 } from '../lib/searchFilters';
@@ -36,7 +38,7 @@ const GRID_CLASS = 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid
 const PRIMARY_BUTTON_CLASS =
   'inline-flex min-h-11 items-center justify-center rounded-[var(--radius-md)] bg-[var(--primary)] px-5 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--primary-hover)] active:scale-[.98]';
 
-/** Лента объявлений с поиском, фильтрами и страницами (помесячная аренда) */
+/** Лента объявлений с поиском, фильтрами и страницами: помесячная или посуточная аренда */
 export default function SearchPage() {
   const { lang, t } = useI18n();
   const ht = t.home;
@@ -50,6 +52,7 @@ export default function SearchPage() {
     replaceFilters,
     resetFilters,
     setCity,
+    setRentPeriod,
     setQuery,
     addDistrict,
     setSort,
@@ -81,7 +84,7 @@ export default function SearchPage() {
   // Есть что сбрасывать: фильтры или текст поиска
   const narrowed = filtered || query !== '';
 
-  useDocumentTitle(`${ht.page_title} — Bina.ai`);
+  useDocumentTitle(`${ht.page_title} — bina.ai`);
   useTelegramBackButton('/');
 
   const search = (text: string) => {
@@ -119,14 +122,20 @@ export default function SearchPage() {
       </header>
 
       <section className="search-page__filters flex flex-col gap-4" aria-label={ht.filters}>
-        <CityPicker
-          city={city}
-          cities={cities.cities}
-          loading={cities.loading}
-          failed={cities.error !== undefined}
-          onRetry={cities.reload}
-          onChange={setCity}
-        />
+        <div className="search-page__modes flex flex-wrap items-center gap-2">
+          <CityPicker
+            city={city}
+            cities={cities.cities}
+            loading={cities.loading}
+            failed={cities.error !== undefined}
+            onRetry={cities.reload}
+            onChange={setCity}
+          />
+          <RentPeriodToggle
+            value={isDaily(filters) ? 'daily' : 'monthly'}
+            onChange={setRentPeriod}
+          />
+        </div>
         <SearchBar
           query={query}
           districts={districts}

@@ -198,7 +198,7 @@ export default function FeatureLabPage() {
   const { lang } = useI18n();
   const x: Texts = TEXTS[lang];
   const navigate = useNavigate();
-  useDocumentTitle(`${x.title} — Bina.ai`);
+  useDocumentTitle(`${x.title} — bina.ai`);
 
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [listings, setListings] = useState<Listing[]>([]);
