@@ -6,6 +6,7 @@
 любое написание к коду.
 """
 
+import re
 from dataclasses import dataclass
 
 Labels = dict[str, str]
@@ -300,3 +301,33 @@ def parse_cities(raw: str) -> tuple[str, ...]:
     if unknown:
         raise ValueError(f"unknown cities: {', '.join(unknown)} (known: {', '.join(CITIES)})")
     return codes
+
+
+def _locative_ka(name: str) -> str:
+    """«ბათუმი» → «ბათუმში» (в Батуми)."""
+    return (name[:-1] if name.endswith("ი") else name) + "ში"
+
+
+# «квартира в Батуми», «ბინა ბათუმში», «flat in Batumi»: где квартира по словам объявления
+_CITY_MENTIONS: dict[str, re.Pattern[str]] = {
+    code: re.compile(
+        "|".join(
+            [
+                rf"(?<![\w-])в\s+{re.escape(info.names['ru'])}(?![\w-])",
+                rf"(?<![\w-])in\s+{re.escape(info.names['en'])}(?![\w-])",
+                re.escape(_locative_ka(info.names["ka"])),
+            ]
+        ),
+        re.IGNORECASE,
+    )
+    for code, info in CITIES.items()
+}
+
+
+def city_in_text(text: str) -> str | None:
+    """Город, в котором квартира по словам объявления («сдаётся квартира в Батуми»).
+
+    Назван ровно один город — его код, иначе (ни одного или несколько) — ``None``.
+    """
+    found = {code for code, pattern in _CITY_MENTIONS.items() if pattern.search(text or "")}
+    return found.pop() if len(found) == 1 else None
