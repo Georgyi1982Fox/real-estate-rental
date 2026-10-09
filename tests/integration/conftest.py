@@ -63,6 +63,7 @@ MIGRATIONS = (
     "documents",
     "history_notes",
     "retry_translations",
+    "hotels",
 )
 
 

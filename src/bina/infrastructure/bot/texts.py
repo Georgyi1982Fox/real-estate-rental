@@ -633,6 +633,17 @@ _RU: dict[str, str] = {
     "history_header": "🕘 <b>Недавно смотрели</b>",
     "history_empty": ("Вы ещё не открывали квартиры. Они появятся здесь, когда вы их посмотрите."),
     "favorites_notes": "📝 <b>Ваши заметки</b>",
+    "hotel_admin_new": (
+        "🏨 <b>Новая гостиница</b>\n"
+        "\n"
+        "<b>{name}</b> · {kind} · {city}\n"
+        "🛏 Номеров: {rooms} · от {price} ₾ за ночь\n"
+        "📷 Фото: {photos}\n"
+        "👤 {author}\n"
+        "\n"
+        "{description}"
+    ),
+    "hotel_admin_hidden": "Гостиница скрыта.",
 }
 
 _EN: dict[str, str] = {
@@ -1299,6 +1310,17 @@ _EN: dict[str, str] = {
     "history_header": "🕘 <b>Recently viewed</b>",
     "history_empty": ("You have not opened any apartments yet. They will appear here once you do."),
     "favorites_notes": "📝 <b>Your notes</b>",
+    "hotel_admin_new": (
+        "🏨 <b>New hotel</b>\n"
+        "\n"
+        "<b>{name}</b> · {kind} · {city}\n"
+        "🛏 Rooms: {rooms} · from {price} GEL a night\n"
+        "📷 Photos: {photos}\n"
+        "👤 {author}\n"
+        "\n"
+        "{description}"
+    ),
+    "hotel_admin_hidden": "The hotel is hidden.",
 }
 
 _KA: dict[str, str] = {
@@ -1938,6 +1960,17 @@ _KA: dict[str, str] = {
     "history_header": "🕘 <b>ბოლოს ნანახი</b>",
     "history_empty": "ბინები ჯერ არ გაგიხსნიათ. აქ გამოჩნდება, როცა მათ ნახავთ.",
     "favorites_notes": "📝 <b>თქვენი შენიშვნები</b>",
+    "hotel_admin_new": (
+        "🏨 <b>ახალი სასტუმრო</b>\n"
+        "\n"
+        "<b>{name}</b> · {kind} · {city}\n"
+        "🛏 ნომრები: {rooms} · ღამე {price} ₾-დან\n"
+        "📷 ფოტო: {photos}\n"
+        "👤 {author}\n"
+        "\n"
+        "{description}"
+    ),
+    "hotel_admin_hidden": "სასტუმრო დამალულია.",
 }
 
 TEXTS: dict[str, dict[str, str]] = {"ru": _RU, "en": _EN, "ka": _KA}

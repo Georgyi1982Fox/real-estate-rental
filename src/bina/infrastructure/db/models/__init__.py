@@ -10,6 +10,7 @@ from .districts import District
 from .documents import DocumentSignature, SignedDocument
 from .embeddings import Embedding
 from .favorites import Favorite
+from .hotels import Hotel, HotelComplaint, HotelRoom
 from .listings import Listing, ListingStatus
 from .notifications import Notification, NotificationType, SavedSearch
 from .payments import Payment
@@ -32,6 +33,9 @@ __all__ = [
     "DocumentSignature",
     "Embedding",
     "Favorite",
+    "Hotel",
+    "HotelComplaint",
+    "HotelRoom",
     "Listing",
     "ListingStat",
     "ListingStatus",
