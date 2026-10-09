@@ -245,6 +245,8 @@
     -webkit-mask-image: linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);
   }
   .wheel-picker__option {
+    /* Соседние строки уменьшаются к левому краю — текст остаётся на одной вертикали */
+    transform-origin: left center;
     transition:
       opacity 200ms ease,
       transform 200ms ease,

@@ -7,6 +7,7 @@ import { conditionName } from '../i18n/conditions';
 import { featureName } from '../i18n/features';
 import type { Lang, Strings } from '../i18n/strings';
 import { fill, formatPrice, tr } from './format';
+import { SOURCE_CODES, sourceName } from './sources';
 
 export const PRICE_MAX = 10000;
 export const PRICE_STEP = 100;
@@ -68,6 +69,7 @@ export const FILTER_KEYS = [
   ...NUMBER_KEYS,
   ...FLAG_KEYS,
   ...LIST_KEYS,
+  'source',
   'city',
   'rent_period',
 ] as const;
@@ -134,6 +136,15 @@ export function filterDistricts(filters: SearchFilters): string[] {
   return uniqueIds([...(filters.districts ?? []), ...(filters.district ? [filters.district] : [])]);
 }
 
+/**
+ * Выбранные сайты в порядке SOURCE_CODES. Незнакомый код отбрасывается:
+ * на него сервер отвечает 422
+ */
+export function filterSources(filters: SearchFilters): string[] {
+  const chosen = filters.source ?? [];
+  return SOURCE_CODES.filter((code) => chosen.includes(code));
+}
+
 /** Значения параметра списком: и ?key=a,b, и ?key=a&key=b */
 function listParam(params: URLSearchParams, key: string, limit?: number): string[] {
   return uniqueIds(
@@ -163,6 +174,8 @@ export function parseFilters(params: URLSearchParams): SearchFilters {
     const codes = listParam(params, key, CODES_MAX);
     if (codes.length > 0) filters[key] = codes;
   });
+  const sources = filterSources({ source: listParam(params, 'source') });
+  if (sources.length > 0) filters.source = sources;
   const city = (params.get('city') ?? '').trim().slice(0, CITY_MAX);
   if (city) filters.city = city;
   // 'monthly' — значение по умолчанию, в адресе его не держим
@@ -216,6 +229,8 @@ export function filterEntries(filters: SearchFilters): [string, string][] {
     const codes = uniqueIds(filters[key] ?? [], CODES_MAX).sort();
     if (codes.length > 0) entries.push([key, codes.join(',')]);
   });
+  const sources = filterSources(filters);
+  if (sources.length > 0) entries.push(['source', sources.join(',')]);
   if (filters.city) entries.push(['city', filters.city]);
   if (filters.rent_period && filters.rent_period !== 'monthly') {
     entries.push(['rent_period', filters.rent_period]);
@@ -403,7 +418,7 @@ export function countText(value: number, top: number): string {
 
 /**
  * Чипы дополнительных фильтров — всего, кроме районов, цены и комнат (filterLabels):
- * текст поиска, площадь, спальни, санузлы, этаж, состояние, удобства, собственник.
+ * текст поиска, площадь, спальни, санузлы, этаж, состояние, удобства, собственник, сайт.
  * Неизвестный код удобства или состояния показывается как есть.
  * cityNames — для карточки сохранённого поиска: добавляет чипы «Посуточно» и города
  * («Батуми» или «Вся Грузия»); на странице поиска их показывают переключатель срока
@@ -485,6 +500,14 @@ export function extraFilterChips(
   if (filters.owner_only) {
     chips.push({ key: 'owner_only', label: ft.owner_only, patch: { owner_only: undefined } });
   }
+  const sources = filterSources(filters);
+  sources.forEach((code) => {
+    chips.push({
+      key: `source:${code}`,
+      label: `${ft.source}: ${sourceName(code) ?? code}`,
+      patch: { source: without(sources, code) },
+    });
+  });
   if (cityNames) {
     if (isDaily(filters)) {
       chips.push({ key: 'rent_period', label: ft.daily, patch: { rent_period: undefined } });

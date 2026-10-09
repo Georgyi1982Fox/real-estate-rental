@@ -67,9 +67,10 @@ export default function SearchPage() {
   // Город из ссылки (?city=…) важнее запомненного; undefined — «Вся Грузия»
   const city = urlCity === undefined ? cities.city : cityParam(urlCity);
   const searchQuery = searchToQuery({ ...filters, city }, query, sort);
-  // Поиск сохраняется целиком: город + фильтры + текст из строки поиска (без сортировки)
+  // Поиск сохраняется целиком: город + фильтры + текст из строки поиска (без сортировки).
+  // Сайт не передаём: сохранённые поиски его ещё не хранят
   const savedFilters = useMemo(
-    () => withQuery({ ...filters, city }, query),
+    () => withQuery({ ...filters, source: undefined, city }, query),
     [filters, city, query],
   );
   // remember: «Назад» из объявления сразу показывает тот же список на той же прокрутке
