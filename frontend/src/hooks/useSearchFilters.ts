@@ -9,6 +9,7 @@ import {
   parseFilters,
   parseSort,
   QUERY_KEY,
+  SMART_SORT,
   SORT_KEY,
   type SortOrder,
 } from '../lib/searchFilters';
@@ -41,6 +42,8 @@ export function useSearchFilters() {
   }, [search]);
   const query = cleanQuery(new URLSearchParams(search).get(QUERY_KEY));
   const sort = parseSort(new URLSearchParams(search).get(SORT_KEY));
+  // Ссылка из бота: ?q=…&sort=smart открывает поиск по смыслу, даже если он был выключен
+  const smartLink = new URLSearchParams(search).get(SORT_KEY) === SMART_SORT;
   const page = Math.max(
     1,
     Number.parseInt(new URLSearchParams(search).get('page') ?? '1', 10) || 1,
@@ -130,14 +133,19 @@ export function useSearchFilters() {
     [update],
   );
 
-  /** Поиск по словам; пустая строка убирает q. Фильтры остаются, страница — первая */
+  /**
+   * Поиск по словам; пустая строка убирает q. Фильтры остаются, страница — первая.
+   * dropSort — новый текст ищем по смыслу, выбранная раньше сортировка ему уступает
+   */
   const setQuery = useCallback(
-    (text: string) => {
+    (text: string, dropSort = false) => {
       update(
         (params) => {
           const next = cleanQuery(text);
           if (next) params.set(QUERY_KEY, next);
           else params.delete(QUERY_KEY);
+          // sort=smart из ссылки относится только к её тексту
+          if (dropSort || params.get(SORT_KEY) === SMART_SORT) params.delete(SORT_KEY);
           params.delete('page');
         },
         true,
@@ -192,6 +200,7 @@ export function useSearchFilters() {
     urlCity,
     query,
     sort,
+    smartLink,
     page,
     setFilters,
     replaceFilters,

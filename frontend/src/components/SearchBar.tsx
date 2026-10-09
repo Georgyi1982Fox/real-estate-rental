@@ -181,7 +181,7 @@ export default function SearchBar({
             aria-activedescendant={
               expanded && active !== NO_OPTION ? suggestionId(listId, active) : undefined
             }
-            className={`search-bar__input min-h-13 w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] py-3 pl-4 text-sm text-[var(--text-primary)] shadow-[var(--shadow-sm)] placeholder:text-[var(--text-secondary)] ${text ? 'pr-24' : 'pr-14'}`}
+            className={`search-bar__input min-h-13 w-full text-ellipsis rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] py-3 pl-4 text-sm text-[var(--text-primary)] shadow-[var(--shadow-sm)] placeholder:text-[var(--text-secondary)] ${text ? 'pr-24' : 'pr-14'}`}
             onChange={(event) => {
               setText(event.target.value);
               setOpen(true);

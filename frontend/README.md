@@ -48,7 +48,7 @@ npm run build      # tsc + vite build → dist/
 
 | Метод | Путь | Ответ |
 |---|---|---|
-| GET | `/api/listings?page=&per_page=&q=&district=&min_price=&max_price=&rooms=&min_area=&max_area=&floor_min=&floor_max=&not_first_floor=&not_last_floor=&bedrooms=&bathrooms=&features=&condition=&owner_only=&city=&rent_period=` | `{items, total, page, pages}` |
+| GET | `/api/listings?page=&per_page=&q=&district=&min_price=&max_price=&rooms=&min_area=&max_area=&floor_min=&floor_max=&not_first_floor=&not_last_floor=&bedrooms=&bathrooms=&features=&condition=&owner_only=&city=&rent_period=&sort=` | `{items, total, page, pages}` |
 | GET | `/api/listings/{id}` | объект квартиры (без телефона и Telegram владельца), 404 если нет |
 | GET | `/api/listings/{id}/similar` | `{items}` — до 3 похожих |
 | GET | `/api/listings/{id}/phone` | `{phone}`, 404 если номера нет |

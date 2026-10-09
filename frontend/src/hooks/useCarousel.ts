@@ -3,6 +3,19 @@ import type { RefObject } from 'react';
 import { haptic } from '../lib/telegram';
 
 const SCROLL_DEBOUNCE_MS = 60;
+/** Насколько прокрутка может не дойти до слайда, чтобы считаться остановившейся на нём */
+const SNAP_TOLERANCE_PX = 2;
+
+/**
+ * Шаг ленты в пикселях. Ширина слайда бывает дробной (карточка в сетке — 343,5px), а
+ * clientWidth округлён: на последних слайдах ошибка копилась, и лента не замечала,
+ * что стоит на копии. Ширина всей ленты, делённая на число слайдов, даёт точный шаг
+ */
+function slideStep(track: HTMLUListElement): number {
+  return track.childElementCount > 0
+    ? track.scrollWidth / track.childElementCount
+    : track.clientWidth;
+}
 
 export interface CarouselSlide {
   /** Номер фото в исходном списке */
@@ -48,7 +61,7 @@ export function useCarousel(total: number): Carousel {
     if (!track) return;
     const align = () =>
       track.scrollTo({
-        left: (currentRef.current + offset) * track.clientWidth,
+        left: (currentRef.current + offset) * slideStep(track),
         behavior: 'instant',
       });
     align();
@@ -60,13 +73,13 @@ export function useCarousel(total: number): Carousel {
   /** Лента стоит на копии — мгновенно переставляем на настоящее фото; возвращает позицию в ленте */
   const leaveClone = useCallback(
     (track: HTMLUListElement): number => {
-      const position = Math.round(track.scrollLeft / track.clientWidth);
+      const step = slideStep(track);
+      const position = Math.round(track.scrollLeft / step);
       if (!loop) return position;
-      // Перескакиваем только когда прокрутка остановилась ровно на слайде, а не на полпути
-      if (Math.abs(track.scrollLeft - position * track.clientWidth) > 1) return position;
+      // Перескакиваем только когда прокрутка остановилась на слайде, а не на полпути
+      if (Math.abs(track.scrollLeft - position * step) > SNAP_TOLERANCE_PX) return position;
       const real = position === 0 ? total : position === total + 1 ? 1 : position;
-      if (real !== position)
-        track.scrollTo({ left: real * track.clientWidth, behavior: 'instant' });
+      if (real !== position) track.scrollTo({ left: real * step, behavior: 'instant' });
       return real;
     },
     [loop, total],
@@ -93,7 +106,7 @@ export function useCarousel(total: number): Carousel {
       const from = leaveClone(track);
       // Через край едем на копию (один шаг в ту же сторону), а не назад через всю ленту
       const position = index !== target ? from + Math.sign(index - target) : target + offset;
-      track.scrollTo({ left: position * track.clientWidth, behavior: 'smooth' });
+      track.scrollTo({ left: position * slideStep(track), behavior: 'smooth' });
       select(target);
     },
     [leaveClone, offset, select, total],
