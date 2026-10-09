@@ -30,6 +30,7 @@ from bina.infrastructure.api.routes import (
     documents,
     favorites,
     history,
+    hotels,
     legal,
     listings,
     location,
@@ -115,6 +116,8 @@ def create_app(
     app.include_router(legal.router)
     app.include_router(my_listings.router)
     app.include_router(agency.router)
+    app.include_router(hotels.router)
+    app.include_router(hotels.my_router)
     # TASK-096: фото собственников (папка MEDIA_DIR); отдаются как обычные файлы
     app.mount("/api/media", StaticFiles(directory=media_dir(), check_dir=False), name="media")
     return app

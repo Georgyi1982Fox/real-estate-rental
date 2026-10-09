@@ -24,6 +24,7 @@ from bina.infrastructure.bot.texts import t, ui_language
 from bina.infrastructure.db.models import User
 from bina.infrastructure.db.models.users import UserRole
 from bina.infrastructure.db.repositories.admin import AdminRepository, AdminStats, ComplaintCase
+from bina.infrastructure.db.repositories.hotels import HotelsRepository
 
 QUEUE_SIZE = 5
 TITLE_LENGTH = 80
@@ -144,6 +145,9 @@ async def on_admin(
                 reply_markup=case_keyboard(user.language, case),
                 disable_web_page_preview=True,
             )
+    elif callback_data.action == AdminAction.HOTEL_HIDE and callback_data.listing is not None:
+        await HotelsRepository(session).hide(callback_data.listing)
+        await message.answer(t(user.language, "hotel_admin_hidden"))
     elif callback_data.listing is not None:
         if callback_data.action == AdminAction.HIDE:
             await repository.hide(callback_data.listing)
@@ -158,7 +162,13 @@ def create_router() -> Router:
     router = Router(name="admin")
     router.message.register(cmd_admin, Command("admin"))
     # Проверку собственника (VERIFY_*) обрабатывает handlers/promotion.py
-    actions = {AdminAction.STATS, AdminAction.COMPLAINTS, AdminAction.HIDE, AdminAction.RESTORE}
+    actions = {
+        AdminAction.STATS,
+        AdminAction.COMPLAINTS,
+        AdminAction.HIDE,
+        AdminAction.RESTORE,
+        AdminAction.HOTEL_HIDE,
+    }
     # Блокировку агентства (AGENCY_BLOCK) обрабатывает handlers/agency.py
     router.callback_query.register(on_admin, AdminCallback.filter(F.action.in_(actions)))
     return router

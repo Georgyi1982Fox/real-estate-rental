@@ -104,6 +104,8 @@ class AdminAction(StrEnum):
     VERIFY_NO = "vno"
     # Блокировка агентства (TASK-100): request — агентство
     AGENCY_BLOCK = "ablk"
+    # Скрыть гостиницу (TASK-120): listing — ID гостиницы
+    HOTEL_HIDE = "hhide"
 
 
 class AdminCallback(CallbackData, prefix="adm"):
