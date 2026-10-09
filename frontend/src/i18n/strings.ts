@@ -127,7 +127,8 @@ const ka = {
   home: {
     page_title: 'ბინის ძიება',
     search_label: 'ბინის ძიება',
-    search_placeholder: 'რაიონი, ქუჩა, მეტრო…',
+    search_placeholder: 'აღწერეთ ბინა თქვენი სიტყვებით…',
+    smart_search: 'აზრით ძებნა',
     search_button: 'ძებნა',
     search_for: 'ძებნა „{n}“',
     search_clear: 'გასუფთავება',
@@ -648,7 +649,8 @@ const ru: Strings = {
   home: {
     page_title: 'Поиск квартиры',
     search_label: 'Поиск квартиры',
-    search_placeholder: 'Район, улица, метро…',
+    search_placeholder: 'Опишите квартиру своими словами…',
+    smart_search: 'По смыслу',
     search_button: 'Найти',
     search_for: 'Искать «{n}»',
     search_clear: 'Очистить',
@@ -1164,7 +1166,8 @@ const en: Strings = {
   home: {
     page_title: 'Apartment search',
     search_label: 'Apartment search',
-    search_placeholder: 'District, street, metro…',
+    search_placeholder: 'Describe the flat in your own words…',
+    smart_search: 'By meaning',
     search_button: 'Search',
     search_for: 'Search for “{n}”',
     search_clear: 'Clear',

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { District, ListingsPage, SearchFilters } from '../api/types';
 import { useApi } from '../hooks/useApi';
 import { plural } from '../lib/format';
-import { hasFilters, searchToQuery } from '../lib/searchFilters';
+import { hasFilters, searchToQuery, SMART_SORT } from '../lib/searchFilters';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 import FilterPanel from './FilterPanel';
@@ -23,6 +23,8 @@ interface FilterModalProps {
   city: string | undefined;
   /** Текст поиска (q): окно его не меняет, но квартиры считаются с его учётом */
   query: string;
+  /** Включён поиск по смыслу: он отдаёт не больше 50 квартир, и считать надо так же */
+  smart?: boolean;
   districts: District[];
   /** «Показать»: новые фильтры целиком */
   onApply: (filters: SearchFilters) => void;
@@ -38,6 +40,7 @@ export default function FilterModal({
   filters,
   city,
   query,
+  smart = false,
   districts,
   onApply,
 }: FilterModalProps) {
@@ -55,7 +58,7 @@ export default function FilterModal({
     else setCountQuery(null);
   }
 
-  const draftQuery = searchToQuery({ ...draft, city }, query);
+  const draftQuery = searchToQuery({ ...draft, city }, query, smart ? SMART_SORT : undefined);
 
   // Считаем квартиры не на каждое нажатие, а после паузы; при открытии — сразу
   useEffect(() => {

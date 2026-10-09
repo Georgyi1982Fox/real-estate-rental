@@ -13,20 +13,24 @@ import RentPeriodToggle from '../components/RentPeriodToggle';
 import SaveSearchButton from '../components/SaveSearchButton';
 import SearchBar from '../components/SearchBar';
 import Skeleton from '../components/Skeleton';
+import SmartSearchToggle from '../components/SmartSearchToggle';
 import SortSelect from '../components/SortSelect';
 import { useApi } from '../hooks/useApi';
 import { cityParam, useCity } from '../hooks/useCity';
 import { useCityDistricts, useDistricts } from '../hooks/useDistricts';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useSearchFilters } from '../hooks/useSearchFilters';
+import { saveSmartSearch, useSmartSearch } from '../hooks/useSmartSearch';
 import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
 import { fill, fillVars, plural, tr } from '../lib/format';
 import {
+  canSmartSearch,
   countFilters,
   filterDistricts,
   hasFilters,
   isDaily,
   searchToQuery,
+  SMART_SORT,
   withQuery,
 } from '../lib/searchFilters';
 import { haptic } from '../lib/telegram';
@@ -47,6 +51,7 @@ export default function SearchPage() {
     urlCity,
     query,
     sort,
+    smartLink,
     page,
     setFilters,
     replaceFilters,
@@ -66,7 +71,12 @@ export default function SearchPage() {
   const cities = useCity();
   // Город из ссылки (?city=…) важнее запомненного; undefined — «Вся Грузия»
   const city = urlCity === undefined ? cities.city : cityParam(urlCity);
-  const searchQuery = searchToQuery({ ...filters, city }, query, sort);
+  // «По смыслу»: нужен текст из 3+ букв. Включён по ссылке (sort=smart) или по запомненному
+  // выбору, пока в адресе нет обычной сортировки
+  const smartPreferred = useSmartSearch();
+  const smartAvailable = canSmartSearch(query);
+  const smart = smartAvailable && (smartLink || (sort === undefined && smartPreferred));
+  const searchQuery = searchToQuery({ ...filters, city }, query, smart ? SMART_SORT : sort);
   // Поиск сохраняется целиком: город + фильтры + текст из строки поиска (без сортировки).
   // Сайт не передаём: сохранённые поиски его ещё не хранят
   const savedFilters = useMemo(
@@ -89,7 +99,7 @@ export default function SearchPage() {
   useTelegramBackButton('/');
 
   const search = (text: string) => {
-    setQuery(text);
+    setQuery(text, smartPreferred && canSmartSearch(text));
     // На телефоне результаты ниже экрана — показываем их начало
     if (text && window.matchMedia('(pointer: coarse)').matches) {
       resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -108,6 +118,12 @@ export default function SearchPage() {
       });
     } else summary = plural(ht.found, data.total, lang);
   }
+
+  const toggleSmart = (next: boolean) => {
+    saveSmartSearch(next);
+    // Убираем и sort=smart из ссылки, и обычную сортировку: дальше решает запомненный выбор
+    setSort(undefined);
+  };
 
   const changePage = (next: number) => {
     setPage(next);
@@ -147,6 +163,7 @@ export default function SearchPage() {
         >
           <FilterButton count={countFilters(filters)} onClick={openFilters} />
         </SearchBar>
+        {smartAvailable && <SmartSearchToggle checked={smart} onChange={toggleSmart} />}
         <FilterChips
           filters={filters}
           districtNames={names}
@@ -175,6 +192,7 @@ export default function SearchPage() {
           filters={filters}
           city={city}
           query={query}
+          smart={smart}
           districts={districts}
           onApply={replaceFilters}
         />
@@ -201,7 +219,8 @@ export default function SearchPage() {
               </p>
             )}
           </div>
-          <SortSelect value={sort} byRelevance={query !== ''} onChange={setSort} />
+          {/* По смыслу порядок задаёт сервер — выбирать сортировку нечем */}
+          {!smart && <SortSelect value={sort} byRelevance={query !== ''} onChange={setSort} />}
         </header>
 
         {loading && (

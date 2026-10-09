@@ -97,7 +97,20 @@ export const SORT_ORDERS = [
 ] as const;
 export type SortOrder = (typeof SORT_ORDERS)[number];
 
-/** Сортировка из адреса; незнакомое значение — как будто её нет */
+/**
+ * «По смыслу» (FRONTEND-031): sort=smart — сверху объявления, близкие к тексту по смыслу.
+ * В SORT_ORDERS не входит: включается переключателем у строки поиска, а не в списке сортировки
+ */
+export const SMART_SORT = 'smart';
+/** С такого числа букв в тексте поиск по смыслу имеет смысл */
+export const SMART_MIN_LETTERS = 3;
+
+/** В тексте поиска достаточно букв (цифры и знаки не считаются) для поиска по смыслу */
+export function canSmartSearch(query: string): boolean {
+  return (query.match(/\p{L}/gu)?.length ?? 0) >= SMART_MIN_LETTERS;
+}
+
+/** Сортировка из адреса; незнакомое значение (и smart) — как будто её нет */
 export function parseSort(raw: string | null): SortOrder | undefined {
   return SORT_ORDERS.find((order) => order === raw);
 }
@@ -248,7 +261,11 @@ export function filtersToQuery(filters: SearchFilters): string {
  * Строка запроса для /api/listings: поиск по словам + фильтры + сортировка.
  * Без sort при q сервер сам ставит сверху самые подходящие.
  */
-export function searchToQuery(filters: SearchFilters, query: string, sort?: SortOrder): string {
+export function searchToQuery(
+  filters: SearchFilters,
+  query: string,
+  sort?: SortOrder | typeof SMART_SORT,
+): string {
   const search = filtersToQuery(withQuery(filters, query));
   if (!sort) return search;
   return `${search}${search ? '&' : ''}${SORT_KEY}=${sort}`;
