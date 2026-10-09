@@ -25,7 +25,7 @@ export default function SortSelect({ value, byRelevance, onChange }: SortSelectP
 
   return (
     <div className="sort-select flex max-w-full items-center gap-2 text-sm text-[var(--text-secondary)]">
-      <span id={labelId} className="sort-select__label shrink-0">
+      <span id={labelId} className="sort-select__label shrink-0 font-bold">
         {st.label}
       </span>
       <WheelPicker

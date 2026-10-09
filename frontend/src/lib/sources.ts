@@ -9,6 +9,19 @@ const SITE_NAMES: Record<string, string> = {
   telegram: 'Telegram',
 };
 
+/**
+ * Коды фильтра «Сайт» (GET /api/listings?source=) в порядке показа;
+ * owner — объявление размещено на самом bina.ai
+ */
+export const SOURCE_CODES = ['ss', 'myhome', 'livo', 'korter', 'telegram', 'owner'] as const;
+const OWN_SITE_NAME = 'bina.ai';
+
+/** Название источника по коду — для фильтра и подписи на карточке; незнакомый код — undefined */
+export function sourceName(source: string | null | undefined): string | undefined {
+  if (source === 'owner') return OWN_SITE_NAME;
+  return SITE_NAMES[source ?? ''];
+}
+
 /** Код сайта по домену ссылки — когда бэкенд не прислал source или прислал незнакомый */
 const HOST_SOURCES: Record<string, string> = {
   'ss.ge': 'ss',

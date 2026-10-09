@@ -12,9 +12,11 @@ import {
   ROOMS_MAX,
   countText,
   filterDistricts,
+  filterSources,
   isDaily,
   priceLabel,
 } from '../lib/searchFilters';
+import { SOURCE_CODES, sourceName } from '../lib/sources';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 import Icon from './Icon';
@@ -41,6 +43,11 @@ const countOptions = (max: number) =>
 
 const BEDROOM_OPTIONS = countOptions(BEDROOMS_MAX);
 const BATHROOM_OPTIONS = countOptions(BATHROOMS_MAX);
+/** Названия сайтов одинаковы на всех языках */
+const SOURCE_OPTIONS = SOURCE_CODES.map((code) => ({
+  value: code as string,
+  label: sourceName(code) ?? code,
+}));
 
 const CONTROL_CLASS =
   'rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] text-sm text-[var(--text-primary)]';
@@ -57,7 +64,7 @@ interface FilterPanelProps {
 
 /**
  * Поля фильтров для окна FilterModal: срок аренды, районы (несколько), цена, комнаты, площадь, спальни,
- * санузлы, этаж, состояние, удобства, «только собственник»
+ * санузлы, этаж, состояние, удобства, сайт, «только собственник»
  */
 export default function FilterPanel({ districts, filters, onChange }: FilterPanelProps) {
   const { lang, t } = useI18n();
@@ -68,6 +75,7 @@ export default function FilterPanel({ districts, filters, onChange }: FilterPane
   const selected = filterDistricts(filters);
   const features = filters.features ?? [];
   const conditions = filters.condition ?? [];
+  const sources = filterSources(filters);
   const daily = isDaily(filters);
 
   // По алфавиту на языке интерфейса
@@ -118,7 +126,7 @@ export default function FilterPanel({ districts, filters, onChange }: FilterPane
   };
 
   /** Несколько значений из группы; пустой список — фильтра нет */
-  const toggleCode = (key: 'features' | 'condition', codes: string[], code: string) => {
+  const toggleCode = (key: 'features' | 'condition' | 'source', codes: string[], code: string) => {
     const next = codes.includes(code) ? codes.filter((item) => item !== code) : [...codes, code];
     onChange({ [key]: next.length > 0 ? next : undefined });
   };
@@ -338,6 +346,16 @@ export default function FilterPanel({ districts, filters, onChange }: FilterPane
         options={featureOptions}
         selected={features}
         onToggle={(code) => toggleCode('features', features, code)}
+      />
+
+      {/* Ничего не выбрано — объявления со всех сайтов */}
+      <PillGroup
+        className="filter-panel__source"
+        legend={ft.source}
+        legendClassName={LEGEND_CLASS}
+        options={SOURCE_OPTIONS}
+        selected={sources}
+        onToggle={(code) => toggleCode('source', sources, code)}
       />
 
       <div className={`filter-panel__owner overflow-hidden ${CONTROL_CLASS}`}>

@@ -4,6 +4,7 @@ import type { DistrictNames } from '../hooks/useDistricts';
 import { useFavorites } from '../hooks/useFavorites';
 import { tr } from '../lib/format';
 import { fraudLevel } from '../lib/fraud';
+import { sourceName } from '../lib/sources';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 import CardGallery from './CardGallery';
@@ -39,6 +40,8 @@ export default function ListingCard({
   const image = images[0];
   const hasFloor = typeof listing.floor === 'number';
   const fraud = fraudLevel(listing);
+  // Незнакомый код источника — подписи нет
+  const source = sourceName(listing.source);
 
   return (
     <article
@@ -142,6 +145,13 @@ export default function ListingCard({
               </div>
             )}
           </dl>
+
+          {source && (
+            <p className="listing-card__source m-0 truncate text-xs text-[var(--text-secondary)]">
+              <span className="sr-only">{t.filters.source}: </span>
+              {source}
+            </p>
+          )}
         </figcaption>
       </figure>
 

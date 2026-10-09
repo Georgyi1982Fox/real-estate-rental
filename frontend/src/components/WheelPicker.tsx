@@ -16,13 +16,15 @@ interface WheelPickerProps<T extends string> {
 }
 
 /** Сколько ждать после последнего scroll-события, чтобы считать барабан остановившимся */
-const SETTLE_MS = 130;
+const SETTLE_MS = 250;
 /** Запасная высота строки (px), пока рефы ещё не отрисованы */
 const FALLBACK_ROW_PX = 36;
 
 /**
  * Барабан-пикер: вертикальная колонка значений на общем фоне вместо выпадающего списка.
  * Переключение — свайпом/колесом мыши/стрелками, соседние значения видны частично.
+ * Пока палец на барабане, меняется только сам барабан: onChange вызывается,
+ * когда его отпустили и прокрутка остановилась.
  */
 export default function WheelPicker<T extends string>({
   options,
@@ -34,6 +36,8 @@ export default function WheelPicker<T extends string>({
   const listRef = useRef<HTMLDivElement>(null);
   const rowRef = useRef<HTMLDivElement>(null);
   const settleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  /** Палец держит барабан: остановка прокрутки ещё не означает выбор */
+  const touching = useRef(false);
   const baseId = useId();
 
   const committedIndex = useMemo(() => {
@@ -67,13 +71,39 @@ export default function WheelPicker<T extends string>({
     [committedIndex, onChange, options],
   );
 
-  const handleScroll = () => {
+  const nearestIndex = () => {
     const nearest = Math.round((listRef.current?.scrollTop ?? 0) / rowHeight());
-    const clamped = Math.min(Math.max(nearest, 0), options.length - 1);
-    setVisualIndex(clamped);
-    if (settleTimer.current) clearTimeout(settleTimer.current);
-    settleTimer.current = setTimeout(() => commit(clamped), SETTLE_MS);
+    return Math.min(Math.max(nearest, 0), options.length - 1);
   };
+
+  /** Выбрать строку под центром, когда прокрутка (в т. ч. по инерции) остановится */
+  const commitWhenSettled = () => {
+    if (settleTimer.current) clearTimeout(settleTimer.current);
+    settleTimer.current = setTimeout(() => commit(nearestIndex()), SETTLE_MS);
+  };
+
+  const handleScroll = () => {
+    setVisualIndex(nearestIndex());
+    if (touching.current) return;
+    commitWhenSettled();
+  };
+
+  const handleTouchStart = () => {
+    touching.current = true;
+    if (settleTimer.current) clearTimeout(settleTimer.current);
+  };
+
+  const handleTouchEnd = () => {
+    touching.current = false;
+    commitWhenSettled();
+  };
+
+  useEffect(
+    () => () => {
+      if (settleTimer.current) clearTimeout(settleTimer.current);
+    },
+    [],
+  );
 
   const goTo = (index: number) => {
     if (settleTimer.current) clearTimeout(settleTimer.current);
@@ -107,6 +137,9 @@ export default function WheelPicker<T extends string>({
       aria-activedescendant={`${baseId}-${visualIndex}`}
       className={`wheel-picker no-scrollbar h-[6.75rem] touch-pan-y select-none snap-y snap-mandatory overflow-y-auto overscroll-contain rounded-[var(--radius-md)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 ${className}`}
       onScroll={handleScroll}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
       onKeyDown={handleKeyDown}
     >
       <div aria-hidden="true" className="h-9" />
@@ -117,7 +150,7 @@ export default function WheelPicker<T extends string>({
           id={`${baseId}-${index}`}
           role="option"
           aria-selected={index === committedIndex}
-          className={`wheel-picker__option flex h-9 cursor-pointer snap-center items-center justify-center text-center text-sm ${
+          className={`wheel-picker__option flex h-9 cursor-pointer snap-center items-center justify-start text-left text-sm ${
             index === visualIndex
               ? 'wheel-picker__option--active font-semibold text-[var(--text-primary)]'
               : 'wheel-picker__option--peek text-[var(--text-secondary)]'
