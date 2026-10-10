@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
 import type { RentPeriod, SearchFilters } from '../api/types';
 import {
   cleanQuery,
@@ -14,6 +13,7 @@ import {
   type SortOrder,
 } from '../lib/searchFilters';
 import { cityParam, saveCity } from './useCity';
+import { useUrlParams } from './useUrlParams';
 
 /** Записать фильтры в параметры адреса вместо прежних; страница сбрасывается на первую */
 function writeFilters(params: URLSearchParams, filters: SearchFilters): void {
@@ -33,8 +33,7 @@ function writeFilters(params: URLSearchParams, filters: SearchFilters): void {
  * после чего city из адреса убирается; без city действует запомненный город.
  */
 export function useSearchFilters() {
-  const { search } = useLocation();
-  const navigate = useNavigate();
+  const { search, update } = useUrlParams();
   // Новый объект только при изменении адреса — на filters можно опираться в эффектах
   const { filters, urlCity } = useMemo(() => {
     const { city, ...rest } = parseFilters(new URLSearchParams(search));
@@ -47,21 +46,6 @@ export function useSearchFilters() {
   const page = Math.max(
     1,
     Number.parseInt(new URLSearchParams(search).get('page') ?? '1', 10) || 1,
-  );
-
-  /**
-   * Изменить параметры адреса. setSearchParams из React Router кодирует запятую как %2C,
-   * а районы в адресе должны читаться: ?district=vake,saburtalo.
-   * keepScroll — страница остаётся на месте (иначе ScrollRestoration прокрутит её наверх)
-   */
-  const update = useCallback(
-    (change: (params: URLSearchParams) => void, replace: boolean, keepScroll = false) => {
-      const params = new URLSearchParams(search);
-      change(params);
-      const next = params.toString().replace(/%2C/gi, ',');
-      navigate({ search: next ? `?${next}` : '' }, { replace, preventScrollReset: keepScroll });
-    },
-    [search, navigate],
   );
 
   // Город из ссылки становится выбранным; в адресе он больше не нужен

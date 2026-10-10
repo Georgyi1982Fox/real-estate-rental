@@ -8,6 +8,8 @@ interface GalleryProps {
   images: string[];
   /** Базовый alt, к нему добавляется номер фото */
   alt: string;
+  /** Название галереи для скринридера; по умолчанию — «Фото квартиры» */
+  label?: string;
 }
 
 const ARROW_CLASS =
@@ -17,7 +19,7 @@ const ARROW_CLASS =
  * Галерея фото: нативный свайп (CSS scroll-snap), стрелки на десктопе, точки-навигация.
  * Листается по кругу: после последнего фото снова первое
  */
-export default function Gallery({ images, alt }: GalleryProps) {
+export default function Gallery({ images, alt, label }: GalleryProps) {
   const { t } = useI18n();
   const [failed, setFailed] = useState<ReadonlySet<number>>(new Set());
   const total = images.length;
@@ -50,13 +52,13 @@ export default function Gallery({ images, alt }: GalleryProps) {
     <section
       className="gallery relative"
       aria-roledescription="carousel"
-      aria-label={t.gallery.label}
+      aria-label={label ?? t.gallery.label}
     >
       <ul
         ref={trackRef}
         className="gallery__track no-scrollbar flex aspect-[4/3] w-full list-none snap-x snap-mandatory overflow-x-auto overscroll-x-contain rounded-[var(--radius-lg)] bg-[var(--surface-hover)] p-0 sm:aspect-[16/10]"
         tabIndex={0}
-        aria-label={t.gallery.label}
+        aria-label={label ?? t.gallery.label}
         onScroll={onScroll}
         onKeyDown={handleKeyDown}
       >
@@ -117,7 +119,7 @@ export default function Gallery({ images, alt }: GalleryProps) {
 
           <nav
             className="gallery__dots absolute inset-x-0 bottom-2 flex justify-center gap-0.5"
-            aria-label={t.gallery.label}
+            aria-label={label ?? t.gallery.label}
           >
             {images.map((src, index) => (
               <button

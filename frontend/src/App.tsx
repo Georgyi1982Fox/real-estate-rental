@@ -1,12 +1,17 @@
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import Layout from './components/Layout';
+import { HOTELS_PATH, MY_HOTELS_PATH, NEW_HOTEL_PATH } from './lib/hotels';
 import { DAILY_SEARCH_PATH } from './lib/searchFilters';
 import AuthPage from './pages/AuthPage';
 import FavoritesPage from './pages/FavoritesPage';
 import FeatureLabPage from './pages/FeatureLabPage';
 import HelpPage from './pages/HelpPage';
 import HomePage from './pages/HomePage';
+import HotelFormPage from './pages/HotelFormPage';
+import HotelPage from './pages/HotelPage';
+import HotelsPage from './pages/HotelsPage';
 import LegalPage from './pages/LegalPage';
+import MyHotelsPage from './pages/MyHotelsPage';
 import ListingPage from './pages/ListingPage';
 import NotFoundPage from './pages/NotFoundPage';
 import NotificationsPage from './pages/NotificationsPage';
@@ -28,6 +33,13 @@ const router = createBrowserRouter(
         { path: '/', element: <HomePage /> },
         { path: '/search', element: <SearchPage /> },
         { path: '/listing/:id', element: <ListingPage /> },
+        // Гостиницы (FRONTEND-045): отдельный раздел, с квартирами не смешивается
+        { path: HOTELS_PATH, element: <HotelsPage /> },
+        { path: `${HOTELS_PATH}/:id`, element: <HotelPage /> },
+        { path: MY_HOTELS_PATH, element: <MyHotelsPage /> },
+        // key: «Разместить» и «Изменить» — разные формы, состояние не переносится
+        { path: NEW_HOTEL_PATH, element: <HotelFormPage key="new" /> },
+        { path: `${MY_HOTELS_PATH}/:id/edit`, element: <HotelFormPage key="edit" /> },
         { path: '/help', element: <HelpPage /> },
         { path: '/legal/:doc', element: <LegalPage /> },
         // Посуточная аренда — та же лента в режиме «Посуточно»

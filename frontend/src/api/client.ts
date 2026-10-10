@@ -7,12 +7,15 @@ export class ApiError extends Error {
   readonly status: number;
   /** Машинный код ошибки из тела ответа, например "payment_required" */
   readonly code?: string;
+  /** Текст ошибки из тела ответа (FastAPI: { detail: "rejected: bad_price" }) */
+  readonly detail?: string;
 
-  constructor(status: number, message: string, code?: string) {
+  constructor(status: number, message: string, code?: string, detail?: string) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
+    this.detail = detail;
   }
 
   get isNotFound(): boolean {
@@ -31,21 +34,24 @@ export class ApiError extends Error {
 }
 
 /**
- * Код ошибки из JSON-тела. Бэкенд может положить его в корень ({ code }),
- * в { error: { code } } или в FastAPI-обёртку { detail: { code } }
+ * Код и текст ошибки из JSON-тела. Код бэкенд может положить в корень ({ code }),
+ * в { error: { code } } или в FastAPI-обёртку { detail: { code } }; текст — строка detail
  */
-async function readErrorCode(response: Response): Promise<string | undefined> {
+async function readError(response: Response): Promise<{ code?: string; detail?: string }> {
   try {
     const body: unknown = await response.json();
-    const candidates = [body, pick(body, 'error'), pick(body, 'detail')];
+    const rawDetail = pick(body, 'detail');
+    const detail = typeof rawDetail === 'string' ? rawDetail : undefined;
+    const candidates = [body, pick(body, 'error'), rawDetail];
     for (const candidate of candidates) {
       const code = pick(candidate, 'code');
-      if (typeof code === 'string') return code;
+      if (typeof code === 'string') return { code, detail };
     }
+    return { detail };
   } catch {
-    // Тело не JSON или пустое — кода нет
+    // Тело не JSON или пустое — ни кода, ни текста
   }
-  return undefined;
+  return {};
 }
 
 function pick(value: unknown, key: string): unknown {
@@ -55,7 +61,7 @@ function pick(value: unknown, key: string): unknown {
 }
 
 async function request<T>(
-  method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   path: string,
   body?: unknown,
   signal?: AbortSignal,
@@ -65,7 +71,10 @@ async function request<T>(
   // После «Выйти» запросы идут анонимно, пока пользователь снова не войдёт
   const initData = isSignedOut() ? '' : getInitData();
   if (initData) headers['X-Telegram-Init-Data'] = initData;
-  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  // Файл уходит телом запроса как есть, всё остальное — JSON
+  const file = body instanceof Blob ? body : null;
+  if (file) headers['Content-Type'] = file.type || 'application/octet-stream';
+  else if (body !== undefined) headers['Content-Type'] = 'application/json';
 
   let response: Response;
   try {
@@ -73,7 +82,7 @@ async function request<T>(
       method,
       signal,
       headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: file ?? (body === undefined ? undefined : JSON.stringify(body)),
       credentials: 'same-origin',
     });
   } catch (error) {
@@ -83,8 +92,8 @@ async function request<T>(
   }
 
   if (!response.ok) {
-    const code = await readErrorCode(response);
-    throw new ApiError(response.status, response.statusText || 'Request failed', code);
+    const { code, detail } = await readError(response);
+    throw new ApiError(response.status, response.statusText || 'Request failed', code, detail);
   }
   // 204 No Content (например, /api/auth/logout)
   if (response.status === 204) return undefined as T;
@@ -103,6 +112,16 @@ export function apiPost<T>(path: string, body?: unknown, signal?: AbortSignal): 
 /** Частичное обновление ресурса, body сериализуется в JSON */
 export function apiPatch<T>(path: string, body: unknown, signal?: AbortSignal): Promise<T> {
   return request<T>('PATCH', path, body, signal);
+}
+
+/** Замена ресурса целиком, body сериализуется в JSON */
+export function apiPut<T>(path: string, body: unknown, signal?: AbortSignal): Promise<T> {
+  return request<T>('PUT', path, body, signal);
+}
+
+/** Загрузка файла: тело запроса — сам файл (например, фото гостиницы) */
+export function apiUpload<T>(path: string, file: Blob, signal?: AbortSignal): Promise<T> {
+  return request<T>('POST', path, file, signal);
 }
 
 /** Удаление ресурса (обычно ответ 204 без тела) */
