@@ -1,22 +1,12 @@
-import type { ReactNode } from 'react';
 import type { Listing } from '../api/types';
 import { conditionName } from '../i18n/conditions';
 import { fillVars, formatPrice } from '../lib/format';
 import { useI18n } from '../providers/I18nProvider';
 import ListingAmenities from './ListingAmenities';
+import SpecItem from './SpecItem';
 
 interface ListingSpecsProps {
   listing: Listing;
-}
-
-function SpecItem({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="listing-specs__item min-w-0 rounded-[var(--radius-md)] bg-[var(--surface-hover)] px-2.5 py-3 sm:p-3">
-      <dt className="text-xs text-[var(--text-secondary)]">{label}</dt>
-      {/* На 375px длинное слово («გარემონტებული») крупным шрифтом не помещается в плитку и рвётся */}
-      <dd className="mt-1 break-words text-[13px] font-semibold sm:text-base">{children}</dd>
-    </div>
-  );
 }
 
 /**

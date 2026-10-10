@@ -1,16 +1,13 @@
 import type { SearchFilters } from '../api/types';
 import type { DistrictNames } from '../hooks/useDistricts';
-import { fill } from '../lib/format';
 import {
   districtsLabel,
   extraFilterChips,
   filterDistricts,
   filterLabels,
-  type FilterChip,
 } from '../lib/searchFilters';
-import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
-import Icon from './Icon';
+import ChipList, { type Chip } from './ChipList';
 
 interface FilterChipsProps {
   filters: SearchFilters;
@@ -41,11 +38,12 @@ export default function FilterChips({
     (ids.length > 0 ? `${ht.districts}: ${ids.length}` : '');
   const labels = filterLabels(filters, districts, t.searches);
 
-  const chips: FilterChip[] = [];
+  const chips: Chip<SearchFilters>[] = [];
   if (labels.districts) {
     chips.push({
       key: 'districts',
       label: labels.districts,
+      icon: 'pin',
       patch: { district: undefined, districts: undefined },
     });
   }
@@ -61,44 +59,5 @@ export default function FilterChips({
   }
   chips.push(...extraFilterChips(filters, t, lang));
 
-  if (chips.length === 0) return null;
-
-  return (
-    <ul className="filter-chips flex flex-wrap gap-2" aria-label={ht.active_filters}>
-      {chips.map((chip) => (
-        <li
-          key={chip.key}
-          className="filter-chips__chip inline-flex min-w-0 max-w-full items-center rounded-full bg-[var(--surface-hover)] text-sm font-medium text-[var(--text-primary)]"
-        >
-          <button
-            type="button"
-            className="filter-chips__label inline-flex min-h-9 min-w-0 items-center gap-1.5 rounded-full py-1.5 pl-3.5 pr-1 underline-offset-2 hover:underline"
-            aria-haspopup="dialog"
-            aria-label={fill(ht.edit_filter, chip.label)}
-            onClick={() => {
-              haptic('light');
-              onEdit();
-            }}
-          >
-            {chip.key === 'districts' && (
-              <Icon name="pin" className="size-4 text-[var(--text-secondary)]" />
-            )}
-            <span className="truncate">{chip.label}</span>
-          </button>
-          {/* Крестик — отдельная кнопка; after расширяет зону нажатия до 44 px */}
-          <button
-            type="button"
-            className="filter-chips__remove relative grid size-9 shrink-0 place-items-center rounded-full text-[var(--text-secondary)] transition-colors duration-200 after:absolute after:-inset-1 after:content-[''] hover:bg-[var(--border)] hover:text-[var(--text-primary)] active:scale-[.95]"
-            aria-label={fill(ht.remove_filter, chip.label)}
-            onClick={() => {
-              haptic('light');
-              onRemove(chip.patch);
-            }}
-          >
-            <Icon name="close" className="size-4" />
-          </button>
-        </li>
-      ))}
-    </ul>
-  );
+  return <ChipList chips={chips} onRemove={onRemove} onEdit={onEdit} />;
 }

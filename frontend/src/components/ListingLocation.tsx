@@ -20,6 +20,8 @@ interface ListingLocationProps {
   /** Адрес и район из самого объявления — пока /location не ответил */
   address: string;
   district: string;
+  /** Подпись карты для скринридера; по умолчанию — «Квартира на карте» */
+  mapLabel?: string;
 }
 
 /** Есть ли что показать на карте: точность exact/district и настоящие координаты */
@@ -41,9 +43,11 @@ export default function ListingLocation({
   loading,
   address,
   district,
+  mapLabel,
 }: ListingLocationProps) {
   const { t } = useI18n();
   const lt = t.listing;
+  const label = mapLabel ?? lt.map.label;
   const showMap = hasMapPoint(location);
   const districtName = location?.district || district;
   const place = address || location?.address || districtName;
@@ -84,7 +88,7 @@ export default function ListingLocation({
                   latitude={location.latitude}
                   longitude={location.longitude}
                   exact={location.precision === 'exact'}
-                  label={lt.map.label}
+                  label={label}
                 />
               </Suspense>
             </div>
@@ -97,7 +101,7 @@ export default function ListingLocation({
 
           <nav
             className={`listing-location__links grid gap-3 ${yandex ? 'grid-cols-2' : 'grid-cols-1'}`}
-            aria-label={lt.map.label}
+            aria-label={label}
           >
             {google && (
               <ExternalLink href={google} className={MAP_BUTTON_CLASS}>

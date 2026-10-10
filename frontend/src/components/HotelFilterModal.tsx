@@ -1,49 +1,41 @@
 import { useCallback, useState } from 'react';
-import type { District, SearchFilters } from '../api/types';
+import type { HotelFilters } from '../api/types';
 import { useResultCount } from '../hooks/useResultCount';
 import { plural } from '../lib/format';
-import { hasFilters, searchToQuery, SMART_SORT } from '../lib/searchFilters';
+import { hasHotelFilters, hotelsQuery } from '../lib/hotelFilters';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
-import FilterPanel from './FilterPanel';
+import HotelFilterPanel from './HotelFilterPanel';
 import Modal from './Modal';
 
 const BUTTON_CLASS =
   'inline-flex min-h-11 items-center justify-center rounded-[var(--radius-md)] px-4 py-2.5 text-sm font-semibold transition-colors duration-200 active:scale-[.98]';
 
-interface FilterModalProps {
+interface HotelFilterModalProps {
   open: boolean;
   onClose: () => void;
   /** Применённые фильтры (из адреса) — с них начинается правка в окне */
-  filters: SearchFilters;
-  /** Выбранный город: окно его не меняет, но квартиры считаются в нём */
+  filters: HotelFilters;
+  /** Выбранный город: окно его не меняет, но объекты считаются в нём */
   city: string | undefined;
-  /** Текст поиска (q): окно его не меняет, но квартиры считаются с его учётом */
-  query: string;
-  /** Включён поиск по смыслу: он отдаёт не больше 50 квартир, и считать надо так же */
-  smart?: boolean;
-  districts: District[];
   /** «Показать»: новые фильтры целиком */
-  onApply: (filters: SearchFilters) => void;
+  onApply: (filters: HotelFilters) => void;
 }
 
 /**
- * Окно фильтров. Правки живут только в окне и применяются кнопкой «Показать N квартир»;
- * закрытие любым способом (✕, фон, Esc, свайп, «Назад») ничего не меняет.
+ * Окно фильтров гостиниц. Правки живут только в окне и применяются кнопкой
+ * «Показать N объектов»; закрытие любым способом ничего не меняет
  */
-export default function FilterModal({
+export default function HotelFilterModal({
   open,
   onClose,
   filters,
   city,
-  query,
-  smart = false,
-  districts,
   onApply,
-}: FilterModalProps) {
+}: HotelFilterModalProps) {
   const { lang, t } = useI18n();
   const ht = t.home;
-  const [draft, setDraft] = useState<SearchFilters>(filters);
+  const [draft, setDraft] = useState<HotelFilters>(filters);
   const [wasOpen, setWasOpen] = useState(open);
 
   // Каждое открытие начинается с применённых фильтров
@@ -52,15 +44,13 @@ export default function FilterModal({
     if (open) setDraft(filters);
   }
 
-  const draftQuery = searchToQuery({ ...draft, city }, query, smart ? SMART_SORT : undefined);
-
   const { counting, total } = useResultCount(
     open,
-    draftQuery,
-    (query) => `/api/listings?per_page=1${query ? `&${query}` : ''}`,
+    hotelsQuery(draft, city),
+    (query) => `/api/hotels?per_page=1${query ? `&${query}` : ''}`,
   );
 
-  const change = useCallback((patch: SearchFilters) => {
+  const change = useCallback((patch: HotelFilters) => {
     setDraft((current) => ({ ...current, ...patch }));
   }, []);
 
@@ -73,18 +63,17 @@ export default function FilterModal({
   let showLabel = ht.show_any;
   if (counting) showLabel = ht.show_loading;
   else if (total === 0) showLabel = ht.nothing_found;
-  else if (total !== undefined) showLabel = plural(ht.show_count, total, lang);
+  else if (total !== undefined) showLabel = plural(t.hotels.show_count, total, lang);
 
   const footer = (
     <div className="filter-modal__actions flex gap-3">
       <button
         type="button"
         className={`${BUTTON_CLASS} text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] disabled:opacity-50 disabled:hover:bg-transparent`}
-        disabled={!hasFilters(draft)}
+        disabled={!hasHotelFilters(draft)}
         onClick={() => {
           haptic('light');
-          // Срок аренды — режим ленты, «Сбросить» его не трогает
-          setDraft({ rent_period: draft.rent_period });
+          setDraft({});
         }}
       >
         {ht.reset}
@@ -104,7 +93,7 @@ export default function FilterModal({
 
   return (
     <Modal open={open} title={ht.filters} onClose={onClose} footer={footer}>
-      <FilterPanel districts={districts} filters={draft} onChange={change} />
+      <HotelFilterPanel filters={draft} onChange={change} />
     </Modal>
   );
 }
