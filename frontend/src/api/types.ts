@@ -73,6 +73,10 @@ export interface Listing {
   /** Неизвестные коды не показываем */
   features?: FeatureCode[];
   owner_type?: OwnerType | null;
+  /** Оплачен «Топ» (TASK-097): бэкенд сам ставит такие объявления вверху поиска */
+  is_promoted?: boolean;
+  /** Bina.ai проверил документ о собственности (TASK-098) */
+  is_verified?: boolean;
   latitude?: number | null;
   longitude?: number | null;
   /** Опубликовано на сайте-источнике */

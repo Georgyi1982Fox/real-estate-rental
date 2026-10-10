@@ -24,6 +24,7 @@ import ListingSkeleton from '../components/ListingSkeleton';
 import ListingSpecs from '../components/ListingSpecs';
 import MarketPriceBadge from '../components/MarketPriceBadge';
 import PhoneReveal from '../components/PhoneReveal';
+import PromotionBadges from '../components/PromotionBadges';
 import SimilarListings from '../components/SimilarListings';
 import { useApi } from '../hooks/useApi';
 import { useContact } from '../hooks/useContact';
@@ -114,6 +115,8 @@ export default function ListingPage() {
   const district = listing ? (districtEntry ? tr(districtEntry, lang) : listing.district) : '';
   const ownerName = tr(listing?.owner?.name, lang) || listing?.owner_name || '';
   const address = tr(listing?.address, lang);
+  const promoted = listing?.is_promoted === true;
+  const verified = listing?.is_verified === true;
 
   return (
     <>
@@ -199,6 +202,17 @@ export default function ListingPage() {
                   periodClassName="text-base font-medium text-[var(--text-secondary)]"
                   monthly
                 />
+
+                {(promoted || verified) && (
+                  <div className="listing-summary__badges space-y-1.5">
+                    <PromotionBadges promoted={promoted} verified={verified} />
+                    {verified && (
+                      <p className="listing-summary__verified-hint m-0 text-xs text-[var(--text-secondary)]">
+                        {t.card.verified_hint}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 <MarketPriceBadge listingId={listing.id} />
 

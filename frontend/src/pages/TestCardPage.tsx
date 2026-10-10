@@ -25,6 +25,8 @@ const TEST_LISTINGS: Listing[] = [
     area: 82,
     district: 'Ваке',
     images: [],
+    is_promoted: true,
+    is_verified: true,
     fraud_level: 'none',
     fraud_reasons: [],
   },

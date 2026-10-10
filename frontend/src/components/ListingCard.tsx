@@ -11,6 +11,7 @@ import CardGallery from './CardGallery';
 import FraudBadge from './FraudBadge';
 import ListingPrice from './ListingPrice';
 import OwnerBadge from './OwnerBadge';
+import PromotionBadges from './PromotionBadges';
 
 interface ListingCardProps {
   listing: Listing;
@@ -40,12 +41,16 @@ export default function ListingCard({
   const image = images[0];
   const hasFloor = typeof listing.floor === 'number';
   const fraud = fraudLevel(listing);
+  const promoted = listing.is_promoted === true;
+  const verified = listing.is_verified === true;
   // Незнакомый код источника — подписи нет
   const source = sourceName(listing.source);
 
   return (
     <article
-      className="listing-card group relative w-full max-w-full overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)] transition-all duration-200 focus-within:shadow-[var(--shadow-md)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]"
+      className={`listing-card group relative w-full max-w-full overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--surface)] shadow-[var(--shadow-sm)] transition-all duration-200 focus-within:shadow-[var(--shadow-md)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)] ${
+        promoted ? 'listing-card--promoted border-[var(--promo-border)]' : 'border-[var(--border)]'
+      }`}
       data-listing-id={listing.id}
     >
       <figure className="listing-card__figure">
@@ -104,6 +109,8 @@ export default function ListingCard({
                 className="listing-card__price text-lg font-bold leading-6 text-[var(--text-primary)]"
                 periodClassName="text-sm font-medium text-[var(--text-secondary)]"
               />
+              {/* «Проверено» бывает и у агентства, поэтому «Собственник» — отдельный значок */}
+              <PromotionBadges promoted={promoted} verified={verified} />
               {listing.owner_type === 'owner' && <OwnerBadge />}
             </div>
           </div>
