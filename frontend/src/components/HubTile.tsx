@@ -7,7 +7,7 @@ import type { IconName } from './Icon';
 
 /**
  * Цвет иконки (--tone-* в theme.css): свой у каждой группы плиток,
- * hero — у двух больших плиток сверху
+ * hero — у плиток поиска сверху
  */
 export type HubTone = 'hero' | 'search' | 'owner' | 'benefit' | 'housing' | 'more';
 
@@ -41,8 +41,6 @@ interface HubTileProps {
   iconClass?: string;
   /** Имя ссылки для скринридера, если его нужно дополнить (например, числом непрочитанных) */
   label?: string;
-  /** Крупная плитка-«герой» */
-  large?: boolean;
 }
 
 /** Плитка главного меню: иконка, название, короткая подпись */
@@ -57,19 +55,14 @@ export default function HubTile({
   badgeMax = 9,
   iconClass = '',
   label,
-  large = false,
 }: HubTileProps) {
   const content = (
     <>
       <span className={`hub-tile__icon relative ${TONE_CLASS[tone]}`}>
-        <Icon name={icon} className={`stroke-[1.5] ${large ? 'size-12' : 'size-9'} ${iconClass}`} />
+        <Icon name={icon} className={`size-9 stroke-[1.5] ${iconClass}`} />
         <CountBadge count={badge} max={badgeMax} />
       </span>
-      <span
-        className={`hub-tile__title font-semibold leading-tight ${large ? 'text-base' : 'text-sm'}`}
-      >
-        {title}
-      </span>
+      <span className="hub-tile__title text-sm font-semibold leading-tight">{title}</span>
       <span className="hub-tile__text text-xs leading-snug text-[var(--text-secondary)]">
         {text}
       </span>

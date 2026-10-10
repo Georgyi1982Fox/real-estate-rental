@@ -39,6 +39,12 @@
   --success-bg: #ecfdf5;
   --success-text: #065f46;
 
+  /* Значок «Топ» (FRONTEND-045, 036) и звёзды гостиницы */
+  --promo-bg: #fff7ed;
+  --promo-text: #9a3412;
+  --promo-border: #fdba74;
+  --star: #d97706;
+
   /* Иконки главного меню (FRONTEND-034): пастельные, у каждой группы плиток свой цвет */
   --tone-search: #7fb89a;
   --tone-owner: #7aaee8;
@@ -105,6 +111,10 @@
     --danger-text: #fecaca;
     --success-bg: rgba(16, 185, 129, 0.16);
     --success-text: #a7f3d0;
+    --promo-bg: rgba(249, 115, 22, 0.16);
+    --promo-text: #fed7aa;
+    --promo-border: rgba(249, 115, 22, 0.55);
+    --star: #fbbf24;
     --tone-search: #b5dcc3;
     --tone-owner: #b3d1f7;
     --tone-benefit: #f7dc8e;
@@ -130,6 +140,10 @@
   --danger-text: #fecaca;
   --success-bg: rgba(16, 185, 129, 0.16);
   --success-text: #a7f3d0;
+  --promo-bg: rgba(249, 115, 22, 0.16);
+  --promo-text: #fed7aa;
+  --promo-border: rgba(249, 115, 22, 0.55);
+  --star: #fbbf24;
   --tone-search: #b5dcc3;
   --tone-owner: #b3d1f7;
   --tone-benefit: #f7dc8e;

@@ -34,8 +34,14 @@ interface GroupConfig {
   tiles: TileConfig[];
 }
 
-const SEARCH_TILE: TileConfig = { key: 'search', icon: 'search', to: '/search' };
-const DAILY_TILE: TileConfig = { key: 'daily', icon: 'bed', to: DAILY_SEARCH_PATH };
+// Первый ряд — что искать: квартиры на месяц, посуточно, гостиницы
+const HERO_TILES: TileConfig[] = [
+  { key: 'search', icon: 'search', to: '/search' },
+  { key: 'daily', icon: 'bed', to: DAILY_SEARCH_PATH },
+  { key: 'hotels', icon: 'hotel', to: '/hotels' },
+];
+/** Сетка плиток: одна и та же у первого ряда и у групп */
+const GRID_CLASS = 'grid grid-cols-2 gap-2 lg:grid-cols-4';
 
 // Группы — как в главном меню бота
 const GROUPS: GroupConfig[] = [
@@ -53,7 +59,10 @@ const GROUPS: GroupConfig[] = [
   {
     key: 'owners',
     tone: 'owner',
-    tiles: [{ key: 'owner', icon: 'home_plus', to: '/my-listings' }],
+    tiles: [
+      { key: 'owner', icon: 'home_plus', to: '/my-listings' },
+      { key: 'my_hotels', icon: 'hotel', to: '/my/hotels' },
+    ],
   },
   {
     key: 'benefits',
@@ -84,7 +93,7 @@ const GROUPS: GroupConfig[] = [
 const NOTIFICATIONS_BADGE_MAX = 9;
 const FAVORITES_BADGE_MAX = 99;
 
-/** Главное меню: две крупные плитки поиска и сетка разделов по группам */
+/** Главное меню: ряд плиток поиска и сетка разделов по группам */
 export default function HubMenu() {
   const { lang, t } = useI18n();
   const ht = t.hub;
@@ -121,7 +130,7 @@ export default function HubMenu() {
     return { count: 0, max: 0 };
   };
 
-  const renderTile = (tile: TileConfig, tone: HubTone, large = false) => {
+  const renderTile = (tile: TileConfig, tone: HubTone) => {
     const badge = tileBadge(tile.key);
     return (
       <HubTile
@@ -131,7 +140,6 @@ export default function HubMenu() {
         tone={tone}
         to={tile.to}
         href={tile.href}
-        large={large}
         badge={badge.count}
         badgeMax={badge.max}
         iconClass={tile.motion}
@@ -142,9 +150,12 @@ export default function HubMenu() {
 
   return (
     <nav className="hub-menu flex flex-col gap-4" aria-label={ht.menu}>
-      <ul className="hub-menu__heroes grid grid-cols-2 gap-2" aria-label={ht.groups.main}>
-        <li className="min-w-0">{renderTile(SEARCH_TILE, 'hero', true)}</li>
-        <li className="min-w-0">{renderTile(DAILY_TILE, 'hero', true)}</li>
+      <ul className={`hub-menu__heroes ${GRID_CLASS}`} aria-label={ht.groups.main}>
+        {HERO_TILES.map((tile) => (
+          <li key={tile.key} className="min-w-0">
+            {renderTile(tile, 'hero')}
+          </li>
+        ))}
       </ul>
 
       {/* Каждая группа — с новой строки, и на телефоне, и на компьютере */}
@@ -162,7 +173,7 @@ export default function HubMenu() {
             >
               {ht.groups[group.key]}
             </h2>
-            <ul className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+            <ul className={GRID_CLASS}>
               {group.tiles.map((tile) => (
                 <li key={tile.key} className="min-w-0">
                   {renderTile(tile, group.tone)}

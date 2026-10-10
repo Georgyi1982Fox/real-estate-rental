@@ -441,3 +441,159 @@ export interface DistrictInfo {
   median_rent: DistrictMedianRent[];
   note: string;
 }
+
+/** ID гостиницы: UUID-строка с бэкенда, число — только в моках */
+export type HotelId = string | number;
+
+/**
+ * Гостиница в списке GET /api/hotels (TASK-120): гостиницы, гостевые дома, хостелы,
+ * апарт-отели размещают сами хозяева. Тексты к кодам kind и amenities — в i18n/hotels.ts
+ */
+export interface HotelSummary {
+  id: HotelId;
+  kind: string;
+  name: Localized;
+  /** Код города (GET /api/cities) */
+  city: string;
+  address?: string | null;
+  /** 1–5; null — без звёзд (гостевой дом, хостел) */
+  stars?: number | null;
+  /** Неизвестные коды не показываем */
+  amenities: string[];
+  images: string[];
+  /** Цена самого дешёвого номера за ночь, ₾ — «от N ₾» */
+  min_price?: number | null;
+  max_guests?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  is_promoted: boolean;
+  is_verified: boolean;
+}
+
+export interface HotelRoom {
+  id: string;
+  kind: string;
+  /** Своё название номера; пусто — показываем тип */
+  title?: string | null;
+  guests: number;
+  /** За ночь */
+  price: number;
+  currency: Currency | string;
+  /** Сколько таких номеров */
+  count: number;
+}
+
+/** GET /api/hotels/{id} */
+export interface Hotel extends HotelSummary {
+  /** Только те языки, на которых написал хозяин */
+  description?: Localized | null;
+  /** Время заезда и выезда: «14:00» */
+  check_in?: string | null;
+  check_out?: string | null;
+  rooms: HotelRoom[];
+  has_phone: boolean;
+  has_whatsapp: boolean;
+  has_telegram: boolean;
+}
+
+export interface HotelsPage extends ListResponse<HotelSummary> {
+  total: number;
+  page: number;
+  pages: number;
+}
+
+/** GET /api/hotels/{id}/contact (нужен вход, иначе 401) */
+export interface HotelContact {
+  phone?: string | null;
+  whatsapp_url?: string | null;
+  telegram_url?: string | null;
+}
+
+/** active — в поиске, off — снят хозяином, hidden — скрыт модерацией */
+export type MyHotelStatus = 'active' | 'off' | 'hidden';
+
+/** Свой объект (/api/my/hotels, нужен вход): ещё статус показа и контакты как их ввёл хозяин */
+export interface MyHotel extends Hotel {
+  status: MyHotelStatus;
+  phone?: string | null;
+  whatsapp?: string | null;
+}
+
+/** GET /api/my/hotels */
+export interface MyHotels extends ListResponse<MyHotel> {
+  /** Сколько объектов можно держать включёнными */
+  limit: number;
+}
+
+/** Номер в POST/PUT …/rooms и в rooms при размещении */
+export interface HotelRoomInput {
+  kind: string;
+  title: string;
+  guests: number;
+  price: number;
+  currency: string;
+  count: number;
+}
+
+/**
+ * Тело POST и PUT /api/my/hotels. rooms учитываются только при размещении:
+ * у готового объекта номера меняются своими запросами
+ */
+export interface HotelInput {
+  kind: string;
+  name: string;
+  city: string;
+  /** На любом языке; сервер кладёт в колонку своего языка */
+  description: string;
+  address: string | null;
+  /** Точка на карте: обе координаты или ни одной, только в Грузии */
+  latitude: number | null;
+  longitude: number | null;
+  stars: number | null;
+  amenities: string[];
+  /** «14:00» */
+  check_in: string | null;
+  check_out: string | null;
+  /** Обязателен, если у хозяина нет имени в Telegram */
+  phone: string | null;
+  whatsapp: string | null;
+  rooms: HotelRoomInput[];
+}
+
+/** GET /api/hotels/options — коды для фильтров и формы размещения */
+export interface HotelOptions {
+  kinds: string[];
+  room_kinds: string[];
+  amenities: string[];
+  currencies: string[];
+  sorts: string[];
+  /** active_hotels, rooms, photos, description */
+  limits: Record<string, number>;
+}
+
+/** Фильтры поиска гостиниц: в адресе страницы и в GET /api/hotels */
+export interface HotelFilters {
+  /** Типы объекта: подходит любой из выбранных */
+  kind?: string[];
+  /** Сколько гостей нужно разместить */
+  guests?: number;
+  /** Цена за ночь, ₾ */
+  price_min?: number;
+  price_max?: number;
+  /** Не меньше стольких звёзд */
+  stars?: number;
+  /** Коды удобств: в гостинице должны быть все */
+  amenities?: string[];
+}
+
+/** GET /api/complaints/reasons: title уже на языке пользователя */
+export interface ComplaintReason {
+  code: string;
+  title: string;
+}
+
+/** POST …/complaints */
+export interface ComplaintRequest {
+  reason: string;
+  comment: string;
+}
