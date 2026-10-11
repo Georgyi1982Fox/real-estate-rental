@@ -16,6 +16,7 @@ import FavoriteButton from '../components/FavoriteButton';
 import { FRAUD_WARNING_HASH } from '../components/FraudBadge';
 import FraudWarning from '../components/FraudWarning';
 import Gallery from '../components/Gallery';
+import ListingAssistant from '../components/ListingAssistant';
 import ListingDates from '../components/ListingDates';
 import ListingDescription from '../components/ListingDescription';
 import ListingLocation, { hasMapPoint } from '../components/ListingLocation';
@@ -291,6 +292,13 @@ export default function ListingPage() {
             <div className="listing-page__details min-w-0 space-y-6 lg:col-start-1 lg:row-start-2">
               <ListingSpecs listing={listing} />
               <ListingDescription text={tr(listing.description, lang).trim()} />
+              {/* Готовое сообщение человек отправляет сам: хозяину — в бота, иначе — на сайте */}
+              <ListingAssistant
+                listingId={listing.id}
+                openUrl={gone ? '' : (listing.source_url ?? '')}
+                openLabel={byOwner ? lt.write_owner : lt.assistant.open_listing}
+                districtNames={names}
+              />
 
               <ListingLocation
                 ref={locationRef}

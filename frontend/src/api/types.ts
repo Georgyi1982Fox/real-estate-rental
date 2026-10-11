@@ -393,6 +393,28 @@ export interface ListingRisk {
   premium_required: boolean;
 }
 
+/** Что просим у AI-помощника: сообщение хозяину или вопросы для просмотра */
+export type AssistantAction = 'message_owner' | 'viewing_questions';
+
+/** POST /api/listings/{id}/assistant; note — о себе, до 300 символов, можно пустую строку */
+export interface AssistantRequest {
+  action: AssistantAction;
+  note: string;
+}
+
+/**
+ * Ответ AI-помощника (только Premium: иначе 402; лимит на день — 429; AI не ответил — 502).
+ * message_owner: text_ka — на грузинском, translation — на языке пользователя из профиля.
+ * viewing_questions: questions на языке пользователя
+ */
+export interface AssistantResponse {
+  action: string;
+  text_ka: string | null;
+  translation: string | null;
+  questions: string[];
+  remaining_today: number;
+}
+
 /** exact — точка известна; district — только район (показываем круг); none — карты нет */
 export type LocationPrecision = 'exact' | 'district' | 'none';
 
