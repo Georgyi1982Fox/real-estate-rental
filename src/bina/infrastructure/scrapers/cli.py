@@ -63,11 +63,13 @@ from bina.infrastructure.scrapers.backfill import BackfillStats, DetailsSource, 
 from bina.infrastructure.scrapers.korter_scraper import KorterScraper
 from bina.infrastructure.scrapers.livo_scraper import LivoScraper
 from bina.infrastructure.scrapers.myhome_scraper import MyHomeScraper
+from bina.infrastructure.scrapers.photo_mirror import TelegramPhotoMirror, http_download
 from bina.infrastructure.scrapers.pipeline import ScrapeResult, run_scrape
 from bina.infrastructure.scrapers.scheduler import ScraperScheduler
 from bina.infrastructure.scrapers.settings import ScraperSettings, TelegramSettings
 from bina.infrastructure.scrapers.ss_scraper import SSScraper
 from bina.infrastructure.scrapers.telegram_scraper import TelegramChannelScraper
+from bina.infrastructure.storage.photos import LocalPhotoStorage
 
 if TYPE_CHECKING:
     from aiogram.client.default import DefaultBotProperties
@@ -92,6 +94,8 @@ DUPLICATES_BATCH = 2000
 GEOCODE_BATCH = 30
 # Отпечатков смысла за запуск (TASK-012): 500 объявлений ≈ 16 запросов, копейки
 EMBED_BATCH = 500
+# Сколько уже сохранённых объявлений Telegram перескачивать фото за запуск
+TELEGRAM_PHOTO_BACKFILL = 40
 
 
 def make_scraper(source: str, *, details: bool, dump_dir: Path | None) -> BaseScraper:
@@ -137,10 +141,15 @@ async def scrape(
         await _merge_street_districts(db)
         for source in sources:
             scraper = make_scraper(source, details=details, dump_dir=dump_dir)
+            # Фото Telegram сохраняем себе: ссылки на посты перестают открываться
+            mirror = _telegram_photo_mirror(scraper) if source == TELEGRAM else None
+            hook = mirror.mirror_listings if mirror is not None else None
             try:
-                results.append(await run_scrape(scraper, source, limit, db.session_factory))
+                results.append(await run_scrape(scraper, source, limit, db.session_factory, hook))
                 if source == TELEGRAM:
                     await _archive_old_posts(db)
+                    if mirror is not None:
+                        await _mirror_existing_telegram_photos(db, mirror)
             finally:
                 close = getattr(scraper, "close", None)
                 if close is not None:
@@ -233,6 +242,28 @@ async def _archive_old_posts(db: DatabaseManager) -> None:
         await session.commit()
     if archived:
         logger.info("Old Telegram posts archived", count=archived)
+
+
+def _telegram_photo_mirror(scraper: BaseScraper) -> TelegramPhotoMirror | None:
+    """Зеркало фото Telegram на HTTP-клиенте парсера; без клиента — ничего."""
+    client = getattr(scraper, "client", None)
+    if client is None:
+        return None
+    return TelegramPhotoMirror(LocalPhotoStorage(), http_download(client))
+
+
+async def _mirror_existing_telegram_photos(
+    db: DatabaseManager, mirror: TelegramPhotoMirror
+) -> None:
+    """Перескачать фото у сохранённых объявлений Telegram (``TELEGRAM_PHOTO_BACKFILL`` за раз)."""
+    async with db.session_factory() as session:
+        listings = await ListingsRepository(session).source_remote_photos(
+            TELEGRAM, TELEGRAM_PHOTO_BACKFILL
+        )
+        fixed = await mirror.backfill(listings)
+        await session.commit()
+    if fixed:
+        logger.info("Telegram photos mirrored", listings=fixed)
 
 
 async def translate(limit: int) -> TranslationStats:

@@ -1,5 +1,6 @@
 """Полный цикл парсинга: источник → нормализация → дедупликация → БД."""
 
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
@@ -17,6 +18,9 @@ from bina.infrastructure.scrapers.normalizer import ListingNormalizer
 from bina.infrastructure.scrapers.repository import ScrapedListingsRepository
 
 logger = structlog.get_logger(__name__)
+
+# Доработка объявлений перед сохранением (Telegram: скачать фото себе)
+PhotoMirror = Callable[[list[RawListing]], Awaitable[list[RawListing]]]
 
 # Сколько помнить объявления, из которых не вышло объявления (потом — попробовать снова)
 SKIP_REMEMBER = timedelta(days=30)
@@ -38,6 +42,7 @@ async def run_scrape(
     source: str,
     limit: int,
     session_factory: async_sessionmaker[AsyncSession],
+    photo_mirror: PhotoMirror | None = None,
 ) -> ScrapeResult:
     """Парсит источник и сохраняет новые и изменившиеся объявления (с коммитом).
 
@@ -78,6 +83,9 @@ async def run_scrape(
     async with session_factory() as session:
         repository = ListingsRepository(session)
         changed = await ListingDeduplicator(repository).deduplicate(valid)
+        if photo_mirror is not None:
+            # Фото Telegram сохраняем себе: временные ссылки на посты перестают открываться
+            changed = await photo_mirror(changed)
         saved = await ScrapedListingsRepository(session).save_listings(changed)
         await repository.mark_checked(source, [item.source_id for item in raw_listings])
         await repository.add_skips(source, rejected)

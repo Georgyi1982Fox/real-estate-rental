@@ -7,6 +7,7 @@ from uuid import UUID
 
 from sqlalchemy import (
     ColumnElement,
+    Text,
     and_,
     case,
     cast,
@@ -867,6 +868,20 @@ class ListingsRepository(IListingsRepository):
                 fraud_checked_at=datetime.now(UTC),
             )
         )
+
+    async def source_remote_photos(self, source: str, limit: int) -> list[Listing]:
+        """Объявления источника с внешними (не нашими ``/api/media``) адресами фото.
+
+        Внешние ссылки содержат ``http`` — наши адреса (``/api/media/...``) нет; как только
+        фото зеркалируются, объявление выпадает из выборки и очередь двигается дальше.
+        """
+        query = (
+            select(Listing)
+            .where(Listing.source_name == source, cast(Listing.images, Text).like("%http%"))
+            .order_by(Listing.created_at.desc())
+            .limit(limit)
+        )
+        return list((await self._session.execute(query)).scalars().all())
 
     async def _get_or_create_district(self, district_name: str, city: str) -> District:
         """Район города по названию; нового района ещё нет — создаётся."""
