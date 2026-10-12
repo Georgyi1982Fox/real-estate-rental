@@ -19,6 +19,7 @@ import Gallery from '../components/Gallery';
 import ListingAssistant from '../components/ListingAssistant';
 import ListingDates from '../components/ListingDates';
 import ListingDescription from '../components/ListingDescription';
+import ListingDocuments from '../components/ListingDocuments';
 import ListingLocation, { hasMapPoint } from '../components/ListingLocation';
 import ListingPrice from '../components/ListingPrice';
 import ListingSkeleton from '../components/ListingSkeleton';
@@ -299,6 +300,7 @@ export default function ListingPage() {
                 openLabel={byOwner ? lt.write_owner : lt.assistant.open_listing}
                 districtNames={names}
               />
+              <ListingDocuments listing={listing} />
 
               <ListingLocation
                 ref={locationRef}

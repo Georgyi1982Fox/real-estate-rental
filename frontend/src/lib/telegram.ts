@@ -51,6 +51,7 @@ interface TelegramWebApp {
   openLink(url: string): void;
   openTelegramLink(url: string): void;
   openInvoice?(url: string, callback?: (status: InvoiceStatus) => void): void;
+  close(): void;
   MainButton: TelegramMainButton;
   BackButton: {
     show(): void;
@@ -183,6 +184,21 @@ export function openLink(url: string, navigateInternal: (path: string) => void):
   // Браузер: новая вкладка; если её заблокировали — в этой же
   const opened = window.open(target.href, '_blank', 'noopener,noreferrer');
   if (!opened) window.location.assign(target.href);
+}
+
+/**
+ * Перейти в чат с ботом (туда он присылает документы): открываем чат и закрываем мини-апп,
+ * иначе он остаётся поверх переписки. Вне Telegram ничего не делает — там обычная ссылка
+ */
+export function openBotChat(botUrl: string): void {
+  const webApp = getWebApp();
+  if (!webApp) return;
+  try {
+    webApp.openTelegramLink(botUrl);
+  } catch {
+    // Старый клиент без openTelegramLink: мини-апп открыт из чата с ботом — хватит закрытия
+  }
+  webApp.close();
 }
 
 /** Можно ли платить звёздами прямо в приложении (openInvoice есть с Bot API 6.1) */

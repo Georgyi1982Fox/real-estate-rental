@@ -4,8 +4,11 @@ import { useSyncExternalStore } from 'react';
 // многих мест (карточки, страница квартиры, фильтры), поэтому окно одно на всё приложение —
 // PremiumLimitModal в Layout, а хуки только сообщают причину через showPremiumPrompt()
 
-/** Какой лимит бесплатного тарифа исчерпан; assistant — AI-помощник есть только в Premium */
-export type PremiumLimitReason = 'favorites' | 'searches' | 'assistant';
+/**
+ * Какой лимит бесплатного тарифа исчерпан; assistant (AI-помощник) и documents (договор аренды)
+ * есть только в Premium
+ */
+export type PremiumLimitReason = 'favorites' | 'searches' | 'assistant' | 'documents';
 
 let reason: PremiumLimitReason | null = null;
 const listeners = new Set<() => void>();
