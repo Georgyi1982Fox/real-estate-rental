@@ -4,6 +4,7 @@ import pytest
 
 from bina.application.localization import (
     district_base,
+    district_canonical,
     district_names,
     localize_address,
     localize_name,
@@ -77,6 +78,13 @@ def test_localize_address_empty() -> None:
         # Опечатка сайта и номер части района
         ("Старий Тбилиси", {"ru": "Старый Тбилиси", "en": "Old Tbilisi", "ka": "ძველი თბილისი"}),
         ("Дигоми 3", {"ru": "Дигоми 3", "en": "Digomi 3", "ka": "დიღომი 3"}),
+        # «Старый/Новый + город» переводятся по словам, а не коверкаются побуквенно
+        ("Старый Батуми", {"ru": "Старый Батуми", "en": "Old Batumi", "ka": "ძველი ბათუმი"}),
+        ("Новый Рустави", {"ru": "Новый Рустави", "en": "New Rustavi", "ka": "ახალი რუსთავი"}),
+        ("Старый Рустави", {"ru": "Старый Рустави", "en": "Old Rustavi", "ka": "ძველი რუსთავი"}),
+        ("Старый город", {"ru": "Старый город", "en": "Old Town", "ka": "ძველი ქალაქი"}),
+        ("Центр", {"ru": "Центр", "en": "Center", "ka": "ცენტრი"}),
+        ("Unknown", {"ru": "Не указан", "en": "Unknown", "ka": "უცნობი"}),
     ],
 )
 def test_district_names(name: str, expected: dict[str, str]) -> None:
@@ -88,6 +96,21 @@ def test_unknown_district_is_transliterated() -> None:
     assert names["ru"] == "Новый квартал"
     assert names["en"] == "Novyy kvartal"
     assert script_of(names["ka"]) == "ka"
+
+
+def test_district_canonical_none_for_untranslatable() -> None:
+    # Нераспознанное название — None (вызвавший решит транслитерировать)
+    assert district_canonical("Новый квартал") is None
+    assert district_canonical("Авчала") is None
+    assert district_canonical("") is None
+
+
+def test_district_canonical_translates_compound() -> None:
+    assert district_canonical("Старый Батуми") == {
+        "ru": "Старый Батуми",
+        "en": "Old Batumi",
+        "ka": "ძველი ბათუმი",
+    }
 
 
 def test_transliterate_same_script_unchanged() -> None:

@@ -157,11 +157,15 @@ async def _merge_street_districts(db: DatabaseManager) -> None:
     сайтах (``ListingsRepository.fix_impossible_prices``).
     """
     async with db.session_factory() as session:
-        merged = await DistrictsRepository(session).merge_streets()
+        districts = DistrictsRepository(session)
+        merged = await districts.merge_streets()
+        renamed = await districts.fix_district_names()
         fixed = await ListingsRepository(session).fix_impossible_prices()
         await session.commit()
     if merged:
         logger.info("Street districts merged", districts=merged)
+    if renamed:
+        logger.info("District names fixed", districts=renamed)
     if any(fixed.values()):
         logger.info("Impossible prices fixed", **fixed)
 
