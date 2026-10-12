@@ -15,6 +15,7 @@ import Icon from './Icon';
 import type { IconName } from './Icon';
 import Modal from './Modal';
 import OpenInTelegram from './OpenInTelegram';
+import PremiumBadge from './PremiumBadge';
 
 type Tab = AssistantAction | 'cheaper';
 
@@ -131,10 +132,7 @@ export default function ListingAssistant({
         >
           <Icon name="sparkles" className="size-5 text-[var(--accent)]" />
           {at.title}
-          <span className="listing-assistant__premium inline-flex items-center gap-1 rounded-full bg-[var(--warning-bg)] px-2 py-0.5 text-xs font-semibold text-[var(--warning-text)]">
-            <Icon name="crown" className="size-3.5" />
-            {t.premium.premium}
-          </span>
+          <PremiumBadge />
         </h2>
         <p className="listing-assistant__intro text-sm text-[var(--text-secondary)]">{at.intro}</p>
       </header>

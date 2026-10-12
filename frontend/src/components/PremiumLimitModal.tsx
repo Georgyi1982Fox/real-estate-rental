@@ -13,18 +13,23 @@ export default function PremiumLimitModal() {
   const pt = t.premium;
   const reason = usePremiumPrompt();
 
-  // AI-помощник — не лимит, а возможность только для Premium: свой заголовок и тексты
-  const forAssistant = reason === 'assistant';
-  const text = forAssistant
-    ? pt.assistant_text
-    : reason === 'searches'
+  // AI-помощник и документы — не лимит, а возможности только для Premium: свой заголовок и тексты
+  const feature =
+    reason === 'assistant'
+      ? { title: pt.assistant_title, text: pt.assistant_text, hint: pt.assistant_hint }
+      : reason === 'documents'
+        ? { title: pt.documents_title, text: pt.documents_text, hint: pt.documents_hint }
+        : null;
+  const text =
+    feature?.text ??
+    (reason === 'searches'
       ? fill(pt.limit_searches, FREE_LIMITS.searches)
-      : fill(pt.limit_favorites, FREE_LIMITS.favorites ?? '');
+      : fill(pt.limit_favorites, FREE_LIMITS.favorites ?? ''));
 
   return (
     <Modal
       open={reason !== null}
-      title={forAssistant ? pt.assistant_title : pt.limit_title}
+      title={feature?.title ?? pt.limit_title}
       onClose={hidePremiumPrompt}
     >
       <section className="premium-limit flex flex-col items-center gap-4 text-center">
@@ -33,7 +38,7 @@ export default function PremiumLimitModal() {
         </span>
         <p className="premium-limit__text text-base font-semibold">{text}</p>
         <p className="premium-limit__hint text-sm text-[var(--text-secondary)]">
-          {forAssistant ? pt.assistant_hint : fill(pt.limit_text, PREMIUM_LIMITS.searches)}
+          {feature?.hint ?? fill(pt.limit_text, PREMIUM_LIMITS.searches)}
         </p>
         <Link
           to="/premium"

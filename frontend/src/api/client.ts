@@ -9,13 +9,22 @@ export class ApiError extends Error {
   readonly code?: string;
   /** Текст ошибки из тела ответа (FastAPI: { detail: "rejected: bad_price" }) */
   readonly detail?: string;
+  /** Поля, которые не прошли проверку (422 FastAPI: { detail: [{ loc: ["body", "months"] }] }) */
+  readonly fields: string[];
 
-  constructor(status: number, message: string, code?: string, detail?: string) {
+  constructor(
+    status: number,
+    message: string,
+    code?: string,
+    detail?: string,
+    fields: string[] = [],
+  ) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
     this.detail = detail;
+    this.fields = fields;
   }
 
   get isNotFound(): boolean {
@@ -35,23 +44,35 @@ export class ApiError extends Error {
 
 /**
  * Код и текст ошибки из JSON-тела. Код бэкенд может положить в корень ({ code }),
- * в { error: { code } } или в FastAPI-обёртку { detail: { code } }; текст — строка detail
+ * в { error: { code } } или в FastAPI-обёртку { detail: { code } }; текст — строка detail;
+ * список detail — ошибки полей (422)
  */
-async function readError(response: Response): Promise<{ code?: string; detail?: string }> {
+async function readError(
+  response: Response,
+): Promise<{ code?: string; detail?: string; fields?: string[] }> {
   try {
     const body: unknown = await response.json();
     const rawDetail = pick(body, 'detail');
     const detail = typeof rawDetail === 'string' ? rawDetail : undefined;
+    const fields = Array.isArray(rawDetail) ? rawDetail.map(fieldName).filter(Boolean) : [];
     const candidates = [body, pick(body, 'error'), rawDetail];
     for (const candidate of candidates) {
       const code = pick(candidate, 'code');
-      if (typeof code === 'string') return { code, detail };
+      if (typeof code === 'string') return { code, detail, fields };
     }
-    return { detail };
+    return { detail, fields };
   } catch {
     // Тело не JSON или пустое — ни кода, ни текста
   }
   return {};
+}
+
+/** Имя поля из ошибки FastAPI: последний текстовый элемент loc (["body", "months"] → months) */
+function fieldName(item: unknown): string {
+  const loc = pick(item, 'loc');
+  if (!Array.isArray(loc)) return '';
+  const names = loc.filter((part): part is string => typeof part === 'string');
+  return names.length > 1 ? (names[names.length - 1] ?? '') : '';
 }
 
 function pick(value: unknown, key: string): unknown {
@@ -92,8 +113,14 @@ async function request<T>(
   }
 
   if (!response.ok) {
-    const { code, detail } = await readError(response);
-    throw new ApiError(response.status, response.statusText || 'Request failed', code, detail);
+    const { code, detail, fields } = await readError(response);
+    throw new ApiError(
+      response.status,
+      response.statusText || 'Request failed',
+      code,
+      detail,
+      fields,
+    );
   }
   // 204 No Content (например, /api/auth/logout)
   if (response.status === 204) return undefined as T;

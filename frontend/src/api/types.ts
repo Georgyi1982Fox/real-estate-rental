@@ -415,6 +415,46 @@ export interface AssistantResponse {
   remaining_today: number;
 }
 
+/** Кто платит коммунальные по договору аренды */
+export type ContractUtilities = 'tenant' | 'landlord' | 'included';
+
+/** Второй язык договора (первый — всегда грузинский) */
+export type ContractLanguage = 'ru' | 'en';
+
+/**
+ * POST /api/listings/{id}/contract — анкета договора аренды (только Premium: иначе 402;
+ * ошибки в полях — 422; бот не смог отправить файл — 502).
+ * delivery: chat — бот присылает PDF в чат с пользователем
+ */
+export interface ContractRequest {
+  landlord_name: string;
+  tenant_name: string;
+  /** Паспорт / ID; пустая строка — не указан */
+  landlord_id: string;
+  tenant_id: string;
+  address: string;
+  /** Дата начала: 2026-11-01 */
+  start_date: string;
+  /** Срок, 1–60 месяцев */
+  months: number;
+  rent: number;
+  currency: Currency;
+  deposit: number;
+  /** До какого числа платить, 1–28 */
+  payment_day: number;
+  utilities: ContractUtilities;
+  pets_allowed: boolean;
+  notes: string;
+  second_language: ContractLanguage;
+  delivery: 'chat';
+}
+
+/** Документ (договор, акт приёмки) отправлен ботом в чат */
+export interface DocumentSent {
+  sent: boolean;
+  filename: string;
+}
+
 /** exact — точка известна; district — только район (показываем круг); none — карты нет */
 export type LocationPrecision = 'exact' | 'district' | 'none';
 
