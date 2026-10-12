@@ -13,20 +13,27 @@ export default function PremiumLimitModal() {
   const pt = t.premium;
   const reason = usePremiumPrompt();
 
-  const text =
-    reason === 'searches'
+  // AI-помощник — не лимит, а возможность только для Premium: свой заголовок и тексты
+  const forAssistant = reason === 'assistant';
+  const text = forAssistant
+    ? pt.assistant_text
+    : reason === 'searches'
       ? fill(pt.limit_searches, FREE_LIMITS.searches)
       : fill(pt.limit_favorites, FREE_LIMITS.favorites ?? '');
 
   return (
-    <Modal open={reason !== null} title={pt.limit_title} onClose={hidePremiumPrompt}>
+    <Modal
+      open={reason !== null}
+      title={forAssistant ? pt.assistant_title : pt.limit_title}
+      onClose={hidePremiumPrompt}
+    >
       <section className="premium-limit flex flex-col items-center gap-4 text-center">
         <span className="premium-limit__icon inline-grid size-14 place-items-center rounded-full bg-[var(--accent)]/15 text-[var(--accent)]">
           <Icon name="crown" className="size-7" />
         </span>
         <p className="premium-limit__text text-base font-semibold">{text}</p>
         <p className="premium-limit__hint text-sm text-[var(--text-secondary)]">
-          {fill(pt.limit_text, PREMIUM_LIMITS.searches)}
+          {forAssistant ? pt.assistant_hint : fill(pt.limit_text, PREMIUM_LIMITS.searches)}
         </p>
         <Link
           to="/premium"
