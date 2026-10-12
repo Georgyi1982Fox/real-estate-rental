@@ -8,6 +8,8 @@
 
 import re
 
+from bina.application.cities import city, city_of
+
 LANGS: tuple[str, ...] = ("ka", "ru", "en")
 
 _KA_LATIN = {
@@ -309,6 +311,24 @@ for _ru, _en, _ka, _aliases in _DISTRICTS:
         _DISTRICT_INDEX[_alias.lower()] = (_ru, _en, _ka)
 
 
+# Общие слова в названиях районов: написание → (ru, en, ka). Побуквенная
+# транслитерация их коверкает («Старый»→«სტარიი»), поэтому переводим словарём.
+_DISTRICT_WORDS: dict[str, tuple[str, str, str]] = {
+    "старый": ("Старый", "Old", "ძველი"),
+    "старая": ("Старая", "Old", "ძველი"),
+    "старое": ("Старое", "Old", "ძველი"),
+    "старий": ("Старый", "Old", "ძველი"),
+    "новый": ("Новый", "New", "ახალი"),
+    "новая": ("Новая", "New", "ახალი"),
+    "новое": ("Новое", "New", "ახალი"),
+    "центр": ("Центр", "Center", "ცენტრი"),
+    "город": ("город", "Town", "ქალაქი"),
+    "район": ("Район", "District", "რაიონი"),
+    "поселок": ("Посёлок", "Settlement", "დასახლება"),
+    "посёлок": ("Посёлок", "Settlement", "დასახლება"),
+    "unknown": ("Не указан", "Unknown", "უცნობი"),
+}
+
 # «Сабуртало/Картозия», «Вазисубани, 8-й Легион»: сайт пишет район вместе с улицей
 _DISTRICT_PART_RE = re.compile(r"\s*[/,]\s*")
 
@@ -322,18 +342,57 @@ def district_base(name: str) -> str | None:
     return parts[0]
 
 
-def district_names(name: str) -> dict[str, str]:
-    """Название района на трёх языках: из словаря, иначе транслитерация.
+def _district_word(word: str) -> tuple[str, str, str] | None:
+    """Слово названия района на трёх языках: словарь районов, общие слова, город."""
+    known = _DISTRICT_INDEX.get(word.lower())
+    if known is not None:
+        return known
+    common = _DISTRICT_WORDS.get(word.lower())
+    if common is not None:
+        return common
+    code = city_of(word)
+    if code is not None:
+        names = city(code).names
+        return (names["ru"], names["en"], names["ka"])
+    return None
 
-    «Дигоми 3» → словарное «Дигоми» + номер.
+
+def _resolve_district(base: str) -> tuple[str, str, str] | None:
+    """Район (без номера) на трёх языках по словарю или переводимым словам; иначе ``None``."""
+    known = _DISTRICT_INDEX.get(base.lower())
+    if known is not None:
+        return known
+    parts = [_district_word(word) for word in base.split()]
+    if parts and all(part is not None for part in parts):
+        return (
+            " ".join(part[0] for part in parts if part),
+            " ".join(part[1] for part in parts if part),
+            " ".join(part[2] for part in parts if part),
+        )
+    return None
+
+
+def district_canonical(name: str) -> dict[str, str] | None:
+    """Название района на трёх языках из словаря/переводимых слов; ``None`` — только транслит.
+
+    «Старый Батуми» → «ძველი ბათუმი», «Новый Рустави» → «ახალი რუსთავი»,
+    «Дигоми 3» → словарное «Дигоми» + номер. Непереводимое название — ``None``.
     """
     clean = re.sub(r"\s+", " ", name or "").strip()
     if not clean:
-        return {}
+        return None
     match = re.match(r"^(.*?)(\s+\d+)?$", clean)
     base, suffix = (match.group(1), match.group(2) or "") if match else (clean, "")
-    known = _DISTRICT_INDEX.get(base.lower())
-    if known is not None:
-        ru, en, ka = known
-        return {"ru": ru + suffix, "en": en + suffix, "ka": ka + suffix}
-    return {lang: transliterate(clean, lang) for lang in LANGS}
+    resolved = _resolve_district(base)
+    if resolved is None:
+        return None
+    ru, en, ka = resolved
+    return {"ru": ru + suffix, "en": en + suffix, "ka": ka + suffix}
+
+
+def district_names(name: str) -> dict[str, str]:
+    """Название района на трёх языках: из словаря/переводимых слов, иначе транслитерация."""
+    clean = re.sub(r"\s+", " ", name or "").strip()
+    if not clean:
+        return {}
+    return district_canonical(clean) or {lang: transliterate(clean, lang) for lang in LANGS}

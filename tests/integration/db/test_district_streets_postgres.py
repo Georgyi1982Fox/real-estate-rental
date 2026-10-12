@@ -89,3 +89,61 @@ async def test_merge_streets_moves_listings_and_searches(session: AsyncSession) 
         .scalar_one()
         .is_deleted
     )
+
+
+async def test_fix_district_names_renames_garbled(session: AsyncSession) -> None:
+    districts = DistrictsRepository(session)
+    # Созданы до словаря: русское название побуквенно превращено в грузинский
+    garbled = District(
+        city="batumi",
+        name_ka="სტარიი ბატუმი",
+        name_ru="Старый Батуми",
+        name_en="Staryy Batumi",
+        avg_price_per_m2=0,
+        safety_score=0,
+    )
+    rustavi = District(
+        city="rustavi",
+        name_ka="ნოვიი რუსტავი",
+        name_ru="Новый Рустави",
+        name_en="Novyy Rustavi",
+        avg_price_per_m2=0,
+        safety_score=0,
+    )
+    session.add_all([garbled, rustavi])
+    await session.flush()
+
+    assert await districts.fix_district_names() == 2
+
+    await session.refresh(garbled)
+    await session.refresh(rustavi)
+    assert (garbled.name_ka, garbled.name_en) == ("ძველი ბათუმი", "Old Batumi")
+    assert (rustavi.name_ka, rustavi.name_en) == ("ახალი რუსთავი", "New Rustavi")
+    # Повторный прогон уже ничего не меняет
+    assert await districts.fix_district_names() == 0
+
+
+async def test_fix_district_names_merges_duplicate(session: AsyncSession) -> None:
+    districts = DistrictsRepository(session)
+    correct = await districts.create_district("Старый Батуми", "batumi")
+    garbled = District(
+        city="batumi",
+        name_ka="სტარიი ბატუმი",
+        name_ru="Старый Батуми",
+        name_en="Staryy Batumi",
+        avg_price_per_m2=0,
+        safety_score=0,
+    )
+    session.add(garbled)
+    await session.flush()
+    listings = ListingsRepository(session)
+    listing = await listings.create_or_update_from_raw(raw("e", "Ваке"))
+    listing.district_id = garbled.id
+    await session.flush()
+
+    assert await districts.fix_district_names() == 1
+
+    await session.refresh(listing)
+    await session.refresh(garbled)
+    assert listing.district_id == correct.id
+    assert garbled.is_deleted

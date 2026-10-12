@@ -5,7 +5,7 @@ from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bina.application.cities import CITIES, DEFAULT_CITY
-from bina.application.localization import district_base, district_names
+from bina.application.localization import district_base, district_canonical, district_names
 from bina.application.repositories.districts import IDistrictsRepository
 from bina.infrastructure.db.models import District, Listing, SavedSearch
 
@@ -77,6 +77,44 @@ class DistrictsRepository(IDistrictsRepository):
             merged += 1
         await self._session.flush()
         return merged
+
+    async def fix_district_names(self) -> int:
+        """Исправить кривые названия районов и склеить дубликаты.
+
+        Районы, созданные до появления словаря, хранят русское название, побуквенно
+        превращённое в грузинский («სტარიი ბატუმი» вместо «ძველი ბათუმი»). Для каждого
+        района заново выводим три названия из исходного (то из них, что удаётся
+        распознать); если такой район уже есть — переносим в него объявления и поиски,
+        иначе переименовываем на месте. Возвращает число исправленных районов.
+        """
+        query = select(District).where(District.is_deleted.is_(False))
+        fixed = 0
+        for district in (await self._session.execute(query)).scalars().all():
+            names = next(
+                (
+                    found
+                    for raw in (district.name_ru, district.name_ka, district.name_en)
+                    if (found := district_canonical(raw)) is not None
+                ),
+                None,
+            )
+            if names is None or (
+                names["ka"] == district.name_ka
+                and names["ru"] == district.name_ru
+                and names["en"] == district.name_en
+            ):
+                continue
+            target = await self.get_by_name(names["ka"], district.city, active_only=True)
+            if target is not None and target.id != district.id:
+                await self._move(district.id, target.id)
+                district.is_deleted = True
+            else:
+                district.name_ka = names["ka"]
+                district.name_ru = names["ru"]
+                district.name_en = names["en"]
+            fixed += 1
+        await self._session.flush()
+        return fixed
 
     async def _move(self, old_id: UUID, new_id: UUID) -> None:
         """Перенести объявления и сохранённые поиски из района ``old_id`` в ``new_id``."""
