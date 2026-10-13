@@ -85,7 +85,7 @@ export const CONTRACT_FIELDS: ContractField[] = [
 ];
 
 /** Сегодня по местному времени: 2026-11-01 */
-function today(): string {
+export function today(): string {
   const now = new Date();
   const month = String(now.getMonth() + 1).padStart(2, '0');
   const day = String(now.getDate()).padStart(2, '0');

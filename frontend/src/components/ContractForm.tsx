@@ -1,4 +1,3 @@
-import { useId } from 'react';
 import type { FormEvent } from 'react';
 import type { Currency } from '../api/types';
 import {
@@ -18,11 +17,12 @@ import {
 import type { ContractDraft, ContractErrors, ContractField } from '../lib/contract';
 import { fill } from '../lib/format';
 import { useI18n } from '../providers/I18nProvider';
-import FormField, { FIELD_ERROR_CLASS, FIELD_INPUT_CLASS, fieldBorderClass } from './FormField';
+import FormField from './FormField';
 import { FORM_LEGEND_CLASS } from './HotelFormMain';
 import PillGroup from './PillGroup';
 import SelectField from './SelectField';
 import Switch from './Switch';
+import TextAreaField from './TextAreaField';
 
 const CURRENCY_LABELS: Record<Currency, string> = { GEL: '₾ GEL', USD: '$ USD', EUR: '€ EUR' };
 const PARTY_CLASS = 'contract-form__party m-0 flex min-w-0 flex-col gap-3 border-0 p-0';
@@ -53,7 +53,6 @@ export default function ContractForm({
 }: ContractFormProps) {
   const { t } = useI18n();
   const ct = t.contract;
-  const notesId = useId();
   const error = (field: ContractField) => {
     const problem = errors[field];
     return problem ? ct.errors[problem] : undefined;
@@ -228,34 +227,16 @@ export default function ContractForm({
           />
         </div>
 
-        <p className="form-field m-0 flex min-w-0 flex-col gap-1.5">
-          <label htmlFor={notesId} className="form-field__label text-sm font-medium">
-            {ct.notes}
-          </label>
-          <textarea
-            id={notesId}
-            name="notes"
-            rows={3}
-            maxLength={CONTRACT_NOTES_MAX}
-            value={draft.notes}
-            placeholder={ct.notes_placeholder}
-            aria-describedby={`${notesId}-hint`}
-            aria-invalid={errors.notes ? true : undefined}
-            className={`${FIELD_INPUT_CLASS} resize-y leading-relaxed ${fieldBorderClass(Boolean(errors.notes))}`}
-            onChange={(event) => onChange({ notes: event.target.value })}
-          />
-          <small
-            id={`${notesId}-hint`}
-            className="form-field__hint flex justify-between gap-3 text-xs text-[var(--text-secondary)]"
-          >
-            <span className={errors.notes ? FIELD_ERROR_CLASS : ''}>
-              {error('notes') ?? ct.optional}
-            </span>
-            <span className="shrink-0 tabular-nums">
-              {draft.notes.length} / {CONTRACT_NOTES_MAX}
-            </span>
-          </small>
-        </p>
+        <TextAreaField
+          label={ct.notes}
+          name="notes"
+          maxLength={CONTRACT_NOTES_MAX}
+          value={draft.notes}
+          placeholder={ct.notes_placeholder}
+          hint={ct.optional}
+          error={error('notes')}
+          onChange={(event) => onChange({ notes: event.target.value })}
+        />
 
         <PillGroup
           legend={ct.second_language}

@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ACCEPTANCE_PATH } from '../lib/acceptance';
 import { botSectionUrl } from '../lib/config';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
@@ -23,7 +24,7 @@ function RowContent({ icon, label }: { icon: IconName; label: string }) {
   );
 }
 
-/** Меню профиля: избранное, сохранённые поиски, помощь, поддержка (бот), о приложении */
+/** Меню профиля: избранное, сохранённые поиски, акт приёмки, помощь, поддержка (бот), о приложении */
 export default function ProfileMenu() {
   const { t } = useI18n();
   const pt = t.profile;
@@ -42,6 +43,12 @@ export default function ProfileMenu() {
         <li>
           <Link to="/searches" className={ROW_CLASS} onClick={() => haptic('light')}>
             <RowContent icon="bell" label={t.header.searches} />
+          </Link>
+        </li>
+        <li>
+          {/* Акт без объявления: адрес квартиры человек вводит сам */}
+          <Link to={ACCEPTANCE_PATH} className={ROW_CLASS} onClick={() => haptic('light')}>
+            <RowContent icon="list_checks" label={t.acceptance.title} />
           </Link>
         </li>
         <li>

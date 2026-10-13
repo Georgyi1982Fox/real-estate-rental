@@ -413,9 +413,10 @@ const ka = {
     assistant_hint:
       'შეტყობინება მეპატრონეს ქართულად, კითხვები ბინის ნახვისთვის და მსგავსი, უფრო იაფი ბინები.',
     documents_title: 'დოკუმენტები — Premium-ში',
-    documents_text: 'ქირავნობის ხელშეკრულება მხოლოდ Premium-ითაა ხელმისაწვდომი.',
+    documents_text:
+      'ქირავნობის ხელშეკრულება და მიღება-ჩაბარების აქტი მხოლოდ Premium-ითაა ხელმისაწვდომი.',
     documents_hint:
-      'ორენოვანი ხელშეკრულება PDF-ად: ქართული და რუსული ან ინგლისური — პირდაპირ ბოტთან ჩატში.',
+      'ორენოვანი PDF: ქართული და რუსული ან ინგლისური — პირდაპირ ბოტთან ჩატში.',
   },
   gallery: {
     label: 'ბინის ფოტოები',
@@ -619,6 +620,47 @@ const ka = {
       check: 'შეამოწმეთ ეს ველი',
       bot: 'ბოტმა ფაილი ვერ გამოგიგზავნათ. გაუშვით ბოტი (/start) და სცადეთ კიდევ ერთხელ.',
       failed: 'ვერ მოხერხდა, სცადეთ კიდევ ერთხელ.',
+    },
+  },
+  // Акт приёмки квартиры (FRONTEND-024): тексты пунктов и состояний приходят с бэкенда
+  acceptance: {
+    title: 'მიღება-ჩაბარების აქტი',
+    intro:
+      'გამქირავებელთან ერთად დაათვალიერეთ ბინა და მონიშნეთ თითოეული პუნქტის მდგომარეობა. შესვლისას ჩაწერილი დეფექტების გამო დეპოზიტს გასვლისას ვერ დაგიკავებენ.',
+    listing: 'განცხადება',
+    premium_note:
+      'აქტის PDF მხოლოდ Premium-ითაა ხელმისაწვდომი. ჩეკლისტის შევსება ახლავე შეგიძლიათ — მონიშვნები შეინახება.',
+    checklist: 'ჩეკლისტი',
+    progress: 'მონიშნულია {n} / {total}',
+    unmarked_hint: 'მოუნიშნავი პუნქტები აქტში არ მოხვდება.',
+    all_ok: 'ყველაფერი წესრიგშია',
+    comment: 'კომენტარი',
+    comment_placeholder: 'რა არის დაზიანებული: ნაკაწრი, ბზარი, არ მუშაობს…',
+    details: 'აქტის მონაცემები',
+    landlord: 'გამქირავებლის სახელი და გვარი',
+    tenant: 'დამქირავებლის სახელი და გვარი',
+    date: 'მიღების თარიღი',
+    keys: 'გასაღებები',
+    meters: 'მრიცხველების ჩვენებები',
+    electricity: 'დენი',
+    gas: 'გაზი',
+    water: 'წყალი',
+    notes: 'შენიშვნები',
+    notes_placeholder: 'მაგალითად: კონდიციონერის პულტს მოგვიანებით გადმოგვცემენ',
+    second_language: 'აქტის მეორე ენა',
+    disclaimer:
+      'ეს აქტის ნიმუშია. მიღების დღეს გადაუღეთ ბინას ფოტოები და შეინახეთ ისინი აქტთან ერთად.',
+    submit: 'აქტის მიღება',
+    sent_title: 'აქტი გაიგზავნა ბოტთან ჩატში',
+    sent_text: 'ფაილი {n} ბოტთან ჩატშია: ამობეჭდეთ და ხელი მოაწერეთ გამქირავებელთან ერთად.',
+    edit: 'აქტის შეცვლა',
+    saved_hint: 'მონახაზი ამ მოწყობილობაზე ინახება.',
+    clear: 'აქტის გასუფთავება',
+    clear_title: 'გავასუფთაოთ აქტი?',
+    clear_text: 'ყველა მონიშვნა და შეყვანილი მონაცემი წაიშლება.',
+    errors: {
+      items: 'მონიშნეთ მინიმუმ ერთი პუნქტი.',
+      keys: '0-დან 50-მდე',
     },
   },
   // Раздел «Гостиницы» (FRONTEND-045): названия типов и удобств — в i18n/hotels.ts
@@ -1176,9 +1218,9 @@ const ru: Strings = {
     assistant_hint:
       'Сообщение хозяину на грузинском, вопросы для просмотра и похожие квартиры дешевле.',
     documents_title: 'Документы — в Premium',
-    documents_text: 'Договор аренды доступен только с Premium.',
+    documents_text: 'Договор аренды и акт приёмки доступны только с Premium.',
     documents_hint:
-      'Двуязычный договор в PDF: грузинский и русский или английский — прямо в чат с ботом.',
+      'Двуязычный PDF: грузинский и русский или английский — прямо в чат с ботом.',
   },
   gallery: {
     label: 'Фотографии квартиры',
@@ -1380,6 +1422,46 @@ const ru: Strings = {
       check: 'Проверьте это поле',
       bot: 'Бот не смог прислать файл. Запустите бота (/start) и попробуйте ещё раз.',
       failed: 'Не получилось, попробуйте ещё раз.',
+    },
+  },
+  acceptance: {
+    title: 'Акт приёмки',
+    intro:
+      'Пройдите по квартире вместе с хозяином и отметьте состояние каждого пункта. Дефекты, записанные при въезде, нельзя удержать из депозита при выезде.',
+    listing: 'Объявление',
+    premium_note:
+      'PDF акта доступен только с Premium. Чек-лист можно заполнить уже сейчас — отметки сохранятся.',
+    checklist: 'Чек-лист',
+    progress: 'отмечено {n} из {total}',
+    unmarked_hint: 'Пункты без отметки в акт не попадут.',
+    all_ok: 'Всё в порядке',
+    comment: 'Комментарий',
+    comment_placeholder: 'Что не так: царапина, скол, не работает…',
+    details: 'Данные акта',
+    landlord: 'Имя и фамилия хозяина',
+    tenant: 'Имя и фамилия арендатора',
+    date: 'Дата приёмки',
+    keys: 'Ключей',
+    meters: 'Показания счётчиков',
+    electricity: 'Свет',
+    gas: 'Газ',
+    water: 'Вода',
+    notes: 'Примечания',
+    notes_placeholder: 'Например: пульт от кондиционера передадут позже',
+    second_language: 'Второй язык акта',
+    disclaimer:
+      'Это образец акта. В день приёмки сфотографируйте квартиру и сохраните фото вместе с актом.',
+    submit: 'Получить акт',
+    sent_title: 'Акт отправлен в чат с ботом',
+    sent_text: 'Файл {n} — в чате с ботом: распечатайте его и подпишите вместе с хозяином.',
+    edit: 'Изменить акт',
+    saved_hint: 'Черновик сохраняется на этом устройстве.',
+    clear: 'Очистить акт',
+    clear_title: 'Очистить акт?',
+    clear_text: 'Все отметки и введённые данные будут удалены.',
+    errors: {
+      items: 'Отметьте хотя бы один пункт.',
+      keys: 'От 0 до 50',
     },
   },
   hotels: {
@@ -1933,9 +2015,10 @@ const en: Strings = {
     assistant_hint:
       'A message to the landlord in Georgian, questions for the viewing and similar cheaper apartments.',
     documents_title: 'Documents — in Premium',
-    documents_text: 'The lease agreement is available with Premium only.',
+    documents_text:
+      'The lease agreement and the handover report are available with Premium only.',
     documents_hint:
-      'A bilingual agreement in PDF: Georgian plus Russian or English — sent straight to your chat with the bot.',
+      'A bilingual PDF: Georgian plus Russian or English — sent straight to your chat with the bot.',
   },
   gallery: {
     label: 'Apartment photos',
@@ -2138,6 +2221,47 @@ const en: Strings = {
       check: 'Check this field',
       bot: 'The bot could not send the file. Start the bot (/start) and try again.',
       failed: 'Something went wrong, please try again.',
+    },
+  },
+  acceptance: {
+    title: 'Handover report',
+    intro:
+      'Walk through the apartment with the landlord and mark the condition of every item. Defects recorded at move-in cannot be deducted from your deposit at move-out.',
+    listing: 'Listing',
+    premium_note:
+      'The report PDF is available with Premium only. You can fill in the checklist right now — your marks are saved.',
+    checklist: 'Checklist',
+    progress: '{n} of {total} marked',
+    unmarked_hint: 'Unmarked items are left out of the report.',
+    all_ok: 'All OK',
+    comment: 'Comment',
+    comment_placeholder: 'What is wrong: a scratch, a chip, not working…',
+    details: 'Report details',
+    landlord: "Landlord's full name",
+    tenant: "Tenant's full name",
+    date: 'Handover date',
+    keys: 'Keys',
+    meters: 'Meter readings',
+    electricity: 'Power',
+    gas: 'Gas',
+    water: 'Water',
+    notes: 'Notes',
+    notes_placeholder: 'For example: the AC remote will be handed over later',
+    second_language: 'Second language of the report',
+    disclaimer:
+      'This is a sample report. Take photos of the apartment on the handover day and keep them with the report.',
+    submit: 'Get the report',
+    sent_title: 'The report was sent to your chat with the bot',
+    sent_text:
+      'The file {n} is in your chat with the bot: print it and sign it together with the landlord.',
+    edit: 'Edit the report',
+    saved_hint: 'The draft is saved on this device.',
+    clear: 'Clear the report',
+    clear_title: 'Clear the report?',
+    clear_text: 'All marks and entered details will be deleted.',
+    errors: {
+      items: 'Mark at least one item.',
+      keys: 'From 0 to 50',
     },
   },
   hotels: {
