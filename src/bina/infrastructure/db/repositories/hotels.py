@@ -189,6 +189,31 @@ class HotelsRepository:
         )
         return result.first() is not None
 
+    # ---------------------------------------------------------------- перевод (этап 2)
+
+    async def list_untranslated(self, limit: int) -> list[Hotel]:
+        """Активные гостиницы с описанием не на всех языках (новые сверху).
+
+        Нужно и то, что описание где-то есть (иначе переводить нечего), и то, что
+        где-то его нет.
+        """
+        columns = (Hotel.description_ka, Hotel.description_ru, Hotel.description_en)
+        has_text = or_(*(func.trim(column) != "" for column in columns))
+        missing = or_(*(func.trim(column) == "" for column in columns))
+        query = (
+            select(Hotel)
+            .where(Hotel.is_active.is_(True), Hotel.hidden_at.is_(None), has_text, missing)
+            .order_by(Hotel.created_at.desc())
+            .limit(limit)
+        )
+        return list((await self._session.execute(query)).scalars().all())
+
+    async def save_descriptions(self, hotel_id: UUID, by_language: dict[str, str]) -> None:
+        """Записать перевод описания в языковые колонки (переводятся только пустые)."""
+        values = {f"description_{lang}": text for lang, text in by_language.items() if text}
+        if values:
+            await self._session.execute(update(Hotel).where(Hotel.id == hotel_id).values(**values))
+
 
 def apply_draft(hotel: Hotel, draft: HotelDraft) -> None:
     """Поля объекта из черновика (кроме номеров и фото)."""

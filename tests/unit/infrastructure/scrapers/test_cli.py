@@ -383,6 +383,9 @@ async def test_translate_commits_in_batches(monkeypatch: pytest.MonkeyPatch) -> 
         yield True
 
     monkeypatch.setattr(scrape_cli, "advisory_lock", free_lock)
+    # Перевод гостиниц — отдельный шаг со своими тестами; здесь проверяем объявления
+    hotels_step = AsyncMock()
+    monkeypatch.setattr(scrape_cli, "_translate_hotels", hotels_step)
     FakeUseCase.limits.clear()
     FakeUseCase.batches[:] = [
         TranslationStats(checked=10, translated=9, failed=1),
@@ -398,6 +401,8 @@ async def test_translate_commits_in_batches(monkeypatch: pytest.MonkeyPatch) -> 
     provider.close.assert_awaited_once()
     # Сначала текст не на своём языке — на место (перевод потом заполнит пустое)
     fixer.assert_awaited_once_with(scrape_cli.LANGUAGE_FIX_BATCH)
+    # Описания гостиниц переводятся тем же провайдером в том же запуске
+    hotels_step.assert_awaited_once_with(db, provider, 25)
 
 
 async def test_translate_reports_ai_outage(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -420,6 +425,7 @@ async def test_translate_reports_ai_outage(monkeypatch: pytest.MonkeyPatch) -> N
         yield True
 
     monkeypatch.setattr(scrape_cli, "advisory_lock", free_lock)
+    monkeypatch.setattr(scrape_cli, "_translate_hotels", AsyncMock())
     FakeUseCase.limits.clear()
     FakeUseCase.batches[:] = [
         TranslationStats(

@@ -13,6 +13,7 @@ import structlog
 from bina.application.daily_report import DailyReport, report_day
 from bina.application.health_monitor import Alert, HealthMonitor
 from bina.application.ports.embeddings import EmbeddingsError
+from bina.application.ports.llm_provider import LLMProvider
 from bina.application.ports.scraper import BaseScraper
 from bina.application.rent_reminders import TBILISI
 from bina.application.use_cases.agencies import run_bumps
@@ -35,6 +36,7 @@ from bina.application.use_cases.rent_reminders import (
     RentReminderStats,
     SendRentRemindersUseCase,
 )
+from bina.application.use_cases.translate_hotels import TranslateHotelsUseCase
 from bina.application.use_cases.translate_listings import (
     TranslateListingsUseCase,
     TranslationStats,
@@ -43,6 +45,7 @@ from bina.infrastructure.db.locks import FRAUD_LOCK, TRANSLATE_LOCK, advisory_lo
 from bina.infrastructure.db.repositories.admin import AdminRepository
 from bina.infrastructure.db.repositories.agencies import AgenciesRepository
 from bina.infrastructure.db.repositories.districts import DistrictsRepository
+from bina.infrastructure.db.repositories.hotels import HotelsRepository
 from bina.infrastructure.db.repositories.listings import ListingsRepository
 from bina.infrastructure.db.repositories.notifications import (
     NotificationsRepository,
@@ -58,7 +61,7 @@ from bina.infrastructure.llm.photo_analyzer import (
     create_photo_analyzer,
     photo_analysis_configured,
 )
-from bina.infrastructure.llm.translator import LLMTranslator
+from bina.infrastructure.llm.translator import LLMMessageTranslator, LLMTranslator
 from bina.infrastructure.scrapers.backfill import BackfillStats, DetailsSource, backfill_details
 from bina.infrastructure.scrapers.korter_scraper import KorterScraper
 from bina.infrastructure.scrapers.livo_scraper import LivoScraper
@@ -309,6 +312,8 @@ async def translate(limit: int) -> TranslationStats:
                     # Больше нечего переводить или вся пачка не перевелась (не крутим одни и те же)
                     if stats.checked == 0 or stats.translated == 0:
                         break
+                # Описания гостиниц (TASK-120, этап 2): тем же провайдером AI
+                await _translate_hotels(db, provider, limit)
             finally:
                 close = getattr(provider, "close", None)
                 if close is not None:
@@ -325,6 +330,28 @@ async def translate(limit: int) -> TranslationStats:
         unavailable=unavailable,
         error=error,
     )
+
+
+async def _translate_hotels(db: DatabaseManager, provider: LLMProvider, limit: int) -> None:
+    """Перевести описания гостиниц пачками тем же провайдером AI (TASK-120, этап 2)."""
+    translator = LLMMessageTranslator(provider)
+    checked = translated = 0
+    while checked < limit:
+        async with db.session_factory() as session:
+            use_case = TranslateHotelsUseCase(
+                translator,
+                HotelsRepository(session),
+                after_save=session.commit,
+                concurrency=LLM_CONCURRENCY,
+            )
+            stats = await use_case.execute(min(TRANSLATE_BATCH, limit - checked))
+            await session.commit()
+        checked += stats.checked
+        translated += stats.translated
+        if stats.checked == 0 or stats.translated == 0:
+            break
+    if translated:
+        logger.info("Hotels translated", hotels=translated)
 
 
 class TranslatorDownError(RuntimeError):
