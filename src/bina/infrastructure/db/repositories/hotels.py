@@ -11,6 +11,7 @@ from sqlalchemy.dialects.postgresql import JSONB, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bina.application.complaints import HIDE_AFTER, TRUSTED_ACCOUNT_AGE_HOURS
+from bina.application.fraud import HIDE_SCORE
 from bina.application.hotels import HotelDraft, RoomDraft, night_price_gel
 from bina.application.localization import dominant_script
 from bina.infrastructure.db.models import Hotel, HotelComplaint, HotelRoom, User
@@ -38,6 +39,8 @@ def visible() -> list[ColumnElement[bool]]:
         Hotel.is_active.is_(True),
         Hotel.hidden_at.is_(None),
         Hotel.min_price_gel.is_not(None),
+        # Явный обман (проверка ИИ, этап 2) — вне поиска, как у квартир
+        Hotel.fraud_score < HIDE_SCORE,
     ]
 
 
@@ -213,6 +216,31 @@ class HotelsRepository:
         values = {f"description_{lang}": text for lang, text in by_language.items() if text}
         if values:
             await self._session.execute(update(Hotel).where(Hotel.id == hotel_id).values(**values))
+
+    # -------------------------------------------------------------- проверка ИИ (этап 2)
+
+    async def list_fraud_unchecked(self, limit: int) -> list[Hotel]:
+        """Активные гостиницы с описанием, ещё не проверенные ИИ (новые сверху)."""
+        has_text = or_(
+            func.trim(Hotel.description_ka) != "",
+            func.trim(Hotel.description_ru) != "",
+            func.trim(Hotel.description_en) != "",
+        )
+        query = (
+            select(Hotel)
+            .where(Hotel.is_active.is_(True), Hotel.checked_at.is_(None), has_text)
+            .order_by(Hotel.created_at.desc())
+            .limit(limit)
+        )
+        return list((await self._session.execute(query)).scalars().all())
+
+    async def save_fraud(self, hotel_id: UUID, score: int, reasons: list[str]) -> None:
+        """Записать оценку ИИ и время проверки."""
+        await self._session.execute(
+            update(Hotel)
+            .where(Hotel.id == hotel_id)
+            .values(fraud_score=score, fraud_reasons=list(reasons), checked_at=datetime.now(UTC))
+        )
 
 
 def apply_draft(hotel: Hotel, draft: HotelDraft) -> None:

@@ -60,3 +60,28 @@ class IFraudAnalyzer(ABC):
         Raises:
             FraudAnalysisError: если оценку получить не удалось.
         """
+
+
+@dataclass(frozen=True, slots=True)
+class HotelFacts:
+    """Факты гостиницы, которые AI видит вместе с описанием (TASK-120)."""
+
+    kind: str  # bina.application.hotels.KINDS
+    city: str
+    price_per_night_gel: Decimal | None = None
+    max_guests: int = 0
+    stars: int | None = None
+    amenities: int = 0
+    photos: int = 0
+
+
+class IHotelFraudAnalyzer(ABC):
+    """Оценивает описание гостиницы на признаки мошенничества."""
+
+    @abstractmethod
+    async def analyze_hotel(self, text: ListingText, facts: HotelFacts) -> FraudVerdict:
+        """Оценка гостиницы.
+
+        Raises:
+            FraudAnalysisError: если оценку получить не удалось.
+        """

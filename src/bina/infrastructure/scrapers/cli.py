@@ -19,6 +19,7 @@ from bina.application.rent_reminders import TBILISI
 from bina.application.use_cases.agencies import run_bumps
 from bina.application.use_cases.analyze_photos import AnalyzePhotosUseCase, PhotoStats
 from bina.application.use_cases.check_fraud import CheckFraudUseCase, FraudStats
+from bina.application.use_cases.check_hotels_fraud import CheckHotelsFraudUseCase
 from bina.application.use_cases.embed_listings import EmbedListingsUseCase, EmbedStats
 from bina.application.use_cases.find_duplicates import DuplicateStats, FindDuplicatesUseCase
 from bina.application.use_cases.geocode_listings import GeocodeListingsUseCase, GeocodeStats
@@ -408,6 +409,8 @@ async def check_fraud(limit: int) -> FraudStats:
                     # Больше нечего проверять или вся пачка не прошла (не крутим одни и те же)
                     if stats.checked == 0:
                         break
+                # Гостиницы (TASK-120, этап 2): тем же провайдером AI
+                await _check_hotels_fraud(db, provider, limit)
             finally:
                 close = getattr(provider, "close", None)
                 if close is not None:
@@ -415,6 +418,28 @@ async def check_fraud(limit: int) -> FraudStats:
     finally:
         await db.dispose()
     return FraudStats(checked=checked, suspicious=suspicious, hidden=hidden, failed=failed)
+
+
+async def _check_hotels_fraud(db: DatabaseManager, provider: LLMProvider, limit: int) -> None:
+    """Проверить гостиницы на обман пачками тем же провайдером AI (TASK-120, этап 2)."""
+    analyzer = LLMFraudAnalyzer(provider)
+    checked = hidden = 0
+    while checked < limit:
+        async with db.session_factory() as session:
+            use_case = CheckHotelsFraudUseCase(
+                analyzer,
+                HotelsRepository(session),
+                after_save=session.commit,
+                concurrency=LLM_CONCURRENCY,
+            )
+            stats = await use_case.execute(min(TRANSLATE_BATCH, limit - checked))
+            await session.commit()
+        checked += stats.checked
+        hidden += stats.hidden
+        if stats.checked == 0:
+            break
+    if hidden:
+        logger.info("Hotels hidden by fraud check", hotels=hidden)
 
 
 async def fill_details(limit: int, recheck_days: int = 0) -> BackfillStats:

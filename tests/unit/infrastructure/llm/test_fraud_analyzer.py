@@ -7,11 +7,17 @@ from typing import Any
 import httpx
 import pytest
 
-from bina.application.ports.fraud import FraudAnalysisError, FraudVerdict, ListingFacts
+from bina.application.ports.fraud import (
+    FraudAnalysisError,
+    FraudVerdict,
+    HotelFacts,
+    ListingFacts,
+)
 from bina.application.ports.llm_provider import LLMProvider
 from bina.application.ports.translator import ListingText
 from bina.infrastructure.llm.fraud_analyzer import LLMFraudAnalyzer, parse_verdict
 from bina.infrastructure.llm.prompts.detect_fraud import build_fraud_prompt
+from bina.infrastructure.llm.prompts.detect_hotel_fraud import build_hotel_fraud_prompt
 
 
 class FakeProvider(LLMProvider):
@@ -107,3 +113,32 @@ def test_prompt_daily_rent_price_is_per_day() -> None:
     daily = dataclasses.replace(FraudFactsNoMedian, price=Decimal(50), rent_period="daily")
     assert "50 GEL per day (daily rent)" in build_fraud_prompt(TEXT, daily)
     assert "1000 GEL per month" in build_fraud_prompt(TEXT, FraudFactsNoMedian)
+
+
+# --- Гостиницы (TASK-120, этап 2)
+
+HOTEL_TEXT = ListingText("Guest House Mtsvane", "Уютный гостевой дом, бронь на картой заранее")
+HOTEL_FACTS = HotelFacts(
+    kind="guesthouse",
+    city="batumi",
+    price_per_night_gel=Decimal("80"),
+    max_guests=4,
+    stars=None,
+    amenities=3,
+    photos=5,
+)
+
+
+def test_hotel_prompt_has_text_facts_and_codes() -> None:
+    prompt = build_hotel_fraud_prompt(HOTEL_TEXT, HOTEL_FACTS)
+    assert HOTEL_TEXT.title in prompt and HOTEL_TEXT.description in prompt
+    assert "Kind: guesthouse" in prompt and "80 GEL/night" in prompt
+    assert "sleeps up to 4" in prompt and "stars: not set" in prompt
+    assert '"prepayment"' in prompt and '"owner_abroad"' in prompt
+
+
+async def test_analyze_hotel_parses_verdict() -> None:
+    provider = FakeProvider(['{"score": 85, "reasons": ["prepayment", "made_up"]}'])
+    verdict = await LLMFraudAnalyzer(provider).analyze_hotel(HOTEL_TEXT, HOTEL_FACTS)
+    # Неизвестные коды отбрасываются, как у квартир
+    assert verdict == FraudVerdict(85, ["prepayment"])

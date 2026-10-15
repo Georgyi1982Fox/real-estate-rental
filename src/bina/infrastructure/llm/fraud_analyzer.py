@@ -15,12 +15,15 @@ from bina.application.ports.fraud import (
     AI_REASONS,
     FraudAnalysisError,
     FraudVerdict,
+    HotelFacts,
     IFraudAnalyzer,
+    IHotelFraudAnalyzer,
     ListingFacts,
 )
 from bina.application.ports.llm_provider import LLMProvider
 from bina.application.ports.translator import ListingText
 from bina.infrastructure.llm.prompts.detect_fraud import build_fraud_prompt
+from bina.infrastructure.llm.prompts.detect_hotel_fraud import build_hotel_fraud_prompt
 
 logger = structlog.get_logger(__name__)
 
@@ -52,16 +55,22 @@ def parse_verdict(raw: str) -> FraudVerdict:
     return FraudVerdict(score=verdict.score, reasons=reasons)
 
 
-class LLMFraudAnalyzer(IFraudAnalyzer):
-    """:class:`IFraudAnalyzer` поверх :class:`LLMProvider`."""
+class LLMFraudAnalyzer(IFraudAnalyzer, IHotelFraudAnalyzer):
+    """:class:`IFraudAnalyzer` и :class:`IHotelFraudAnalyzer` поверх :class:`LLMProvider`."""
 
     def __init__(self, provider: LLMProvider, attempts: int = 2) -> None:
         self._provider = provider
         self._attempts = attempts
 
     async def analyze(self, text: ListingText, facts: ListingFacts) -> FraudVerdict:
-        """Оценка одним запросом."""
-        prompt = build_fraud_prompt(text, facts)
+        """Оценка объявления одним запросом."""
+        return await self._verdict(build_fraud_prompt(text, facts))
+
+    async def analyze_hotel(self, text: ListingText, facts: HotelFacts) -> FraudVerdict:
+        """Оценка гостиницы одним запросом."""
+        return await self._verdict(build_hotel_fraud_prompt(text, facts))
+
+    async def _verdict(self, prompt: str) -> FraudVerdict:
         last_error = ""
         for attempt in range(1, self._attempts + 1):
             try:
