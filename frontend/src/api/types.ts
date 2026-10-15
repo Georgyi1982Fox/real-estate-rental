@@ -455,6 +455,57 @@ export interface DocumentSent {
   filename: string;
 }
 
+/** Пункт или раздел чек-листа приёмки, состояние пункта: код и название на языке пользователя */
+export interface AcceptanceOption {
+  code: string;
+  title: string;
+}
+
+export interface AcceptanceSection extends AcceptanceOption {
+  items: AcceptanceOption[];
+}
+
+/**
+ * GET /api/documents/acceptance/checklist — чек-лист акта приёмки на языке пользователя
+ * из профиля (нужен вход, иначе 401). statuses: ok / defect / missing
+ */
+export interface AcceptanceChecklist {
+  sections: AcceptanceSection[];
+  statuses: AcceptanceOption[];
+}
+
+/** Отмеченный пункт акта; comment — пустая строка, если его нет */
+export interface AcceptanceItem {
+  code: string;
+  status: string;
+  comment: string;
+}
+
+/**
+ * POST /api/documents/acceptance — акт приёмки квартиры (только Premium: иначе 402;
+ * ошибки в полях или нет адреса — 422; бот не смог отправить файл — 502).
+ * Пункты, которых нет в items, в акт не попадают
+ */
+export interface AcceptanceRequest {
+  /** Объявление: без своего адреса сервер возьмёт адрес из него */
+  listing_id?: string;
+  landlord_name: string;
+  tenant_name: string;
+  address: string;
+  /** Дата приёмки: 2026-11-01 */
+  handover_date: string;
+  items: AcceptanceItem[];
+  /** Сколько ключей передано; null — не указано */
+  keys: number | null;
+  /** Показания счётчиков; пустая строка — не указаны */
+  electricity: string;
+  gas: string;
+  water: string;
+  notes: string;
+  second_language: ContractLanguage;
+  delivery: 'chat';
+}
+
 /** exact — точка известна; district — только район (показываем круг); none — карты нет */
 export type LocationPrecision = 'exact' | 'district' | 'none';
 

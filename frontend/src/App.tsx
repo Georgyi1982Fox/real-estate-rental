@@ -1,7 +1,9 @@
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import Layout from './components/Layout';
+import { ACCEPTANCE_PATH } from './lib/acceptance';
 import { HOTELS_PATH, MY_HOTELS_PATH, NEW_HOTEL_PATH } from './lib/hotels';
 import { DAILY_SEARCH_PATH } from './lib/searchFilters';
+import AcceptancePage from './pages/AcceptancePage';
 import AuthPage from './pages/AuthPage';
 import FavoritesPage from './pages/FavoritesPage';
 import FeatureLabPage from './pages/FeatureLabPage';
@@ -40,6 +42,8 @@ const router = createBrowserRouter(
         // key: «Разместить» и «Изменить» — разные формы, состояние не переносится
         { path: NEW_HOTEL_PATH, element: <HotelFormPage key="new" /> },
         { path: `${MY_HOTELS_PATH}/:id/edit`, element: <HotelFormPage key="edit" /> },
+        // Акт приёмки квартиры (FRONTEND-024): из объявления (?listing=) и из профиля
+        { path: ACCEPTANCE_PATH, element: <AcceptancePage /> },
         { path: '/help', element: <HelpPage /> },
         { path: '/legal/:doc', element: <LegalPage /> },
         // Посуточная аренда — та же лента в режиме «Посуточно»

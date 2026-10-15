@@ -1,7 +1,9 @@
 import { useCallback, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ApiError, apiGet } from '../api/client';
 import type { Listing, Subscription } from '../api/types';
 import { showPremiumPrompt } from '../hooks/usePremiumPrompt';
+import { acceptancePath } from '../lib/acceptance';
 import { haptic } from '../lib/telegram';
 import { useAuth } from '../providers/AuthProvider';
 import { useI18n } from '../providers/I18nProvider';
@@ -11,14 +13,18 @@ import Modal from './Modal';
 import OpenInTelegram from './OpenInTelegram';
 import PremiumBadge from './PremiumBadge';
 
+const ACTION_CLASS =
+  'listing-documents__action flex min-h-12 w-full items-center gap-2 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-left text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-hover)] active:scale-[.98] disabled:opacity-70';
+
 interface ListingDocumentsProps {
   listing: Listing;
 }
 
 /**
- * «Документы» на странице объявления (только Premium): договор аренды в PDF.
- * Блок видят все. Анкета длинная, поэтому тариф проверяем до неё: без входа — окно входа
- * через Telegram, без Premium — общее окно «Подключить Premium». Окончательно решает бэкенд
+ * «Документы» на странице объявления (только Premium): договор аренды и акт приёмки в PDF.
+ * Блок видят все. Анкета договора длинная, поэтому тариф проверяем до неё: без входа — окно
+ * входа через Telegram, без Premium — общее окно «Подключить Premium». Окончательно решает
+ * бэкенд. Акт приёмки — отдельная страница: чек-лист открыт всем, кто вошёл
  */
 export default function ListingDocuments({ listing }: ListingDocumentsProps) {
   const { t } = useI18n();
@@ -81,22 +87,36 @@ export default function ListingDocuments({ listing }: ListingDocumentsProps) {
         </p>
       </header>
 
-      <button
-        type="button"
-        className="listing-documents__action flex min-h-12 w-full items-center gap-2 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-left text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-hover)] active:scale-[.98] disabled:opacity-70"
-        aria-haspopup="dialog"
-        aria-busy={checking}
-        disabled={checking}
-        onClick={() => void openContract()}
+      <nav
+        className="listing-documents__actions flex flex-col gap-2"
+        aria-labelledby="listing-documents-title"
       >
-        <Icon name="file" className="size-5 text-[var(--text-secondary)]" />
-        <span className="min-w-0 flex-1 break-words">{ct.button}</span>
-        {checking ? (
-          <span className="spinner" aria-hidden="true" />
-        ) : (
+        <button
+          type="button"
+          className={ACTION_CLASS}
+          aria-haspopup="dialog"
+          aria-busy={checking}
+          disabled={checking}
+          onClick={() => void openContract()}
+        >
+          <Icon name="file" className="size-5 text-[var(--text-secondary)]" />
+          <span className="min-w-0 flex-1 break-words">{ct.button}</span>
+          {checking ? (
+            <span className="spinner" aria-hidden="true" />
+          ) : (
+            <Icon name="chevron" className="size-4 text-[var(--text-secondary)]" />
+          )}
+        </button>
+        <Link
+          to={acceptancePath(listing.id)}
+          className={ACTION_CLASS}
+          onClick={() => haptic('light')}
+        >
+          <Icon name="list_checks" className="size-5 text-[var(--text-secondary)]" />
+          <span className="min-w-0 flex-1 break-words">{t.acceptance.title}</span>
           <Icon name="chevron" className="size-4 text-[var(--text-secondary)]" />
-        )}
-      </button>
+        </Link>
+      </nav>
 
       <ContractModal
         open={contractOpen}
