@@ -1,12 +1,31 @@
 import { useEffect, useRef, useState } from 'react';
-import { LANGUAGES } from '../i18n/strings';
+import { useMe } from '../hooks/useMe';
+import { LANGUAGES, STRINGS } from '../i18n/strings';
+import type { Lang } from '../i18n/strings';
 import { haptic } from '../lib/telegram';
+import { useAuth } from '../providers/AuthProvider';
 import { useI18n } from '../providers/I18nProvider';
+import { useToast } from '../providers/ToastProvider';
 
 export default function LanguageSwitcher() {
   const { lang, setLang, t } = useI18n();
+  const { isAuthenticated } = useAuth();
+  const { setLanguage } = useMe();
+  const showToast = useToast();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+
+  // Интерфейс меняется сразу, выбор уходит на бэкенд (им пользуются бот и документы)
+  const changeLanguage = (code: Lang) => {
+    if (code === lang) return;
+    haptic('selection');
+    setLang(code);
+    if (isAuthenticated) {
+      setLanguage(code).catch(() =>
+        showToast(STRINGS[code].profile.language_error, 'error'),
+      );
+    }
+  };
 
   // Закрытие по клику вне меню и по Escape
   useEffect(() => {
@@ -55,8 +74,7 @@ export default function LanguageSwitcher() {
                 aria-current={active ? 'true' : undefined}
                 className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-sm transition-colors hover:bg-[var(--surface-hover)] ${active ? 'font-semibold text-[var(--primary)]' : 'text-[var(--text-primary)]'}`}
                 onClick={() => {
-                  if (!active) haptic('selection');
-                  setLang(code);
+                  changeLanguage(code);
                   setOpen(false);
                 }}
               >
