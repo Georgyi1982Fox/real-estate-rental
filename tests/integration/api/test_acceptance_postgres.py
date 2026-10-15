@@ -91,6 +91,15 @@ async def test_checklist_in_user_language(client: AsyncClient, language: str) ->
     assert [item["code"] for item in checklist["statuses"]] == ["ok", "defect", "missing"]
 
 
+async def test_checklist_follows_app_language_over_profile(client: AsyncClient) -> None:
+    """Язык приложения (?lang=) важнее сохранённого в профиле: чек-лист на нём."""
+    # В профиле английский, а приложение показывает грузинский
+    answer = await client.get("/api/documents/acceptance/checklist?lang=ka", headers=headers("en"))
+    assert answer.status_code == 200
+    titles = [section["title"] for section in answer.json()["sections"]]
+    assert all(script_of(title) == "ka" for title in titles)
+
+
 async def test_acceptance(client: AsyncClient, session: AsyncSession, sender: FakeSender) -> None:
     url = "/api/documents/acceptance"
     body = {**BODY, "address": "Paliashvili 1"}
