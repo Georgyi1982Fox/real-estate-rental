@@ -11,7 +11,7 @@ PDF — в чат с ботом или файлом в ответе (``delivery`
 from datetime import UTC, date, datetime
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException, Request, Response, status
+from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from pydantic import BaseModel, Field, field_validator
 
 from bina.application.acceptance import (
@@ -123,9 +123,15 @@ class AcceptanceIn(BaseModel):
 
 
 @router.get("/acceptance/checklist", response_model=ChecklistOut)
-async def acceptance_checklist(user: CurrentUserDep) -> ChecklistOut:
-    """Разделы и пункты чек-листа, состояния — на языке пользователя."""
-    language = ui_language(user)
+async def acceptance_checklist(
+    user: CurrentUserDep, lang: str | None = Query(default=None)
+) -> ChecklistOut:
+    """Разделы и пункты чек-листа на языке приложения (``?lang=``), иначе — языке профиля.
+
+    Mini App показывает язык из своей настройки, а он может отличаться от сохранённого в
+    профиле; тексты чек-листа должны совпадать с тем, что видит пользователь.
+    """
+    language = lang if lang in ("ka", "ru", "en") else ui_language(user)
     return ChecklistOut(
         sections=[
             ChecklistSectionOut(
