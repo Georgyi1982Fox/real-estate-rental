@@ -51,6 +51,18 @@ def test_default_sections_cover_cities_and_daily_rent() -> None:
     assert [city for city, _ in only_batumi.searches] == ["batumi", "batumi"]
 
 
+def test_major_cities_beyond_tbilisi_and_batumi() -> None:
+    """TASK-092: аренда собирается и по другим крупным городам (Кутаиси, Рустави…)."""
+    from urllib.parse import unquote
+
+    scraper = KorterScraper(delay_seconds=0, cities=("kutaisi", "rustavi"))
+    assert {city for city, _ in scraper.searches} == {"kutaisi", "rustavi"}
+    paths = [unquote(path) for _, path in scraper.searches]
+    # И помесячная, и посуточная аренда по каждому городу
+    assert any("аренда-квартир-кутаиси?" in path for path in paths)
+    assert any("аренда-квартир-посуточно-рустави?" in path for path in paths)
+
+
 def test_initial_state() -> None:
     state = initial_state(LIST_HTML)
     assert state is not None and "apartmentListingStore" in state

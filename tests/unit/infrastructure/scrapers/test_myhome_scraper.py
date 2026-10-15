@@ -398,6 +398,15 @@ def test_disabled_city_is_not_scraped() -> None:
     assert list(scraper.search_paths) == ["batumi"]
 
 
+def test_major_cities_beyond_tbilisi_and_batumi() -> None:
+    """TASK-079/092: аренда собирается и по другим крупным городам (Кутаиси, Рустави…)."""
+    scraper = MyHomeScraper(delay_seconds=0, cities=("kutaisi", "rustavi", "poti", "kobuleti"))
+    assert set(scraper.search_paths) == {"kutaisi", "rustavi", "poti", "kobuleti"}
+    # Город задаётся slug-ом и номером TNET (Кутаиси — 96)
+    assert "/kvartira/kutaisi/" in scraper.search_paths["kutaisi"]
+    assert "cities=96" in scraper.search_paths["kutaisi"]
+
+
 def test_daily_rent_statements() -> None:
     """TASK-092: deal_type_id 7 — посуточная аренда (ищется отдельным адресом)."""
     scraper = MyHomeScraper(delay_seconds=0, cities=("tbilisi",))
