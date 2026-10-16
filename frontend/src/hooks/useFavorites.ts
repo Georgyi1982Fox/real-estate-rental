@@ -1,10 +1,11 @@
 import { useCallback, useSyncExternalStore } from 'react';
 import { ApiError, apiDelete, apiGet, apiPost } from '../api/client';
 import type { ListingId } from '../api/types';
-import { isSignedOut } from '../lib/session';
-import { getInitData, haptic } from '../lib/telegram';
+import { usesServerFavorites as usesServer } from '../lib/session';
+import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 import { useToast } from '../providers/ToastProvider';
+import { clearNotes, dropNote, refreshNotes } from './useFavoriteNotes';
 import { showPremiumPrompt } from './usePremiumPrompt';
 
 // Единственное место работы с избранным; компоненты работают через useFavorites().
@@ -39,11 +40,6 @@ function load(): string[] {
     // localStorage может быть недоступен (приватный режим) — работаем только в памяти
     return EMPTY;
   }
-}
-
-/** Пользователь Telegram, который не нажал «Выйти»: избранное живёт на сервере */
-function usesServer(): boolean {
-  return getInitData() !== '' && !isSignedOut();
 }
 
 // Общее состояние для всех компонентов: снимок в памяти + подписчики useSyncExternalStore.
@@ -94,6 +90,7 @@ async function syncWithServer(): Promise<void> {
 /** Синхронизировать с сервером (один раз; повторно — после входа, см. AuthProvider) */
 export function refreshFavorites(): Promise<void> {
   if (!usesServer()) return Promise.resolve();
+  void refreshNotes();
   synced = syncWithServer().catch(() => {
     // Сервер недоступен — показываем кэш, попробуем при следующем открытии
     synced = null;
@@ -127,6 +124,7 @@ function getSnapshot(): string[] {
  * На сервере избранное остаётся и вернётся после входа.
  */
 export function clearFavorites(): void {
+  clearNotes();
   ids = EMPTY;
   synced = null;
   try {
@@ -183,11 +181,15 @@ export function useFavorites() {
       showToast(t.card.removed, 'success');
       haptic('light');
       if (!usesServer()) return;
-      apiDelete(`/api/favorites/${encodeURIComponent(key)}`).catch(() => {
-        save(before.filter((item) => item === key || ids.includes(item)));
-        showToast(t.card.favorite_error, 'error');
-        haptic('error');
-      });
+      apiDelete(`/api/favorites/${encodeURIComponent(key)}`).then(
+        // Сервер удаляет заметку вместе с избранным
+        () => dropNote(key),
+        () => {
+          save(before.filter((item) => item === key || ids.includes(item)));
+          showToast(t.card.favorite_error, 'error');
+          haptic('error');
+        },
+      );
     },
     [showToast, t],
   );

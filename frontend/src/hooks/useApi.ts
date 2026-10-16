@@ -34,6 +34,16 @@ function rememberResponse(path: string, data: unknown): void {
   if (remembered.size > REMEMBER_MAX && !oldest.done) remembered.delete(oldest.value);
 }
 
+/**
+ * Забыть запомненные ответы, чей адрес начинается с prefix: данные на сервере изменились
+ * (например, история очищена) — при возврате на страницу старое не должно мелькнуть
+ */
+export function forgetResponses(prefix: string): void {
+  for (const path of [...remembered.keys()]) {
+    if (path.startsWith(prefix)) remembered.delete(path);
+  }
+}
+
 /** Запомненный ответ для path; тип ответа знает вызывающий — тот же, что у запроса */
 function recall<T>(path: string | null, enabled: boolean): ApiState<T> {
   if (!enabled || path === null || !remembered.has(path)) return { path: null };

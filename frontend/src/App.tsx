@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import Layout from './components/Layout';
 import { ACCEPTANCE_PATH } from './lib/acceptance';
+import { HISTORY_PATH } from './lib/history';
 import { HOTELS_PATH, MY_HOTELS_PATH, NEW_HOTEL_PATH } from './lib/hotels';
 import { DAILY_SEARCH_PATH } from './lib/searchFilters';
 import { DOCUMENTS_PATH } from './lib/signing';
@@ -9,6 +10,7 @@ import AuthPage from './pages/AuthPage';
 import FavoritesPage from './pages/FavoritesPage';
 import FeatureLabPage from './pages/FeatureLabPage';
 import HelpPage from './pages/HelpPage';
+import HistoryPage from './pages/HistoryPage';
 import HomePage from './pages/HomePage';
 import HotelFormPage from './pages/HotelFormPage';
 import HotelPage from './pages/HotelPage';
@@ -57,6 +59,7 @@ const router = createBrowserRouter(
         { path: '/my-listings', element: <SoonPage feature="owner" /> },
         { path: '/invite', element: <SoonPage feature="invite" /> },
         { path: '/favorites', element: <FavoritesPage /> },
+        { path: HISTORY_PATH, element: <HistoryPage /> },
         { path: '/profile', element: <ProfilePage /> },
         { path: '/premium', element: <PremiumPage /> },
         { path: '/searches', element: <SavedSearchesPage /> },

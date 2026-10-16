@@ -83,6 +83,11 @@ export interface Listing {
   published_at?: string | null;
   /** Обновлено на сайте-источнике */
   updated_at?: string | null;
+  /**
+   * Сколько раз квартиру открывали на Bina.ai (сайт, приложение, бот) — вместе с текущим
+   * просмотром. Только в GET /api/listings/{id}; в списках — null
+   */
+  views?: number | null;
   owner?: Owner;
   images?: string[];
   rating?: number;
@@ -108,6 +113,16 @@ export interface Listing {
    * в списке объявлений — всегда []
    */
   also_on?: ListingSourceLink[];
+}
+
+/** Квартира из «Недавно смотрели» (GET /api/history) */
+export interface ViewedListing {
+  listing: Listing;
+  viewed_at: string;
+}
+
+export interface ViewHistory {
+  items: ViewedListing[];
 }
 
 /** Ссылка на объявление на сайте: source — ss, myhome, livo, korter, telegram */
