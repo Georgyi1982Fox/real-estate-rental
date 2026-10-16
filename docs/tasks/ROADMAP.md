@@ -3,7 +3,7 @@
 Единый список всех задач проекта: исходный план (TASK-001…083), новые задачи
 (TASK-084 и дальше) и задачи фронтенда. **После каждой задачи обновляем этот файл.**
 
-Последнее обновление: 2026-10-02.
+Последнее обновление: 2026-10-16.
 
 ## Как пользоваться
 
@@ -70,7 +70,7 @@
 | 35 | TASK-041 Ежедневный отчёт владельцу и проверка безопасности (`TASK-041-DAILY-REPORT.md`); TASK-042, TASK-055…063 | бэкенд | 🔄 |
 | 36 | TASK-120 Раздел «🏨 Гостиницы» (`TASK-120-HOTELS.md`; фронт — FRONTEND-045) | бэкенд + фронт | 🔄 бэкенд: этап 1 ✅ (модели, API, жалобы, модерация), этап 2 🔄 — перевод описаний ✅, ИИ-проверка ✅; осталось: платный «🔥 Топ» (Stars), карточка гостиницы в боте + меню |
 
-Фронтенд у друга сейчас: FRONTEND-014, 016, 017 (012, 013, 015, 034 приняты). Ещё не выданы (по порядку): 018, 019, 020, 021, 022, … 029, 030 (выбор города), 031 (умный поиск), 032 (посуточная аренда), 033 (сдать квартиру).
+Фронтенд у друга: очередь и статус — `FRONTEND-QUEUE.md`. Сейчас выданы (16.10): 043, 041, 027, 028, 029, 040.
 
 ---
 
@@ -345,29 +345,38 @@ PDF «Акт приёмки» на двух языках для защиты з�
 | FRONTEND-011 Premium | ✅ | `FRONTEND-011-PREMIUM.md` (PR #57, #60) |
 | FRONTEND-012 Значок «подозрительное» | ✅ | `FRONTEND-012-FRAUD-BADGE.md` (PR #94) |
 | FRONTEND-013 Фильтры во всплывающем окне | ✅ | `FRONTEND-013-FILTER-MODAL.md` (PR #94) |
-| FRONTEND-014 Подсказки в поиске | 👤 в работе | `FRONTEND-014-SEARCH-AUTOCOMPLETE.md` |
+| FRONTEND-014 Подсказки в поиске | ✅ | `FRONTEND-014-SEARCH-AUTOCOMPLETE.md` |
 | FRONTEND-015 Подробности объявления | ✅ | `FRONTEND-015-LISTING-DETAILS.md` (PR #102) |
-| FRONTEND-016 Выбор тарифа 7 / 30 дней | 👤 выдана | `FRONTEND-016-PLAN-CHOICE.md` |
-| FRONTEND-017 «Сохранить поиск» со всеми фильтрами | 👤 выдана | `FRONTEND-017-SAVE-ALL-FILTERS.md` |
-| FRONTEND-018 «Также на другом сайте» | 📋 ещё не выдана (4-я) | `FRONTEND-018-ALSO-ON.md` |
-| FRONTEND-019 Фильтр «Источник» (SS / MyHome / Telegram) | 📋 ещё не выдана (5-я) | `FRONTEND-019-SOURCE-FILTER.md` |
-| FRONTEND-020 «Цена ниже рынка» | 📋 ещё не выдана (6-я) | `FRONTEND-020-PRICE-BADGE.md` |
-| FRONTEND-021 «Почему подозрительно» и советы | 📋 ещё не выдана (7-я) | `FRONTEND-021-RISK-DETAILS.md` |
-| FRONTEND-022 AI-помощник в объявлении | 📋 ещё не выдана (8-я) | `FRONTEND-022-AI-ASSISTANT.md` |
-| FRONTEND-023 «Договор аренды» | 📋 ещё не выдана (9-я) | `FRONTEND-023-CONTRACT.md` |
-| FRONTEND-024 «Акт приёмки» | 📋 ещё не выдана (10-я) | `FRONTEND-024-ACCEPTANCE.md` |
-| FRONTEND-025 «Полная стоимость» | 📋 ещё не выдана (11-я) | `FRONTEND-025-COSTS.md` |
-| FRONTEND-026 Карта и «О районе» | 📋 ещё не выдана (12-я) | `FRONTEND-026-DISTRICT-MAP.md` |
-| FRONTEND-027 Сравнение квартир | 📋 ещё не выдана (13-я) | `FRONTEND-027-COMPARE.md` |
-| FRONTEND-028 «Пожаловаться» | 📋 ещё не выдана (14-я) | `FRONTEND-028-COMPLAINTS.md` |
-| FRONTEND-029 «Пригласи друга» | 📋 ещё не выдана (15-я) | `FRONTEND-029-REFERRALS.md` |
-| FRONTEND-032 Посуточная аренда, Livo.ge и Korter.ge | 📋 ещё не выдана | `FRONTEND-032-DAILY-RENT.md` |
-| FRONTEND-033 «Сдать квартиру» (собственники) | 📋 ещё не выдана | `FRONTEND-033-OWNER-LISTINGS.md` |
+| FRONTEND-016 Выбор тарифа 7 / 30 дней | ✅ | `FRONTEND-016-PLAN-CHOICE.md` |
+| FRONTEND-017 «Сохранить поиск» со всеми фильтрами | ✅ | `FRONTEND-017-SAVE-ALL-FILTERS.md` |
+| FRONTEND-018 «Также на другом сайте» | ✅ | `FRONTEND-018-ALSO-ON.md` |
+| FRONTEND-019 Фильтр «Источник» (SS / MyHome / Telegram) | ✅ | `FRONTEND-019-SOURCE-FILTER.md` |
+| FRONTEND-020 «Цена ниже рынка» | ✅ | `FRONTEND-020-PRICE-BADGE.md` |
+| FRONTEND-021 «Почему подозрительно» и советы | ✅ | `FRONTEND-021-RISK-DETAILS.md` |
+| FRONTEND-022 AI-помощник в объявлении | ✅ | `FRONTEND-022-AI-ASSISTANT.md` |
+| FRONTEND-023 «Договор аренды» | ✅ | `FRONTEND-023-CONTRACT.md` |
+| FRONTEND-024 «Акт приёмки» | ✅ | `FRONTEND-024-ACCEPTANCE.md` |
+| FRONTEND-025 «Полная стоимость» | 📋 следующая после пакета | `FRONTEND-025-COSTS.md` |
+| FRONTEND-026 Карта и «О районе» | ✅ | `FRONTEND-026-DISTRICT-MAP.md` |
+| FRONTEND-027 Сравнение квартир | 👤 выдана 16.10 | `FRONTEND-027-COMPARE.md` |
+| FRONTEND-028 «Пожаловаться» | 👤 выдана 16.10 | `FRONTEND-028-COMPLAINTS.md` |
+| FRONTEND-029 «Пригласи друга» | 👤 выдана 16.10 | `FRONTEND-029-REFERRALS.md` |
+| FRONTEND-032 Посуточная аренда, Livo.ge и Korter.ge | ✅ | `FRONTEND-032-DAILY-RENT.md` |
+| FRONTEND-033 «Сдать квартиру» (собственники) | 📋 | `FRONTEND-033-OWNER-LISTINGS.md` |
 | FRONTEND-034 Красивое главное меню Mini App (все функции бота) + кнопки чата с хозяином | ✅ | `FRONTEND-034-HOME-HUB.md` (PR #109) |
 | FRONTEND-035 «Написать хозяину» и «Просмотр» (ведут в бота) | ✅ в FRONTEND-034 | `FRONTEND-035-CHAT-BUTTONS.md` |
-| FRONTEND-036 Значки «🔥 Топ» и «✅ Проверенный собственник», кнопки в «Моих объявлениях» | 📋 ещё не выдана | `FRONTEND-036-PROMOTION-BADGES.md` |
-| FRONTEND-037 «Ремонт по фото» (AI) и разбор для Premium | 📋 ещё не выдана | `FRONTEND-037-PHOTO-REPORT.md` |
-| FRONTEND-038 Кабинет риелтора / агентства и страница агентства | 📋 ещё не выдана | `FRONTEND-038-AGENCY-CABINET.md` |
+| FRONTEND-036 Значки «🔥 Топ» и «✅ Проверенный собственник», кнопки в «Моих объявлениях» | ✅ | `FRONTEND-036-PROMOTION-BADGES.md` |
+| FRONTEND-037 «Ремонт по фото» (AI) и разбор для Premium | 📋 | `FRONTEND-037-PHOTO-REPORT.md` |
+| FRONTEND-038 Кабинет риелтора / агентства и страница агентства | 📋 | `FRONTEND-038-AGENCY-CABINET.md` |
+| FRONTEND-030 Выбор города | ✅ | `FRONTEND-030-CITIES.md` |
+| FRONTEND-031 Умный поиск | ✅ | `FRONTEND-031-SMART-SEARCH.md` |
+| FRONTEND-039 Вход по телефону для хозяина | ✅ | `FRONTEND-039-OWNER-PHONE-LOGIN.md` |
+| FRONTEND-040 «Мои данные»: скачать / удалить аккаунт | 👤 выдана 16.10 | `FRONTEND-040-MY-DATA.md` |
+| FRONTEND-041 «Поделиться» и «Вам может понравиться» | 👤 выдана 16.10 | `FRONTEND-041-SHARE-RECOMMEND.md` |
+| FRONTEND-042 «Отправить на подпись» и «Мои документы» | ✅ | `FRONTEND-042-SIGNING.md` (PR #158) |
+| FRONTEND-043 «Недавно смотрели», заметки, просмотры | 👤 выдана 16.10 | `FRONTEND-043-HISTORY-NOTES.md` |
+| FRONTEND-044 Поиск без «сбросов» | ✅ | `FRONTEND-044-SEARCH-UX.md` |
+| FRONTEND-045 Раздел «🏨 Гостиницы» | ✅ этап 1, доработка 📋 | `FRONTEND-045-HOTELS.md` |
 
 Для задач из «Очереди» с пометкой «бэкенд + фронт» бэкенд пишет отдельный
 `FRONTEND-0xx-….md` для друга.
