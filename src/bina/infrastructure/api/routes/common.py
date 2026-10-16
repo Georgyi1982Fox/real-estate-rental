@@ -7,7 +7,9 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bina.application.cities import CITIES
+from bina.infrastructure.api.schemas import ListingOut
 from bina.infrastructure.db.models import Listing, ListingStatus
+from bina.infrastructure.db.repositories.agencies import ListingStatsRepository
 from bina.infrastructure.db.repositories.listings import ListingsRepository
 
 MAX_PER_PAGE = 50
@@ -104,3 +106,10 @@ def valid_city(city: str | None) -> str | None:
     if city is not None and city not in CITIES:
         raise bad_request(f"unknown city: {city}")
     return city
+
+
+async def fill_views(session: AsyncSession, items: list[ListingOut]) -> None:
+    """«👁 12» на карточках списков (TASK-121): просмотры для всех объявлений страницы сразу."""
+    views = await ListingStatsRepository(session).views_by_listing([item.id for item in items])
+    for item in items:
+        item.views = views.get(item.id, 0)

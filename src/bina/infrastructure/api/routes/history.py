@@ -11,6 +11,7 @@ from fastapi import APIRouter, Query, Response, status
 from pydantic import BaseModel
 
 from bina.infrastructure.api.dependencies import CurrentUserDep, SessionDep
+from bina.infrastructure.api.routes.common import fill_views
 from bina.infrastructure.api.schemas import ListingOut
 from bina.infrastructure.db.repositories.view_history import ViewHistoryRepository
 
@@ -34,9 +35,11 @@ async def history(
 ) -> HistoryOut:
     """Недавно смотренные квартиры, новые сверху."""
     rows = await ViewHistoryRepository(session).recent(user.id, limit)
-    return HistoryOut(
+    out = HistoryOut(
         items=[ViewedOut(listing=ListingOut.from_model(item), viewed_at=at) for item, at in rows]
     )
+    await fill_views(session, [item.listing for item in out.items])
+    return out
 
 
 @router.delete("", status_code=status.HTTP_204_NO_CONTENT)

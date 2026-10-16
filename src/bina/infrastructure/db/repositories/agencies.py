@@ -1,5 +1,6 @@
 """Агентства, их статистика и ежедневное поднятие Premium-объявлений (TASK-100)."""
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta
 from uuid import UUID
@@ -18,11 +19,26 @@ from bina.infrastructure.db.models import (
     Listing,
     ListingStat,
     ListingStatus,
+    ViewedListing,
     Viewing,
 )
 
 # Статистика в кабинете — за последние 30 дней
 STATS_DAYS = 30
+# «За неделю» в сводке просмотров (TASK-121)
+WEEK_DAYS = 7
+
+
+@dataclass(frozen=True, slots=True)
+class ViewsSummary:
+    """Просмотры объявления без имён: кто именно смотрел, не показываем никому."""
+
+    total: int
+    today: int
+    week: int
+    # Разные люди, вошедшие в аккаунт (гости в браузере сюда не попадают)
+    people: int
+    in_favorites: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -201,3 +217,40 @@ class ListingStatsRepository:
             ListingStat.listing_id == listing_id
         )
         return int((await self._session.execute(query)).scalar_one())
+
+    async def views_by_listing(self, listing_ids: Sequence[UUID]) -> dict[UUID, int]:
+        """Просмотры сразу для страницы объявлений (TASK-121): «👁 12» на карточках."""
+        if not listing_ids:
+            return {}
+        query = (
+            select(ListingStat.listing_id, func.sum(ListingStat.views))
+            .where(ListingStat.listing_id.in_(list(listing_ids)))
+            .group_by(ListingStat.listing_id)
+        )
+        return {listing_id: int(total) for listing_id, total in await self._session.execute(query)}
+
+    async def views_summary(self, listing_id: UUID, today: date) -> ViewsSummary:
+        """Сводка просмотров без имён (TASK-121): всего, сегодня, за 7 дней, сколько разных
+        людей (из вошедших в аккаунт) и у скольких квартира в избранном."""
+        week_start = today - timedelta(days=WEEK_DAYS - 1)
+        counts = select(
+            func.coalesce(func.sum(ListingStat.views), 0),
+            func.coalesce(func.sum(ListingStat.views).filter(ListingStat.day == today), 0),
+            func.coalesce(func.sum(ListingStat.views).filter(ListingStat.day >= week_start), 0),
+        ).where(ListingStat.listing_id == listing_id)
+        total, today_views, week = (await self._session.execute(counts)).one()
+        people = await self._session.scalar(
+            select(func.count())
+            .select_from(ViewedListing)
+            .where(ViewedListing.listing_id == listing_id)
+        )
+        in_favorites = await self._session.scalar(
+            select(func.count()).select_from(Favorite).where(Favorite.listing_id == listing_id)
+        )
+        return ViewsSummary(
+            total=int(total),
+            today=int(today_views),
+            week=int(week),
+            people=int(people or 0),
+            in_favorites=int(in_favorites or 0),
+        )

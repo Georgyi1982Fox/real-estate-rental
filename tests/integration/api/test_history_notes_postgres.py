@@ -91,4 +91,4 @@ async def test_view_counter(client: AsyncClient, session: AsyncSession) -> None:
     await client.get(f"/api/listings/{listing.id}", headers=headers())
     assert (await client.get(f"/api/listings/{listing.id}")).json()["views"] == 3
     in_list = (await client.get("/api/listings")).json()["items"][0]
-    assert in_list["views"] is None, "в списке счётчик не считаем — только на странице"
+    assert in_list["views"] == 3, "TASK-121: счётчик виден и на карточке в списке"
