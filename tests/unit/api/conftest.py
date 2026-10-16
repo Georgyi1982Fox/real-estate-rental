@@ -49,6 +49,7 @@ def store(monkeypatch: pytest.MonkeyPatch) -> Store:
     monkeypatch.setattr(common, "ListingsRepository", fake(FakeListingsRepository))
     monkeypatch.setattr(listings, "ListingsRepository", fake(FakeListingsRepository))
     monkeypatch.setattr(listings, "ListingStatsRepository", fake(FakeListingStatsRepository))
+    monkeypatch.setattr(common, "ListingStatsRepository", fake(FakeListingStatsRepository))
     monkeypatch.setattr(districts, "DistrictsRepository", fake(FakeDistrictsRepository))
     monkeypatch.setattr(cities, "DistrictsRepository", fake(FakeDistrictsRepository))
     monkeypatch.setattr(favorites, "ListingsRepository", fake(FakeListingsRepository))

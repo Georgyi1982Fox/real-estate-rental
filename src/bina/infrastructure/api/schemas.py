@@ -94,7 +94,8 @@ class ListingOut(BaseModel):
     )
     views: int | None = Field(
         default=None,
-        description="Сколько раз открывали на Bina.ai (только в GET /api/listings/{id})",
+        description="Сколько раз открывали на Bina.ai (в списках и в GET /api/listings/{id}); "
+        "подробности — GET /api/listings/{id}/views",
     )
     also_on: list["SourceLinkOut"] = Field(
         default_factory=list,

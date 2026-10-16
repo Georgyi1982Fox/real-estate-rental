@@ -6,7 +6,7 @@ from typing import Annotated
 
 import structlog
 from fastapi import APIRouter, HTTPException, Query, Request, status
-from pydantic import ValidationError
+from pydantic import BaseModel, Field, ValidationError
 
 from bina.application.dtos.listing_search import (
     SOURCES,
@@ -27,6 +27,7 @@ from bina.infrastructure.api.dependencies import CurrentUserDep, OptionalUserDep
 from bina.infrastructure.api.routes.common import (
     MAX_PER_PAGE,
     bad_request,
+    fill_views,
     get_listing_or_404,
     get_visible_listing_or_404,
     not_found,
@@ -163,7 +164,9 @@ async def list_listings(
                 smart = await SmartSearchUseCase(ListingsRepository(session), embedder).execute(
                     filters, page=page - 1, page_size=per_page
                 )
-                return ListingsPageOut.from_page(smart)
+                out = ListingsPageOut.from_page(smart)
+                await fill_views(session, out.items)
+                return out
             except EmbeddingsError as exc:
                 logger.warning("Smart search unavailable, falling back", error=str(exc))
         sort = ListingSort.RELEVANCE
@@ -175,7 +178,9 @@ async def list_listings(
         page_size=per_page,
         sort=sort or (ListingSort.RELEVANCE if filters.query else ListingSort.NEWEST),
     )
-    return ListingsPageOut.from_page(result)
+    out = ListingsPageOut.from_page(result)
+    await fill_views(session, out.items)
+    return out
 
 
 def get_embedder(request: Request) -> IEmbedder | None:
@@ -225,6 +230,35 @@ async def get_listing(
         for source, url in other_sites(links, listing.source_name)
     ]
     return out
+
+
+class ListingViewsOut(BaseModel):
+    """Просмотры объявления (TASK-121). Без имён: кто именно смотрел, не раскрываем никому."""
+
+    total: int = Field(description="Всего просмотров на Bina.ai")
+    today: int = Field(description="Сегодня")
+    week: int = Field(description="За последние 7 дней (вместе с сегодня)")
+    people: int = Field(description="Разных людей, вошедших в аккаунт (гости не считаются)")
+    in_favorites: int = Field(description="У скольких людей квартира в избранном")
+
+
+@router.get("/{listing_id}/views", response_model=ListingViewsOut)
+async def listing_views(listing_id: str, session: SessionDep) -> ListingViewsOut:
+    """Подсказка к «👁 12» на карточке: сегодня, за неделю, сколько людей, в избранном.
+
+    Сам запрос просмотром не считается.
+    """
+    listing = await get_listing_or_404(session, listing_id)
+    summary = await ListingStatsRepository(session).views_summary(
+        listing.id, datetime.now(UTC).date()
+    )
+    return ListingViewsOut(
+        total=summary.total,
+        today=summary.today,
+        week=summary.week,
+        people=summary.people,
+        in_favorites=summary.in_favorites,
+    )
 
 
 def other_sites(links: list[tuple[str, str]], own_source: str) -> list[tuple[str, str]]:
@@ -294,7 +328,9 @@ async def similar_listings(listing_id: str, session: SessionDep) -> ListingsOut:
                 items.append(candidate)
         if len(items) >= SIMILAR_LIMIT:
             break
-    return ListingsOut(items=[ListingOut.from_model(item) for item in items[:SIMILAR_LIMIT]])
+    similar = ListingsOut(items=[ListingOut.from_model(item) for item in items[:SIMILAR_LIMIT]])
+    await fill_views(session, similar.items)
+    return similar
 
 
 @router.get("/{listing_id}/phone", response_model=PhoneOut)

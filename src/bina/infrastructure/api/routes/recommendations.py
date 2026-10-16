@@ -18,7 +18,7 @@ from bina.infrastructure.api.dependencies import (
     SessionDep,
     SettingsDep,
 )
-from bina.infrastructure.api.routes.common import get_visible_listing_or_404
+from bina.infrastructure.api.routes.common import fill_views, get_visible_listing_or_404
 from bina.infrastructure.api.routes.referral import bot_username_or_none
 from bina.infrastructure.api.schemas import ListingOut
 from bina.infrastructure.bot.formatters import listing_price, listing_title
@@ -50,9 +50,11 @@ async def recommendations(
     items, based_on = await RecommendUseCase(
         FavoritesRepository(session), ListingsRepository(session), DistrictsRepository(session)
     ).execute(user.id, limit)
-    return RecommendationsOut(
+    out = RecommendationsOut(
         items=[ListingOut.from_model(item) for item in items], based_on=based_on
     )
+    await fill_views(session, out.items)
+    return out
 
 
 @router.get("/api/listings/{listing_id}/share", response_model=ShareOut)

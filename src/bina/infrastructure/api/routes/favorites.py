@@ -19,7 +19,12 @@ from bina.application.use_cases.favorites import (
     RemoveFavoriteUseCase,
 )
 from bina.infrastructure.api.dependencies import CurrentUserDep, SessionDep
-from bina.infrastructure.api.routes.common import MAX_PER_PAGE, not_found, payment_required
+from bina.infrastructure.api.routes.common import (
+    MAX_PER_PAGE,
+    fill_views,
+    not_found,
+    payment_required,
+)
 from bina.infrastructure.api.schemas import (
     FavoriteIdsOut,
     FavoriteIn,
@@ -46,7 +51,9 @@ async def list_favorites(
     result = await GetFavoritesUseCase(FavoritesRepository(session)).execute(
         user.id, page=page - 1, page_size=per_page
     )
-    return ListingsPageOut.from_page(result)
+    out = ListingsPageOut.from_page(result)
+    await fill_views(session, out.items)
+    return out
 
 
 @router.get("/ids", response_model=FavoriteIdsOut)

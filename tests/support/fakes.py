@@ -1,6 +1,7 @@
 """In-memory реализации репозиториев для тестов бота и API."""
 
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
@@ -12,6 +13,7 @@ from bina.application.fraud import HIDE_SCORE
 from bina.application.referrals import CODE_ALPHABET
 from bina.infrastructure.db.models import District, Listing, ListingStatus, User
 from bina.infrastructure.db.models.users import SubscriptionTier, UserRole
+from bina.infrastructure.db.repositories.agencies import ViewsSummary
 
 
 @dataclass
@@ -467,3 +469,10 @@ class FakeListingStatsRepository:
 
     async def total_views(self, listing_id: UUID) -> int:
         return self._store.views.get(listing_id, 0)
+
+    async def views_by_listing(self, listing_ids: Sequence[UUID]) -> dict[UUID, int]:
+        return {i: self._store.views[i] for i in listing_ids if i in self._store.views}
+
+    async def views_summary(self, listing_id: UUID, today: Any) -> ViewsSummary:
+        total = self._store.views.get(listing_id, 0)
+        return ViewsSummary(total=total, today=total, week=total, people=0, in_favorites=0)
