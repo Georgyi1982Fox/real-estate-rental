@@ -3,6 +3,7 @@ import Layout from './components/Layout';
 import { ACCEPTANCE_PATH } from './lib/acceptance';
 import { HOTELS_PATH, MY_HOTELS_PATH, NEW_HOTEL_PATH } from './lib/hotels';
 import { DAILY_SEARCH_PATH } from './lib/searchFilters';
+import { DOCUMENTS_PATH } from './lib/signing';
 import AcceptancePage from './pages/AcceptancePage';
 import AuthPage from './pages/AuthPage';
 import FavoritesPage from './pages/FavoritesPage';
@@ -13,6 +14,7 @@ import HotelFormPage from './pages/HotelFormPage';
 import HotelPage from './pages/HotelPage';
 import HotelsPage from './pages/HotelsPage';
 import LegalPage from './pages/LegalPage';
+import MyDocumentsPage from './pages/MyDocumentsPage';
 import MyHotelsPage from './pages/MyHotelsPage';
 import ListingPage from './pages/ListingPage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -44,6 +46,8 @@ const router = createBrowserRouter(
         { path: `${MY_HOTELS_PATH}/:id/edit`, element: <HotelFormPage key="edit" /> },
         // Акт приёмки квартиры (FRONTEND-024): из объявления (?listing=) и из профиля
         { path: ACCEPTANCE_PATH, element: <AcceptancePage /> },
+        // «Мои документы» — отправленные на подпись (FRONTEND-042), вход из профиля
+        { path: DOCUMENTS_PATH, element: <MyDocumentsPage /> },
         { path: '/help', element: <HelpPage /> },
         { path: '/legal/:doc', element: <LegalPage /> },
         // Посуточная аренда — та же лента в режиме «Посуточно»

@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import type { Listing } from '../api/types';
+import type { DocumentDelivery, Listing } from '../api/types';
 import { useDocumentDelivery } from '../hooks/useDocumentDelivery';
 import { BOT_URL } from '../lib/config';
 import {
@@ -12,6 +12,7 @@ import {
 } from '../lib/contract';
 import type { ContractDraft, ContractErrors, ContractField } from '../lib/contract';
 import { fill } from '../lib/format';
+import { submitDelivery } from '../lib/signing';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 import { useToast } from '../providers/ToastProvider';
@@ -20,9 +21,16 @@ import DocumentSent from './DocumentSent';
 import ExternalLink from './ExternalLink';
 import Icon from './Icon';
 import Modal from './Modal';
+import SigningSent from './SigningSent';
 
 /** Что показать над кнопкой: ошибки в полях, бот не смог написать (502) или общий сбой */
 type Problem = 'fix' | 'bot' | 'failed';
+
+/** Документ на подписи: ссылка для второй стороны и прислал ли бот файл в чат */
+interface Signing {
+  inviteUrl: string;
+  sent: boolean;
+}
 
 interface ContractModalProps {
   open: boolean;
@@ -33,7 +41,8 @@ interface ContractModalProps {
 }
 
 /**
- * Окно «Договор аренды» (только Premium): анкета → бот присылает двуязычный PDF в чат.
+ * Окно «Договор аренды» (только Premium): анкета → бот присылает двуязычный PDF в чат
+ * или документ уходит на подпись обеим сторонам (FRONTEND-042).
  * Анкета живёт, пока открыта страница объявления: закрыли окно и вернулись — всё на месте
  */
 export default function ContractModal({ open, listing, onClose, onLogin }: ContractModalProps) {
@@ -49,6 +58,9 @@ export default function ContractModal({ open, listing, onClose, onLogin }: Contr
   const [problem, setProblem] = useState<Problem | null>(null);
   // Имя отправленного файла: вместо анкеты — экран «Договор отправлен»
   const [sent, setSent] = useState<string | null>(null);
+  const [signing, setSigning] = useState<Signing | null>(null);
+  // Кнопка, которой отправили анкету: на ней крутится индикатор
+  const [mode, setMode] = useState<DocumentDelivery>('chat');
   const formRef = useRef<HTMLFormElement | null>(null);
   // Поле, к которому надо перейти (объект — чтобы повторная ошибка в том же поле сработала снова)
   const [focusOn, setFocusOn] = useState<{ field: ContractField } | null>(null);
@@ -95,15 +107,21 @@ export default function ContractModal({ open, listing, onClose, onLogin }: Contr
       reject(found);
       return;
     }
+    const delivery = submitDelivery(event);
     haptic('light');
+    setMode(delivery);
     setErrors({});
     setProblem(null);
-    const result = await send(toContractRequest(draft));
+    const result = await send(toContractRequest(draft, delivery));
 
     if (result.status === 'sent') {
       haptic('success');
       setSent(result.filename);
       if (!openRef.current) showToast(ct.sent_title, 'success');
+    } else if (result.status === 'signing') {
+      haptic('success');
+      setSigning({ inviteUrl: result.inviteUrl, sent: result.sent });
+      if (!openRef.current) showToast(t.signing.sent_title, 'success');
     } else if (result.status === 'login') {
       onClose();
       onLogin();
@@ -121,37 +139,65 @@ export default function ContractModal({ open, listing, onClose, onLogin }: Contr
     }
   };
 
-  const footer = sent ? undefined : (
-    <div className="contract-modal__footer flex flex-col gap-2">
-      {problem && !busy && (
-        <p
-          className="contract-modal__problem m-0 text-center text-sm font-medium text-[var(--danger)]"
-          role="alert"
+  const footer =
+    sent || signing ? undefined : (
+      <div className="contract-modal__footer flex flex-col gap-2">
+        {problem && !busy && (
+          <p
+            className="contract-modal__problem m-0 text-center text-sm font-medium text-[var(--danger)]"
+            role="alert"
+          >
+            {ct.errors[problem]}{' '}
+            {problem === 'bot' && (
+              <ExternalLink href={BOT_URL} className="underline underline-offset-2">
+                {ct.open_bot} ↗
+              </ExternalLink>
+            )}
+          </p>
+        )}
+        <button
+          type="submit"
+          form={formId}
+          data-delivery="chat"
+          className="contract-modal__submit inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--primary)] px-4 py-3 text-center text-sm font-semibold text-white shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--primary-hover)] active:scale-[.98] disabled:opacity-70"
+          disabled={busy}
+          aria-busy={busy && mode === 'chat'}
         >
-          {ct.errors[problem]}{' '}
-          {problem === 'bot' && (
-            <ExternalLink href={BOT_URL} className="underline underline-offset-2">
-              {ct.open_bot} ↗
-            </ExternalLink>
+          {busy && mode === 'chat' ? (
+            <span className="spinner" aria-hidden="true" />
+          ) : (
+            <Icon name="file" />
           )}
-        </p>
-      )}
-      <button
-        type="submit"
-        form={formId}
-        className="contract-modal__submit inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--primary)] px-4 py-3 text-center text-sm font-semibold text-white shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--primary-hover)] active:scale-[.98] disabled:opacity-70"
-        disabled={busy}
-        aria-busy={busy}
-      >
-        {busy ? <span className="spinner" aria-hidden="true" /> : <Icon name="file" />}
-        {busy ? ct.sending : ct.submit}
-      </button>
-    </div>
-  );
+          {busy && mode === 'chat' ? ct.sending : ct.submit}
+        </button>
+        <button
+          type="submit"
+          form={formId}
+          data-delivery="sign"
+          className="contract-modal__sign inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-center text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-hover)] active:scale-[.98] disabled:opacity-70"
+          disabled={busy}
+          aria-busy={busy && mode === 'sign'}
+        >
+          {busy && mode === 'sign' ? (
+            <span className="spinner" aria-hidden="true" />
+          ) : (
+            <Icon name="signature" />
+          )}
+          {busy && mode === 'sign' ? ct.sending : t.signing.sign_button}
+        </button>
+      </div>
+    );
 
   return (
     <Modal open={open} title={ct.title} onClose={onClose} footer={footer}>
-      {sent ? (
+      {signing ? (
+        <SigningSent
+          inviteUrl={signing.inviteUrl}
+          sent={signing.sent}
+          editLabel={ct.edit}
+          onEdit={() => setSigning(null)}
+        />
+      ) : sent ? (
         <DocumentSent
           title={ct.sent_title}
           text={fill(ct.sent_text, sent)}

@@ -6,6 +6,7 @@ import type {
   ContractRequest,
   ContractUtilities,
   Currency,
+  DocumentDelivery,
   Listing,
 } from '../api/types';
 import type { Lang } from '../i18n/strings';
@@ -154,8 +155,11 @@ export function contractProblems(draft: ContractDraft): ContractErrors {
   return errors;
 }
 
-/** Тело POST /api/listings/{id}/contract */
-export function toContractRequest(draft: ContractDraft): ContractRequest {
+/** Тело POST /api/listings/{id}/contract: в чат или на подпись */
+export function toContractRequest(
+  draft: ContractDraft,
+  delivery: DocumentDelivery = 'chat',
+): ContractRequest {
   return {
     landlord_name: draft.landlord_name.trim(),
     tenant_name: draft.tenant_name.trim(),
@@ -172,7 +176,7 @@ export function toContractRequest(draft: ContractDraft): ContractRequest {
     pets_allowed: draft.pets_allowed,
     notes: draft.notes.trim(),
     second_language: draft.second_language,
-    delivery: 'chat',
+    delivery,
   };
 }
 

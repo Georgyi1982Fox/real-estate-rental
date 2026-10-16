@@ -424,7 +424,7 @@ export type ContractLanguage = 'ru' | 'en';
 /**
  * POST /api/listings/{id}/contract — анкета договора аренды (только Premium: иначе 402;
  * ошибки в полях — 422; бот не смог отправить файл — 502).
- * delivery: chat — бот присылает PDF в чат с пользователем
+ * delivery: chat — бот присылает PDF в чат с пользователем; sign — на подпись (см. SigningStarted)
  */
 export interface ContractRequest {
   landlord_name: string;
@@ -446,13 +446,56 @@ export interface ContractRequest {
   pets_allowed: boolean;
   notes: string;
   second_language: ContractLanguage;
-  delivery: 'chat';
+  delivery: DocumentDelivery;
 }
 
 /** Документ (договор, акт приёмки) отправлен ботом в чат */
 export interface DocumentSent {
   sent: boolean;
   filename: string;
+}
+
+/** Как выдать документ: chat — бот присылает PDF в чат; sign — сохранить и отправить на подпись */
+export type DocumentDelivery = 'chat' | 'sign';
+
+/**
+ * Ответ на delivery: sign — документ сохранён, бот прислал его создателю в чат со ссылкой.
+ * invite_url — ссылка на бота: открыть документ и подписать (её пересылают второй стороне)
+ */
+export interface SigningStarted {
+  document_id: string;
+  invite_url: string;
+  /** Бот прислал документ в чат */
+  sent: boolean;
+}
+
+/** pending — ждёт подписей, signed — подписали обе стороны, declined — кто-то отказался */
+export type SignedDocumentStatus = 'pending' | 'signed' | 'declined';
+
+/** Кто подписал документ; me — это сам пользователь */
+export interface DocumentSigner {
+  name: string;
+  signed_at: string;
+  me: boolean;
+}
+
+/** Документ из «Моих документов»: kind — contract / acceptance */
+export interface SignedDocument {
+  id: string;
+  kind: string;
+  title: string;
+  status: SignedDocumentStatus;
+  created_at: string;
+  completed_at: string | null;
+  sha256: string;
+  signers: DocumentSigner[];
+  /** Только создателю, пока документ ждёт подписей */
+  invite_url: string | null;
+}
+
+/** GET /api/documents — свои документы (созданные или подписанные), новые сверху */
+export interface SignedDocuments {
+  items: SignedDocument[];
 }
 
 /** Пункт или раздел чек-листа приёмки, состояние пункта: код и название на языке пользователя */
@@ -503,7 +546,7 @@ export interface AcceptanceRequest {
   water: string;
   notes: string;
   second_language: ContractLanguage;
-  delivery: 'chat';
+  delivery: DocumentDelivery;
 }
 
 /** exact — точка известна; district — только район (показываем круг); none — карты нет */

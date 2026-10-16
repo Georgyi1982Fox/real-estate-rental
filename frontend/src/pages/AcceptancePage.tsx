@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import type { AcceptanceChecklist, Listing, Subscription } from '../api/types';
+import type { AcceptanceChecklist, DocumentDelivery, Listing, Subscription } from '../api/types';
 import AcceptanceChecklistSection from '../components/AcceptanceChecklistSection';
 import AcceptanceDetails from '../components/AcceptanceDetails';
 import AcceptanceSkeleton from '../components/AcceptanceSkeleton';
@@ -12,6 +12,7 @@ import Icon from '../components/Icon';
 import Modal from '../components/Modal';
 import OpenInTelegram from '../components/OpenInTelegram';
 import PremiumBadge from '../components/PremiumBadge';
+import SigningSent from '../components/SigningSent';
 import { useAcceptanceDraft } from '../hooks/useAcceptanceDraft';
 import { useApi } from '../hooks/useApi';
 import { useDocumentDelivery } from '../hooks/useDocumentDelivery';
@@ -35,6 +36,7 @@ import type {
 } from '../lib/acceptance';
 import { BOT_URL } from '../lib/config';
 import { fill, fillVars, tr } from '../lib/format';
+import { submitDelivery } from '../lib/signing';
 import { haptic } from '../lib/telegram';
 import { useAuth } from '../providers/AuthProvider';
 import { useI18n } from '../providers/I18nProvider';
@@ -47,7 +49,7 @@ const CHECKLIST_PATH = '/api/documents/acceptance/checklist';
 
 /**
  * «Акт приёмки квартиры» (PDF — только Premium): чек-лист по разделам, данные акта →
- * бот присылает двуязычный PDF в чат. Открывается из объявления (`?listing=`: адрес берётся
+ * бот присылает двуязычный PDF в чат или акт уходит на подпись обеим сторонам. Открывается из объявления (`?listing=`: адрес берётся
  * из него) и из профиля (адрес вводится вручную). Черновик хранится на устройстве
  */
 export default function AcceptancePage() {
@@ -69,6 +71,10 @@ export default function AcceptancePage() {
   const [problem, setProblem] = useState<Problem | null>(null);
   // Имя отправленного файла: вместо акта — экран «Акт отправлен»
   const [sent, setSent] = useState<string | null>(null);
+  // Акт на подписи: ссылка для второй стороны и прислал ли бот файл в чат
+  const [signing, setSigning] = useState<{ inviteUrl: string; sent: boolean } | null>(null);
+  // Кнопка, которой отправили акт: на ней крутится индикатор
+  const [mode, setMode] = useState<DocumentDelivery>('chat');
   const [clearOpen, setClearOpen] = useState(false);
   // Стабильная ссылка: Modal перезапускает эффект (фокус) при смене onClose
   const closeClear = useCallback(() => setClearOpen(false), []);
@@ -156,14 +162,22 @@ export default function AcceptancePage() {
       reject(found);
       return;
     }
+    const delivery = submitDelivery(event);
     haptic('light');
+    setMode(delivery);
     setErrors({});
     setProblem(null);
-    const result = await send(toAcceptanceRequest(draft, list, listingAddress, listingId));
+    const result = await send(
+      toAcceptanceRequest(draft, list, listingAddress, listingId, delivery),
+    );
 
     if (result.status === 'sent') {
       haptic('success');
       setSent(result.filename);
+      window.scrollTo({ top: 0 });
+    } else if (result.status === 'signing') {
+      haptic('success');
+      setSigning({ inviteUrl: result.inviteUrl, sent: result.sent });
       window.scrollTo({ top: 0 });
     } else if (result.status === 'login') {
       // Сессия закончилась: повторный запрос чек-листа ответит 401 и покажет вход
@@ -178,6 +192,19 @@ export default function AcceptancePage() {
     }
     // premium: окно «Подключить Premium» уже открыто, акт остаётся в черновике
   };
+
+  if (signing) {
+    return (
+      <section className={PAGE_CLASS}>
+        <SigningSent
+          inviteUrl={signing.inviteUrl}
+          sent={signing.sent}
+          editLabel={at.edit}
+          onEdit={() => setSigning(null)}
+        />
+      </section>
+    );
+  }
 
   if (sent) {
     return (
@@ -295,12 +322,31 @@ export default function AcceptancePage() {
           )}
           <button
             type="submit"
+            data-delivery="chat"
             className="acceptance__submit inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--primary)] px-4 py-3 text-center text-sm font-semibold text-white shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--primary-hover)] active:scale-[.98] disabled:opacity-70"
             disabled={busy}
-            aria-busy={busy}
+            aria-busy={busy && mode === 'chat'}
           >
-            {busy ? <span className="spinner" aria-hidden="true" /> : <Icon name="file" />}
-            {busy ? ct.sending : at.submit}
+            {busy && mode === 'chat' ? (
+              <span className="spinner" aria-hidden="true" />
+            ) : (
+              <Icon name="file" />
+            )}
+            {busy && mode === 'chat' ? ct.sending : at.submit}
+          </button>
+          <button
+            type="submit"
+            data-delivery="sign"
+            className="acceptance__sign inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-center text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-hover)] active:scale-[.98] disabled:opacity-70"
+            disabled={busy}
+            aria-busy={busy && mode === 'sign'}
+          >
+            {busy && mode === 'sign' ? (
+              <span className="spinner" aria-hidden="true" />
+            ) : (
+              <Icon name="signature" />
+            )}
+            {busy && mode === 'sign' ? ct.sending : t.signing.sign_button}
           </button>
           <p className="m-0 text-center text-xs text-[var(--text-secondary)]">{at.saved_hint}</p>
           <button
