@@ -374,7 +374,7 @@ PDF «Акт приёмки» на двух языках для защиты з�
 | FRONTEND-040 «Мои данные»: скачать / удалить аккаунт | 👤 выдана 16.10 | `FRONTEND-040-MY-DATA.md` |
 | FRONTEND-041 «Поделиться» и «Вам может понравиться» | 👤 выдана 16.10 | `FRONTEND-041-SHARE-RECOMMEND.md` |
 | FRONTEND-042 «Отправить на подпись» и «Мои документы» | ✅ | `FRONTEND-042-SIGNING.md` (PR #158) |
-| FRONTEND-043 «Недавно смотрели», заметки, просмотры | 👤 выдана 16.10 | `FRONTEND-043-HISTORY-NOTES.md` |
+| FRONTEND-043 «Недавно смотрели», заметки, просмотры | ✅ | `FRONTEND-043-HISTORY-NOTES.md` (PR #160) |
 | FRONTEND-044 Поиск без «сбросов» | ✅ | `FRONTEND-044-SEARCH-UX.md` |
 | FRONTEND-045 Раздел «🏨 Гостиницы» | ✅ этап 1, доработка 📋 | `FRONTEND-045-HOTELS.md` |
 
