@@ -2,6 +2,8 @@
 // Настоящая авторизация — на бэкенде (initData в Telegram, cookie-сессия в браузере);
 // здесь только mock-токен и флаг «вышел из аккаунта».
 
+import { getInitData } from './telegram';
+
 export type AuthMethod = 'telegram' | 'google' | 'email';
 
 const TOKEN_KEY = 'bina:token';
@@ -44,4 +46,12 @@ export function isSignedOut(): boolean {
 
 export function setSignedOut(value: boolean): void {
   write(SIGNED_OUT_KEY, value ? '1' : null);
+}
+
+/**
+ * Пользователь Telegram, который не нажал «Выйти»: избранное и заметки к нему живут
+ * на сервере. Гость в браузере хранит избранное только на устройстве, заметок у него нет
+ */
+export function usesServerFavorites(): boolean {
+  return getInitData() !== '' && !isSignedOut();
 }

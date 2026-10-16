@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ACCEPTANCE_PATH } from '../lib/acceptance';
 import { botSectionUrl } from '../lib/config';
+import { HISTORY_PATH } from '../lib/history';
 import { DOCUMENTS_PATH } from '../lib/signing';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
@@ -25,7 +26,7 @@ function RowContent({ icon, label }: { icon: IconName; label: string }) {
   );
 }
 
-/** Меню профиля: избранное, сохранённые поиски, акт приёмки, мои документы, помощь, поддержка (бот), о приложении */
+/** Меню профиля: избранное, недавно смотрели, сохранённые поиски, акт приёмки, мои документы, помощь, поддержка (бот), о приложении */
 export default function ProfileMenu() {
   const { t } = useI18n();
   const pt = t.profile;
@@ -39,6 +40,11 @@ export default function ProfileMenu() {
         <li>
           <Link to="/favorites" className={ROW_CLASS} onClick={() => haptic('light')}>
             <RowContent icon="heart" label={t.header.favorites} />
+          </Link>
+        </li>
+        <li>
+          <Link to={HISTORY_PATH} className={ROW_CLASS} onClick={() => haptic('light')}>
+            <RowContent icon="clock" label={t.history.title} />
           </Link>
         </li>
         <li>

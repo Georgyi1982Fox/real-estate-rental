@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import EmptyState from '../components/EmptyState';
 import ErrorState from '../components/ErrorState';
+import FavoriteNote from '../components/FavoriteNote';
 import ListingCard from '../components/ListingCard';
 import Skeleton from '../components/Skeleton';
 import { useDistricts } from '../hooks/useDistricts';
@@ -67,6 +68,7 @@ export default function FavoritesPage() {
           {listings.map((listing) => (
             <li key={listing.id} className="favorites__item flex min-w-0 flex-col gap-2">
               <ListingCard listing={listing} districtNames={names} />
+              <FavoriteNote listingId={listing.id} />
               <button
                 type="button"
                 className="favorites__remove inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm font-semibold text-[var(--danger)] transition-colors duration-200 hover:bg-[var(--surface-hover)] active:scale-[.98]"

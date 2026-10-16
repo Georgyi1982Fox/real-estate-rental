@@ -13,6 +13,7 @@ import DistrictAbout from '../components/DistrictAbout';
 import ErrorState from '../components/ErrorState';
 import ExternalLink from '../components/ExternalLink';
 import FavoriteButton from '../components/FavoriteButton';
+import FavoriteNote from '../components/FavoriteNote';
 import { FRAUD_WARNING_HASH } from '../components/FraudBadge';
 import FraudWarning from '../components/FraudWarning';
 import Gallery from '../components/Gallery';
@@ -32,6 +33,7 @@ import { useApi } from '../hooks/useApi';
 import { useContact } from '../hooks/useContact';
 import { useDistricts } from '../hooks/useDistricts';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { useFavorites } from '../hooks/useFavorites';
 import { useGoBack, useTelegramBackButton } from '../hooks/useTelegramBackButton';
 import { useTelegramMainButton } from '../hooks/useTelegramMainButton';
 import { fill, tr } from '../lib/format';
@@ -48,6 +50,7 @@ export default function ListingPage() {
   const { lang, t } = useI18n();
   const lt = t.listing;
   const { names } = useDistricts();
+  const { isFavorite } = useFavorites();
   const {
     data: listing,
     error,
@@ -265,6 +268,9 @@ export default function ListingPage() {
                   <FavoriteButton listingId={listing.id} />
                 </section>
 
+                {/* Заметка — только к квартире в избранном (сервер хранит её вместе с избранным) */}
+                {isFavorite(listing.id) && <FavoriteNote listingId={listing.id} />}
+
                 {chatUrl && !gone && (
                   <p className="listing-contact__hint m-0 text-xs text-[var(--text-secondary)]">
                     {lt.translate_hint}
@@ -311,7 +317,11 @@ export default function ListingPage() {
               />
               <DistrictAbout districtId={listing.district} />
 
-              <ListingDates publishedAt={listing.published_at} updatedAt={listing.updated_at} />
+              <ListingDates
+                publishedAt={listing.published_at}
+                updatedAt={listing.updated_at}
+                views={listing.views}
+              />
             </div>
           </div>
         </article>
