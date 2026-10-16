@@ -3,6 +3,7 @@ import EmptyState from '../components/EmptyState';
 import ErrorState from '../components/ErrorState';
 import FavoriteNote from '../components/FavoriteNote';
 import ListingCard from '../components/ListingCard';
+import Recommendations from '../components/Recommendations';
 import Skeleton from '../components/Skeleton';
 import { useDistricts } from '../hooks/useDistricts';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
@@ -81,6 +82,9 @@ export default function FavoritesPage() {
           ))}
         </ul>
       )}
+
+      {/* Похожие на избранное; пустое избранное и так объясняет, что делать */}
+      {!isEmpty && <Recommendations districtNames={names} />}
     </section>
   );
 }
