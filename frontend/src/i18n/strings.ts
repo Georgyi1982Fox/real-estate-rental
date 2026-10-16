@@ -664,6 +664,40 @@ const ka = {
     },
   },
   // Раздел «Гостиницы» (FRONTEND-045): названия типов и удобств — в i18n/hotels.ts
+  signing: {
+    sign_button: 'ხელმოსაწერად გაგზავნა',
+    sent_title: 'დოკუმენტი ხელმოსაწერად გაიგზავნა',
+    sent_text:
+      'დოკუმენტი გამოგეგზავნათ ბოტთან ჩატში. მოაწერეთ იქ ხელი და ბმული გაუგზავნეთ მეორე მხარეს.',
+    not_sent_text:
+      'დოკუმენტი შენახულია, მაგრამ ბოტმა ჩატში ვერ გამოგიგზავნათ. მოაწერეთ ხელი ბმულით და გაუგზავნეთ ის მეორე მხარეს.',
+    sign_now: 'ახლავე ხელმოწერა',
+    sign: 'ხელის მოწერა',
+    forward: 'ბმულის გადაგზავნა',
+    copied: 'ბმული დაკოპირდა — გაუგზავნეთ მეორე მხარეს',
+    title: 'ჩემი დოკუმენტები',
+    intro: 'ხელმოსაწერად გაგზავნილი ხელშეკრულებები და აქტები. ხელს აწერენ ბოტთან ჩატში.',
+    legal_note:
+      'ეს მარტივი ელექტრონული ხელმოწერაა: მხარეები თანხმობას თავიანთი Telegram ანგარიშით ადასტურებენ.',
+    statuses: {
+      pending: 'ელოდება ხელმოწერას',
+      signed: 'ხელმოწერილია',
+      declined: 'უარყოფილია',
+    },
+    created: 'შეიქმნა {n}',
+    signed_by: 'ხელი მოაწერეს',
+    nobody_signed: 'ჯერ არავის მოუწერია ხელი',
+    you: 'თქვენ',
+    download: 'ჩამოტვირთვა',
+    certificate: 'ხელმოწერის სერტიფიკატი',
+    file_sent: 'ბოტმა ფაილი ჩატში გამოგიგზავნათ',
+    empty_title: 'დოკუმენტები ჯერ არ არის',
+    empty_text: 'შეადგინეთ ხელშეკრულება ან მიღება-ჩაბარების აქტი და გაგზავნეთ ხელმოსაწერად.',
+    errors: {
+      not_found: 'დოკუმენტი ვერ მოიძებნა — სია განახლდა.',
+      not_signed: 'სერტიფიკატი გამოჩნდება, როცა ორივე მხარე მოაწერს ხელს.',
+    },
+  },
   hotels: {
     page_title: 'სასტუმროები',
     intro: 'სასტუმროები, საოჯახო სასტუმროები, ჰოსტელები და აპარტ-ოტელები — პირდაპირ მეპატრონეებისგან.',
@@ -1464,6 +1498,40 @@ const ru: Strings = {
       keys: 'От 0 до 50',
     },
   },
+  signing: {
+    sign_button: 'Отправить на подпись',
+    sent_title: 'Документ отправлен на подпись',
+    sent_text:
+      'Документ отправлен вам в чат с ботом. Подпишите его там и перешлите ссылку второй стороне.',
+    not_sent_text:
+      'Документ сохранён, но бот не смог прислать его в чат. Подпишите по ссылке и перешлите её второй стороне.',
+    sign_now: 'Подписать сейчас',
+    sign: 'Подписать',
+    forward: 'Переслать ссылку',
+    copied: 'Ссылка скопирована — отправьте её второй стороне',
+    title: 'Мои документы',
+    intro: 'Договоры и акты, отправленные на подпись. Подписывают в чате с ботом.',
+    legal_note:
+      'Это простая электронная подпись: стороны подтверждают согласие своим аккаунтом Telegram.',
+    statuses: {
+      pending: 'Ждёт подписей',
+      signed: 'Подписан',
+      declined: 'Отклонён',
+    },
+    created: 'Создан {n}',
+    signed_by: 'Подписали',
+    nobody_signed: 'Ещё никто не подписал',
+    you: 'вы',
+    download: 'Скачать',
+    certificate: 'Сертификат подписи',
+    file_sent: 'Бот прислал файл в чат',
+    empty_title: 'Документов пока нет',
+    empty_text: 'Составьте договор или акт приёмки и отправьте на подпись.',
+    errors: {
+      not_found: 'Документ не найден — список обновлён.',
+      not_signed: 'Сертификат появится, когда подпишут обе стороны.',
+    },
+  },
   hotels: {
     page_title: 'Гостиницы',
     intro: 'Гостиницы, гостевые дома, хостелы и апарт-отели — напрямую от хозяев.',
@@ -2262,6 +2330,40 @@ const en: Strings = {
     errors: {
       items: 'Mark at least one item.',
       keys: 'From 0 to 50',
+    },
+  },
+  signing: {
+    sign_button: 'Send for signing',
+    sent_title: 'Document sent for signing',
+    sent_text:
+      'The document is in your chat with the bot. Sign it there and forward the link to the other party.',
+    not_sent_text:
+      'The document is saved, but the bot could not send it to your chat. Sign it via the link and forward the link to the other party.',
+    sign_now: 'Sign now',
+    sign: 'Sign',
+    forward: 'Forward the link',
+    copied: 'Link copied — send it to the other party',
+    title: 'My documents',
+    intro: 'Contracts and reports sent for signing. They are signed in the chat with the bot.',
+    legal_note:
+      'This is a simple electronic signature: each party confirms consent with their Telegram account.',
+    statuses: {
+      pending: 'Awaiting signatures',
+      signed: 'Signed',
+      declined: 'Declined',
+    },
+    created: 'Created {n}',
+    signed_by: 'Signed by',
+    nobody_signed: 'Nobody has signed yet',
+    you: 'you',
+    download: 'Download',
+    certificate: 'Signature certificate',
+    file_sent: 'The bot sent the file to your chat',
+    empty_title: 'No documents yet',
+    empty_text: 'Draw up a lease or a handover report and send it for signing.',
+    errors: {
+      not_found: 'Document not found — the list has been refreshed.',
+      not_signed: 'The certificate will appear once both parties have signed.',
     },
   },
   hotels: {

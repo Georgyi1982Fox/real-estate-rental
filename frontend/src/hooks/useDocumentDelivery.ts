@@ -1,21 +1,23 @@
 import { useCallback, useRef, useState } from 'react';
 import { ApiError, apiPost } from '../api/client';
-import type { DocumentSent } from '../api/types';
+import type { DocumentSent, SigningStarted } from '../api/types';
 import { showPremiumPrompt } from './usePremiumPrompt';
 
 /**
- * Чем закончился запрос документа: sent — бот прислал PDF в чат; login — 401; premium — 402
+ * Чем закончился запрос документа: sent — бот прислал PDF в чат; signing — документ сохранён
+ * на подпись (delivery: sign), есть ссылка для второй стороны; login — 401; premium — 402
  * (окно «Подключить Premium» уже показано); invalid — 422, сервер не принял поля;
  * bot — 502, бот не смог написать человеку (не запущен или заблокирован); failed — всё остальное
  */
 export type DeliveryResult =
   | { status: 'sent'; filename: string }
+  | { status: 'signing'; documentId: string; inviteUrl: string; sent: boolean }
   | { status: 'invalid'; error: ApiError }
   | { status: 'busy' | 'login' | 'premium' | 'bot' | 'failed' };
 
 /**
- * Документ в чат с ботом (договор аренды, акт приёмки): POST с анкетой, в ответ — имя файла.
- * Пока идёт запрос, второй не отправляется
+ * Документ в чат с ботом (договор аренды, акт приёмки): POST с анкетой, в ответ — имя файла,
+ * а с delivery: sign — ссылка на подпись. Пока идёт запрос, второй не отправляется
  */
 export function useDocumentDelivery(path: string) {
   const [busy, setBusy] = useState(false);
@@ -28,7 +30,16 @@ export function useDocumentDelivery(path: string) {
       pending.current = true;
       setBusy(true);
       try {
-        const data = await apiPost<DocumentSent>(path, body);
+        const data = await apiPost<DocumentSent | SigningStarted>(path, body);
+        if ('invite_url' in data) {
+          if (!data.invite_url) return { status: 'failed' };
+          return {
+            status: 'signing',
+            documentId: String(data.document_id),
+            inviteUrl: data.invite_url,
+            sent: data.sent,
+          };
+        }
         return data.sent ? { status: 'sent', filename: data.filename } : { status: 'failed' };
       } catch (error) {
         if (!(error instanceof ApiError)) return { status: 'failed' };

@@ -7,6 +7,7 @@ import type {
   AcceptanceRequest,
   AcceptanceSection,
   ContractLanguage,
+  DocumentDelivery,
 } from '../api/types';
 import type { Lang } from '../i18n/strings';
 import { today } from './contract';
@@ -288,12 +289,13 @@ export function acceptanceProblems(
   return errors;
 }
 
-/** Тело POST /api/documents/acceptance */
+/** Тело POST /api/documents/acceptance: в чат или на подпись */
 export function toAcceptanceRequest(
   draft: AcceptanceDraft,
   checklist: AcceptanceChecklist,
   listingAddress: string,
   listingId?: string,
+  delivery: DocumentDelivery = 'chat',
 ): AcceptanceRequest {
   return {
     ...(listingId ? { listing_id: listingId } : {}),
@@ -308,7 +310,7 @@ export function toAcceptanceRequest(
     water: draft.water.trim(),
     notes: draft.notes.trim(),
     second_language: draft.second_language,
-    delivery: 'chat',
+    delivery,
   };
 }
 
