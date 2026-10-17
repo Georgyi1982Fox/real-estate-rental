@@ -28,6 +28,7 @@ import ListingSpecs from '../components/ListingSpecs';
 import MarketPriceBadge from '../components/MarketPriceBadge';
 import PhoneReveal from '../components/PhoneReveal';
 import PromotionBadges from '../components/PromotionBadges';
+import ShareButton from '../components/ShareButton';
 import SimilarListings from '../components/SimilarListings';
 import { useApi } from '../hooks/useApi';
 import { useContact } from '../hooks/useContact';
@@ -125,21 +126,25 @@ export default function ListingPage() {
 
   return (
     <>
-      <nav className="listing-page__breadcrumb mb-4" aria-label={lt.back}>
-        <Link
-          to="/search"
-          className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
-          onClick={(event) => {
-            // Новая вкладка (Ctrl/⌘ + щелчок) — обычная ссылка на поиск
-            if (event.metaKey || event.ctrlKey || event.shiftKey) return;
-            event.preventDefault();
-            haptic('light');
-            goBack();
-          }}
-        >
-          <span aria-hidden="true">←</span> {lt.back}
-        </Link>
-      </nav>
+      <div className="listing-page__toolbar mb-4 flex min-h-9 items-center justify-between gap-3">
+        <nav className="listing-page__breadcrumb" aria-label={lt.back}>
+          <Link
+            to="/search"
+            className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
+            onClick={(event) => {
+              // Новая вкладка (Ctrl/⌘ + щелчок) — обычная ссылка на поиск
+              if (event.metaKey || event.ctrlKey || event.shiftKey) return;
+              event.preventDefault();
+              haptic('light');
+              goBack();
+            }}
+          >
+            <span aria-hidden="true">←</span> {lt.back}
+          </Link>
+        </nav>
+        {/* key: при переходе на похожую квартиру — ссылка уже на неё */}
+        {listing && <ShareButton key={listing.id} listingId={listing.id} />}
+      </div>
 
       {loading && <ListingSkeleton />}
       {error && <ErrorState onRetry={reload} />}

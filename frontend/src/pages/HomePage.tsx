@@ -5,6 +5,7 @@ import EmptyState from '../components/EmptyState';
 import ErrorState from '../components/ErrorState';
 import HubMenu from '../components/HubMenu';
 import ListingCard from '../components/ListingCard';
+import Recommendations from '../components/Recommendations';
 import RecentlyViewed from '../components/RecentlyViewed';
 import SearchBar from '../components/SearchBar';
 import Skeleton from '../components/Skeleton';
@@ -25,7 +26,7 @@ const NO_DISTRICTS: string[] = [];
 /** Параметры ленты: раньше она жила на «/», старые ссылки (?district=…&q=…) ведут в /search */
 const SEARCH_PARAMS = [...FILTER_KEYS, QUERY_KEY, 'page'];
 
-/** Главный экран-«хаб»: приветствие, поиск, меню всех разделов, «Вы смотрели» и новые объявления */
+/** Главный экран-«хаб»: приветствие, поиск, меню всех разделов, «Вы смотрели», «Вам может понравиться» и новые объявления */
 export default function HomePage() {
   const { t } = useI18n();
   const ht = t.hub;
@@ -81,6 +82,8 @@ export default function HomePage() {
       <HubMenu />
 
       <RecentlyViewed districtNames={names} />
+
+      <Recommendations districtNames={names} quiet />
 
       <section
         className="home__listings flex flex-col gap-4"

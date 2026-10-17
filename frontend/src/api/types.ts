@@ -125,6 +125,22 @@ export interface ViewHistory {
   items: ViewedListing[];
 }
 
+/** «Поделиться» (GET /api/listings/{id}/share): ссылка на карточку квартиры в боте */
+export interface ListingShare {
+  url: string;
+  /** Подпись: заголовок и цена на языке запроса */
+  text: string;
+  /** Окно Telegram «Переслать» с этой ссылкой */
+  telegram_url: string;
+}
+
+/** «Вам может понравиться» (GET /api/recommendations) */
+export interface Recommendations {
+  items: Listing[];
+  /** Сколько избранного учтено; 0 — избранного нет */
+  based_on: number;
+}
+
 /** Ссылка на объявление на сайте: source — ss, myhome, livo, korter, telegram */
 export interface ListingSourceLink {
   source: string;

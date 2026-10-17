@@ -46,10 +46,18 @@ function load(): string[] {
 // Порядок: старые → новые (последний добавленный — в конце)
 let ids = load();
 let synced: Promise<void> | null = null;
+// Растёт, когда сервер подтвердил изменение избранного: зависящее от него (рекомендации)
+// перезапрашивается уже после ответа сервера, а не по мгновенному сердечку
+let serverVersion = 0;
 const listeners = new Set<() => void>();
 
 function emit(): void {
   listeners.forEach((listener) => listener());
+}
+
+function bumpServerVersion(): void {
+  serverVersion += 1;
+  emit();
 }
 
 function save(next: string[]): void {
@@ -85,6 +93,7 @@ async function syncWithServer(): Promise<void> {
   const addedMeanwhile = ids.filter((id) => !local.includes(id) && !merged.includes(id));
   const removedMeanwhile = local.filter((id) => !ids.includes(id));
   save([...merged, ...addedMeanwhile].filter((id) => !removedMeanwhile.includes(id)));
+  bumpServerVersion();
 }
 
 /** Синхронизировать с сервером (один раз; повторно — после входа, см. AuthProvider) */
@@ -117,6 +126,15 @@ function subscribe(listener: () => void): () => void {
 
 function getSnapshot(): string[] {
   return ids;
+}
+
+function getServerVersion(): number {
+  return serverVersion;
+}
+
+/** Номер версии избранного на сервере: меняется после каждого подтверждённого изменения */
+export function useFavoritesServerVersion(): number {
+  return useSyncExternalStore(subscribe, getServerVersion);
 }
 
 /**
@@ -156,7 +174,10 @@ export function useFavorites() {
       }
       // Toast «Добавлено» — только после ответа: на лимите тарифа вместо него будет окно Premium
       apiPost('/api/favorites', { listing_id: key }).then(
-        () => showToast(t.card.added, 'success'),
+        () => {
+          showToast(t.card.added, 'success');
+          bumpServerVersion();
+        },
         (error: unknown) => {
           save(ids.filter((item) => item !== key));
           if (error instanceof ApiError && error.isPaymentRequired) {
@@ -183,7 +204,10 @@ export function useFavorites() {
       if (!usesServer()) return;
       apiDelete(`/api/favorites/${encodeURIComponent(key)}`).then(
         // Сервер удаляет заметку вместе с избранным
-        () => dropNote(key),
+        () => {
+          dropNote(key);
+          bumpServerVersion();
+        },
         () => {
           save(before.filter((item) => item === key || ids.includes(item)));
           showToast(t.card.favorite_error, 'error');

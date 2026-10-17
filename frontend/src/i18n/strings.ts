@@ -232,6 +232,16 @@ const ka = {
     empty_title: 'აქ ჯერ ცარიელია',
     empty_text: 'გახსენით ნებისმიერი ბინა — ის აქ გამოჩნდება.',
   },
+  share: {
+    button: 'გაზიარება',
+    label: 'ბინის გაზიარება',
+    copied: 'ბმული დაკოპირდა',
+  },
+  recommend: {
+    title: 'შეიძლება მოგეწონოთ',
+    no_favorites: 'დაამატეთ ბინები ფავორიტებში ♥ — მსგავსს შეგირჩევთ',
+    empty: 'მსგავსი ბინები ჯერ არ არის, შემოიარეთ მოგვიანებით',
+  },
   favorites: {
     page_title: 'ფავორიტები',
     heading: 'ფავორიტები',
@@ -1097,6 +1107,16 @@ const ru: Strings = {
     empty_title: 'Здесь пока пусто',
     empty_text: 'Откройте любую квартиру — она появится здесь.',
   },
+  share: {
+    button: 'Поделиться',
+    label: 'Поделиться квартирой',
+    copied: 'Ссылка скопирована',
+  },
+  recommend: {
+    title: 'Вам может понравиться',
+    no_favorites: 'Добавьте квартиры в избранное ♥ — подберём похожие',
+    empty: 'Похожих пока нет, загляните позже',
+  },
   favorites: {
     page_title: 'Избранное',
     heading: 'Избранное',
@@ -1957,6 +1977,16 @@ const en: Strings = {
     clear_error: 'Could not clear the history. Please try again.',
     empty_title: 'Nothing here yet',
     empty_text: 'Open any apartment and it will show up here.',
+  },
+  share: {
+    button: 'Share',
+    label: 'Share this apartment',
+    copied: 'Link copied',
+  },
+  recommend: {
+    title: 'You may like',
+    no_favorites: 'Add apartments to favorites ♥ — we will find similar ones',
+    empty: 'Nothing similar yet, check back later',
   },
   favorites: {
     page_title: 'Favorites',
