@@ -41,6 +41,8 @@ class ListingSearchFilters(BaseModel):
 
     # Город (``bina.application.cities``); None — все города (TASK-079)
     city: str | None = None
+    # TASK-122: несколько городов (любой из них); вместе с city — объединение
+    cities: tuple[str, ...] = ()
     # Вид аренды (TASK-092): по умолчанию помесячно — цены посуточной аренды за сутки
     # и в одном списке с помесячными сбивают с толку; None — любой
     rent_period: str | None = MONTHLY
@@ -72,6 +74,11 @@ class ListingSearchFilters(BaseModel):
     published_since: datetime | None = None
     # Источники (любой из): ss, myhome, livo, korter, telegram, owner (SOURCES)
     sources: tuple[str, ...] = ()
+
+    @property
+    def all_cities(self) -> list[str]:
+        """Все города фильтра без повторов (пусто — любой город)."""
+        return list(dict.fromkeys([*([self.city] if self.city else []), *self.cities]))
 
     @property
     def all_district_ids(self) -> list[UUID]:

@@ -41,12 +41,25 @@ export const BEDROOMS_MAX = 4;
 export const BATHROOMS_MAX = 3;
 /** Столько кодов удобств или состояний берём из адреса */
 const CODES_MAX = 30;
-const CITY_MAX = 64;
+/** Несколько городов — через запятую: 'batumi,tbilisi' (TASK-122) */
+const CITY_MAX = 200;
 /**
  * «Вся Грузия» в адресе страницы (?city=all) и в хранилище выбранного города.
  * В запросы к API не попадает: без city сервер ищет по всей стране
  */
 export const ALL_CITIES = 'all';
+
+/** Коды городов из 'batumi,tbilisi' (TASK-122); пусто или ALL_CITIES — «Вся Грузия» */
+export function cityCodes(city: string | undefined): string[] {
+  if (!city || city === ALL_CITIES) return [];
+  return [...new Set(city.split(',').map((code) => code.trim()).filter(Boolean))];
+}
+
+/** Обратно: без повторов, по алфавиту (один и тот же выбор — одна строка); пусто — undefined */
+export function joinCities(codes: string[]): string | undefined {
+  const unique = [...new Set(codes.map((code) => code.trim()).filter(Boolean))].sort();
+  return unique.length > 0 ? unique.join(',') : undefined;
+}
 
 const NUMBER_KEYS = [
   'min_price',
@@ -316,11 +329,22 @@ export function countFilters(filters: SearchFilters): number {
  * несколько — массив districts.
  */
 export function toSavedFilters(filters: SearchFilters): SearchFilters {
-  const { district: _district, districts: _districts, ...rest } = filters;
+  const { district: _district, districts: _districts, city, cities: _cities, ...rest } = filters;
+  // Один город — старое поле city, несколько — массив cities (TASK-122)
+  const codes = cityCodes(city);
+  const place: SearchFilters =
+    codes.length > 1 ? { cities: codes } : codes.length === 1 ? { city: codes[0] } : {};
   const ids = filterDistricts(filters);
-  if (ids.length === 1) return { ...rest, district: ids[0] };
-  if (ids.length > 1) return { ...rest, districts: ids };
-  return rest;
+  if (ids.length === 1) return { ...rest, ...place, district: ids[0] };
+  if (ids.length > 1) return { ...rest, ...place, districts: ids };
+  return { ...rest, ...place };
+}
+
+/** Поиск с сервера: несколько городов (cities) — в одну строку city, как в адресе страницы */
+export function fromSavedFilters(filters: SearchFilters): SearchFilters {
+  const { cities, ...rest } = filters;
+  const city = joinCities([...cityCodes(rest.city), ...(cities ?? [])]);
+  return city ? { ...rest, city } : rest;
 }
 
 /** «Ваке, Сабуртало +1» по алфавиту; неизвестные ID (районы ещё грузятся) пропускаются */
@@ -530,8 +554,11 @@ export function extraFilterChips(
       chips.push({ key: 'rent_period', label: ft.daily, patch: { rent_period: undefined } });
     }
     // Название города ещё грузится или города уже нет в списке — показываем код
-    const name = filters.city ? cityNames[filters.city] : undefined;
-    const label = filters.city ? (name ? tr(name, lang) : filters.city) : t.city.all;
+    const codes = cityCodes(filters.city);
+    const label =
+      codes.length > 0
+        ? codes.map((code) => (cityNames[code] ? tr(cityNames[code], lang) : code)).join(', ')
+        : t.city.all;
     chips.push({ key: 'city', label, patch: { city: undefined } });
   }
   return chips;

@@ -3,6 +3,7 @@ import { useFavorites } from '../hooks/useFavorites';
 import { useUnreadNotifications } from '../hooks/useNotificationFeed';
 import { LOGO_URL } from '../lib/config';
 import { fill } from '../lib/format';
+import { MORE_PATH } from '../lib/paths';
 import { useAuth } from '../providers/AuthProvider';
 import { useI18n } from '../providers/I18nProvider';
 import Avatar from './Avatar';
@@ -57,6 +58,16 @@ export default function Header({ nav }: HeaderProps) {
             >
               <Icon name="heart" className="size-5" />
               <CountBadge count={count} max={99} />
+            </Link>
+          )}
+          {/* «Ещё» — в нижней панели; без неё (браузер на компьютере) — кнопкой в шапке */}
+          {!inNav && (
+            <Link
+              to={MORE_PATH}
+              className={`app-icon-button app-header__more ${navHidden}`}
+              aria-label={t.nav.more}
+            >
+              <Icon name="grid" className="size-5" />
             </Link>
           )}
           {/* Гостю уведомлений нет — колокольчик не показываем */}

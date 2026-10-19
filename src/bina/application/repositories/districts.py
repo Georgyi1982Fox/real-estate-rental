@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from collections.abc import Sequence
 from typing import Protocol
 from uuid import UUID
 
@@ -20,8 +21,17 @@ class IDistrictsRepository(Protocol):
         ...
 
     @abstractmethod
-    async def list_all(self, city: str | None = None) -> list[District]:
-        """Все (не удалённые) районы города (``None`` — всех городов) по названию."""
+    async def list_all(
+        self,
+        city: str | None = None,
+        *,
+        cities: Sequence[str] = (),
+        with_city_wide: bool = False,
+    ) -> list[District]:
+        """Все (не удалённые) районы городов (не заданы — всех) по названию.
+
+        «Весь город» (TASK-122) — только с ``with_city_wide``.
+        """
         ...
 
     @abstractmethod

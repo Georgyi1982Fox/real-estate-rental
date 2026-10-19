@@ -1,7 +1,8 @@
 """Акт приёма-передачи квартиры (TASK-102).
 
 - ``GET /api/documents/acceptance/checklist`` — чек-лист на языке пользователя
-  (разделы, пункты, состояния), чтобы Mini App не хранил тексты у себя.
+  (разделы, пункты, состояния), чтобы Mini App не хранил тексты у себя; ``rooms`` —
+  комнаты, которые человек добавляет сам (код пункта ``<комната>-<номер>:<пункт>``).
 - ``POST /api/documents/acceptance`` — PDF акта (Premium): грузинский и русский/английский.
   ``listing_id`` необязателен: адрес подставляется из объявления.
 
@@ -16,11 +17,13 @@ from pydantic import BaseModel, Field, field_validator
 
 from bina.application.acceptance import (
     CHECKLIST,
-    ITEMS,
+    MAX_ITEMS,
+    ROOMS,
     STATUS_LABELS,
     AcceptanceData,
     CheckedItem,
     ItemStatus,
+    is_known_item,
 )
 from bina.application.cities import city
 from bina.application.signing import DocumentKind
@@ -59,6 +62,15 @@ class ChecklistSectionOut(BaseModel):
     items: list[ChecklistItemOut]
 
 
+class RoomOut(BaseModel):
+    """Тип комнаты: пункты проверки и сколько таких комнат можно добавить."""
+
+    code: str
+    title: str
+    items: list[ChecklistItemOut]
+    max_count: int
+
+
 class StatusOut(BaseModel):
     code: str
     title: str
@@ -67,7 +79,10 @@ class StatusOut(BaseModel):
 class ChecklistOut(BaseModel):
     """Чек-лист приёмки на языке пользователя."""
 
-    sections: list[ChecklistSectionOut]
+    sections: list[ChecklistSectionOut] = Field(description="Старый чек-лист разделами")
+    rooms: list[RoomOut] = Field(
+        description="Комнаты: человек добавляет нужные; код пункта — <комната>-<номер>:<пункт>"
+    )
     statuses: list[StatusOut]
 
 
@@ -79,7 +94,7 @@ class CheckedItemIn(BaseModel):
     @field_validator("code")
     @classmethod
     def _known(cls, value: str) -> str:
-        if value not in ITEMS:
+        if not is_known_item(value):
             raise ValueError(f"unknown checklist item: {value}")
         return value
 
@@ -98,7 +113,7 @@ class AcceptanceIn(BaseModel):
     tenant_name: str = Field(min_length=2, max_length=120)
     address: str = Field(default="", max_length=200)
     handover_date: date | None = Field(default=None, description="По умолчанию — сегодня")
-    items: list[CheckedItemIn] = Field(min_length=1, max_length=len(ITEMS))
+    items: list[CheckedItemIn] = Field(min_length=1, max_length=MAX_ITEMS)
     keys: int | None = Field(default=None, ge=0, le=50)
     electricity: str = Field(default="", max_length=20)
     gas: str = Field(default="", max_length=20)
@@ -143,6 +158,18 @@ async def acceptance_checklist(
                 ],
             )
             for section in CHECKLIST
+        ],
+        rooms=[
+            RoomOut(
+                code=room.code,
+                title=room.labels[language],
+                items=[
+                    ChecklistItemOut(code=item.code, title=item.labels[language])
+                    for item in room.items
+                ],
+                max_count=room.max_count,
+            )
+            for room in ROOMS
         ],
         statuses=[
             StatusOut(code=code.value, title=labels[language])

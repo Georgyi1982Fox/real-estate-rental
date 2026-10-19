@@ -101,6 +101,20 @@ async def get_visible_listing_or_404(session: AsyncSession, listing_id: str) -> 
     return listing
 
 
+def parse_city_codes(values: list[str] | None) -> tuple[str, ...]:
+    """Города из ``city`` (TASK-122): повтором параметра или через запятую; пусто — все.
+
+    Неизвестный код — 400, как у :func:`valid_city`.
+    """
+    codes = tuple(
+        dict.fromkeys(part.strip() for value in values or [] for part in value.split(","))
+    )
+    codes = tuple(code for code in codes if code)
+    for code in codes:
+        valid_city(code)
+    return codes
+
+
 def valid_city(city: str | None) -> str | None:
     """Проверить код города (TASK-079); неизвестный — 400 с понятным сообщением."""
     if city is not None and city not in CITIES:

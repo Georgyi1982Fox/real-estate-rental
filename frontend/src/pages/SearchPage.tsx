@@ -34,6 +34,7 @@ import {
   withQuery,
 } from '../lib/searchFilters';
 import { haptic } from '../lib/telegram';
+import { RENT_PATH } from '../lib/paths';
 import { useI18n } from '../providers/I18nProvider';
 
 const LISTINGS_PER_PAGE = 6;
@@ -96,7 +97,7 @@ export default function SearchPage() {
   const narrowed = filtered || query !== '';
 
   useDocumentTitle(`${ht.page_title} — bina.ai`);
-  useTelegramBackButton('/');
+  useTelegramBackButton(RENT_PATH);
 
   const search = (text: string) => {
     setQuery(text, smartPreferred && canSmartSearch(text));

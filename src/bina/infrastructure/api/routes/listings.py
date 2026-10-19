@@ -31,13 +31,12 @@ from bina.infrastructure.api.routes.common import (
     get_listing_or_404,
     get_visible_listing_or_404,
     not_found,
+    parse_city_codes,
     parse_codes,
     parse_decimal,
     parse_districts,
-    valid_city,
 )
 from bina.infrastructure.api.schemas import (
-    CityCode,
     ContactOut,
     ListingOut,
     ListingsOut,
@@ -70,7 +69,11 @@ async def list_listings(
     page: Annotated[int, Query(ge=1)] = 1,
     per_page: Annotated[int, Query(ge=1, le=MAX_PER_PAGE)] = 20,
     city: Annotated[
-        CityCode | None, Query(description="Код города (см. /api/cities); пусто — все (TASK-079)")
+        list[str] | None,
+        Query(
+            description="Код города (см. /api/cities); несколько — через запятую "
+            "(city=tbilisi,batumi) или повтором, любой из них (TASK-122); пусто — все (TASK-079)"
+        ),
     ] = None,
     rent_period: Annotated[
         RentPeriod,
@@ -126,10 +129,10 @@ async def list_listings(
     ] = None,
 ) -> ListingsPageOut:
     """Активные объявления с пагинацией, фильтрами, поиском по тексту и сортировкой."""
-    valid_city(city)
+    cities = parse_city_codes(city)
     try:
         filters = search_filters(
-            city=city,
+            cities=cities,
             rent_period=rent_period,
             district_ids=parse_districts(district),
             price_min=parse_decimal(min_price, "min_price"),

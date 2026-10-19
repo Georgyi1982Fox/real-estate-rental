@@ -10,8 +10,9 @@ import HotelPrice from '../components/HotelPrice';
 import HotelRooms from '../components/HotelRooms';
 import Icon from '../components/Icon';
 import ListingDescription from '../components/ListingDescription';
-import ListingLocation from '../components/ListingLocation';
+import ListingLocation, { mapTarget } from '../components/ListingLocation';
 import ListingSkeleton from '../components/ListingSkeleton';
+import MapChooser from '../components/MapChooser';
 import PromotionBadges from '../components/PromotionBadges';
 import RatingStars from '../components/RatingStars';
 import { useApi } from '../hooks/useApi';
@@ -41,6 +42,9 @@ export default function HotelPage() {
   } = useApi<Hotel>(hotelId !== null ? `/api/hotels/${hotelId}` : null);
   const locationRef = useRef<HTMLElement>(null);
   const [complaintOpen, setComplaintOpen] = useState(false);
+  // Окно «Открыть в картах» по нажатию на адрес под названием
+  const [mapsOpen, setMapsOpen] = useState(false);
+  const closeMaps = useCallback(() => setMapsOpen(false), []);
   // Стабильная ссылка: Modal перезапускает эффект (фокус) при смене onClose
   const closeComplaint = useCallback(() => setComplaintOpen(false), []);
 
@@ -120,10 +124,19 @@ export default function HotelPage() {
                   <PromotionBadges promoted={hotel.is_promoted} verified={hotel.is_verified} />
                   {place && (
                     <p className="hotel-summary__meta m-0 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[var(--text-secondary)]">
-                      <span className="inline-flex min-w-0 items-start gap-1.5 break-words">
+                      {/* Адрес — кнопка: выбрать Google Maps или Яндекс Карты */}
+                      <button
+                        type="button"
+                        className="hotel-summary__place inline-flex min-w-0 items-start gap-1.5 break-words rounded-[var(--radius-sm)] text-left underline decoration-dotted underline-offset-4 hover:text-[var(--text-primary)]"
+                        aria-haspopup="dialog"
+                        onClick={() => {
+                          haptic('light');
+                          setMapsOpen(true);
+                        }}
+                      >
                         <Icon name="pin" className="mt-0.5 size-4" />
                         {place}
-                      </span>
+                      </button>
                       {location && (
                         <button
                           type="button"
@@ -189,6 +202,12 @@ export default function HotelPage() {
             open={complaintOpen}
             onClose={closeComplaint}
             path={`/api/hotels/${hotelId}/complaints`}
+          />
+          <MapChooser
+            open={mapsOpen}
+            onClose={closeMaps}
+            target={mapTarget(location, place)}
+            place={place}
           />
         </article>
       )}

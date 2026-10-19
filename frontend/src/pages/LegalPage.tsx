@@ -5,6 +5,7 @@ import ErrorState from '../components/ErrorState';
 import { useApi } from '../hooks/useApi';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
+import { MORE_PATH } from '../lib/paths';
 import { useI18n } from '../providers/I18nProvider';
 import NotFoundPage from './NotFoundPage';
 
@@ -26,7 +27,7 @@ export default function LegalPage() {
   const title = data?.title?.trim() || (docId ? t.legal.titles[docId] : '');
 
   useDocumentTitle(title ? `${title} — bina.ai` : 'bina.ai');
-  useTelegramBackButton('/');
+  useTelegramBackButton(MORE_PATH);
 
   if (!docId || error?.isNotFound) return <NotFoundPage />;
 

@@ -1,15 +1,10 @@
-import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ACCEPTANCE_PATH } from '../lib/acceptance';
-import { botSectionUrl } from '../lib/config';
 import { HISTORY_PATH } from '../lib/history';
 import { DOCUMENTS_PATH } from '../lib/signing';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
-import ExternalLink from './ExternalLink';
 import Icon from './Icon';
 import type { IconName } from './Icon';
-import Modal from './Modal';
 import ProfileSection from './ProfileSection';
 
 const ROW_CLASS =
@@ -26,75 +21,29 @@ function RowContent({ icon, label }: { icon: IconName; label: string }) {
   );
 }
 
-/** Меню профиля: избранное, недавно смотрели, сохранённые поиски, акт приёмки, мои документы, помощь, поддержка (бот), о приложении */
+/**
+ * Меню профиля — только своё: избранное, недавно смотрели, сохранённые поиски, мои документы.
+ * Помощь, поддержка, «О приложении», акт приёмки, Premium и документы сервиса — в «Ещё»
+ */
 export default function ProfileMenu() {
   const { t } = useI18n();
   const pt = t.profile;
-  const [aboutOpen, setAboutOpen] = useState(false);
-  // Стабильная ссылка: Modal перезапускает эффект (фокус) при смене onClose
-  const closeAbout = useCallback(() => setAboutOpen(false), []);
+  const rows: { to: string; icon: IconName; label: string }[] = [
+    { to: '/favorites', icon: 'heart', label: t.header.favorites },
+    { to: HISTORY_PATH, icon: 'clock', label: t.history.title },
+    { to: '/searches', icon: 'bell', label: t.header.searches },
+    { to: DOCUMENTS_PATH, icon: 'file', label: t.signing.title },
+  ];
 
   return (
-    <>
-      <ProfileSection title={pt.menu} as="nav">
-        <li>
-          <Link to="/favorites" className={ROW_CLASS} onClick={() => haptic('light')}>
-            <RowContent icon="heart" label={t.header.favorites} />
+    <ProfileSection title={pt.menu} as="nav">
+      {rows.map((row) => (
+        <li key={row.to}>
+          <Link to={row.to} className={ROW_CLASS} onClick={() => haptic('light')}>
+            <RowContent icon={row.icon} label={row.label} />
           </Link>
         </li>
-        <li>
-          <Link to={HISTORY_PATH} className={ROW_CLASS} onClick={() => haptic('light')}>
-            <RowContent icon="clock" label={t.history.title} />
-          </Link>
-        </li>
-        <li>
-          <Link to="/searches" className={ROW_CLASS} onClick={() => haptic('light')}>
-            <RowContent icon="bell" label={t.header.searches} />
-          </Link>
-        </li>
-        <li>
-          {/* Акт без объявления: адрес квартиры человек вводит сам */}
-          <Link to={ACCEPTANCE_PATH} className={ROW_CLASS} onClick={() => haptic('light')}>
-            <RowContent icon="list_checks" label={t.acceptance.title} />
-          </Link>
-        </li>
-        <li>
-          <Link to={DOCUMENTS_PATH} className={ROW_CLASS} onClick={() => haptic('light')}>
-            <RowContent icon="file" label={t.signing.title} />
-          </Link>
-        </li>
-        <li>
-          <Link to="/help" className={ROW_CLASS} onClick={() => haptic('light')}>
-            <RowContent icon="help" label={pt.help} />
-          </Link>
-        </li>
-        <li>
-          {/* Поддержка — раздел бота; в Telegram чат открывается нативно (openTelegramLink) */}
-          <ExternalLink href={botSectionUrl('support')} className={ROW_CLASS}>
-            <RowContent icon="message" label={t.hub.tiles.support.title} />
-          </ExternalLink>
-        </li>
-        <li>
-          <button
-            type="button"
-            className={ROW_CLASS}
-            aria-haspopup="dialog"
-            onClick={() => {
-              haptic('light');
-              setAboutOpen(true);
-            }}
-          >
-            <RowContent icon="info" label={pt.about} />
-          </button>
-        </li>
-      </ProfileSection>
-
-      <Modal open={aboutOpen} title={pt.about} onClose={closeAbout}>
-        <p className="text-sm leading-relaxed">{pt.about_text}</p>
-        <p className="mt-4 text-xs text-[var(--text-secondary)]">
-          © {new Date().getFullYear()} bina.ai
-        </p>
-      </Modal>
-    </>
+      ))}
+    </ProfileSection>
   );
 }

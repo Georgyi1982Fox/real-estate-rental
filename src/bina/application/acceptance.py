@@ -134,6 +134,168 @@ ITEMS: dict[str, ChecklistItem] = {
     item.code: item for section in CHECKLIST for item in section.items
 }
 
+# --- Комнаты (дизайн 2026-10): человек сам добавляет комнаты, которые есть в квартире
+# (несколько спален, две ванные…), и у каждой — свой список пунктов. Код пункта комнаты:
+# ``<тип>-<номер>:<пункт>``, например ``bedroom-2:windows``. Старые коды разделов
+# (``entrance_door``…) по-прежнему принимаются — черновики, начатые до этого.
+
+
+@dataclass(frozen=True, slots=True)
+class RoomType:
+    code: str
+    labels: Labels
+    items: tuple[ChecklistItem, ...]
+    # Сколько таких комнат можно добавить
+    max_count: int
+
+
+_DOOR = _item("door", "კარი", "Дверь", "Door")
+_WINDOWS = ITEMS["windows"]
+_WALLS = ITEMS["walls"]
+_FLOORS = ITEMS["floors"]
+_SOCKETS = ITEMS["sockets"]
+_LIGHTING = ITEMS["lighting"]
+_HEATING = ITEMS["heating"]
+_AIR_CONDITIONER = ITEMS["air_conditioner"]
+
+ROOMS: tuple[RoomType, ...] = (
+    RoomType(
+        "hallway",
+        {"ka": "დერეფანი", "ru": "Прихожая", "en": "Hallway"},
+        (
+            ITEMS["entrance_door"],
+            _WALLS,
+            _FLOORS,
+            _LIGHTING,
+            _item("hall_wardrobe", "კარადა / საკიდი", "Шкаф / вешалка", "Wardrobe / coat rack"),
+            _item("intercom", "დომოფონი", "Домофон", "Intercom"),
+        ),
+        max_count=2,
+    ),
+    RoomType(
+        "living_room",
+        {"ka": "მისაღები ოთახი", "ru": "Гостиная", "en": "Living room"},
+        (
+            _DOOR,
+            _WINDOWS,
+            _WALLS,
+            _FLOORS,
+            _SOCKETS,
+            _LIGHTING,
+            _HEATING,
+            _AIR_CONDITIONER,
+            ITEMS["sofa"],
+            ITEMS["table_chairs"],
+            ITEMS["tv"],
+        ),
+        max_count=2,
+    ),
+    RoomType(
+        "bedroom",
+        {"ka": "საძინებელი", "ru": "Спальня", "en": "Bedroom"},
+        (
+            _DOOR,
+            _WINDOWS,
+            _WALLS,
+            _FLOORS,
+            _SOCKETS,
+            _LIGHTING,
+            _HEATING,
+            _AIR_CONDITIONER,
+            ITEMS["bed"],
+            ITEMS["wardrobe"],
+        ),
+        max_count=6,
+    ),
+    RoomType(
+        "kitchen",
+        {"ka": "სამზარეულო", "ru": "Кухня", "en": "Kitchen"},
+        (
+            _WINDOWS,
+            _WALLS,
+            _FLOORS,
+            _SOCKETS,
+            _LIGHTING,
+            ITEMS["stove"],
+            ITEMS["fridge"],
+            ITEMS["kitchen_sink"],
+            ITEMS["kitchen_furniture"],
+            ITEMS["hood"],
+            _item("dishwasher", "ჭურჭლის სარეცხი მანქანა", "Посудомоечная машина", "Dishwasher"),
+        ),
+        max_count=2,
+    ),
+    RoomType(
+        "bathroom",
+        {"ka": "სააბაზანო", "ru": "Ванная и туалет", "en": "Bathroom"},
+        (
+            _DOOR,
+            _item("tiles", "კედლები და ფილები", "Стены и плитка", "Walls and tiles"),
+            _FLOORS,
+            _LIGHTING,
+            ITEMS["toilet"],
+            ITEMS["shower"],
+            ITEMS["bathroom_sink"],
+            ITEMS["water_heater"],
+            ITEMS["washing_machine"],
+            ITEMS["leaks_mold"],
+        ),
+        max_count=4,
+    ),
+    RoomType(
+        "balcony",
+        {"ka": "აივანი", "ru": "Балкон", "en": "Balcony"},
+        (
+            _item("balcony_door", "აივნის კარი", "Дверь на балкон", "Balcony door"),
+            _item("glazing", "შემინვა", "Остекление", "Glazing"),
+            _item("railing", "მოაჯირი", "Перила", "Railing"),
+            _FLOORS,
+        ),
+        max_count=3,
+    ),
+    RoomType(
+        "whole",
+        {"ka": "მთელი ბინა", "ru": "Вся квартира", "en": "Whole apartment"},
+        (
+            _item("cleanliness", "სისუფთავე", "Чистота", "Cleanliness"),
+            _item("heating_boiler", "გათბობის ქვაბი", "Котёл отопления", "Heating boiler"),
+            ITEMS["internet"],
+        ),
+        max_count=1,
+    ),
+)
+
+ROOM_TYPES: dict[str, RoomType] = {room.code: room for room in ROOMS}
+# Пунктов в акте не больше, чем во всех комнатах, добавленных до предела, плюс старые коды
+MAX_ITEMS = len(ITEMS) + sum(len(room.items) * room.max_count for room in ROOMS)
+
+
+@dataclass(frozen=True, slots=True)
+class RoomItem:
+    room: RoomType
+    number: int
+    item: ChecklistItem
+
+
+def room_item(code: str) -> RoomItem | None:
+    """``bedroom-2:windows`` → спальня №2, «Окна»; другое или неверный номер — ``None``."""
+    place, separator, item_code = code.partition(":")
+    room_code, dash, number = place.rpartition("-")
+    room = ROOM_TYPES.get(room_code)
+    if not separator or not dash or room is None or not number.isdigit():
+        return None
+    index = int(number)
+    if not 1 <= index <= room.max_count:
+        return None
+    item = next((candidate for candidate in room.items if candidate.code == item_code), None)
+    return RoomItem(room, index, item) if item is not None else None
+
+
+def is_known_item(code: str) -> bool:
+    """Пункт старого чек-листа или пункт добавленной комнаты."""
+    return code in ITEMS or room_item(code) is not None
+
+
 TITLES: Labels = {
     "ka": "ბინის მიღება-ჩაბარების აქტი",
     "ru": "Акт приёма-передачи квартиры",
@@ -206,24 +368,49 @@ def intro_rows(data: AcceptanceData, second_language: str) -> list[tuple[str, st
 def item_rows(data: AcceptanceData, second_language: str) -> list[tuple[str, str, str]]:
     """Строки таблицы: (пункт ka / 2-й язык, состояние ka / 2-й язык, комментарий).
 
-    Порядок — как в чек-листе, а не как пришли пункты.
+    Порядок — как в чек-листе, а не как пришли пункты: сначала старые разделы, потом
+    комнаты в порядке типов и номеров. Пункт комнаты подписан комнатой: «Спальня 2 — Окна»;
+    номер — только если таких комнат в акте несколько (или это не первая).
     """
     by_code = {item.code: item for item in data.items}
     rows = []
+
+    def add(label: Labels, checked: CheckedItem) -> None:
+        status = STATUS_LABELS[checked.status]
+        rows.append(
+            (
+                f"{label['ka']} / {label[second_language]}",
+                f"{status['ka']} / {status[second_language]}",
+                checked.comment,
+            )
+        )
+
     for section in CHECKLIST:
         for checklist_item in section.items:
             checked = by_code.get(checklist_item.code)
-            if checked is None:
-                continue
-            labels = checklist_item.labels
-            status = STATUS_LABELS[checked.status]
-            rows.append(
-                (
-                    f"{labels['ka']} / {labels[second_language]}",
-                    f"{status['ka']} / {status[second_language]}",
-                    checked.comment,
-                )
+            if checked is not None:
+                add(checklist_item.labels, checked)
+
+    found = [(found, by_code[code]) for code in by_code if (found := room_item(code)) is not None]
+    numbers: dict[str, set[int]] = {}
+    for place, _ in found:
+        numbers.setdefault(place.room.code, set()).add(place.number)
+    order = {room.code: index for index, room in enumerate(ROOMS)}
+
+    def position(entry: tuple[RoomItem, CheckedItem]) -> tuple[int, int, int]:
+        place = entry[0]
+        return order[place.room.code], place.number, place.room.items.index(place.item)
+
+    for place, checked in sorted(found, key=position):
+        numbered = place.number > 1 or len(numbers[place.room.code]) > 1
+        label = {
+            language: (
+                f"{place.room.labels[language]}{f' {place.number}' if numbered else ''} — "
+                f"{place.item.labels[language]}"
             )
+            for language in ("ka", "ru", "en")
+        }
+        add(label, checked)
     return rows
 
 

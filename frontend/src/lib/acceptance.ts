@@ -5,7 +5,7 @@ import type {
   AcceptanceChecklist,
   AcceptanceItem,
   AcceptanceRequest,
-  AcceptanceSection,
+  AcceptanceRoomType,
   ContractLanguage,
   DocumentDelivery,
 } from '../api/types';
@@ -42,9 +42,17 @@ export interface AcceptanceMark {
   comment: string;
 }
 
+/** Добавленная комната: тип и номер среди комнат этого типа (Спальня 1, Спальня 2) */
+export interface AcceptanceRoom {
+  type: string;
+  n: number;
+}
+
 /** Черновик акта: числа — строками, как их набирает человек */
 export interface AcceptanceDraft {
-  /** Отмеченные пункты по коду; пункта без отметки здесь нет */
+  /** Комнаты в порядке добавления; сначала их нет — человек добавляет те, что есть в квартире */
+  rooms: AcceptanceRoom[];
+  /** Отмеченные пункты по коду (`bedroom-2:windows`); пункта без отметки здесь нет */
   items: Record<string, AcceptanceMark>;
   landlord_name: string;
   tenant_name: string;
@@ -106,6 +114,7 @@ export function acceptanceDraftKey(listingId: string | null): string {
 /** Пустой акт; второй язык — язык интерфейса (для грузинского — английский, как на бэкенде) */
 export function emptyAcceptanceDraft(lang: Lang): AcceptanceDraft {
   return {
+    rooms: [],
     items: {},
     landlord_name: '',
     tenant_name: '',
@@ -132,6 +141,17 @@ function text(value: unknown, max: number): string {
 function readDraft(value: unknown, lang: Lang): AcceptanceDraft | null {
   if (!isRecord(value)) return null;
   const draft = emptyAcceptanceDraft(lang);
+  if (Array.isArray(value.rooms)) {
+    const seen = new Set<string>();
+    for (const room of value.rooms) {
+      if (!isRecord(room) || typeof room.type !== 'string' || typeof room.n !== 'number') continue;
+      if (!Number.isInteger(room.n) || room.n < 1 || room.n > ROOM_NUMBER_MAX) continue;
+      const key = roomKey({ type: room.type, n: room.n });
+      if (seen.has(key)) continue;
+      seen.add(key);
+      draft.rooms.push({ type: room.type, n: room.n });
+    }
+  }
   if (isRecord(value.items)) {
     for (const [code, mark] of Object.entries(value.items)) {
       if (!isRecord(mark) || typeof mark.status !== 'string') continue;
@@ -219,9 +239,89 @@ export function acceptanceAddress(draft: AcceptanceDraft, listingAddress: string
   return draft.address ?? listingAddress.slice(0, ACCEPTANCE_ADDRESS_MAX);
 }
 
-/** Сколько пунктов раздела отмечено */
-export function markedCount(section: AcceptanceSection, draft: AcceptanceDraft): number {
-  return section.items.filter((item) => draft.items[item.code]).length;
+/** Номер комнаты в черновике не больше этого (у бэкенда предел — max_count типа) */
+const ROOM_NUMBER_MAX = 20;
+
+/** Ключ комнаты: `bedroom-2` */
+export function roomKey(room: AcceptanceRoom): string {
+  return `${room.type}-${room.n}`;
+}
+
+/** Код пункта комнаты для бэкенда: `bedroom-2:windows` */
+export function roomItemCode(room: AcceptanceRoom, itemCode: string): string {
+  return `${roomKey(room)}:${itemCode}`;
+}
+
+/** Комнаты, которые знает чек-лист, — по порядку типов, внутри типа — по номеру */
+export function orderedRooms(
+  draft: AcceptanceDraft,
+  checklist: AcceptanceChecklist,
+): { room: AcceptanceRoom; type: AcceptanceRoomType }[] {
+  const order = new Map(checklist.rooms.map((type, index) => [type.code, index]));
+  return draft.rooms
+    .flatMap((room) => {
+      const type = checklist.rooms.find((candidate) => candidate.code === room.type);
+      return type && room.n <= type.max_count ? [{ room, type }] : [];
+    })
+    .sort(
+      (a, b) =>
+        (order.get(a.room.type) ?? 0) - (order.get(b.room.type) ?? 0) || a.room.n - b.room.n,
+    );
+}
+
+/** Сколько комнат этого типа уже добавлено */
+export function roomCount(draft: AcceptanceDraft, type: string): number {
+  return draft.rooms.filter((room) => room.type === type).length;
+}
+
+/**
+ * Добавить комнату: номер — самый маленький свободный (удалили «Спальню 2» — следующая
+ * снова 2). null — комнат этого типа уже предельное число
+ */
+export function addRoom(draft: AcceptanceDraft, type: AcceptanceRoomType): AcceptanceRoom | null {
+  const taken = new Set(draft.rooms.filter((room) => room.type === type.code).map((room) => room.n));
+  for (let n = 1; n <= type.max_count; n += 1) {
+    if (!taken.has(n)) return { type: type.code, n };
+  }
+  return null;
+}
+
+/** Убрать комнату вместе с её отметками */
+export function removeRoom(
+  draft: AcceptanceDraft,
+  room: AcceptanceRoom,
+): Pick<AcceptanceDraft, 'rooms' | 'items'> {
+  const key = roomKey(room);
+  const prefix = `${key}:`;
+  return {
+    rooms: draft.rooms.filter((candidate) => roomKey(candidate) !== key),
+    items: Object.fromEntries(
+      Object.entries(draft.items).filter(([code]) => !code.startsWith(prefix)),
+    ),
+  };
+}
+
+/** Название комнаты: номер — только если таких комнат несколько (или это не первая) */
+export function roomTitle(
+  room: AcceptanceRoom,
+  type: AcceptanceRoomType,
+  draft: AcceptanceDraft,
+): string {
+  return room.n > 1 || roomCount(draft, room.type) > 1 ? `${type.title} ${room.n}` : type.title;
+}
+
+/** Сколько пунктов комнаты отмечено */
+export function roomMarked(
+  draft: AcceptanceDraft,
+  room: AcceptanceRoom,
+  type: AcceptanceRoomType,
+): number {
+  return type.items.filter((item) => draft.items[roomItemCode(room, item.code)]).length;
+}
+
+/** Сколько пунктов во всех добавленных комнатах */
+export function roomsTotal(draft: AcceptanceDraft, checklist: AcceptanceChecklist): number {
+  return orderedRooms(draft, checklist).reduce((count, { type }) => count + type.items.length, 0);
 }
 
 /** Поставить или снять отметку: повторное нажатие на выбранное состояние снимает её */
@@ -238,32 +338,38 @@ export function toggleMark(
   return items;
 }
 
-/** «Всё в порядке» для раздела: пункты без отметки — в порядке, уже отмеченные не трогаем */
-export function markSectionOk(
+/** «Всё в порядке» для комнаты: пункты без отметки — в порядке, уже отмеченные не трогаем */
+export function markRoomOk(
   draft: AcceptanceDraft,
-  section: AcceptanceSection,
+  room: AcceptanceRoom,
+  type: AcceptanceRoomType,
 ): AcceptanceDraft['items'] {
   const items = { ...draft.items };
-  for (const item of section.items) {
-    if (!items[item.code]) items[item.code] = { status: STATUS_OK, comment: '' };
+  for (const item of type.items) {
+    const code = roomItemCode(room, item.code);
+    if (!items[code]) items[code] = { status: STATUS_OK, comment: '' };
   }
   return items;
 }
 
-/** Отмеченные пункты в порядке чек-листа; отметки пунктов, которых в нём уже нет, пропускаем */
+/**
+ * Отмеченные пункты добавленных комнат, по порядку комнат. Отметки комнат и пунктов,
+ * которых уже нет (и старого чек-листа разделами), в акт не идут
+ */
 export function checkedItems(
   draft: AcceptanceDraft,
   checklist: AcceptanceChecklist,
 ): AcceptanceItem[] {
   const statuses = new Set(checklist.statuses.map((status) => status.code));
-  return checklist.sections
-    .flatMap((section) => section.items)
-    .flatMap((item) => {
-      const mark = draft.items[item.code];
+  return orderedRooms(draft, checklist).flatMap(({ room, type }) =>
+    type.items.flatMap((item) => {
+      const code = roomItemCode(room, item.code);
+      const mark = draft.items[code];
       if (!mark || !statuses.has(mark.status)) return [];
       const comment = mark.status === STATUS_DEFECT ? mark.comment.trim() : '';
-      return [{ code: item.code, status: mark.status, comment }];
-    });
+      return [{ code, status: mark.status, comment }];
+    }),
+  );
 }
 
 /** Те же проверки, что на сервере: что не так в акте (пусто — можно отправлять) */

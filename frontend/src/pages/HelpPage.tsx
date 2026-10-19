@@ -4,6 +4,7 @@ import Icon from '../components/Icon';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
 import { botSectionUrl } from '../lib/config';
+import { MORE_PATH } from '../lib/paths';
 import { useI18n } from '../providers/I18nProvider';
 
 /** Помощь: что умеет bina.ai и частые вопросы */
@@ -12,7 +13,7 @@ export default function HelpPage() {
   const ht = t.help;
 
   useDocumentTitle(`${ht.page_title} — bina.ai`);
-  useTelegramBackButton('/');
+  useTelegramBackButton(MORE_PATH);
 
   return (
     <section

@@ -3,8 +3,9 @@
 Гостям (вход не нужен, кроме контактов и жалоб):
 
 - ``GET /api/hotels/options`` — коды типов, номеров и удобств (тексты — на фронтенде);
-- ``GET /api/hotels`` — поиск: ``city``, ``kind`` (через запятую), ``guests``,
-  ``price_min``/``price_max`` (лари за ночь), ``stars``, ``amenities`` (через запятую),
+- ``GET /api/hotels`` — поиск: ``city`` (несколько — через запятую), ``kind`` (через
+  запятую), ``guests``, ``price_min``/``price_max`` (лари за ночь), ``stars``, ``amenities``
+  (через запятую),
   ``sort`` (newest, price_asc, price_desc, stars_desc), ``page``/``per_page``;
 - ``GET /api/hotels/{id}`` — объект целиком с номерами;
 - ``GET /api/hotels/{id}/contact`` — телефон, WhatsApp, Telegram (нужен вход);
@@ -61,7 +62,12 @@ from bina.infrastructure.api.dependencies import (
     SettingsDep,
     TelegramUsernameDep,
 )
-from bina.infrastructure.api.routes.common import bad_request, not_found, valid_city
+from bina.infrastructure.api.routes.common import (
+    bad_request,
+    not_found,
+    parse_city_codes,
+    valid_city,
+)
 from bina.infrastructure.api.routes.complaints import THANKS, ComplaintIn, ComplaintOut
 from bina.infrastructure.api.routes.recommendations import ShareOut
 from bina.infrastructure.api.routes.referral import bot_username_or_none
@@ -342,7 +348,10 @@ def _codes(value: str | None, allowed: tuple[str, ...], name: str) -> tuple[str,
 @router.get("", response_model=HotelsPageOut)
 async def search_hotels(
     session: SessionDep,
-    city: str | None = None,
+    city: Annotated[
+        list[str] | None,
+        Query(description="Город; несколько — через запятую или повтором (TASK-122)"),
+    ] = None,
     kind: str | None = None,
     guests: Annotated[int | None, Query(ge=1, le=GUESTS_MAX)] = None,
     price_min: Annotated[float | None, Query(ge=0)] = None,
@@ -357,7 +366,7 @@ async def search_hotels(
     if sort not in SORTS:
         raise bad_request(f"sort must be one of {', '.join(SORTS)}")
     filters = HotelFilters(
-        city=valid_city(city),
+        cities=parse_city_codes(city),
         kinds=_codes(kind, KINDS, "kind"),
         guests=guests,
         price_min=price_min,

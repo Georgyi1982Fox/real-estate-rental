@@ -1,6 +1,7 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useMatch } from 'react-router-dom';
 import { useFavorites } from '../hooks/useFavorites';
 import type { Strings } from '../i18n/strings';
+import { MORE_PATH, RENT_PATH } from '../lib/paths';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 import CountBadge from './CountBadge';
@@ -24,7 +25,8 @@ const TABS: Tab[] = [
   { key: 'search', to: '/search', icon: 'search' },
   { key: 'favorites', to: '/favorites', icon: 'heart' },
   { key: 'rent_out', to: '/my-listings', icon: 'home_plus' },
-  { key: 'profile', to: '/profile', icon: 'user' },
+  // Профиль — в шапке (аватар справа), здесь — «Ещё»: Premium, помощь, документы
+  { key: 'more', to: MORE_PATH, icon: 'grid' },
 ];
 
 const FAVORITES_BADGE_MAX = 99;
@@ -33,10 +35,12 @@ interface BottomNavProps {
   mode: Exclude<NavMode, 'none'>;
 }
 
-/** Нижняя панель вкладок: Главная · Поиск · Избранное · Сдать · Профиль */
+/** Нижняя панель вкладок: Главная · Поиск · Избранное · Сдать · Ещё */
 export default function BottomNav({ mode }: BottomNavProps) {
   const { t } = useI18n();
   const { count } = useFavorites();
+  // «Главная» — стартовый экран и главная аренды за ним
+  const onRent = useMatch(RENT_PATH) !== null;
 
   return (
     <nav
@@ -49,16 +53,19 @@ export default function BottomNav({ mode }: BottomNavProps) {
             <NavLink
               to={tab.to}
               end
-              className={({ isActive }) =>
-                `bottom-nav__tab flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-[var(--radius-md)] px-0.5 text-[11px] leading-tight active:scale-[.97] ${
+              className={({ isActive: exact }) => {
+                const isActive = exact || (tab.key === 'home' && onRent);
+                return `bottom-nav__tab flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-[var(--radius-md)] px-0.5 text-[11px] leading-tight active:scale-[.97] ${
                   isActive
                     ? 'bottom-nav__tab--active font-semibold text-[var(--text-primary)]'
                     : 'font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                }`
-              }
+                }`;
+              }}
               onClick={() => haptic('selection')}
             >
-              {({ isActive }) => (
+              {({ isActive: exact }) => {
+                const isActive = exact || (tab.key === 'home' && onRent);
+                return (
                 <>
                   {/* Активная вкладка — иконка на подложке цвета бренда */}
                   <span
@@ -73,7 +80,8 @@ export default function BottomNav({ mode }: BottomNavProps) {
                   </span>
                   <span className="max-w-full truncate">{t.nav[tab.key]}</span>
                 </>
-              )}
+                );
+              }}
             </NavLink>
           </li>
         ))}

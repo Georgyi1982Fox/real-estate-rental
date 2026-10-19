@@ -396,3 +396,22 @@ def district_names(name: str) -> dict[str, str]:
     if not clean:
         return {}
     return district_canonical(clean) or {lang: transliterate(clean, lang) for lang in LANGS}
+
+
+# Района на сайте нет (TASK-122): так пишут парсеры, объявление — про город в целом
+UNKNOWN_DISTRICT = "Unknown"
+
+
+def is_city_wide_district(name: str | None, city_code: str) -> bool:
+    """«Район» — это сам город или «не указан» (TASK-122).
+
+    Сайты не всегда указывают район (часто в Батуми), и парсеры пишут вместо него город:
+    «Батуми», «Районы Батуми», «Batumi» или «Unknown». Такое объявление — про город в целом,
+    а не про район: в списке районов его нет. «Гонио» у Батуми — настоящий район (город
+    Гонио — другой код).
+    """
+    clean = re.sub(r"\s+", " ", name or "").strip()
+    if not clean or clean.lower() == UNKNOWN_DISTRICT.lower():
+        return True
+    canonical = district_canonical(clean) or {}
+    return any(city_of(value) == city_code for value in (clean, *canonical.values()))

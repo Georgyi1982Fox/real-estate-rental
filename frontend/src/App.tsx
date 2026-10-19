@@ -3,6 +3,7 @@ import Layout from './components/Layout';
 import { ACCEPTANCE_PATH } from './lib/acceptance';
 import { HISTORY_PATH } from './lib/history';
 import { HOTELS_PATH, MY_HOTELS_PATH, NEW_HOTEL_PATH } from './lib/hotels';
+import { MORE_PATH, RENT_PATH } from './lib/paths';
 import { DAILY_SEARCH_PATH } from './lib/searchFilters';
 import { DOCUMENTS_PATH } from './lib/signing';
 import AcceptancePage from './pages/AcceptancePage';
@@ -19,6 +20,7 @@ import LegalPage from './pages/LegalPage';
 import MyDocumentsPage from './pages/MyDocumentsPage';
 import MyHotelsPage from './pages/MyHotelsPage';
 import ListingPage from './pages/ListingPage';
+import MorePage from './pages/MorePage';
 import NotFoundPage from './pages/NotFoundPage';
 import NotificationsPage from './pages/NotificationsPage';
 import PremiumPage from './pages/PremiumPage';
@@ -26,6 +28,7 @@ import ProfilePage from './pages/ProfilePage';
 import SavedSearchesPage from './pages/SavedSearchesPage';
 import SearchPage from './pages/SearchPage';
 import SoonPage from './pages/SoonPage';
+import StartPage from './pages/StartPage';
 import TestCardPage from './pages/TestCardPage';
 import { AuthProvider } from './providers/AuthProvider';
 import { I18nProvider } from './providers/I18nProvider';
@@ -36,7 +39,11 @@ const router = createBrowserRouter(
     {
       element: <Layout />,
       children: [
-        { path: '/', element: <HomePage /> },
+        // Стартовый экран: аренда, продажа (скоро), гостиницы. Ссылки на объект или раздел
+        // (из бота, «Поделиться») ведут сразу туда, минуя его
+        { path: '/', element: <StartPage /> },
+        { path: RENT_PATH, element: <HomePage /> },
+        { path: MORE_PATH, element: <MorePage /> },
         { path: '/search', element: <SearchPage /> },
         { path: '/listing/:id', element: <ListingPage /> },
         // Гостиницы (FRONTEND-045): отдельный раздел, с квартирами не смешивается

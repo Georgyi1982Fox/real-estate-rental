@@ -1,10 +1,8 @@
 import { useId } from 'react';
 import { useFavorites } from '../hooks/useFavorites';
 import { useUnreadCount } from '../hooks/useNotificationFeed';
-import { useSubscription } from '../hooks/useSubscription';
 import type { Strings } from '../i18n/strings';
-import { botSectionUrl } from '../lib/config';
-import { fill, formatDate } from '../lib/format';
+import { fill } from '../lib/format';
 import { DAILY_SEARCH_PATH } from '../lib/searchFilters';
 import { useI18n } from '../providers/I18nProvider';
 import HubTile from './HubTile';
@@ -34,58 +32,25 @@ interface GroupConfig {
   tiles: TileConfig[];
 }
 
-// Первый ряд — что искать: квартиры на месяц, посуточно, гостиницы
+// Первый ряд — как искать: на месяц, посуточно, своими словами
 const HERO_TILES: TileConfig[] = [
   { key: 'search', icon: 'search', to: '/search' },
   { key: 'daily', icon: 'bed', to: DAILY_SEARCH_PATH },
-  { key: 'hotels', icon: 'hotel', to: '/hotels' },
+  { key: 'smart', icon: 'sparkles', to: '/smart' },
 ];
-/** Сетка плиток: одна и та же у первого ряда и у групп */
-const GRID_CLASS = 'grid grid-cols-2 gap-2 lg:grid-cols-4';
+/** Три плитки в ряд и на телефоне: меню короткое, остальное — в «Ещё» */
+const GRID_CLASS = 'grid grid-cols-3 gap-2';
 
-// Группы — как в главном меню бота
+// Своё: избранное, поиски с уведомлениями. Premium, размещение, помощь и документы — в «Ещё»
 const GROUPS: GroupConfig[] = [
   {
-    key: 'search',
+    key: 'mine',
     tone: 'search',
     tiles: [
-      { key: 'smart', icon: 'sparkles', to: '/smart' },
       { key: 'favorites', icon: 'heart', to: '/favorites' },
       { key: 'searches', icon: 'bookmark', to: '/searches' },
       // Колокольчик качается всегда, а не только при непрочитанных (в шапке — только при них)
       { key: 'notifications', icon: 'bell', to: '/notifications', motion: 'bell-ring' },
-    ],
-  },
-  {
-    key: 'owners',
-    tone: 'owner',
-    tiles: [
-      { key: 'owner', icon: 'home_plus', to: '/my-listings' },
-      { key: 'my_hotels', icon: 'hotel', to: '/my/hotels' },
-    ],
-  },
-  {
-    key: 'benefits',
-    tone: 'benefit',
-    tiles: [
-      { key: 'premium', icon: 'crown', to: '/premium' },
-      { key: 'invite', icon: 'gift', to: '/invite' },
-    ],
-  },
-  {
-    key: 'housing',
-    tone: 'housing',
-    tiles: [{ key: 'rent', icon: 'calendar', href: botSectionUrl('rent') }],
-  },
-  {
-    key: 'more',
-    tone: 'more',
-    tiles: [
-      { key: 'profile', icon: 'user', to: '/profile' },
-      { key: 'help', icon: 'help', to: '/help' },
-      { key: 'support', icon: 'message', href: botSectionUrl('support') },
-      { key: 'terms', icon: 'file', to: '/legal/terms' },
-      { key: 'privacy', icon: 'lock', to: '/legal/privacy' },
     ],
   },
 ];
@@ -93,23 +58,13 @@ const GROUPS: GroupConfig[] = [
 const NOTIFICATIONS_BADGE_MAX = 9;
 const FAVORITES_BADGE_MAX = 99;
 
-/** Главное меню: ряд плиток поиска и сетка разделов по группам */
+/** Меню главной аренды: ряд плиток поиска и своё (избранное, поиски, уведомления) */
 export default function HubMenu() {
-  const { lang, t } = useI18n();
+  const { t } = useI18n();
   const ht = t.hub;
   const baseId = useId();
   const unread = useUnreadCount();
   const { count: favorites } = useFavorites();
-  const { subscription } = useSubscription();
-
-  const premiumUntil =
-    subscription?.is_premium && subscription.expires_at
-      ? formatDate(subscription.expires_at, lang)
-      : '';
-
-  /** Подпись плитки: у Premium с подпиской — срок действия */
-  const tileText = (key: TileKey): string =>
-    key === 'premium' && premiumUntil ? fill(ht.premium_until, premiumUntil) : ht.tiles[key].text;
 
   /** Счётчик на иконке: непрочитанные уведомления и число квартир в избранном */
   const tileBadge = (key: TileKey): { count: number; max: number; label?: string } => {
@@ -136,7 +91,7 @@ export default function HubMenu() {
       <HubTile
         icon={tile.icon}
         title={ht.tiles[tile.key].title}
-        text={tileText(tile.key)}
+        text={ht.tiles[tile.key].text}
         tone={tone}
         to={tile.to}
         href={tile.href}

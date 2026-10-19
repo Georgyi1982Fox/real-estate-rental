@@ -11,6 +11,7 @@ import { useFavoriteListings } from '../hooks/useFavoriteListings';
 import { useFavorites } from '../hooks/useFavorites';
 import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
 import { fill } from '../lib/format';
+import { RENT_PATH } from '../lib/paths';
 import { useI18n } from '../providers/I18nProvider';
 
 const MAX_SKELETONS = 4;
@@ -26,7 +27,7 @@ export default function FavoritesPage() {
   const { listings, error, loading, reload } = useFavoriteListings(newestFirst);
 
   useDocumentTitle(`${ft.page_title} — bina.ai`);
-  useTelegramBackButton('/');
+  useTelegramBackButton(RENT_PATH);
 
   const isEmpty = ids.length === 0 || (!loading && !error && listings.length === 0);
 

@@ -38,9 +38,15 @@ class Store:
     admin_actions: list[tuple[str, UUID]] = field(default_factory=list)
 
     def add_district(
-        self, name_ru: str, name_en: str = "", name_ka: str = "", city: str = "tbilisi"
+        self,
+        name_ru: str,
+        name_en: str = "",
+        name_ka: str = "",
+        city: str = "tbilisi",
+        *,
+        city_wide: bool = False,
     ) -> District:
-        """Добавить район."""
+        """Добавить район (``city_wide`` — «весь город», TASK-122)."""
         district = District(
             id=uuid4(),
             city=city,
@@ -50,6 +56,7 @@ class Store:
             avg_price_per_m2=Decimal(10),
             safety_score=5,
             is_deleted=False,
+            is_city_wide=city_wide,
         )
         self.districts.append(district)
         return district
@@ -175,8 +182,19 @@ class FakeDistrictsRepository:
         found = {d.city for d in self._store.districts}
         return [code for code in CITIES if code in found]
 
-    async def list_all(self, city: str | None = None) -> list[District]:
-        districts = [d for d in self._store.districts if city is None or d.city == city]
+    async def list_all(
+        self,
+        city: str | None = None,
+        *,
+        cities: Sequence[str] = (),
+        with_city_wide: bool = False,
+    ) -> list[District]:
+        codes = {*([city] if city else []), *cities}
+        districts = [
+            d
+            for d in self._store.districts
+            if (not codes or d.city in codes) and (with_city_wide or not d.is_city_wide)
+        ]
         return sorted(districts, key=lambda d: d.name_ru)
 
 
@@ -217,7 +235,7 @@ class FakeListingsRepository:
             and not item.is_deleted
             and item.fraud_score < HIDE_SCORE
             and (not f.all_district_ids or item.district_id in f.all_district_ids)
-            and (f.city is None or self._city(item) == f.city)
+            and (not f.all_cities or self._city(item) in f.all_cities)
             and (f.rent_period is None or (item.rent_period or "monthly") == f.rent_period)
             and (f.price_min is None or item.price >= f.price_min)
             and (f.price_max is None or item.price <= f.price_max)

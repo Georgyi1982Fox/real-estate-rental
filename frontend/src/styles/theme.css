@@ -25,6 +25,8 @@
   --brand-google-red: #ea4335;
   --brand-google-yellow: #fbbc05;
   --brand-google-green: #34a853;
+  /* Яндекс Карты в окне «Открыть в картах» (красный затемнён для белой буквы) */
+  --brand-yandex: #d6331f;
 
   /* Предупреждение о мошенничестве (FRONTEND-012) */
   --warning-bg: #fffbeb;
@@ -53,6 +55,18 @@
   --tone-more: #94a3b8;
   /* Две большие плитки сверху: «Поиск» и «Посуточно» */
   --tone-hero: #f0976b;
+
+  /* Стартовый экран: карточки направлений (белый текст ≥ 4.5:1 на обоих концах градиента) */
+  --direction-rent-from: #667c5e;
+  --direction-rent-to: #44533f;
+  --direction-hotels-from: #3f78bd;
+  --direction-hotels-to: #2b5a96;
+  --direction-glow: rgba(255, 255, 255, 0.16);
+
+  /* Раздел «Ещё»: Premium-баннер */
+  --premium-from: #f6d27a;
+  --premium-to: #e3a83c;
+  --premium-ink: #3b2a06;
 
   /* Счётчики на иконках (избранное, уведомления) */
   --badge: var(--danger);

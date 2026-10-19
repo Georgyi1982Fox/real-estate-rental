@@ -7,7 +7,12 @@ import type {
   SearchFilters,
   UpdateSavedSearchRequest,
 } from '../api/types';
-import { cleanFilters, sameFilters, toSavedFilters } from '../lib/searchFilters';
+import {
+  cleanFilters,
+  fromSavedFilters,
+  sameFilters,
+  toSavedFilters,
+} from '../lib/searchFilters';
 import { haptic } from '../lib/telegram';
 import { useAuth } from '../providers/AuthProvider';
 import { useI18n } from '../providers/I18nProvider';
@@ -64,7 +69,7 @@ function isSavedSearch(value: unknown): value is SavedSearch {
 
 /** Сервер отдаёт незаданные фильтры как null — в приложении таких полей просто нет */
 function normalize(search: SavedSearch): SavedSearch {
-  return { ...search, filters: cleanFilters(search.filters) };
+  return { ...search, filters: fromSavedFilters(cleanFilters(search.filters)) };
 }
 
 function loadLocal(): SavedSearch[] {

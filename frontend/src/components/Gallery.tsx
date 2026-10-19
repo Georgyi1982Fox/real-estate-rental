@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { useCarousel } from '../hooks/useCarousel';
 import { fill } from '../lib/format';
+import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
+import Icon from './Icon';
+import PhotoViewer from './PhotoViewer';
 
 interface GalleryProps {
   images: string[];
@@ -17,13 +20,20 @@ const ARROW_CLASS =
 
 /**
  * Галерея фото: нативный свайп (CSS scroll-snap), стрелки на десктопе, точки-навигация.
- * Листается по кругу: после последнего фото снова первое
+ * Листается по кругу: после последнего фото снова первое. Нажатие на фото — на весь экран
  */
 export default function Gallery({ images, alt, label }: GalleryProps) {
   const { t } = useI18n();
   const [failed, setFailed] = useState<ReadonlySet<number>>(new Set());
   const total = images.length;
   const { trackRef, slides, current, onScroll, goTo } = useCarousel(total);
+  // Фото на весь экран: номер открытого, null — закрыто
+  const [viewing, setViewing] = useState<number | null>(null);
+  const closeViewer = useCallback(() => setViewing(null), []);
+  const view = (index: number) => {
+    haptic('light');
+    setViewing(index);
+  };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLUListElement>) => {
     if (event.key === 'ArrowRight') {
@@ -76,7 +86,7 @@ export default function Gallery({ images, alt, label }: GalleryProps) {
             </span>
             {!failed.has(index) && (
               <img
-                className="gallery__image relative h-full w-full select-none object-cover"
+                className="gallery__image relative h-full w-full cursor-zoom-in select-none object-cover"
                 src={images[index]}
                 alt={`${alt} — ${index + 1}`}
                 width={800}
@@ -84,12 +94,23 @@ export default function Gallery({ images, alt, label }: GalleryProps) {
                 loading={index === 0 && !clone ? 'eager' : 'lazy'}
                 fetchPriority={index === 0 && !clone ? 'high' : undefined}
                 draggable={false}
+                onClick={() => view(index)}
                 onError={() => setFailed((set) => new Set(set).add(index))}
               />
             )}
           </li>
         ))}
       </ul>
+
+      {/* Подсказка, что фото открывается на весь экран (и кнопка для клавиатуры) */}
+      <button
+        type="button"
+        className="gallery__expand absolute left-3 top-3 inline-grid size-9 place-items-center rounded-full bg-black/55 text-white backdrop-blur-sm hover:bg-black/70"
+        aria-label={t.gallery.fullscreen}
+        onClick={() => view(current)}
+      >
+        <Icon name="maximize" className="size-4" />
+      </button>
 
       <p
         className="gallery__counter pointer-events-none absolute right-3 top-3 rounded-full bg-black/55 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm"
@@ -139,6 +160,13 @@ export default function Gallery({ images, alt, label }: GalleryProps) {
           </nav>
         </>
       )}
+
+      <PhotoViewer
+        images={images}
+        start={viewing}
+        alt={alt}
+        onClose={closeViewer}
+      />
     </section>
   );
 }
