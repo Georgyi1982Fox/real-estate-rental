@@ -99,6 +99,7 @@ COMMAND_BUTTONS = {
     "invite": MenuSection.INVITE,
     "rent": MenuSection.RENT,
     "mylistings": MenuSection.OWNER,
+    "hotels": MenuSection.HOTELS,
     "terms": MenuSection.TERMS,
     "privacy": MenuSection.PRIVACY,
     "paysupport": MenuSection.SUPPORT,

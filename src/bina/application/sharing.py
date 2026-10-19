@@ -29,3 +29,23 @@ def listing_from_share(payload: str | None) -> UUID | None:
 def telegram_share_url(link: str, text: str) -> str:
     """Окно Telegram «Переслать»: выбрать чат и отправить ссылку с подписью."""
     return f"https://t.me/share/url?url={quote(link, safe='')}&text={quote(text, safe='')}"
+
+
+# --- Гостиницы (TASK-120, этап 2): ``/start h_<id>`` — карточка гостиницы
+
+HOTEL_SHARE_PREFIX = "h_"
+
+
+def hotel_share_link(bot_username: str, hotel_id: UUID) -> str:
+    """Ссылка на гостиницу в боте."""
+    return f"https://t.me/{bot_username}?start={HOTEL_SHARE_PREFIX}{hotel_id.hex}"
+
+
+def hotel_from_share(payload: str | None) -> UUID | None:
+    """ID гостиницы из ``/start h_<id>``; другое или неверный ID — ``None``."""
+    if not payload or not payload.startswith(HOTEL_SHARE_PREFIX):
+        return None
+    try:
+        return UUID(payload.removeprefix(HOTEL_SHARE_PREFIX))
+    except ValueError:
+        return None

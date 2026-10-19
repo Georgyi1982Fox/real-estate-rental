@@ -24,6 +24,7 @@ from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from pydantic import BaseModel, Field, field_validator
 
 from bina.application.complaints import DAILY_LIMIT as COMPLAINTS_PER_DAY
+from bina.application.hotel_promotion import hotel_promotion_price
 from bina.application.hotels import (
     AMENITIES,
     CURRENCIES,
@@ -37,6 +38,7 @@ from bina.application.hotels import (
     MAX_ROOMS,
     NAME_MAX,
     NO_CONTACT,
+    NOT_ACTIVE,
     NOT_FOUND,
     REJECTED,
     ROOM_KINDS,
@@ -47,6 +49,8 @@ from bina.application.hotels import (
     clean_time,
 )
 from bina.application.owner_listings import clean_phone, in_georgia, telegram_contact
+from bina.application.promotion import PROMOTION_DAYS
+from bina.application.use_cases.hotel_promotion import HotelPromotionUseCase
 from bina.application.use_cases.hotels import HotelsUseCase
 from bina.infrastructure.api.delivery import ui_language
 from bina.infrastructure.api.dependencies import (
@@ -67,6 +71,8 @@ from bina.infrastructure.db.repositories.hotels import (
     HotelFilters,
     HotelsRepository,
 )
+from bina.infrastructure.db.repositories.payments import PaymentsRepository
+from bina.infrastructure.payments import invoice
 from bina.infrastructure.storage.photos import MAX_PHOTO_BYTES, LocalPhotoStorage
 
 logger = structlog.get_logger(__name__)
@@ -243,6 +249,9 @@ class MyHotelOut(HotelOut):
     status: str = Field(description="active — в поиске, off — снят, hidden — скрыт модерацией")
     phone: str | None
     whatsapp: str | None
+    promoted_until: datetime | None = Field(
+        default=None, description="«🔥 Топ» до (в прошлом — уже закончился)"
+    )
 
     @classmethod
     def mine(cls, hotel: Hotel, now: datetime) -> "MyHotelOut":
@@ -257,6 +266,7 @@ class MyHotelOut(HotelOut):
             status=state,
             phone=hotel.phone,
             whatsapp=hotel.whatsapp,
+            promoted_until=hotel.promoted_until,
         )
 
 
@@ -289,6 +299,8 @@ class OptionsOut(BaseModel):
     currencies: list[str]
     sorts: list[str]
     limits: dict[str, int]
+    promotion_price_stars: int = Field(description="Цена «🔥 Топ» в звёздах")
+    promotion_days: int = Field(description="На сколько дней «🔥 Топ»")
 
 
 # ---------------------------------------------------------------- гостям
@@ -302,6 +314,8 @@ async def hotel_options() -> OptionsOut:
         room_kinds=list(ROOM_KINDS),
         amenities=list(AMENITIES),
         currencies=list(CURRENCIES),
+        promotion_price_stars=hotel_promotion_price(),
+        promotion_days=PROMOTION_DAYS,
         sorts=list(SORTS),
         limits={
             "active_hotels": MAX_ACTIVE_HOTELS,
@@ -418,6 +432,11 @@ def _raise(error: HotelError) -> NoReturn:
         ) from error
     if error.code == NO_CONTACT:
         raise bad_request("phone is required when you have no Telegram username") from error
+    if error.code == NOT_ACTIVE:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Only a listed hotel can be promoted: turn it on and add a room with a price",
+        ) from error
     if error.code == REJECTED:
         # Коды причин — в сообщении: «rejected: link_in_text,bad_price»
         raise bad_request(f"{REJECTED}: {','.join(error.reasons)}") from error
@@ -541,6 +560,39 @@ async def set_hotel_active(
     except HotelError as exc:
         _raise(exc)
     return await _saved(session, hotel)
+
+
+class PromotionInvoiceOut(BaseModel):
+    url: str = Field(description="Счёт в звёздах для Telegram.WebApp.openInvoice")
+    price_stars: int
+    days: int
+
+
+@my_router.post("/{hotel_id}/promotion", response_model=PromotionInvoiceOut)
+async def promote_hotel(
+    hotel_id: UUID, user: CurrentUserDep, session: SessionDep, settings: SettingsDep
+) -> PromotionInvoiceOut:
+    """«🔥 Топ» за звёзды: счёт для мини-приложения. Оплату принимает бот.
+
+    404 — не свой объект; 409 — объект не в разделе (снят, скрыт, нет цены);
+    503 — бот не настроен.
+    """
+    try:
+        hotel = await HotelPromotionUseCase(
+            HotelsRepository(session), PaymentsRepository(session)
+        ).promotable(user.id, hotel_id)
+    except HotelError as exc:
+        _raise(exc)
+    if not settings.bot_token:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Payments are not configured"
+        )
+    bot = Bot(token=settings.bot_token)
+    try:
+        url = await invoice.create_hotel_promotion_link(bot, hotel, ui_language(user))
+    finally:
+        await bot.session.close()
+    return PromotionInvoiceOut(url=url, price_stars=hotel_promotion_price(), days=PROMOTION_DAYS)
 
 
 @my_router.delete("/{hotel_id}", status_code=status.HTTP_204_NO_CONTENT)

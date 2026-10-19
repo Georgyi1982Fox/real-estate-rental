@@ -62,6 +62,8 @@ LIMIT_REACHED = "limit_reached"
 DAILY_LIMIT = "daily_limit"
 NO_CONTACT = "no_contact"
 NOT_FOUND = "not_found"
+# «Топ» только у объекта в разделе: включён, не скрыт, есть цена (этап 2)
+NOT_ACTIVE = "not_active"
 TOO_MANY_ROOMS = "too_many_rooms"
 TOO_MANY_PHOTOS = "too_many_photos"
 BAD_PHOTO = "bad_photo"

@@ -4,10 +4,15 @@
 ``Telegram.WebApp.openInvoice``).
 """
 
+from typing import Any
+
 from aiogram import Bot
 from aiogram.types import LabeledPrice
 
+from bina.application.hotel_promotion import hotel_promotion_payload, hotel_promotion_price
+from bina.application.promotion import PROMOTION_DAYS
 from bina.application.subscriptions import STARS_CURRENCY, Plan
+from bina.infrastructure.db.models import Hotel
 
 _TEXTS: dict[str, dict[str, str]] = {
     "ka": {
@@ -70,3 +75,53 @@ async def create_invoice_link(bot: Bot, plan: Plan, language: str, price: int | 
         currency=STARS_CURRENCY,
         prices=invoice_prices(plan, language, price),
     )
+
+
+# ---------------------------------------------------------------- «🔥 Топ» гостиницы (TASK-120)
+
+_HOTEL_PROMO: dict[str, dict[str, str]] = {
+    "ka": {
+        "title": "🔥 ტოპი: {name}",
+        "description": (
+            "{days} დღე თქვენი ობიექტი პირველია განყოფილებაში «სასტუმროები» ნიშნით «🔥 ტოპი»."
+        ),
+        "label": "ტოპი {days} დღით",
+    },
+    "ru": {
+        "title": "🔥 Топ: {name}",
+        "description": ("{days} дней ваш объект первым в разделе «Гостиницы» со значком «🔥 Топ»."),
+        "label": "Топ на {days} дн.",
+    },
+    "en": {
+        "title": "🔥 Top: {name}",
+        "description": "Your property is first in the Hotels section with a «🔥 Top» badge "
+        "for {days} days.",
+        "label": "Top for {days} days",
+    },
+}
+# Ограничения Telegram для счёта
+_TITLE_MAX = 32
+
+
+def hotel_promotion_invoice(hotel: Hotel, language: str) -> dict[str, Any]:
+    """Поля счёта за «Топ» гостиницы: для ``send_invoice`` и ``create_invoice_link``."""
+    texts = _HOTEL_PROMO.get(language, _HOTEL_PROMO["en"])
+    title = texts["title"].format(name=hotel.name)
+    if len(title) > _TITLE_MAX:
+        title = title[: _TITLE_MAX - 1].rstrip() + "…"
+    return {
+        "title": title,
+        "description": texts["description"].format(days=PROMOTION_DAYS),
+        "payload": hotel_promotion_payload(hotel.id),
+        "currency": STARS_CURRENCY,
+        "prices": [
+            LabeledPrice(
+                label=texts["label"].format(days=PROMOTION_DAYS), amount=hotel_promotion_price()
+            )
+        ],
+    }
+
+
+async def create_hotel_promotion_link(bot: Bot, hotel: Hotel, language: str) -> str:
+    """Ссылка на счёт за «Топ» для ``Telegram.WebApp.openInvoice``."""
+    return await bot.create_invoice_link(**hotel_promotion_invoice(hotel, language))

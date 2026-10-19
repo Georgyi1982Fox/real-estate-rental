@@ -14,6 +14,7 @@ from bina.infrastructure.bot.handlers import (
     fallback,
     favorites,
     help,
+    hotels,
     invite,
     legal,
     owner,
@@ -106,6 +107,8 @@ async def open_section(
         await search.cmd_search(message, session, user, settings)
     elif section == MenuSection.OWNER:
         await owner.cmd_mylistings(message, user, session, state)
+    elif section == MenuSection.HOTELS:
+        await hotels.cmd_hotels(message, user, session, settings)
     elif section == MenuSection.DAILY:
         await search.cmd_daily(message, session, user, settings)
     elif section == MenuSection.SMART:

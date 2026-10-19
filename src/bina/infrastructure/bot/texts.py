@@ -159,6 +159,7 @@ _RU: dict[str, str] = {
         "/invite: пригласить друга\n"
         "/rent: напоминания об оплате аренды\n"
         "/mylistings: сдать свою квартиру\n"
+        "/hotels: гостиницы и гостевые дома\n"
         "/terms: пользовательское соглашение\n"
         "/privacy: политика конфиденциальности\n"
         "/help: эта справка\n\n"
@@ -644,6 +645,42 @@ _RU: dict[str, str] = {
         "{description}"
     ),
     "hotel_admin_hidden": "Гостиница скрыта.",
+    # TASK-120, этап 2: гостиницы в боте
+    "menu_hotels": "🏨 Гостиницы",
+    "hotels_title": (
+        "🏨 <b>Гостиницы</b>\n"
+        "\n"
+        "Гостиницы, гостевые дома и хостелы в Грузии — их размещают сами хозяева. Цены за ночь, "
+        "связь с хозяином напрямую.\n"
+        "\n"
+        "Выберите объект или откройте весь раздел в приложении:"
+    ),
+    "hotels_empty": (
+        "🏨 <b>Гостиницы</b>\n"
+        "\n"
+        "Здесь пока нет ни одного объекта. Есть гостиница, гостевой дом или хостел? Разместите "
+        "бесплатно в приложении — это займёт пару минут."
+    ),
+    "hotels_all": "📱 Все гостиницы",
+    "hotels_mine": "🏨 Мои гостиницы",
+    "hotel_kind_hotel": "Гостиница",
+    "hotel_kind_guesthouse": "Гостевой дом",
+    "hotel_kind_hostel": "Хостел",
+    "hotel_kind_apart_hotel": "Апарт-отель",
+    "hotel_card_price": "💰 от {price} ₾ за ночь · 👥 гостей: до {guests}",
+    "hotel_card_times": "🕑 Заезд с {check_in}, выезд до {check_out}",
+    "hotel_button_price": "от {price} ₾",
+    "hotel_contacts_button": "📞 Контакты",
+    "hotel_contacts": "📞 <b>{name}</b>: контакты хозяина",
+    "hotel_contacts_hint": "При бронировании скажите, что нашли объект в Bina.ai.",
+    "hotel_whatsapp": "💬 Написать в WhatsApp",
+    "hotel_telegram": "✈️ Написать в Telegram",
+    "hotel_unavailable": "Этот объект больше недоступен.",
+    "hotel_promo_outdated": (
+        "Объект снят с показа или удалён. Откройте «Мои гостиницы» в приложении и попробуйте снова."
+    ),
+    "hotel_promo_problem": "Оплата прошла, но объект не найден. Напишите в поддержку: /paysupport",
+    "hotel_promo_activated": "🔥 <b>Готово!</b> «{name}» в топе раздела «Гостиницы» до {date}.",
 }
 
 _EN: dict[str, str] = {
@@ -808,6 +845,7 @@ _EN: dict[str, str] = {
         "/invite: invite a friend\n"
         "/rent: rent payment reminders\n"
         "/mylistings: rent out your apartment\n"
+        "/hotels: hotels and guest houses\n"
         "/terms: terms of use\n"
         "/privacy: privacy policy\n"
         "/help: this help\n\n"
@@ -1321,6 +1359,46 @@ _EN: dict[str, str] = {
         "{description}"
     ),
     "hotel_admin_hidden": "The hotel is hidden.",
+    # TASK-120, stage 2: hotels in the bot
+    "menu_hotels": "🏨 Hotels",
+    "hotels_title": (
+        "🏨 <b>Hotels</b>\n"
+        "\n"
+        "Hotels, guest houses and hostels in Georgia, listed by their owners. Prices per night, "
+        "contact the owner directly.\n"
+        "\n"
+        "Pick a property or open the whole section in the app:"
+    ),
+    "hotels_empty": (
+        "🏨 <b>Hotels</b>\n"
+        "\n"
+        "There are no properties here yet. Have a hotel, guest house or hostel? List it for free "
+        "in the app — it takes a couple of minutes."
+    ),
+    "hotels_all": "📱 All hotels",
+    "hotels_mine": "🏨 My hotels",
+    "hotel_kind_hotel": "Hotel",
+    "hotel_kind_guesthouse": "Guest house",
+    "hotel_kind_hostel": "Hostel",
+    "hotel_kind_apart_hotel": "Aparthotel",
+    "hotel_card_price": "💰 from {price} ₾ per night · 👥 up to {guests} guests",
+    "hotel_card_times": "🕑 Check-in from {check_in}, check-out until {check_out}",
+    "hotel_button_price": "from {price} ₾",
+    "hotel_contacts_button": "📞 Contacts",
+    "hotel_contacts": "📞 <b>{name}</b>: owner contacts",
+    "hotel_contacts_hint": "When booking, mention that you found the property on Bina.ai.",
+    "hotel_whatsapp": "💬 Message on WhatsApp",
+    "hotel_telegram": "✈️ Message on Telegram",
+    "hotel_unavailable": "This property is no longer available.",
+    "hotel_promo_outdated": (
+        "The property is hidden or deleted. Open «My hotels» in the app and try again."
+    ),
+    "hotel_promo_problem": (
+        "The payment went through, but the property was not found. Contact support: /paysupport"
+    ),
+    "hotel_promo_activated": (
+        "🔥 <b>Done!</b> «{name}» is at the top of the Hotels section until {date}."
+    ),
 }
 
 _KA: dict[str, str] = {
@@ -1478,6 +1556,7 @@ _KA: dict[str, str] = {
         "/invite: მეგობრის მოწვევა\n"
         "/rent: ქირის გადახდის შეხსენებები\n"
         "/mylistings: თქვენი ბინის გაქირავება\n"
+        "/hotels: სასტუმროები და საოჯახო სასტუმროები\n"
         "/terms: სამომხმარებლო შეთანხმება\n"
         "/privacy: კონფიდენციალურობის პოლიტიკა\n"
         "/help: ეს დახმარება\n\n"
@@ -1971,6 +2050,44 @@ _KA: dict[str, str] = {
         "{description}"
     ),
     "hotel_admin_hidden": "სასტუმრო დამალულია.",
+    # TASK-120, ეტაპი 2: სასტუმროები ბოტში
+    "menu_hotels": "🏨 სასტუმროები",
+    "hotels_title": (
+        "🏨 <b>სასტუმროები</b>\n"
+        "\n"
+        "სასტუმროები, საოჯახო სასტუმროები და ჰოსტელები საქართველოში — მათ თავად მეპატრონეები "
+        "ათავსებენ. ფასები ღამეში, კავშირი პირდაპირ მეპატრონესთან.\n"
+        "\n"
+        "აირჩიეთ ობიექტი ან გახსენით მთელი განყოფილება აპლიკაციაში:"
+    ),
+    "hotels_empty": (
+        "🏨 <b>სასტუმროები</b>\n"
+        "\n"
+        "აქ ჯერ არცერთი ობიექტი არ არის. გაქვთ სასტუმრო, საოჯახო სასტუმრო ან ჰოსტელი? "
+        "განათავსეთ უფასოდ აპლიკაციაში — ამას რამდენიმე წუთი დასჭირდება."
+    ),
+    "hotels_all": "📱 ყველა სასტუმრო",
+    "hotels_mine": "🏨 ჩემი სასტუმროები",
+    "hotel_kind_hotel": "სასტუმრო",
+    "hotel_kind_guesthouse": "საოჯახო სასტუმრო",
+    "hotel_kind_hostel": "ჰოსტელი",
+    "hotel_kind_apart_hotel": "აპარტ-ოტელი",
+    "hotel_card_price": "💰 {price} ₾-დან ღამეში · 👥 {guests} სტუმრამდე",
+    "hotel_card_times": "🕑 შესვლა {check_in}-დან, გასვლა {check_out}-მდე",
+    "hotel_button_price": "{price} ₾-დან",
+    "hotel_contacts_button": "📞 კონტაქტები",
+    "hotel_contacts": "📞 <b>{name}</b>: მეპატრონის კონტაქტები",
+    "hotel_contacts_hint": "დაჯავშნისას უთხარით, რომ ობიექტი Bina.ai-ზე იპოვეთ.",
+    "hotel_whatsapp": "💬 ვოთსაპში მიწერა",
+    "hotel_telegram": "✈️ ტელეგრამში მიწერა",
+    "hotel_unavailable": "ეს ობიექტი აღარ არის ხელმისაწვდომი.",
+    "hotel_promo_outdated": (
+        "ობიექტი მოხსნილია ან წაშლილია. გახსენით «ჩემი სასტუმროები» აპლიკაციაში და სცადეთ ხელახლა."
+    ),
+    "hotel_promo_problem": (
+        "გადახდა შესრულდა, მაგრამ ობიექტი ვერ მოიძებნა. მოგვწერეთ მხარდაჭერაში: /paysupport"
+    ),
+    "hotel_promo_activated": "🔥 <b>მზადაა!</b> «{name}» სასტუმროების ტოპშია {date}-მდე.",
 }
 
 TEXTS: dict[str, dict[str, str]] = {"ru": _RU, "en": _EN, "ka": _KA}
