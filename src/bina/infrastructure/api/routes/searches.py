@@ -82,9 +82,9 @@ def default_search_name(filters: SearchFiltersIn, districts: list[District], lan
         shown = ", ".join(names[:NAMED_DISTRICTS])
         rest = len(names) - NAMED_DISTRICTS
         result.append(f"{shown} +{rest}" if rest > 0 else shown)
-    elif filters.city:
-        # TASK-079: город без районов — «Батуми, 2 комн.»
-        result.append(city_name(filters.city, language))
+    elif cities := filters.all_cities:
+        # TASK-079: город без районов — «Батуми, 2 комн.»; TASK-122: «Тбилиси, Батуми, 2 комн.»
+        result.append(", ".join(city_name(code, language) for code in cities))
     if filters.rent_period == "daily":
         # TASK-092: посуточная аренда видна в названии, а не в «+ ещё N фильтров»
         result.append(parts["daily"])
@@ -98,7 +98,7 @@ def default_search_name(filters: SearchFiltersIn, districts: list[District], lan
     elif filters.max_price is not None:
         result.append(parts["to"].format(n=_amount(filters.max_price)))
     # Город и вид аренды уже в названии, а не в «+ ещё N фильтров»
-    named = ("city", "rent_period")
+    named = ("city", "cities", "rent_period")
     if details := {key: value for key, value in filters.details().items() if key not in named}:
         result.append(parts["more"].format(n=len(details)))
     return ", ".join(result) or parts["all"]

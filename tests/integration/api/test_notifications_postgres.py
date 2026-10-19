@@ -112,6 +112,7 @@ async def test_saved_search_crud(client: AsyncClient, vake: District) -> None:
     assert search["name"] == "Ваке, 2 комн., до 2 000 ₾"
     assert search["filters"] == {
         "city": None,
+        "cities": [],
         "rent_period": "monthly",
         "district": str(vake.id),
         "districts": [str(vake.id)],
@@ -411,3 +412,53 @@ async def test_saved_search_rejects_bad_filters(
 ) -> None:
     response = await client.post("/api/searches", json={"filters": filters}, headers=headers(USER))
     assert response.status_code == 422
+
+
+async def test_search_with_several_cities(client: AsyncClient, session: AsyncSession) -> None:
+    """TASK-122: поиск по нескольким городам — список, сохранённый поиск и уведомления."""
+    repository = ListingsRepository(session)
+
+    def in_city(source_id: str, city: str, district: str) -> RawListing:
+        return dataclasses.replace(raw(source_id, 1000, district=district), city=city)
+
+    batumi = await repository.create_or_update_from_raw(in_city("b1", "batumi", "Старый Батуми"))
+    kutaisi = await repository.create_or_update_from_raw(in_city("k1", "kutaisi", "Центр"))
+    await repository.create_or_update_from_raw(in_city("t1", "tbilisi", "Ваке"))
+    await session.commit()
+    both = {str(batumi.id), str(kutaisi.id)}
+    for query in ("city=batumi,kutaisi", "city=batumi&city=kutaisi"):
+        body = (await client.get(f"/api/listings?{query}")).json()
+        assert {item["id"] for item in body["items"]} == both
+
+    response = await client.post(
+        "/api/searches",
+        json={"filters": {"cities": ["batumi", "kutaisi"], "rooms": 2}},
+        headers=headers(USER),
+    )
+    assert response.status_code == 201, response.text
+    search = response.json()
+    assert search["name"] == "Батуми, Кутаиси, 2 комн."
+    assert (search["filters"]["city"], search["filters"]["cities"]) == (None, ["batumi", "kutaisi"])
+
+    # Старый формат: один city — в ответе и city, и cities из одного города
+    old = await client.post(
+        "/api/searches", json={"filters": {"city": "batumi"}}, headers=headers(OTHER)
+    )
+    assert old.status_code == 201, old.text
+    assert (old.json()["filters"]["city"], old.json()["filters"]["cities"]) == (
+        "batumi",
+        ["batumi"],
+    )
+    bad = await client.post(
+        "/api/searches", json={"filters": {"cities": ["paris"]}}, headers=headers(USER)
+    )
+    assert bad.status_code == 422
+
+    # Уведомления: новые квартиры в обоих городах — да, в Тбилиси — нет
+    await repository.create_or_update_from_raw(in_city("b2", "batumi", "Старый Батуми"))
+    await repository.create_or_update_from_raw(in_city("k2", "kutaisi", "Центр"))
+    await repository.create_or_update_from_raw(in_city("t2", "tbilisi", "Ваке"))
+    await session.commit()
+    new_listings, _ = await create_notifications(session)
+    # Поиск USER (Батуми + Кутаиси) — 2, поиск OTHER (только Батуми) — 1
+    assert new_listings == 3

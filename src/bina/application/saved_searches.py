@@ -14,6 +14,8 @@ from bina.infrastructure.db.models import SavedSearch
 # Какие поля ListingSearchFilters сохраняются в details
 DETAIL_FIELDS: tuple[str, ...] = (
     "city",
+    # TASK-122: несколько городов (один — по-прежнему в city)
+    "cities",
     # TASK-092: нет ключа — помесячно
     "rent_period",
     "area_min",
@@ -30,7 +32,7 @@ DETAIL_FIELDS: tuple[str, ...] = (
     "owner_only",
 )
 _DECIMALS = ("area_min", "area_max")
-_LISTS = ("features", "conditions")
+_LISTS = ("features", "conditions", "cities")
 
 
 def detail_filters(details: Mapping[str, Any] | None) -> dict[str, Any]:

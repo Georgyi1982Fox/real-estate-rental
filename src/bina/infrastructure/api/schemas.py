@@ -310,6 +310,11 @@ class DistrictOut(BaseModel):
     id: UUID
     name: Localized
     city: str = Field(default="tbilisi", description="Код города (GET /api/cities)")
+    city_wide: bool = Field(
+        default=False,
+        description="TASK-122: не район, а «весь город» (сайт района не указал); название — "
+        "город. Бывает только в списке без city — для карточек, не для фильтра",
+    )
 
     @classmethod
     def from_model(cls, district: District) -> "DistrictOut":
@@ -318,6 +323,7 @@ class DistrictOut(BaseModel):
             id=district.id,
             city=district.city,
             name=localized(ka=district.name_ka, ru=district.name_ru, en=district.name_en),
+            city_wide=bool(district.is_city_wide),
         )
 
 
@@ -494,7 +500,14 @@ class InvoiceOut(BaseModel):
 class SearchFiltersIn(BaseModel):
     """Фильтры сохранённого поиска (как параметры ``GET /api/listings``)."""
 
-    city: CityCode | None = Field(default=None, description="Город; пусто — все (TASK-079)")
+    city: CityCode | None = Field(
+        default=None, description="Город; пусто — все (TASK-079). Устарело — лучше cities"
+    )
+    cities: list[CityCode] = Field(
+        default_factory=list,
+        max_length=30,
+        description="TASK-122: несколько городов (любой из них); вместе с city — объединение",
+    )
     rent_period: RentPeriod = Field(
         default="monthly", description="TASK-092: monthly или daily (посуточно)"
     )
@@ -524,6 +537,11 @@ class SearchFiltersIn(BaseModel):
         """``districts`` и ``district`` вместе, без повторов."""
         return list(dict.fromkeys([*self.districts, *([self.district] if self.district else [])]))
 
+    @property
+    def all_cities(self) -> list[str]:
+        """``city`` и ``cities`` вместе, без повторов (TASK-122)."""
+        return list(dict.fromkeys([*([self.city] if self.city else []), *self.cities]))
+
     @field_validator("q")
     @classmethod
     def _clean_query(cls, value: str | None) -> str | None:
@@ -535,6 +553,14 @@ class SearchFiltersIn(BaseModel):
         if value is not None and value not in CITIES:
             raise ValueError(f"unknown city: {value}")
         return value
+
+    @field_validator("cities")
+    @classmethod
+    def _check_cities(cls, value: list[str]) -> list[str]:
+        unknown = [code for code in value if code not in CITIES]
+        if unknown:
+            raise ValueError(f"unknown city: {', '.join(unknown)}")
+        return list(dict.fromkeys(value))
 
     @field_validator("features")
     @classmethod
@@ -565,8 +591,11 @@ class SearchFiltersIn(BaseModel):
 
     def details(self) -> dict[str, Any]:
         """Фильтры для ``SavedSearch.details`` (только заданные; ключи ListingSearchFilters)."""
+        cities = self.all_cities
         values: dict[str, Any] = {
-            "city": self.city,
+            # Один город — как раньше в city (старые версии читают его); несколько — cities
+            "city": cities[0] if len(cities) == 1 else None,
+            "cities": cities if len(cities) > 1 else None,
             # Помесячно — по умолчанию, не хранится
             "rent_period": self.rent_period if self.rent_period != "monthly" else None,
             "area_min": float(self.min_area) if self.min_area is not None else None,
@@ -588,7 +617,9 @@ class SearchFiltersIn(BaseModel):
 class SearchFiltersOut(BaseModel):
     """Фильтры сохранённого поиска; незаданные поля не возвращаются."""
 
+    # Ровно один город; при нескольких — None, а все города в ``cities`` (TASK-122)
     city: str | None = None
+    cities: list[str] = Field(default_factory=list)
     rent_period: RentPeriod = "monthly"
     # Ровно один район; при нескольких — None, а все районы в ``districts``
     district: UUID | None = None
@@ -615,8 +646,17 @@ class SearchFiltersOut(BaseModel):
         """Фильтры поиска: колонки и ``details``."""
         districts = search.all_district_ids
         details = search.details or {}
+        cities = list(
+            dict.fromkeys(
+                [
+                    *([details["city"]] if details.get("city") else []),
+                    *(details.get("cities") or []),
+                ]
+            )
+        )
         return cls(
-            city=details.get("city"),
+            city=cities[0] if len(cities) == 1 else None,
+            cities=cities,
             rent_period=_rent_period(details.get("rent_period")),
             district=districts[0] if len(districts) == 1 else None,
             districts=districts,

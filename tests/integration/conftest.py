@@ -65,6 +65,7 @@ MIGRATIONS = (
     "retry_translations",
     "hotels",
     "hotel_chat",
+    "city_wide_districts",
 )
 
 

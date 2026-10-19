@@ -25,6 +25,8 @@ class HotelFilters:
     """Фильтры поиска гостиниц; ``None`` / пусто — без фильтра."""
 
     city: str | None = None
+    # TASK-122: несколько городов (любой из них); вместе с city — объединение
+    cities: tuple[str, ...] = ()
     kinds: tuple[str, ...] = ()
     guests: int | None = None
     price_min: float | None = None
@@ -114,8 +116,11 @@ class HotelsRepository:
 
     def _filtered(self, query: Select[Any], filters: HotelFilters) -> Select[Any]:
         conditions = visible()
-        if filters.city:
-            conditions.append(Hotel.city == filters.city)
+        cities = list(dict.fromkeys([*([filters.city] if filters.city else []), *filters.cities]))
+        if len(cities) == 1:
+            conditions.append(Hotel.city == cities[0])
+        elif cities:
+            conditions.append(Hotel.city.in_(cities))
         if filters.kinds:
             conditions.append(Hotel.kind.in_(filters.kinds))
         if filters.guests:

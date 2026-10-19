@@ -1,3 +1,4 @@
+from typing import Any
 from uuid import uuid4
 
 import pytest
@@ -179,6 +180,7 @@ async def test_districts(client: AsyncClient, seeded: Store) -> None:
         "id": str(seeded.districts[0].id),
         "name": {"ka": "ვაკე", "ru": "Ваке", "en": "Vake"},
         "city": "tbilisi",
+        "city_wide": False,
     }
 
 
@@ -197,6 +199,42 @@ async def test_city_filter(client: AsyncClient, seeded: Store) -> None:
     empty = await client.get("/api/listings", params={"city": "kutaisi"})
     assert empty.status_code == 200 and empty.json()["items"] == []
     assert (await client.get("/api/listings", params={"city": "paris"})).status_code == 422
+
+
+async def test_several_cities(client: AsyncClient, seeded: Store) -> None:
+    """TASK-122: несколько городов — через запятую или повтором, любой из них."""
+    batumi = seeded.add_district("Старый Батуми", "Old Batumi", "ძველი ბათუმი", city="batumi")
+    kutaisi = seeded.add_district("Центр", "Center", "ცენტრი", city="kutaisi")
+    seeded.add_listing(batumi, price=900)
+    seeded.add_listing(kutaisi, price=700)
+
+    def cities_of(items: list[dict[str, Any]]) -> set[str]:
+        by_id = {str(d.id): d.city for d in seeded.districts}
+        return {by_id[item["district"]] for item in items}
+
+    both = await client.get("/api/listings", params={"city": "batumi,kutaisi"})
+    assert both.status_code == 200
+    assert cities_of(both.json()["items"]) == {"batumi", "kutaisi"}
+    repeated = await client.get("/api/listings?city=batumi&city=kutaisi")
+    assert repeated.json()["total"] == both.json()["total"] == 2
+    one = await client.get("/api/listings", params={"city": "batumi"})
+    assert cities_of(one.json()["items"]) == {"batumi"}
+    assert (await client.get("/api/listings", params={"city": "batumi,paris"})).status_code == 422
+
+    districts = (await client.get("/api/districts?city=batumi,kutaisi")).json()["items"]
+    assert {item["city"] for item in districts} == {"batumi", "kutaisi"}
+
+
+async def test_city_wide_district_not_in_city_filter(client: AsyncClient, seeded: Store) -> None:
+    """TASK-122: «Батуми» (район не указан) — не в фильтре Батуми, но есть для названий."""
+    whole = seeded.add_district("Батуми", "Batumi", "ბათუმი", city="batumi", city_wide=True)
+    old = seeded.add_district("Старый Батуми", "Old Batumi", "ძველი ბათუმი", city="batumi")
+
+    picker = (await client.get("/api/districts", params={"city": "batumi"})).json()["items"]
+    assert [item["id"] for item in picker] == [str(old.id)]
+    names = (await client.get("/api/districts")).json()["items"]
+    [entry] = [item for item in names if item["id"] == str(whole.id)]
+    assert entry["city_wide"] is True and entry["name"]["ru"] == "Батуми"
 
     cities = (await client.get("/api/cities")).json()["items"]
     assert [city["code"] for city in cities] == ["tbilisi", "batumi"]

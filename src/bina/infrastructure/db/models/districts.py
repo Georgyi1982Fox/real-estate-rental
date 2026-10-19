@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from sqlalchemy import JSON, Numeric, String
+from sqlalchemy import JSON, Boolean, Numeric, String, false
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -40,6 +40,14 @@ class District(Base, SoftDeleteMixin):
     name_en: Mapped[str] = mapped_column(
         String,
         nullable=False,
+    )
+    # TASK-122: не район, а «весь город» — у объявлений, где сайт района не указал;
+    # в списках районов (фильтр, бот) его нет, в карточках — название города
+    is_city_wide: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default=false(),
     )
     center_coordinates: Mapped[str | None] = mapped_column(
         String,

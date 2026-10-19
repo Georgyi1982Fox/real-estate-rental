@@ -28,7 +28,12 @@ from bina.application.duplicates import candidate_bounds
 from bina.application.fraud import HIDE_SCORE
 from bina.application.listing_details import clean_features
 from bina.application.listing_titles import listing_titles
-from bina.application.localization import MIN_LETTERS, district_base, dominant_script
+from bina.application.localization import (
+    MIN_LETTERS,
+    district_base,
+    dominant_script,
+    is_city_wide_district,
+)
 from bina.application.ports.scraper import RawListing
 from bina.application.ports.translator import LANGUAGES, ListingText
 from bina.application.price_analysis import ROOMS_GROUP_MAX
@@ -201,9 +206,15 @@ class ListingsRepository(IListingsRepository):
             # TASK-090: та же квартира с другого сайта показывается один раз
             not_hidden_duplicate(),
         ]
-        if filters.city is not None:
+        cities = filters.all_cities
+        if len(cities) == 1:
             conditions.append(
-                Listing.district_id.in_(select(District.id).where(District.city == filters.city))
+                Listing.district_id.in_(select(District.id).where(District.city == cities[0]))
+            )
+        elif cities:
+            # TASK-122: несколько городов — любой из них
+            conditions.append(
+                Listing.district_id.in_(select(District.id).where(District.city.in_(cities)))
             )
         if filters.rent_period is not None:
             conditions.append(Listing.rent_period == filters.rent_period)
@@ -890,6 +901,9 @@ class ListingsRepository(IListingsRepository):
         districts_repo = DistrictsRepository(self._session)
         # «Сабуртало/Картозия» — район «Сабуртало», улица в район не попадает
         name = district_base(district_name) or district_name
+        # TASK-122: района нет (сайт написал город или «Unknown») — «весь город»
+        if is_city_wide_district(name, city):
+            return await districts_repo.city_wide(city)
         district = await districts_repo.find(name, city)
         if district is not None:
             return district

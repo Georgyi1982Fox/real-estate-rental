@@ -75,6 +75,11 @@ async def test_publish_and_find(client: AsyncClient) -> None:
     page = (await client.get("/api/hotels?city=batumi&guests=3")).json()
     assert [item["id"] for item in page["items"]] == [hotel["id"]]
     assert (await client.get("/api/hotels?city=tbilisi")).json()["total"] == 0
+    # TASK-122: несколько городов — через запятую или повтором
+    assert (await client.get("/api/hotels?city=tbilisi,batumi")).json()["total"] == 1
+    assert (await client.get("/api/hotels?city=tbilisi&city=batumi")).json()["total"] == 1
+    assert (await client.get("/api/hotels?city=tbilisi,kutaisi")).json()["total"] == 0
+    assert (await client.get("/api/hotels?city=batumi,paris")).status_code == 422
     assert (await client.get("/api/hotels?guests=5")).json()["total"] == 0
     assert (await client.get("/api/hotels?price_max=100")).json()["total"] == 0
     assert (await client.get("/api/hotels?amenities=wifi,sea_view")).json()["total"] == 1
