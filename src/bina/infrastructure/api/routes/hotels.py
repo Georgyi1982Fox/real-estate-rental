@@ -50,20 +50,25 @@ from bina.application.hotels import (
 )
 from bina.application.owner_listings import clean_phone, in_georgia, telegram_contact
 from bina.application.promotion import PROMOTION_DAYS
+from bina.application.sharing import hotel_share_link, telegram_share_url
 from bina.application.use_cases.hotel_promotion import HotelPromotionUseCase
 from bina.application.use_cases.hotels import HotelsUseCase
 from bina.infrastructure.api.delivery import ui_language
 from bina.infrastructure.api.dependencies import (
     CurrentUserDep,
+    OptionalUserDep,
     SessionDep,
     SettingsDep,
     TelegramUsernameDep,
 )
 from bina.infrastructure.api.routes.common import bad_request, not_found, valid_city
 from bina.infrastructure.api.routes.complaints import THANKS, ComplaintIn, ComplaintOut
+from bina.infrastructure.api.routes.recommendations import ShareOut
+from bina.infrastructure.api.routes.referral import bot_username_or_none
 from bina.infrastructure.api.settings import ApiSettings
 from bina.infrastructure.api.validation import clean_text
 from bina.infrastructure.bot.hotel_alerts import notify_admins_hotel
+from bina.infrastructure.bot.texts import t
 from bina.infrastructure.db.models import Hotel, HotelRoom, User
 from bina.infrastructure.db.repositories.hotels import (
     SORTS,
@@ -392,6 +397,30 @@ async def hotel_contact(hotel_id: UUID, user: CurrentUserDep, session: SessionDe
         whatsapp_url=f"https://wa.me/{whatsapp}" if whatsapp else None,
         telegram_url=hotel.contact_url,
     )
+
+
+@router.get("/{hotel_id}/share", response_model=ShareOut)
+async def share_hotel(
+    hotel_id: UUID,
+    request: Request,
+    user: OptionalUserDep,
+    session: SessionDep,
+    settings: SettingsDep,
+    lang: Annotated[str | None, Query(pattern="^(ka|ru|en)$")] = None,
+) -> ShareOut:
+    """Ссылка на гостиницу в боте (этап 2): карточка с «✍️ Написать хозяину».
+
+    Для «📤 Поделиться» и «💬 Написать в боте». 503 — бот не настроен.
+    """
+    hotel = await _visible_or_404(session, hotel_id)
+    username = await bot_username_or_none(request, settings)
+    if not username:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Bot is not configured")
+    language = lang or (user.language if user else "ru")
+    price = f"{float(hotel.min_price_gel or 0):.0f}"
+    link = hotel_share_link(username, hotel.id)
+    text = f"{hotel.name} · {t(language, 'hotel_button_price', price=price)}"
+    return ShareOut(url=link, text=text, telegram_url=telegram_share_url(link, text))
 
 
 @router.post("/{hotel_id}/complaints", response_model=ComplaintOut)

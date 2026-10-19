@@ -11,15 +11,18 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bina.application.hotel_promotion import hotel_promotion_payload
 from bina.application.hotels import HotelDraft, RoomDraft
+from bina.application.ports.translator import IMessageTranslator
 from bina.infrastructure.bot.factory import create_dispatcher
 from bina.infrastructure.bot.keyboards.callbacks import (
+    ChatAction,
+    ChatCallback,
     HotelAction,
     HotelCallback,
     MenuCallback,
     MenuSection,
 )
 from bina.infrastructure.bot.settings import BotSettings
-from bina.infrastructure.db.models import Hotel, Payment, User
+from bina.infrastructure.db.models import ChatMessage, Conversation, Hotel, Payment, User
 from bina.infrastructure.db.repositories.hotels import HotelsRepository
 from tests.support.people import Person
 from tests.support.telegram import BOT_USERNAME, TOKEN, FakeTelegramSession
@@ -34,9 +37,20 @@ def telegram() -> FakeTelegramSession:
     return FakeTelegramSession()
 
 
+class EchoTranslator(IMessageTranslator):
+    """Перевод — пометка языка перед текстом."""
+
+    async def translate_message(self, text: str, target: str) -> str:
+        return f"[{target}] {text}"
+
+
 @pytest.fixture
 def dispatcher(session_factory: async_sessionmaker[AsyncSession]) -> Dispatcher:
-    return create_dispatcher(BotSettings(token=TOKEN, mini_app_url=MINI_APP), session_factory)
+    return create_dispatcher(
+        BotSettings(token=TOKEN, mini_app_url=MINI_APP),
+        session_factory,
+        message_translator=EchoTranslator(),
+    )
 
 
 @pytest.fixture
@@ -128,12 +142,18 @@ async def test_hotels_section_card_and_contacts(
     assert "Check-in from 14:00, check-out until 12:00" in text
     assert "+995" not in text, "телефон — только по кнопке «Контакты»"
     card_markup = last_markup(telegram)
-    assert buttons(card_markup) == ["📞 Contacts", "📱 More in the app", "📤 Share", "🏠 Main menu"]
-    share = card_markup.inline_keyboard[2][0].url or ""
+    assert buttons(card_markup) == [
+        "✍️ Message the owner",
+        "📞 Contacts",
+        "📱 More in the app",
+        "📤 Share",
+        "🏠 Main menu",
+    ]
+    share = card_markup.inline_keyboard[3][0].url or ""
     assert f"start%3Dh_{hotel.id.hex}" in share and BOT_USERNAME in share
 
     telegram.calls.clear()
-    await guest.press(card_markup.inline_keyboard[0][0].callback_data or "")
+    await guest.press(card_markup.inline_keyboard[1][0].callback_data or "")
     contacts = telegram.of(SendMessage)[-1]
     assert "+995599112233" in (contacts.text or "")
     urls = [b.url for row in last_markup(telegram).inline_keyboard for b in row if b.url]
@@ -170,6 +190,66 @@ async def test_hotel_card_with_photo_and_hidden_hotel(
     assert "больше недоступен" in (telegram.of(AnswerCallbackQuery)[-1].text or "")
     await owner.send(f"/start h_{hotel.id.hex}")
     assert "больше недоступен" in (telegram.of(SendMessage)[-1].text or "")
+
+
+def last_to(telegram: FakeTelegramSession, chat_id: int) -> SendMessage:
+    sent: SendMessage = [call for call in telegram.of(SendMessage) if call.chat_id == chat_id][-1]
+    return sent
+
+
+def callbacks(message: SendMessage) -> list[str]:
+    assert isinstance(message.reply_markup, InlineKeyboardMarkup)
+    return [b.callback_data or "" for row in message.reply_markup.inline_keyboard for b in row]
+
+
+async def test_chat_with_hotel_owner(
+    people: dict[str, Person],
+    telegram: FakeTelegramSession,
+    session_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    """Этап 2: гость пишет хозяину гостиницы через бота, оба — на своём языке."""
+    owner, guest = people["owner"], people["guest"]
+    hotel = await add_hotel(session_factory, "Sea Breeze")
+    write = HotelCallback(action=HotelAction.WRITE, id=hotel.id).pack()
+
+    await guest.press(write)
+    assert "Write to the hotel owner" in (last_to(telegram, GUEST_ID).text or "")
+    await guest.send("Hello! Is a double room free on 1 May?")
+
+    to_owner = last_to(telegram, OWNER_ID)
+    text = to_owner.text or ""
+    assert "Сообщение от гостя</b>\n🏨 Sea Breeze" in text
+    assert "[ru] Hello! Is a double room free on 1 May?" in text
+    assert "Оригинал: Hello!" in text
+    assert str(GUEST_ID) not in text, "Telegram гостя не виден"
+    assert "Sent" in (last_to(telegram, GUEST_ID).text or "")
+
+    [reply] = callbacks(to_owner)
+    assert ChatCallback.unpack(reply).action == ChatAction.REPLY
+    await owner.press(reply)
+    await owner.send("Да, свободен. Завтрак включён.")
+    to_guest = last_to(telegram, GUEST_ID)
+    assert "Reply from the hotel</b>\n🏨 Sea Breeze" in (to_guest.text or "")
+    assert "[en] Да, свободен. Завтрак включён." in (to_guest.text or "")
+    # Гостю — «Ответить» и снова карточка гостиницы (просмотров у гостиниц нет)
+    assert callbacks(to_guest)[1] == HotelCallback(action=HotelAction.OPEN, id=hotel.id).pack()
+    assert len(callbacks(to_guest)) == 2
+
+    # Повторное «Написать» — тот же диалог
+    await guest.press(write)
+    await guest.send("Thanks!")
+    async with session_factory() as session:
+        [conversation] = (await session.execute(select(Conversation))).scalars().all()
+        assert conversation.hotel_id == hotel.id and conversation.listing_id is None
+        stored = (await session.execute(select(ChatMessage))).scalars().all()
+        assert len(stored) == 3
+
+    # Своей гостинице не пишут: в карточке нет кнопки, нажатие — подсказка
+    telegram.calls.clear()
+    await owner.press(HotelCallback(action=HotelAction.OPEN, id=hotel.id).pack())
+    assert write not in callbacks(last_to(telegram, OWNER_ID))
+    await owner.press(write)
+    assert "Это ваша гостиница" in (telegram.of(AnswerCallbackQuery)[-1].text or "")
 
 
 async def pay(person: Person, payload: str, charge_id: str, amount: int = 150) -> None:

@@ -1,4 +1,4 @@
-"""Диалоги с хозяином, сообщения и просмотры (TASK-111, TASK-112)."""
+"""Диалоги с хозяином, сообщения и просмотры (TASK-111, TASK-112); гостиницы (TASK-120)."""
 
 from datetime import date, datetime, timedelta
 from uuid import UUID
@@ -13,11 +13,13 @@ from bina.application.rent_reminders import TBILISI
 from bina.infrastructure.db.models import (
     ChatMessage,
     Conversation,
+    Hotel,
     Listing,
     ListingStatus,
     User,
     Viewing,
 )
+from bina.infrastructure.db.repositories.hotels import visible as visible_hotel
 
 
 class ChatRepository:
@@ -48,6 +50,15 @@ class ChatRepository:
         )
         return (await self._session.execute(query)).scalar_one_or_none()
 
+    async def chat_hotel(self, hotel_id: UUID) -> Hotel | None:
+        """Гостиница в разделе (только ей можно написать первым)."""
+        query = select(Hotel).where(Hotel.id == hotel_id, *visible_hotel())
+        return (await self._session.execute(query)).scalar_one_or_none()
+
+    async def hotel(self, hotel_id: UUID) -> Hotel | None:
+        """Гостиница в любом состоянии (для заголовка в уже начатом диалоге)."""
+        return await self._session.get(Hotel, hotel_id)
+
     async def user(self, user_id: UUID) -> User | None:
         query = select(User).where(User.id == user_id, User.is_deleted.is_(False))
         return (await self._session.execute(query)).scalar_one_or_none()
@@ -63,6 +74,12 @@ class ChatRepository:
         )
         return (await self._session.execute(query)).scalar_one_or_none()
 
+    async def hotel_conversation_for(self, hotel_id: UUID, tenant_id: UUID) -> Conversation | None:
+        query = select(Conversation).where(
+            Conversation.hotel_id == hotel_id, Conversation.tenant_id == tenant_id
+        )
+        return (await self._session.execute(query)).scalar_one_or_none()
+
     async def count_conversations_since(self, tenant_id: UUID, since: datetime) -> int:
         query = select(func.count()).where(
             Conversation.tenant_id == tenant_id, Conversation.created_at >= since
@@ -70,10 +87,18 @@ class ChatRepository:
         return int((await self._session.execute(query)).scalar_one())
 
     async def create_conversation(
-        self, listing_id: UUID, tenant_id: UUID, owner_id: UUID, now: datetime
+        self,
+        tenant_id: UUID,
+        owner_id: UUID,
+        now: datetime,
+        *,
+        listing_id: UUID | None = None,
+        hotel_id: UUID | None = None,
     ) -> Conversation:
+        """Новый диалог о квартире (``listing_id``) или гостинице (``hotel_id``)."""
         conversation = Conversation(
             listing_id=listing_id,
+            hotel_id=hotel_id,
             tenant_id=tenant_id,
             owner_id=owner_id,
             created_at=now,

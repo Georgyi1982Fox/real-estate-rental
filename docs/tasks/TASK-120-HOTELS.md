@@ -56,12 +56,21 @@
 - ✅ Карточка гостиницы в боте (кнопка в разделе или ссылка `start=h_<id>`): фото, цена «от»,
   гостей, заезд/выезд, начало описания на языке пользователя; «📞 Контакты» (телефон,
   WhatsApp, Telegram — только по нажатию), «Подробнее в приложении», «Поделиться».
-- 📋 Чат с хозяином гостиницы в боте с переводом (следующий шаг).
+- ✅ Чат с хозяином гостиницы в боте с переводом: «✍️ Написать хозяину» в карточке →
+  сообщение уходит хозяину на его языке (оригинал — мелко), под ним «↩️ Ответить»; гостю под
+  ответом — «↩️ Ответить» и «🏨 Открыть гостиницу». Telegram друг друга не видно. Тот же
+  диалог `bina_conversations` (миграция `hotel_chat`: `hotel_id` вместо `listing_id`) и тот
+  же лимит — 5 новых диалогов в сутки на квартиры и гостиницы вместе.
+- ✅ «Мои данные»: свои гостиницы (с номерами) и жалобы на гостиницы — в выгрузке;
+  при удалении аккаунта гостиницы удаляются целиком вместе с фото и перепиской.
 - Позже: даты и заявки на бронирование, отзывы.
 
 ### API этапа 2
 - `GET /api/hotels/options` — ещё `promotion_price_stars`, `promotion_days`;
 - `GET /api/my/hotels`, `GET /api/my/hotels/{id}` — ещё `promoted_until`;
+- `GET /api/hotels/{id}/share?lang=` → `{url, text, telegram_url}` — ссылка на карточку
+  гостиницы в боте (`start=h_<id>`): для «📤 Поделиться» и «💬 Написать хозяину в боте»;
+  404 — объекта нет в разделе, 503 — бот не настроен;
 - `POST /api/my/hotels/{id}/promotion` → `{url, price_stars, days}` — счёт для
   `Telegram.WebApp.openInvoice`; 404 — не свой, 409 — объект не в разделе (снят, скрыт,
   нет цены), 503 — нет токена бота.
@@ -71,4 +80,5 @@
 `application/hotel_promotion.py`, `application/use_cases/hotel_promotion.py`,
 `infrastructure/db/models/hotels.py`, `infrastructure/db/repositories/hotels.py`,
 `infrastructure/api/routes/hotels.py`, `infrastructure/payments/invoice.py`,
-`infrastructure/bot/hotel_alerts.py`, `infrastructure/bot/handlers/hotels.py`.
+`infrastructure/bot/hotel_alerts.py`, `infrastructure/bot/handlers/hotels.py`,
+чат — `application/use_cases/chat.py`, `infrastructure/bot/handlers/chat.py`.

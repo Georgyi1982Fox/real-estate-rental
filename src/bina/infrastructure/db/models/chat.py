@@ -3,7 +3,15 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, UniqueConstraint, text
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    String,
+    Text,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -29,15 +37,36 @@ def _listing_fk() -> Mapped[UUID]:
 
 
 class Conversation(Base):
-    """Диалог арендатора с хозяином об одной квартире (один на пару «квартира — арендатор»)."""
+    """Диалог с хозяином об одной квартире или гостинице (TASK-120).
+
+    Один на пару «квартира — арендатор» или «гостиница — гость»; ``tenant_id`` — тот,
+    кто написал первым, ``owner_id`` — хозяин.
+    """
 
     __tablename__ = "bina_conversations"
-    __table_args__ = (UniqueConstraint("listing_id", "tenant_id", name="uq_bina_conversations"),)
+    __table_args__ = (
+        UniqueConstraint("listing_id", "tenant_id", name="uq_bina_conversations"),
+        UniqueConstraint("hotel_id", "tenant_id", name="uq_bina_conversations_hotel"),
+        CheckConstraint(
+            "(listing_id IS NULL) <> (hotel_id IS NULL)", name="ck_bina_conversations_subject"
+        ),
+    )
 
     id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
     )
-    listing_id: Mapped[UUID] = _listing_fk()
+    listing_id: Mapped[UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("bina_listings.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    hotel_id: Mapped[UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("bina_hotels.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
     tenant_id: Mapped[UUID] = _user_fk()
     owner_id: Mapped[UUID] = _user_fk()
 
