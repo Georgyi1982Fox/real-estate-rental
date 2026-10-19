@@ -47,13 +47,28 @@
 - `POST /{id}/rooms`, `PUT /{id}/rooms/{room_id}`, `DELETE /{id}/rooms/{room_id}`.
 
 ## Этап 2
-- Проверка ИИ (спам, чужие фото, обман) и автоперевод описаний на ka/ru/en.
-- «🔥 Топ» за Telegram Stars (как у квартир).
-- Карточка гостиницы в боте (ссылка `start=h_<id>`) и чат с хозяином с переводом.
-- Раздел «🏨 Гостиницы» в меню бота.
+- ✅ Проверка ИИ (спам, чужие фото, обман) и автоперевод описаний на ka/ru/en.
+- ✅ «🔥 Топ» за Telegram Stars (как у квартир): 7 дней первым в разделе, повторная
+  оплата продлевает. Цена — `HOTEL_PROMOTION_PRICE_STARS` в `.env` (по умолчанию 150).
+  Счёт `htop:<id>` создаёт мини-приложение, оплату принимает бот.
+- ✅ Раздел «🏨 Гостиницы» в меню бота и `/hotels`: до 8 объектов кнопками (сначала «Топ»),
+  «Все гостиницы» и «Мои гостиницы» — в приложении.
+- ✅ Карточка гостиницы в боте (кнопка в разделе или ссылка `start=h_<id>`): фото, цена «от»,
+  гостей, заезд/выезд, начало описания на языке пользователя; «📞 Контакты» (телефон,
+  WhatsApp, Telegram — только по нажатию), «Подробнее в приложении», «Поделиться».
+- 📋 Чат с хозяином гостиницы в боте с переводом (следующий шаг).
 - Позже: даты и заявки на бронирование, отзывы.
+
+### API этапа 2
+- `GET /api/hotels/options` — ещё `promotion_price_stars`, `promotion_days`;
+- `GET /api/my/hotels`, `GET /api/my/hotels/{id}` — ещё `promoted_until`;
+- `POST /api/my/hotels/{id}/promotion` → `{url, price_stars, days}` — счёт для
+  `Telegram.WebApp.openInvoice`; 404 — не свой, 409 — объект не в разделе (снят, скрыт,
+  нет цены), 503 — нет токена бота.
 
 ## Код
 `application/hotels.py`, `application/use_cases/hotels.py`,
+`application/hotel_promotion.py`, `application/use_cases/hotel_promotion.py`,
 `infrastructure/db/models/hotels.py`, `infrastructure/db/repositories/hotels.py`,
-`infrastructure/api/routes/hotels.py`, `infrastructure/bot/hotel_alerts.py`.
+`infrastructure/api/routes/hotels.py`, `infrastructure/payments/invoice.py`,
+`infrastructure/bot/hotel_alerts.py`, `infrastructure/bot/handlers/hotels.py`.

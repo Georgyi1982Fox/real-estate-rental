@@ -160,6 +160,7 @@ class MenuSection(StrEnum):
     TERMS = "terms"
     PRIVACY = "privacy"
     ADMIN = "admin"
+    HOTELS = "hotels"  # TASK-120: гостиницы, гостевые дома, хостелы
 
 
 class MenuCallback(CallbackData, prefix="m"):
@@ -237,3 +238,15 @@ class SignCallback(CallbackData, prefix="sg"):
 
 class HistoryCallback(CallbackData, prefix="hist"):
     """«🕘 Недавно смотрели» под избранным (TASK-075)."""
+
+
+class HotelAction(StrEnum):
+    """Гостиницы в боте (TASK-120, этап 2)."""
+
+    OPEN = "o"  # карточка гостиницы
+    CONTACTS = "c"  # телефон и кнопки связи с хозяином
+
+
+class HotelCallback(CallbackData, prefix="ht"):
+    action: HotelAction
+    id: UUID

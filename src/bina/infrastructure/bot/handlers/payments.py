@@ -13,6 +13,7 @@ from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message, PreCheck
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from bina.application.hotel_promotion import is_hotel_promotion_payload
 from bina.application.promotion import is_promotion_payload
 from bina.application.referrals import FRIEND_DISCOUNT_PERCENT
 from bina.application.subscriptions import (
@@ -28,9 +29,10 @@ from bina.application.subscriptions import (
 from bina.application.use_cases.notifications import FREE_DELIVERY_DELAY
 from bina.application.use_cases.referrals import RewardReferrerUseCase
 from bina.application.use_cases.subscriptions import ActivateSubscriptionUseCase
-from bina.infrastructure.bot.handlers import agency, promotion
+from bina.infrastructure.bot.handlers import agency, hotels, promotion
 from bina.infrastructure.bot.keyboards.callbacks import PremiumBuyCallback
 from bina.infrastructure.bot.keyboards.menu import with_home
+from bina.infrastructure.bot.settings import BotSettings
 from bina.infrastructure.bot.texts import t
 from bina.infrastructure.db.models import User
 from bina.infrastructure.db.repositories.payments import PaymentsRepository
@@ -140,6 +142,10 @@ async def on_pre_checkout(
         # TASK-097: счёт за «🔥 Топ»
         await promotion.check_promotion(query, user, session)
         return
+    if is_hotel_promotion_payload(query.invoice_payload):
+        # TASK-120: «🔥 Топ» гостиницы
+        await hotels.check_promotion(query, user, session)
+        return
     discounted = await ReferralsRepository(session).discount_eligible(user)
     plan = validate_checkout(
         plans, query.invoice_payload, query.currency, query.total_amount, discounted
@@ -157,7 +163,11 @@ async def on_pre_checkout(
 
 
 async def on_successful_payment(
-    message: Message, session: AsyncSession, user: User, plans: dict[str, Plan]
+    message: Message,
+    session: AsyncSession,
+    user: User,
+    plans: dict[str, Plan],
+    settings: BotSettings,
 ) -> None:
     """Деньги списаны: записать платёж и продлить подписку."""
     payment = message.successful_payment
@@ -167,6 +177,9 @@ async def on_successful_payment(
         return
     if is_promotion_payload(payment.invoice_payload):
         await promotion.activate_promotion(message, user, session)
+        return
+    if is_hotel_promotion_payload(payment.invoice_payload):
+        await hotels.activate_promotion(message, user, session, settings)
         return
     plan = plan_for_payload(plans, payment.invoice_payload)
     if plan is None:

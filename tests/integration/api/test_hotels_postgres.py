@@ -6,13 +6,15 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from aiogram import Bot
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bina.infrastructure.api.server import create_app
 from bina.infrastructure.api.settings import ApiSettings
-from bina.infrastructure.db.models import User
+from bina.infrastructure.db.models import Hotel, User
+from bina.infrastructure.payments import invoice
 from tests.integration.api.test_my_listings_postgres import BOT_TOKEN, headers, png
 
 OWNER = 901
@@ -190,3 +192,34 @@ async def test_options(client: AsyncClient) -> None:
     assert "guesthouse" in options["kinds"]
     assert "wifi" in options["amenities"]
     assert options["limits"]["active_hotels"] == 5
+    assert options["promotion_price_stars"] == 150
+    assert options["promotion_days"] == 7
+
+
+async def test_promotion_invoice(client: AsyncClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Этап 2: «🔥 Топ» — счёт в звёздах для мини-приложения, только для своего объекта."""
+    titles: list[str] = []
+
+    async def fake_link(bot: Bot, hotel: Hotel, language: str) -> str:
+        fields = invoice.hotel_promotion_invoice(hotel, language)
+        titles.append(fields["title"])
+        assert fields["payload"] == f"htop:{hotel.id.hex}"
+        assert [price.amount for price in fields["prices"]] == [150]
+        return "https://t.me/$invoice"
+
+    monkeypatch.setattr(invoice, "create_hotel_promotion_link", fake_link)
+    hotel = await create(client, name="Очень длинное название гостевого дома у моря")
+    me = headers(OWNER)
+    url = f"/api/my/hotels/{hotel['id']}/promotion"
+
+    response = await client.post(url, headers=me)
+    assert response.status_code == 200, response.text
+    assert response.json() == {"url": "https://t.me/$invoice", "price_stars": 150, "days": 7}
+    assert len(titles[0]) <= 32 and titles[0].endswith("…"), "заголовок счёта — до 32 знаков"
+    assert (await client.get(f"/api/my/hotels/{hotel['id']}", headers=me)).json()[
+        "promoted_until"
+    ] is None
+
+    assert (await client.post(url, headers=headers(GUEST))).status_code == 404
+    await client.patch(f"/api/my/hotels/{hotel['id']}", json={"active": False}, headers=me)
+    assert (await client.post(url, headers=me)).status_code == 409

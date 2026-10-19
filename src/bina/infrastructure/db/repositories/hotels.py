@@ -135,6 +135,11 @@ class HotelsRepository:
         query = select(Hotel).where(Hotel.id == hotel_id, *visible())
         return (await self._session.execute(query)).scalar_one_or_none()
 
+    async def set_promotion(self, hotel: Hotel, until: datetime) -> None:
+        """«🔥 Топ» до ``until`` (TASK-120, этап 2)."""
+        hotel.promoted_until = until
+        await self._session.flush()
+
     # ---------------------------------------------------------------- модерация
 
     async def hide(self, hotel_id: UUID) -> None:

@@ -47,7 +47,7 @@ def _button(language: str, key: str, section: MenuSection) -> InlineKeyboardButt
 def home_menu(language: str, mini_app_url: str | None, admin: bool = False) -> InlineKeyboardMarkup:
     """Все функции бота кнопками (сообщение «главное меню»), сгруппированные по смыслу.
 
-    Сверху — Mini App, затем поиск жилья, «Сдать квартиру», подписка, личное,
+    Сверху — Mini App, затем поиск жилья, «Сдать квартиру», гостиницы, подписка, личное,
     помощь и документы; внизу — админка (только владельцу).
     """
     rows: list[list[InlineKeyboardButton]] = []
@@ -65,6 +65,8 @@ def home_menu(language: str, mini_app_url: str | None, admin: bool = False) -> I
         ],
         # TASK-096: собственник сдаёт свою квартиру
         [_button(language, "menu_owner", MenuSection.OWNER)],
+        # TASK-120: гостиницы, гостевые дома, хостелы
+        [_button(language, "menu_hotels", MenuSection.HOTELS)],
         [
             _button(language, "menu_premium", MenuSection.PREMIUM),
             _button(language, "menu_invite", MenuSection.INVITE),
