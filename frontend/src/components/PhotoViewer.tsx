@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useTelegramBack } from '../hooks/useTelegramBackButton';
+import { fill } from '../lib/format';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 import Icon from './Icon';
@@ -11,7 +12,8 @@ interface PhotoViewerProps {
   /** Какое фото открыть; null — просмотр закрыт */
   start: number | null;
   alt: string;
-  onClose: () => void;
+  /** Закрыли; index — фото, на котором остановились (галерея на странице переходит к нему) */
+  onClose: (index: number) => void;
 }
 
 const MAX_SCALE = 4;
@@ -38,12 +40,16 @@ const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y);
 interface ZoomableProps {
   src: string;
   alt: string;
+  /** Это фото сейчас на экране: только его можно увеличить, ушло с экрана — масштаб сброшен */
+  active: boolean;
+  /** Грузить сразу (текущее и соседние), остальные — когда до них долистают */
+  eager: boolean;
   /** Фото увеличено: лента не листается, палец двигает фото */
   onZoomChange: (zoomed: boolean) => void;
 }
 
 /** Фото на весь экран: двойное нажатие — увеличить/вернуть, двумя пальцами — масштаб, одним — сдвиг */
-function Zoomable({ src, alt, onZoomChange }: ZoomableProps) {
+function Zoomable({ src, alt, active, eager, onZoomChange }: ZoomableProps) {
   const [zoom, setZoom] = useState<Zoom>(NO_ZOOM);
   const pointers = useRef(new Map<number, Point>());
   // Начало жеста: масштаб, сдвиг и расстояние между пальцами
@@ -52,7 +58,14 @@ function Zoomable({ src, alt, onZoomChange }: ZoomableProps) {
   const downAt = useRef<Point | null>(null);
   const zoomed = zoom.scale > 1;
 
-  useEffect(() => onZoomChange(zoomed), [zoomed, onZoomChange]);
+  // Долистали до другого фото — это возвращается к обычному размеру
+  useEffect(() => {
+    if (!active) setZoom(NO_ZOOM);
+  }, [active]);
+
+  useEffect(() => {
+    if (active) onZoomChange(zoomed);
+  }, [active, zoomed, onZoomChange]);
 
   const apply = (next: Zoom) => setZoom(next.scale <= 1.01 ? NO_ZOOM : next);
 
@@ -150,6 +163,7 @@ function Zoomable({ src, alt, onZoomChange }: ZoomableProps) {
         }}
         src={src}
         alt={alt}
+        loading={eager ? 'eager' : 'lazy'}
         draggable={false}
       />
     </div>
@@ -157,18 +171,29 @@ function Zoomable({ src, alt, onZoomChange }: ZoomableProps) {
 }
 
 /**
- * Фото на весь экран поверх страницы: листать свайпом или стрелками, увеличивать
- * (двойное нажатие или двумя пальцами), закрыть крестиком или Esc
+ * Фото на весь экран поверх страницы: листать свайпом, стрелками по бокам или миниатюрами
+ * внизу, увеличивать (двойное нажатие или двумя пальцами), закрыть крестиком, Esc или «Назад»
  */
 export default function PhotoViewer({ images, start, alt, onClose }: PhotoViewerProps) {
   const { t } = useI18n();
   const trackRef = useRef<HTMLUListElement>(null);
+  const thumbsRef = useRef<HTMLUListElement>(null);
   const [current, setCurrent] = useState(start ?? 0);
   const [zoomed, setZoomed] = useState(false);
   const total = images.length;
   const open = start !== null;
+  const close = useCallback(() => onClose(current), [onClose, current]);
   // «Назад» Telegram закрывает фото, а не страницу (приоритет — как у модалки)
-  useTelegramBack(onClose, open, 1);
+  useTelegramBack(close, open, 1);
+
+  // Миниатюра текущего фото всегда видна в полоске
+  useEffect(() => {
+    if (!open) return;
+    const thumb = thumbsRef.current?.children[current];
+    if (thumb instanceof HTMLElement) {
+      thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [open, current]);
 
   const goTo = useCallback(
     (index: number) => {
@@ -196,24 +221,28 @@ export default function PhotoViewer({ images, start, alt, onClose }: PhotoViewer
   useEffect(() => {
     if (!open) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') close();
       else if (event.key === 'ArrowRight') goTo(current + 1);
       else if (event.key === 'ArrowLeft') goTo(current - 1);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open, current, goTo, onClose]);
+  }, [open, current, goTo, close]);
 
   if (!open) return null;
 
+  // Стрелки видны и на телефоне: не все догадываются листать свайпом
   const arrow = (direction: -1 | 1) => (
     <button
       type="button"
-      className={`photo-viewer__arrow absolute top-1/2 hidden size-12 -translate-y-1/2 place-items-center rounded-full bg-white/15 text-white backdrop-blur-sm hover:bg-white/25 md:grid ${
-        direction < 0 ? 'left-4' : 'right-4'
+      className={`photo-viewer__arrow absolute top-1/2 grid size-10 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white backdrop-blur-sm hover:bg-black/65 active:scale-95 md:size-12 ${
+        direction < 0 ? 'left-2 md:left-4' : 'right-2 md:right-4'
       }`}
       aria-label={direction < 0 ? t.gallery.prev : t.gallery.next}
-      onClick={() => goTo(current + direction)}
+      onClick={() => {
+        haptic('selection');
+        goTo(current + direction);
+      }}
     >
       <Icon name="chevron" className={`size-6 ${direction < 0 ? 'rotate-180' : ''}`} />
     </button>
@@ -234,7 +263,7 @@ export default function PhotoViewer({ images, start, alt, onClose }: PhotoViewer
           type="button"
           className="photo-viewer__close inline-grid size-10 place-items-center rounded-full bg-white/15 hover:bg-white/25"
           aria-label={t.common.close}
-          onClick={onClose}
+          onClick={close}
         >
           <Icon name="close" className="size-5" />
         </button>
@@ -252,17 +281,17 @@ export default function PhotoViewer({ images, start, alt, onClose }: PhotoViewer
             if (index !== current && index >= 0 && index < total) setCurrent(index);
           }}
         >
+          {/* Ключи постоянные: фото под пальцем не перерисовывается посреди свайпа
+              (иначе телефон обрывает свайп и лента возвращается назад) */}
           {images.map((src, index) => (
             <li key={src + index} className="h-full w-full shrink-0 snap-center">
-              {/* Увеличение — только у видимого фото; соседние всегда в обычном размере */}
-              {Math.abs(index - current) <= 1 && (
-                <Zoomable
-                  key={index === current ? 'current' : 'near'}
-                  src={src}
-                  alt={`${alt} — ${index + 1}`}
-                  onZoomChange={index === current ? setZoomed : () => undefined}
-                />
-              )}
+              <Zoomable
+                src={src}
+                alt={`${alt} — ${index + 1}`}
+                active={index === current}
+                eager={Math.abs(index - current) <= 1}
+                onZoomChange={setZoomed}
+              />
             </li>
           ))}
         </ul>
@@ -273,6 +302,42 @@ export default function PhotoViewer({ images, start, alt, onClose }: PhotoViewer
           </>
         )}
       </div>
+
+      {/* Миниатюры: нажали — сразу к этому фото */}
+      {total > 1 && (
+        <ul
+          ref={thumbsRef}
+          className="photo-viewer__thumbs no-scrollbar m-0 flex shrink-0 list-none gap-2 overflow-x-auto px-4 py-3"
+          aria-label={t.gallery.label}
+        >
+          {images.map((src, index) => (
+            <li key={src + index} className="shrink-0">
+              <button
+                type="button"
+                className={`photo-viewer__thumb block size-14 overflow-hidden rounded-lg transition-opacity duration-200 ${
+                  index === current
+                    ? 'opacity-100 ring-2 ring-white'
+                    : 'opacity-50 hover:opacity-80'
+                }`}
+                aria-label={fill(t.gallery.go_to, index + 1)}
+                aria-current={index === current ? 'true' : undefined}
+                onClick={() => {
+                  haptic('selection');
+                  goTo(index);
+                }}
+              >
+                <img
+                  className="h-full w-full object-cover"
+                  src={src}
+                  alt=""
+                  loading="lazy"
+                  draggable={false}
+                />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>,
     document.body,
   );

@@ -29,7 +29,14 @@ export default function Gallery({ images, alt, label }: GalleryProps) {
   const { trackRef, slides, current, onScroll, goTo } = useCarousel(total);
   // Фото на весь экран: номер открытого, null — закрыто
   const [viewing, setViewing] = useState<number | null>(null);
-  const closeViewer = useCallback(() => setViewing(null), []);
+  // Закрыли на другом фото — галерея на странице переходит к нему
+  const closeViewer = useCallback(
+    (index: number) => {
+      setViewing(null);
+      if (index !== current) goTo(index);
+    },
+    [current, goTo],
+  );
   const view = (index: number) => {
     haptic('light');
     setViewing(index);
