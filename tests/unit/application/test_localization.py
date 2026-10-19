@@ -6,6 +6,7 @@ from bina.application.localization import (
     district_base,
     district_canonical,
     district_names,
+    is_city_wide_district,
     localize_address,
     localize_name,
     script_of,
@@ -159,3 +160,28 @@ def test_text_languages_migration_moves_texts() -> None:
 )
 def test_district_base(name: str, base: str | None) -> None:
     assert district_base(name) == base
+
+
+@pytest.mark.parametrize(
+    ("name", "city", "expected"),
+    [
+        # TASK-122: сайт не указал район — вместо него город или «Unknown»
+        ("Батуми", "batumi", True),
+        ("Районы Батуми", "batumi", True),
+        ("Batumi", "batumi", True),
+        ("ბათუმი", "batumi", True),
+        ("Батум", "batumi", True),
+        ("Тбилиси", "tbilisi", True),
+        ("Unknown", "tbilisi", True),
+        ("  ", "batumi", True),
+        # Настоящие районы
+        ("Старый Батуми", "batumi", False),
+        ("Гонио", "batumi", False),
+        ("Ваке", "tbilisi", False),
+        ("Тбилисское море", "tbilisi", False),
+        # Название другого города — не «весь этот город»
+        ("Тбилиси", "batumi", False),
+    ],
+)
+def test_city_wide_district(name: str, city: str, expected: bool) -> None:
+    assert is_city_wide_district(name, city) is expected

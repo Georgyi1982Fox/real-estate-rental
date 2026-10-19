@@ -16,9 +16,8 @@ from bina.application.district_guide import (
 )
 from bina.infrastructure.api.delivery import viewer_language
 from bina.infrastructure.api.dependencies import OptionalUserDep, SessionDep
-from bina.infrastructure.api.routes.common import not_found, valid_city
+from bina.infrastructure.api.routes.common import not_found, parse_city_codes
 from bina.infrastructure.api.schemas import (
-    CityCode,
     DistrictOut,
     DistrictsOut,
     Localized,
@@ -78,12 +77,20 @@ class DistrictInfoOut(BaseModel):
 async def list_districts(
     session: SessionDep,
     city: Annotated[
-        CityCode | None, Query(description="Только районы города; пусто — все (TASK-079)")
+        list[str] | None,
+        Query(
+            description="Только районы городов (TASK-079, TASK-122): один код, несколько — "
+            "через запятую (city=tbilisi,batumi) или повтором; пусто — все"
+        ),
     ] = None,
 ) -> DistrictsOut:
-    """Районы (для фильтра и названий в карточках)."""
-    valid_city(city)
-    districts = await DistrictsRepository(session).list_all(city)
+    """Районы: с ``city`` — для фильтра, без него — для названий в карточках.
+
+    TASK-122: «весь город» (``city_wide``: объявления, где сайт не указал район) — только
+    в полном списке без ``city``: в фильтре такого «района» нет.
+    """
+    codes = parse_city_codes(city)
+    districts = await DistrictsRepository(session).list_all(cities=codes, with_city_wide=not codes)
     return DistrictsOut(items=[DistrictOut.from_model(district) for district in districts])
 
 
