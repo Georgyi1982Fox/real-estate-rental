@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { MORE_PATH } from '../lib/paths';
 import { useI18n } from '../providers/I18nProvider';
 import type { NavMode } from './BottomNav';
 
@@ -9,7 +10,7 @@ const NAV_CLASS: Record<NavMode, string> = {
 };
 
 interface FooterProps {
-  /** Нижняя панель вкладок: подвал оставляет под неё место, «Профиль» уже есть в панели */
+  /** Нижняя панель вкладок: подвал оставляет под неё место, «Ещё» уже есть в панели */
   nav: NavMode;
 }
 
@@ -26,12 +27,14 @@ export default function Footer({ nav }: FooterProps) {
       >
         <span>© {new Date().getFullYear()} bina.ai</span>
         {nav !== 'always' && (
-          <Link
-            to="/profile"
-            className={`rounded-md px-2 py-1 ${nav === 'mobile' ? 'max-lg:hidden' : ''}`}
-          >
-            {t.footer.profile}
-          </Link>
+          <span className={`flex items-center gap-1 ${nav === 'mobile' ? 'max-lg:hidden' : ''}`}>
+            <Link to={MORE_PATH} className="rounded-md px-2 py-1">
+              {t.footer.more}
+            </Link>
+            <Link to="/profile" className="rounded-md px-2 py-1">
+              {t.footer.profile}
+            </Link>
+          </span>
         )}
       </nav>
     </footer>

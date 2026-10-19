@@ -10,6 +10,7 @@ import { useNotificationFeed } from '../hooks/useNotificationFeed';
 import type { NotificationFilter } from '../hooks/useNotificationFeed';
 import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
 import { haptic } from '../lib/telegram';
+import { RENT_PATH } from '../lib/paths';
 import { useI18n } from '../providers/I18nProvider';
 import { useToast } from '../providers/ToastProvider';
 
@@ -26,7 +27,7 @@ export default function NotificationsPage() {
   const { items, unreadCount, filter, loading, error, unauthorized } = feed;
 
   useDocumentTitle(`${nt.page_title} — bina.ai`);
-  useTelegramBackButton('/');
+  useTelegramBackButton(RENT_PATH);
 
   const tabs: { value: NotificationFilter; label: string; count?: number }[] = [
     { value: 'all', label: nt.tab_all },

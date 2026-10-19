@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import type {
   ListResponse,
@@ -21,10 +21,11 @@ import ListingAssistant from '../components/ListingAssistant';
 import ListingDates from '../components/ListingDates';
 import ListingDescription from '../components/ListingDescription';
 import ListingDocuments from '../components/ListingDocuments';
-import ListingLocation, { hasMapPoint } from '../components/ListingLocation';
+import ListingLocation, { hasMapPoint, mapTarget } from '../components/ListingLocation';
 import ListingPrice from '../components/ListingPrice';
 import ListingSkeleton from '../components/ListingSkeleton';
 import ListingSpecs from '../components/ListingSpecs';
+import MapChooser from '../components/MapChooser';
 import MarketPriceBadge from '../components/MarketPriceBadge';
 import PhoneReveal from '../components/PhoneReveal';
 import PromotionBadges from '../components/PromotionBadges';
@@ -68,6 +69,9 @@ export default function ListingPage() {
   const locationRef = useRef<HTMLElement>(null);
   // /phone ответил 404: объявление скрыто или снято (ID — см. useContact)
   const [phoneGoneId, setPhoneGoneId] = useState<ListingId | null>(null);
+  // Окно «Открыть в картах» по нажатию на адрес под заголовком
+  const [mapsOpen, setMapsOpen] = useState(false);
+  const closeMaps = useCallback(() => setMapsOpen(false), []);
 
   useTelegramBackButton('/search');
   // Ссылка «← Назад» ведёт туда же, куда нативная кнопка Telegram: в тот же список
@@ -121,6 +125,7 @@ export default function ListingPage() {
   const district = listing ? (districtEntry ? tr(districtEntry, lang) : listing.district) : '';
   const ownerName = tr(listing?.owner?.name, lang) || listing?.owner_name || '';
   const address = tr(listing?.address, lang);
+  const place = address ? `${address}, ${district}` : district;
   const promoted = listing?.is_promoted === true;
   const verified = listing?.is_verified === true;
 
@@ -173,10 +178,19 @@ export default function ListingPage() {
                     {title}
                   </h1>
                   <p className="listing-summary__meta flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[var(--text-secondary)]">
-                    <span className="inline-flex min-w-0 items-start gap-1 break-words">
+                    {/* Адрес — кнопка: выбрать Google Maps или Яндекс Карты */}
+                    <button
+                      type="button"
+                      className="listing-summary__place inline-flex min-w-0 items-start gap-1 break-words rounded-[var(--radius-sm)] text-left underline decoration-dotted underline-offset-4 hover:text-[var(--text-primary)]"
+                      aria-haspopup="dialog"
+                      onClick={() => {
+                        haptic('light');
+                        setMapsOpen(true);
+                      }}
+                    >
                       <span aria-hidden="true">📍</span>
-                      {address ? `${address}, ${district}` : district}
-                    </span>
+                      {place}
+                    </button>
                     {hasMapPoint(location.data) && (
                       <button
                         type="button"
@@ -341,6 +355,13 @@ export default function ListingPage() {
           districtNames={names}
         />
       )}
+
+      <MapChooser
+        open={mapsOpen}
+        onClose={closeMaps}
+        target={mapTarget(location.data, place)}
+        place={place}
+      />
     </>
   );
 }

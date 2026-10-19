@@ -12,6 +12,7 @@ import { useTelegramMainButton } from '../hooks/useTelegramMainButton';
 import { fill, formatDate } from '../lib/format';
 import { FREE_LIMITS, PREMIUM_LIMITS, premiumPlans } from '../lib/premium';
 import { canPay, isInTelegram } from '../lib/telegram';
+import { MORE_PATH } from '../lib/paths';
 import { useI18n } from '../providers/I18nProvider';
 
 const CARD_CLASS =
@@ -23,7 +24,7 @@ export default function PremiumPage() {
   const { subscription, loading, error, unauthorized, reload, buy, buying } = useSubscription();
 
   useDocumentTitle(`${pt.page_title} — bina.ai`);
-  useTelegramBackButton('/profile');
+  useTelegramBackButton(MORE_PATH);
 
   const plans = premiumPlans(subscription?.plans);
   const [selectedId, setSelectedId] = useState<string>();

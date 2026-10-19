@@ -17,6 +17,7 @@ import { fill, fillVars, tr } from '../lib/format';
 import { hotelErrorTexts } from '../lib/hotelForm';
 import { NEW_HOTEL_PATH } from '../lib/hotels';
 import { haptic } from '../lib/telegram';
+import { MORE_PATH } from '../lib/paths';
 import { useAuth } from '../providers/AuthProvider';
 import { useI18n } from '../providers/I18nProvider';
 import { useToast } from '../providers/ToastProvider';
@@ -42,7 +43,7 @@ export default function MyHotelsPage() {
   const closeDelete = useCallback(() => setDeleting(null), []);
 
   useDocumentTitle(`${mt.page_title} — bina.ai`);
-  useTelegramBackButton('/');
+  useTelegramBackButton(MORE_PATH);
 
   const hotels = (data?.items ?? [])
     .filter((hotel) => !removed.includes(String(hotel.id)))

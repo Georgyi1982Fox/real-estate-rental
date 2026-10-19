@@ -544,8 +544,19 @@ export interface AcceptanceSection extends AcceptanceOption {
  * из профиля (нужен вход, иначе 401). statuses: ok / defect / missing
  */
 export interface AcceptanceChecklist {
+  /** Старый чек-лист разделами (до комнат) */
   sections: AcceptanceSection[];
+  /**
+   * Комнаты, которые человек добавляет сам: код пункта комнаты — `<комната>-<номер>:<пункт>`,
+   * например `bedroom-2:windows`
+   */
+  rooms: AcceptanceRoomType[];
   statuses: AcceptanceOption[];
+}
+
+/** Тип комнаты: пункты проверки и сколько таких комнат можно добавить */
+export interface AcceptanceRoomType extends AcceptanceSection {
+  max_count: number;
 }
 
 /** Отмеченный пункт акта; comment — пустая строка, если его нет */

@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import type { AcceptanceChecklist, DocumentDelivery, Listing, Subscription } from '../api/types';
-import AcceptanceChecklistSection from '../components/AcceptanceChecklistSection';
 import AcceptanceDetails from '../components/AcceptanceDetails';
+import AcceptanceRooms from '../components/AcceptanceRooms';
 import AcceptanceSkeleton from '../components/AcceptanceSkeleton';
 import DocumentSent from '../components/DocumentSent';
 import ErrorState from '../components/ErrorState';
@@ -26,6 +26,7 @@ import {
   acceptanceProblems,
   acceptanceServerErrors,
   checkedItems,
+  roomsTotal,
   toAcceptanceRequest,
 } from '../lib/acceptance';
 import type {
@@ -38,6 +39,7 @@ import { BOT_URL } from '../lib/config';
 import { fill, fillVars, tr } from '../lib/format';
 import { submitDelivery } from '../lib/signing';
 import { haptic } from '../lib/telegram';
+import { MORE_PATH } from '../lib/paths';
 import { useAuth } from '../providers/AuthProvider';
 import { useI18n } from '../providers/I18nProvider';
 
@@ -48,7 +50,8 @@ const PAGE_CLASS = 'acceptance mx-auto flex w-full max-w-2xl flex-col gap-5 py-2
 const CHECKLIST_PATH = '/api/documents/acceptance/checklist';
 
 /**
- * «Акт приёмки квартиры» (PDF — только Premium): чек-лист по разделам, данные акта →
+ * «Акт приёмки квартиры» (PDF — только Premium): чек-лист по комнатам, которые человек
+ * добавляет сам, данные акта →
  * бот присылает двуязычный PDF в чат или акт уходит на подпись обеим сторонам. Открывается из объявления (`?listing=`: адрес берётся
  * из него) и из профиля (адрес вводится вручную). Черновик хранится на устройстве
  */
@@ -95,7 +98,7 @@ export default function AcceptancePage() {
   }, [focusOn, busy]);
 
   useDocumentTitle(`${at.title} — bina.ai`);
-  useTelegramBackButton(listingParam ? `/listing/${encodeURIComponent(listingParam)}` : '/profile');
+  useTelegramBackButton(listingParam ? `/listing/${encodeURIComponent(listingParam)}` : MORE_PATH);
 
   // Объявление не нашлось — акт всё равно можно составить, адрес вводится вручную
   const listingId = listing.data ? String(listing.data.id) : undefined;
@@ -120,8 +123,7 @@ export default function AcceptancePage() {
   if (!checklist.data) return <ErrorState onRetry={checklist.reload} />;
 
   const list = checklist.data;
-  const { sections, statuses } = list;
-  const total = sections.reduce((count, section) => count + section.items.length, 0);
+  const total = roomsTotal(draft, list);
   const marked = checkedItems(draft, list).length;
   const address = acceptanceAddress(draft, listingAddress);
 
@@ -270,9 +272,11 @@ export default function AcceptancePage() {
             className="scroll-mt-20 text-lg font-semibold outline-none"
           >
             {at.checklist}{' '}
-            <span className="text-sm font-medium text-[var(--text-secondary)] tabular-nums">
-              · {fillVars(at.progress, { n: marked, total })}
-            </span>
+            {total > 0 && (
+              <span className="text-sm font-medium text-[var(--text-secondary)] tabular-nums">
+                · {fillVars(at.progress, { n: marked, total })}
+              </span>
+            )}
           </h2>
           <p
             className={`m-0 text-xs ${errors.items ? 'font-medium text-[var(--danger)]' : 'text-[var(--text-secondary)]'}`}
@@ -283,15 +287,11 @@ export default function AcceptancePage() {
         </header>
 
         {/* Чек-лист не выключаем на время отправки целиком: fieldset сбросил бы фокус с кнопки */}
-        {sections.map((section) => (
-          <AcceptanceChecklistSection
-            key={section.code}
-            section={section}
-            statuses={statuses}
-            draft={draft}
-            onChange={busy ? () => undefined : update}
-          />
-        ))}
+        <AcceptanceRooms
+          checklist={list}
+          draft={draft}
+          onChange={busy ? () => undefined : update}
+        />
 
         <h2 className="mt-2 text-lg font-semibold">{at.details}</h2>
         <AcceptanceDetails

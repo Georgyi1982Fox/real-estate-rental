@@ -85,9 +85,13 @@ async def test_checklist_in_user_language(client: AsyncClient, language: str) ->
     titles = [section["title"] for section in checklist["sections"]]
     titles += [item["title"] for section in checklist["sections"] for item in section["items"]]
     titles += [item["title"] for item in checklist["statuses"]]
+    titles += [room["title"] for room in checklist["rooms"]]
+    titles += [item["title"] for room in checklist["rooms"] for item in room["items"]]
     assert all(script_of(title) == language for title in titles)
     codes = [item["code"] for section in checklist["sections"] for item in section["items"]]
     assert codes == list(ITEMS)
+    rooms = {room["code"]: room["max_count"] for room in checklist["rooms"]}
+    assert rooms["bedroom"] == 6 and rooms["whole"] == 1
     assert [item["code"] for item in checklist["statuses"]] == ["ok", "defect", "missing"]
 
 
@@ -125,7 +129,27 @@ async def test_acceptance(client: AsyncClient, session: AsyncSession, sender: Fa
     assert file.headers["content-type"] == "application/pdf"
     assert len(sender.sent) == 1
 
+    # Комнаты, добавленные человеком: две спальни и кухня
+    rooms = await client.post(
+        url,
+        json={
+            **body,
+            "delivery": "file",
+            "items": [
+                {"code": "bedroom-1:windows", "status": "ok"},
+                {"code": "bedroom-2:bed", "status": "defect", "comment": "Пятно на матрасе"},
+                {"code": "kitchen-1:dishwasher", "status": "missing"},
+            ],
+        },
+        headers=headers("ru"),
+    )
+    assert rooms.status_code == 200, rooms.text
+    assert rooms.headers["content-type"] == "application/pdf"
+
     for bad in (
+        {**body, "items": [{"code": "bedroom-7:bed", "status": "ok"}]},
+        {**body, "items": [{"code": "kitchen-1:bed", "status": "ok"}]},
+        {**body, "items": [{"code": "attic-1:floors", "status": "ok"}]},
         {**body, "items": [{"code": "piano", "status": "ok"}]},
         {**body, "items": [{"code": "tv", "status": "broken"}]},
         {**body, "items": [{"code": "tv", "status": "ok"}, {"code": "tv", "status": "ok"}]},

@@ -16,6 +16,7 @@ import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
 import { fill } from '../lib/format';
 import { describeFilters, districtsLabel, filterDistricts } from '../lib/searchFilters';
 import { haptic } from '../lib/telegram';
+import { RENT_PATH } from '../lib/paths';
 import { useI18n } from '../providers/I18nProvider';
 import { useToast } from '../providers/ToastProvider';
 
@@ -38,7 +39,7 @@ export default function SavedSearchesPage() {
   const closeDialog = useCallback(() => setDialog(null), []);
 
   useDocumentTitle(`${st.page_title} — bina.ai`);
-  useTelegramBackButton('/');
+  useTelegramBackButton(RENT_PATH);
 
   const districtName = (search: SavedSearch) =>
     districtsLabel(filterDistricts(search.filters), names, lang);
