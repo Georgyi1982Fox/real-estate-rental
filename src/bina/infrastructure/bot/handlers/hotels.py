@@ -3,7 +3,10 @@
 «🏨 Гостиницы» в главном меню и ``/hotels``: несколько объектов кнопками (сначала «🔥 Топ»),
 весь раздел и «Разместить» — в приложении. Кнопка объекта или ссылка ``/start h_<id>`` —
 карточка: фото, цена «от», вместимость, время заезда, начало описания и кнопки
-«📞 Контакты», «Подробнее в приложении», «Поделиться».
+«✍️ Написать хозяину», «📞 Контакты», «Подробнее в приложении», «Поделиться».
+
+«✍️ Написать хозяину» — диалог через бота с переводом, как у квартир (handlers/chat.py):
+сообщение уходит хозяину на его языке, ответ приходит сюда; Telegram друг друга не видно.
 
 «🔥 Топ» гостиницы: счёт ``htop:<id>`` открывает мини-приложение
 (``POST /api/my/hotels/{id}/promotion``); проверку перед списанием и запись оплаты
@@ -18,6 +21,7 @@ import structlog
 from aiogram import Bot, F, Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
 from aiogram.types import (
     CallbackQuery,
     InlineKeyboardButton,
@@ -29,15 +33,19 @@ from aiogram.types import (
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from bina.application.chat import ChatError, ChatErrorCode
 from bina.application.cities import city_name
 from bina.application.promotion import is_promoted
 from bina.application.sharing import hotel_share_link, telegram_share_url
+from bina.application.use_cases.chat import ChatUseCase
 from bina.application.use_cases.hotel_promotion import HotelPromotionUseCase
+from bina.infrastructure.bot.handlers import chat
 from bina.infrastructure.bot.keyboards.callbacks import HotelAction, HotelCallback
 from bina.infrastructure.bot.keyboards.menu import with_home
 from bina.infrastructure.bot.settings import BotSettings
 from bina.infrastructure.bot.texts import t
 from bina.infrastructure.db.models import Hotel, User
+from bina.infrastructure.db.repositories.chat import ChatRepository
 from bina.infrastructure.db.repositories.hotels import HotelFilters, HotelsRepository
 from bina.infrastructure.db.repositories.payments import PaymentsRepository
 
@@ -102,12 +110,24 @@ def render_card(hotel: Hotel, language: str, now: datetime) -> str:
 
 
 def card_keyboard(
-    hotel: Hotel, language: str, bot_username: str | None, mini_app_url: str | None
+    hotel: Hotel,
+    language: str,
+    bot_username: str | None,
+    mini_app_url: str | None,
+    can_write: bool = True,
 ) -> InlineKeyboardMarkup:
+    """``can_write`` — не своя гостиница: можно написать хозяину."""
     builder = InlineKeyboardBuilder()
-    builder.button(
-        text=t(language, "hotel_contacts_button"),
-        callback_data=HotelCallback(action=HotelAction.CONTACTS, id=hotel.id),
+    if can_write:
+        builder.button(
+            text=t(language, "hotel_write_button"),
+            callback_data=HotelCallback(action=HotelAction.WRITE, id=hotel.id),
+        )
+    builder.row(
+        InlineKeyboardButton(
+            text=t(language, "hotel_contacts_button"),
+            callback_data=HotelCallback(action=HotelAction.CONTACTS, id=hotel.id).pack(),
+        )
     )
     if url := _app_url(mini_app_url, f"/hotels/{hotel.id}"):
         builder.row(
@@ -152,7 +172,9 @@ async def show_card(
         return
     text = render_card(hotel, language, datetime.now(UTC))
     username = (await bot.me()).username
-    markup = card_keyboard(hotel, language, username, settings.mini_app_url)
+    markup = card_keyboard(
+        hotel, language, username, settings.mini_app_url, hotel.owner_user_id != user.id
+    )
     if photo := photo_url(hotel, settings.mini_app_url):
         try:
             await message.answer_photo(photo, caption=text, reply_markup=markup)
@@ -257,6 +279,35 @@ async def on_contacts(
     await callback.message.answer("\n".join(lines), reply_markup=contacts_keyboard(hotel, language))
 
 
+# --- «✍️ Написать хозяину»
+
+
+def chat_error(language: str, code: ChatErrorCode) -> str:
+    if code == ChatErrorCode.NOT_FOUND:
+        return t(language, "hotel_unavailable")
+    if code == ChatErrorCode.OWN_LISTING:
+        return t(language, "hotel_chat_error_own")
+    return chat.error_text(language, code)
+
+
+async def on_write(
+    callback: CallbackQuery,
+    callback_data: HotelCallback,
+    user: User,
+    session: AsyncSession,
+    state: FSMContext,
+) -> None:
+    """Диалог с хозяином гостиницы; текст сообщения примет chat.on_message."""
+    try:
+        conversation = await ChatUseCase(ChatRepository(session)).start_hotel(
+            callback_data.id, user, datetime.now(UTC)
+        )
+    except ChatError as exc:
+        await callback.answer(chat_error(user.language, exc.code), show_alert=True)
+        return
+    await chat.ask_message(callback, user, state, conversation.id, "hotel_chat_prompt")
+
+
 # --- «🔥 Топ» за звёзды (счёт создаёт мини-приложение)
 
 
@@ -326,4 +377,5 @@ def create_router() -> Router:
     router.callback_query.register(
         on_contacts, HotelCallback.filter(F.action == HotelAction.CONTACTS)
     )
+    router.callback_query.register(on_write, HotelCallback.filter(F.action == HotelAction.WRITE))
     return router

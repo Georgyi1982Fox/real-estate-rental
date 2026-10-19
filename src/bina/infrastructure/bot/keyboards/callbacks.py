@@ -245,6 +245,7 @@ class HotelAction(StrEnum):
 
     OPEN = "o"  # карточка гостиницы
     CONTACTS = "c"  # телефон и кнопки связи с хозяином
+    WRITE = "w"  # написать хозяину через бота (с переводом)
 
 
 class HotelCallback(CallbackData, prefix="ht"):

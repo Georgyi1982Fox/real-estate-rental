@@ -294,7 +294,9 @@ async def test_new_chats_limit(
                 [],
                 now,
             )
-            await repository.create_conversation(other.id, tenant.id, listing.owner_user_id, now)
+            await repository.create_conversation(
+                tenant.id, listing.owner_user_id, now, listing_id=other.id
+            )
         use_case = ChatUseCase(repository)
         with pytest.raises(ChatError) as error:
             await use_case.start(listing.id, tenant, now)

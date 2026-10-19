@@ -9,6 +9,9 @@
 
 Просмотр: день → час → хозяин отвечает «✅ Подходит» / «❌ Другое время». О
 подтверждённом просмотре бот напоминает обоим за 2 часа (bot/viewing_reminders.py).
+
+Гостиницы (TASK-120): «✍️ Написать хозяину» в карточке гостиницы (handlers/hotels.py)
+начинает такой же диалог; дальше — те же перевод и «↩️ Ответить», без просмотров.
 """
 
 from collections.abc import Awaitable, Callable
@@ -42,7 +45,12 @@ from bina.application.rent_reminders import TBILISI
 from bina.application.use_cases.chat import ChatUseCase, Delivery, ViewingNotice
 from bina.infrastructure.bot.formatters import listing_price, listing_title
 from bina.infrastructure.bot.handlers.owner import ANSWER
-from bina.infrastructure.bot.keyboards.callbacks import ChatAction, ChatCallback
+from bina.infrastructure.bot.keyboards.callbacks import (
+    ChatAction,
+    ChatCallback,
+    HotelAction,
+    HotelCallback,
+)
 from bina.infrastructure.bot.keyboards.menu import with_home
 from bina.infrastructure.bot.texts import t
 from bina.infrastructure.db.models import Listing, User
@@ -111,9 +119,15 @@ def reply_keyboard(delivery: Delivery) -> InlineKeyboardMarkup:
     builder.button(
         **_button(t(language, "chat_reply_button"), ChatAction.REPLY, delivery.conversation.id)
     )
-    if not delivery.to_owner:
+    if not delivery.to_owner and delivery.listing is not None:
         builder.button(
             **_button(t(language, "chat_view_button"), ChatAction.VIEW, delivery.listing.id)
+        )
+    if not delivery.to_owner and delivery.hotel is not None:
+        # TASK-120: гостю — снова карточка гостиницы (просмотров у гостиниц нет)
+        builder.button(
+            text=t(language, "hotel_chat_open_button"),
+            callback_data=HotelCallback(action=HotelAction.OPEN, id=delivery.hotel.id),
         )
     builder.adjust(1)
     return builder.as_markup()
@@ -122,8 +136,13 @@ def reply_keyboard(delivery: Delivery) -> InlineKeyboardMarkup:
 def render_delivery(delivery: Delivery) -> str:
     """Сообщение для получателя: перевод (или оригинал) и оригинал мелко."""
     language = delivery.recipient.language
-    key = "chat_to_owner" if delivery.to_owner else "chat_to_tenant"
-    title = _title(delivery.listing, language)
+    if delivery.hotel is not None:
+        key = "hotel_chat_to_owner" if delivery.to_owner else "hotel_chat_to_guest"
+        title = escape(delivery.hotel.name)
+    else:
+        assert delivery.listing is not None
+        key = "chat_to_owner" if delivery.to_owner else "chat_to_tenant"
+        title = _title(delivery.listing, language)
     body = escape(delivery.translated or delivery.text)
     text = t(language, key, title=title, text=body)
     if delivery.translated:
@@ -214,18 +233,19 @@ async def on_write(
     except ChatError as exc:
         await callback.answer(error_text(user.language, exc.code), show_alert=True)
         return
-    await _ask_message(callback, user, state, conversation.id, "chat_prompt")
+    await ask_message(callback, user, state, conversation.id, "chat_prompt")
 
 
 async def on_reply(
     callback: CallbackQuery, callback_data: ChatCallback, user: User, state: FSMContext
 ) -> None:
-    await _ask_message(callback, user, state, callback_data.id, "chat_reply_prompt")
+    await ask_message(callback, user, state, callback_data.id, "chat_reply_prompt")
 
 
-async def _ask_message(
+async def ask_message(
     callback: CallbackQuery, user: User, state: FSMContext, conversation_id: UUID, key: str
 ) -> None:
+    """Ждём текст сообщения для диалога (его примет :func:`on_message`)."""
     await state.set_state(ChatStates.message)
     await state.update_data(conversation=str(conversation_id))
     await callback.answer()

@@ -19,6 +19,8 @@ from bina.infrastructure.db.models import (
     Conversation,
     DocumentSignature,
     Favorite,
+    Hotel,
+    HotelComplaint,
     Listing,
     Notification,
     Payment,
@@ -58,6 +60,32 @@ _LISTING_FIELDS = (
     "created_at",
 )
 
+# TASK-120: свои гостиницы (номера — списком внутри)
+_HOTEL_FIELDS = (
+    "id",
+    "kind",
+    "name",
+    "city",
+    "address",
+    "latitude",
+    "longitude",
+    "stars",
+    "amenities",
+    "check_in",
+    "check_out",
+    "description_ka",
+    "description_ru",
+    "description_en",
+    "images",
+    "phone",
+    "whatsapp",
+    "contact_url",
+    "is_active",
+    "promoted_until",
+    "created_at",
+)
+_ROOM_FIELDS = ("kind", "title", "guests", "price", "currency", "count")
+
 
 def _value(value: Any) -> Any:
     """Значение для JSON."""
@@ -92,6 +120,10 @@ class AccountRepository:
     def _own_listings(self, user_id: UUID) -> list[ColumnElement[bool]]:
         return [Listing.owner_user_id == user_id, Listing.source_name == OWNER_SOURCE]
 
+    async def _own_hotels(self, user_id: UUID) -> list[Hotel]:
+        query = select(Hotel).where(Hotel.owner_user_id == user_id)
+        return list((await self._session.execute(query)).scalars().all())
+
     async def export(self, user: User) -> dict[str, Any]:
         """Всё, что мы храним о человеке, — словарь для JSON-файла."""
         uid = user.id
@@ -100,6 +132,7 @@ class AccountRepository:
             .scalars()
             .all()
         )
+        hotels = await self._own_hotels(uid)
         conversations = or_(Conversation.tenant_id == uid, Conversation.owner_id == uid)
         return {
             "profile": {
@@ -118,12 +151,18 @@ class AccountRepository:
             "rent_reminders": await self._all(RentReminder, RentReminder.user_id == uid),
             "listings": [_row(listing, _LISTING_FIELDS) for listing in listings],
             "agency": await self._all(Agency, Agency.user_id == uid),
+            "hotels": [
+                _row(hotel, _HOTEL_FIELDS)
+                | {"rooms": [_row(room, _ROOM_FIELDS) for room in hotel.rooms]}
+                for hotel in hotels
+            ],
             "conversations": await self._all(Conversation, conversations),
             "messages_sent": await self._all(ChatMessage, ChatMessage.sender_id == uid),
             "viewings": await self._all(
                 Viewing, or_(Viewing.tenant_id == uid, Viewing.owner_id == uid)
             ),
             "complaints": await self._all(Complaint, Complaint.user_id == uid),
+            "hotel_complaints": await self._all(HotelComplaint, HotelComplaint.user_id == uid),
             "owner_verifications": await self._all(Verification, Verification.user_id == uid),
             "ai_requests_by_day": await self._all(AIUsage, AIUsage.user_id == uid),
             # TASK-115: документы на подпись (без самих файлов — их можно скачать в профиле)
@@ -166,6 +205,10 @@ class AccountRepository:
             if agency.logo_url:
                 files.append(agency.logo_url)
             await self._session.delete(agency)
+        # TASK-120: свои гостиницы удаляются целиком (номера, жалобы и переписка — каскадом)
+        for hotel in await self._own_hotels(uid):
+            files.extend(hotel.images or [])
+        await self._session.execute(delete(Hotel).where(Hotel.owner_user_id == uid))
         # Переписка удаляется целиком (сообщения — каскадом), показы — тоже
         await self._session.execute(
             delete(Conversation).where(
@@ -185,6 +228,7 @@ class AccountRepository:
             SavedSearch,
             RentReminder,
             Complaint,
+            HotelComplaint,
             Verification,
             AIUsage,
         ):

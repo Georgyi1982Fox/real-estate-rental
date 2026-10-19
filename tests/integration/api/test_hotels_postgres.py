@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 from aiogram import Bot
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import update
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bina.infrastructure.api.server import create_app
@@ -49,6 +49,7 @@ async def client(
 ) -> AsyncIterator[AsyncClient]:
     monkeypatch.setenv("MEDIA_DIR", str(tmp_path))
     app = create_app(ApiSettings(bot_token=BOT_TOKEN), session_factory)
+    app.state.bot_username = "bina_bot"
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as http:
         yield http
 
@@ -223,3 +224,51 @@ async def test_promotion_invoice(client: AsyncClient, monkeypatch: pytest.Monkey
     assert (await client.post(url, headers=headers(GUEST))).status_code == 404
     await client.patch(f"/api/my/hotels/{hotel['id']}", json={"active": False}, headers=me)
     assert (await client.post(url, headers=me)).status_code == 409
+
+
+async def test_share_link_opens_card_in_bot(client: AsyncClient) -> None:
+    """Этап 2: ссылка на карточку гостиницы в боте — «Поделиться» и «Написать в боте»."""
+    hotel = await create(client)
+    share = await client.get(f"/api/hotels/{hotel['id']}/share?lang=en")
+    assert share.status_code == 200, share.text
+    body = share.json()
+    hex_id = hotel["id"].replace("-", "")
+    assert body["url"] == f"https://t.me/bina_bot?start=h_{hex_id}"
+    assert body["text"] == "Sea Breeze · from 120 ₾"
+    assert body["telegram_url"].startswith("https://t.me/share/url?url=")
+    await client.patch(
+        f"/api/my/hotels/{hotel['id']}", json={"active": False}, headers=headers(OWNER)
+    )
+    assert (await client.get(f"/api/hotels/{hotel['id']}/share")).status_code == 404
+
+
+async def test_account_export_and_delete_cover_hotels(
+    client: AsyncClient, session: AsyncSession, tmp_path: Path
+) -> None:
+    """«Мои данные»: свои гостиницы — в выгрузке и удаляются вместе с аккаунтом (с фото)."""
+    hotel = await create(client)
+    me = headers(OWNER)
+    photo = await client.post(
+        f"/api/my/hotels/{hotel['id']}/photos",
+        content=png(),
+        headers={**me, "Content-Type": "image/png"},
+    )
+    assert photo.status_code == 200, photo.text
+    assert list(tmp_path.rglob("*.jpg")), "фото на диске"
+    guest = headers(GUEST)
+    await client.get(f"/api/hotels/{hotel['id']}/contact", headers=guest)
+    await client.post(
+        f"/api/hotels/{hotel['id']}/complaints", json={"reason": "fraud"}, headers=guest
+    )
+
+    data = (await client.get("/api/me/export", headers=me)).json()
+    [exported] = data["hotels"]
+    assert exported["id"] == hotel["id"] and exported["phone"] == "+995599112233"
+    assert [room["kind"] for room in exported["rooms"]] == ["double", "family"]
+    assert len((await client.get("/api/me/export", headers=guest)).json()["hotel_complaints"]) == 1
+
+    deleted = await client.delete("/api/me", params={"confirm": "true"}, headers=me)
+    assert deleted.status_code == 204
+    assert (await session.execute(select(Hotel))).scalars().all() == []
+    assert not list(tmp_path.rglob("*.jpg")), "фото стёрты с диска"
+    assert (await client.get(f"/api/hotels/{hotel['id']}")).status_code == 404

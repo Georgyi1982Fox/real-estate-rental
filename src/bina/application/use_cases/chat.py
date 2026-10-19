@@ -1,4 +1,7 @@
-"""Переписка с хозяином и просмотры (TASK-111, TASK-112). Не коммитит."""
+"""Переписка с хозяином и просмотры (TASK-111, TASK-112); с хозяином гостиницы (TASK-120).
+
+Не коммитит.
+"""
 
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
@@ -18,7 +21,7 @@ from bina.application.chat import (
     valid_slot,
 )
 from bina.application.ports.translator import IMessageTranslator, TranslationError
-from bina.infrastructure.db.models import Conversation, Listing, User, Viewing
+from bina.infrastructure.db.models import Conversation, Hotel, Listing, User, Viewing
 from bina.infrastructure.db.repositories.chat import ChatRepository
 
 logger = structlog.get_logger(__name__)
@@ -26,10 +29,14 @@ logger = structlog.get_logger(__name__)
 
 @dataclass(frozen=True, slots=True)
 class Delivery:
-    """Сообщение для получателя: оригинал и перевод на его язык."""
+    """Сообщение для получателя: оригинал и перевод на его язык.
+
+    Диалог о квартире (``listing``) или о гостинице (``hotel``) — одно из двух.
+    """
 
     conversation: Conversation
-    listing: Listing
+    listing: Listing | None
+    hotel: Hotel | None
     sender: User
     recipient: User
     text: str
@@ -70,15 +77,39 @@ class ChatUseCase:
         existing = await self._repository.conversation_for(listing.id, tenant.id)
         if existing is not None:
             return existing
+        await self._check_limit(tenant, now)
+        assert listing.owner_user_id is not None
+        return await self._repository.create_conversation(
+            tenant.id, listing.owner_user_id, now, listing_id=listing.id
+        )
+
+    async def hotel_for(self, hotel_id: UUID, guest: User) -> Hotel:
+        """Гостиница в разделе, хозяину которой ``guest`` может написать."""
+        hotel = await self._repository.chat_hotel(hotel_id)
+        if hotel is None:
+            raise ChatError(ChatErrorCode.NOT_FOUND)
+        if hotel.owner_user_id == guest.id:
+            raise ChatError(ChatErrorCode.OWN_LISTING)
+        return hotel
+
+    async def start_hotel(self, hotel_id: UUID, guest: User, now: datetime) -> Conversation:
+        """Диалог с хозяином гостиницы (новый или уже начатый)."""
+        hotel = await self.hotel_for(hotel_id, guest)
+        existing = await self._repository.hotel_conversation_for(hotel.id, guest.id)
+        if existing is not None:
+            return existing
+        await self._check_limit(guest, now)
+        return await self._repository.create_conversation(
+            guest.id, hotel.owner_user_id, now, hotel_id=hotel.id
+        )
+
+    async def _check_limit(self, tenant: User, now: datetime) -> None:
+        """Новых диалогов за сутки — не больше ``MAX_NEW_CHATS_PER_DAY`` (квартиры и гостиницы)."""
         since = now - timedelta(days=1)
         if await self._repository.count_conversations_since(tenant.id, since) >= (
             MAX_NEW_CHATS_PER_DAY
         ):
             raise ChatError(ChatErrorCode.LIMIT)
-        assert listing.owner_user_id is not None
-        return await self._repository.create_conversation(
-            listing.id, tenant.id, listing.owner_user_id, now
-        )
 
     async def send(
         self, conversation_id: UUID, sender: User, text: str | None, now: datetime
@@ -91,14 +122,20 @@ class ChatUseCase:
         to_owner = sender.id == conversation.tenant_id
         recipient_id = conversation.owner_id if to_owner else conversation.tenant_id
         recipient = await self._repository.user(recipient_id)
-        listing = await self._repository.listing(conversation.listing_id)
-        if recipient is None or listing is None:
+        listing = hotel = None
+        if conversation.listing_id is not None:
+            listing = await self._repository.listing(conversation.listing_id)
+        elif conversation.hotel_id is not None:
+            hotel = await self._repository.hotel(conversation.hotel_id)
+        if recipient is None or (listing is None and hotel is None):
             raise ChatError(ChatErrorCode.NOT_FOUND)
         translated = await self._translate(message, sender.language, recipient.language)
         await self._repository.add_message(
             conversation, sender.id, message, translated, recipient.language, now
         )
-        return Delivery(conversation, listing, sender, recipient, message, translated, to_owner)
+        return Delivery(
+            conversation, listing, hotel, sender, recipient, message, translated, to_owner
+        )
 
     async def _translate(self, text: str, source: str, target: str) -> str | None:
         if self._translator is None or source == target:

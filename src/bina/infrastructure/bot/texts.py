@@ -575,7 +575,8 @@ _RU: dict[str, str] = {
         "⚠️ <b>Удалить аккаунт и все данные?</b>\n"
         "\n"
         "Удалятся: избранное, сохранённые поиски, уведомления, напоминания об оплате, "
-        "переписка с хозяевами, ваши объявления с фото, кабинет агентства, жалобы.{paid}\n"
+        "переписка с хозяевами, ваши объявления и гостиницы с фото, кабинет агентства, "
+        "жалобы.{paid}\n"
         "\n"
         "Вернуть будет нельзя. Сначала можно скачать свои данные кнопкой в профиле."
     ),
@@ -676,6 +677,17 @@ _RU: dict[str, str] = {
     "hotel_whatsapp": "💬 Написать в WhatsApp",
     "hotel_telegram": "✈️ Написать в Telegram",
     "hotel_unavailable": "Этот объект больше недоступен.",
+    "hotel_chat_prompt": (
+        "✍️ Напишите хозяину гостиницы: даты, сколько гостей, вопросы. Бот переведёт "
+        "сообщение на язык хозяина.\n"
+        "\n"
+        "Передумали — нажмите «🏠 Главное меню»."
+    ),
+    "hotel_chat_to_owner": "💬 <b>Сообщение от гостя</b>\n🏨 {title}\n\n{text}",
+    "hotel_chat_to_guest": "💬 <b>Ответ гостиницы</b>\n🏨 {title}\n\n{text}",
+    "hotel_chat_open_button": "🏨 Открыть гостиницу",
+    "hotel_write_button": "✍️ Написать хозяину",
+    "hotel_chat_error_own": "Это ваша гостиница 🙂",
     "hotel_promo_outdated": (
         "Объект снят с показа или удалён. Откройте «Мои гостиницы» в приложении и попробуйте снова."
     ),
@@ -1283,7 +1295,8 @@ _EN: dict[str, str] = {
         "⚠️ <b>Delete your account and all data?</b>\n"
         "\n"
         "This deletes favorites, saved searches, notifications, rent reminders, chats with "
-        "owners, your listings with photos, the agency cabinet and complaints.{paid}\n"
+        "owners, your listings and hotels with photos, the agency cabinet and complaints."
+        "{paid}\n"
         "\n"
         "It cannot be undone. You can download your data first with the button in your profile."
     ),
@@ -1390,6 +1403,17 @@ _EN: dict[str, str] = {
     "hotel_whatsapp": "💬 Message on WhatsApp",
     "hotel_telegram": "✈️ Message on Telegram",
     "hotel_unavailable": "This property is no longer available.",
+    "hotel_chat_prompt": (
+        "✍️ Write to the hotel owner: dates, number of guests, questions. The bot will "
+        "translate your message into their language.\n"
+        "\n"
+        "Changed your mind? Press «🏠 Main menu»."
+    ),
+    "hotel_chat_to_owner": "💬 <b>Message from a guest</b>\n🏨 {title}\n\n{text}",
+    "hotel_chat_to_guest": "💬 <b>Reply from the hotel</b>\n🏨 {title}\n\n{text}",
+    "hotel_chat_open_button": "🏨 Open the hotel",
+    "hotel_write_button": "✍️ Message the owner",
+    "hotel_chat_error_own": "This is your own hotel 🙂",
     "hotel_promo_outdated": (
         "The property is hidden or deleted. Open «My hotels» in the app and try again."
     ),
@@ -1976,7 +2000,8 @@ _KA: dict[str, str] = {
         "⚠️ <b>წავშალოთ ანგარიში და ყველა მონაცემი?</b>\n"
         "\n"
         "წაიშლება: რჩეულები, შენახული ძიებები, შეტყობინებები, ქირის გადახდის შეხსენებები, "
-        "მიმოწერა მესაკუთრეებთან, თქვენი განცხადებები ფოტოებით, სააგენტოს კაბინეტი, "
+        "მიმოწერა მესაკუთრეებთან, თქვენი განცხადებები და სასტუმროები ფოტოებით, "
+        "სააგენტოს კაბინეტი, "
         "საჩივრები.{paid}\n"
         "\n"
         "აღდგენა შეუძლებელი იქნება. ჯერ შეგიძლიათ მონაცემების ჩამოტვირთვა პროფილის ღილაკით."
@@ -2081,6 +2106,17 @@ _KA: dict[str, str] = {
     "hotel_whatsapp": "💬 ვოთსაპში მიწერა",
     "hotel_telegram": "✈️ ტელეგრამში მიწერა",
     "hotel_unavailable": "ეს ობიექტი აღარ არის ხელმისაწვდომი.",
+    "hotel_chat_prompt": (
+        "✍️ მისწერეთ სასტუმროს მეპატრონეს: თარიღები, სტუმრების რაოდენობა, კითხვები. ბოტი "
+        "შეტყობინებას მეპატრონის ენაზე თარგმნის.\n"
+        "\n"
+        "გადაიფიქრეთ? დააჭირეთ «🏠 მთავარი მენიუ»."
+    ),
+    "hotel_chat_to_owner": "💬 <b>შეტყობინება სტუმრისგან</b>\n🏨 {title}\n\n{text}",
+    "hotel_chat_to_guest": "💬 <b>სასტუმროს პასუხი</b>\n🏨 {title}\n\n{text}",
+    "hotel_chat_open_button": "🏨 სასტუმროს გახსნა",
+    "hotel_write_button": "✍️ მეპატრონისთვის მიწერა",
+    "hotel_chat_error_own": "ეს თქვენი სასტუმროა 🙂",
     "hotel_promo_outdated": (
         "ობიექტი მოხსნილია ან წაშლილია. გახსენით «ჩემი სასტუმროები» აპლიკაციაში და სცადეთ ხელახლა."
     ),
