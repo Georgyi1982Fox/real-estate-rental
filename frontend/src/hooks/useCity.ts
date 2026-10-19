@@ -1,10 +1,11 @@
 import { useMemo, useSyncExternalStore } from 'react';
 import type { City, ListResponse, Localized } from '../api/types';
-import { ALL_CITIES } from '../lib/searchFilters';
+import { ALL_CITIES, cityCodes, joinCities } from '../lib/searchFilters';
 import { useApi } from './useApi';
 
 // Выбранный город — один на всё приложение (лента, главная, фильтр районов).
-// Хранится в localStorage: код города или ALL_CITIES («Вся Грузия»).
+// Хранится в localStorage: код города, несколько кодов через запятую (TASK-122)
+// или ALL_CITIES («Вся Грузия»).
 const STORAGE_KEY = 'bina:city';
 export const DEFAULT_CITY = 'tbilisi';
 
@@ -66,7 +67,7 @@ export function saveCity(city: string | undefined): void {
 
 /**
  * Выбранный город и список городов из GET /api/cities.
- * city — код для параметра city; undefined — «Вся Грузия».
+ * city — значение параметра city ('tbilisi' или 'batumi,tbilisi'); undefined — «Вся Грузия».
  */
 export function useCity() {
   const stored = useSyncExternalStore(subscribe, getSnapshot);
@@ -79,10 +80,11 @@ export function useCity() {
     [cities],
   );
 
-  // В списке только города с объявлениями: запомненного города там может уже не быть
+  // В списке только города с объявлениями: запомненных городов там может уже не быть
   let code = stored;
-  if (data && stored !== ALL_CITIES && !names[stored]) {
-    code = names[DEFAULT_CITY] ? DEFAULT_CITY : ALL_CITIES;
+  if (data && stored !== ALL_CITIES) {
+    const known = cityCodes(stored).filter((item) => names[item]);
+    code = joinCities(known) ?? (names[DEFAULT_CITY] ? DEFAULT_CITY : ALL_CITIES);
   }
 
   return { city: cityParam(code), cities, names, loading, error, reload, setCity: saveCity };

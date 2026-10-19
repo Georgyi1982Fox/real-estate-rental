@@ -314,8 +314,13 @@ export interface SearchFilters {
    * В сохранённые поиски пока не передаётся — бэкенд его там ещё не хранит
    */
   source?: string[];
-  /** Город (TASK-079): сервер отдаёт в сохранённых поисках, передаём как есть */
+  /**
+   * Город (TASK-079); несколько — через запятую 'batumi,tbilisi' (TASK-122): так в адресе
+   * страницы и в /api/listings. Сохранённые поиски хранят один город в city, несколько — в cities
+   */
   city?: string;
+  /** Только в /api/searches: несколько городов списком (см. toSavedFilters / fromSavedFilters) */
+  cities?: string[];
   /** Срок аренды (TASK-092); 'monthly' — то же, что поле не задано */
   rent_period?: RentPeriod;
 }

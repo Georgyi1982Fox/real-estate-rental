@@ -355,6 +355,10 @@ const ka = {
     default_name: 'თბილისი',
     find: 'ქალაქის ძებნა',
     not_found: 'ქალაქი ვერ მოიძებნა',
+    title_many: 'ქალაქები',
+    hint: 'შეგიძლიათ რამდენიმე ქალაქის არჩევა — ძებნა ერთდროულად ყველაში იქნება.',
+    apply: 'ჩვენება',
+    more: '+{n}',
   },
   notifications: {
     page_title: 'შეტყობინებები',
@@ -1277,6 +1281,10 @@ const ru: Strings = {
     default_name: 'Тбилиси',
     find: 'Найти город',
     not_found: 'Город не найден',
+    title_many: 'Города',
+    hint: 'Можно выбрать несколько городов — поиск будет сразу по всем.',
+    apply: 'Показать',
+    more: '+{n}',
   },
   notifications: {
     page_title: 'Уведомления',
@@ -2197,6 +2205,10 @@ const en: Strings = {
     default_name: 'Tbilisi',
     find: 'Find a city',
     not_found: 'No city found',
+    title_many: 'Cities',
+    hint: 'You can choose several cities — the search covers all of them at once.',
+    apply: 'Show',
+    more: '+{n}',
   },
   notifications: {
     page_title: 'Notifications',
