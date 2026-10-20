@@ -121,6 +121,36 @@
     }
   }
 
+  /* ---------- Плашка «Сравнить (N)» (FRONTEND-027) ---------- */
+  /* Стоит над нижней панелью, а уведомления (toast) — над плашкой */
+  .compare-bar {
+    bottom: var(--safe-bottom);
+  }
+  html:has(.compare-bar) {
+    --toast-offset: var(--compare-bar-height);
+  }
+  html:has(.bottom-nav) .compare-bar {
+    bottom: calc(var(--bottom-nav-height) + var(--safe-bottom));
+  }
+  html:has(.bottom-nav):has(.compare-bar) {
+    --toast-offset: calc(var(--bottom-nav-height) + var(--compare-bar-height));
+  }
+  @media (min-width: 1024px) {
+    html:has(.bottom-nav--mobile) .compare-bar {
+      bottom: var(--safe-bottom);
+    }
+    html:has(.bottom-nav--mobile):has(.compare-bar) {
+      --toast-offset: var(--compare-bar-height);
+    }
+  }
+
+  /* Таблица сравнения: колонка подписей закреплена при горизонтальной прокрутке */
+  .compare-table__label {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+  }
+
   /* Горизонтальные ленты со свайпом (галерея, похожие квартиры): скролл есть, полосы нет */
   .no-scrollbar {
     scrollbar-width: none;

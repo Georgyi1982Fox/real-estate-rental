@@ -125,6 +125,47 @@ export interface ViewHistory {
   items: ViewedListing[];
 }
 
+/** Строка таблицы сравнения: код и подпись на языке профиля (показываем свою по коду) */
+export interface CompareRow {
+  code: string;
+  title: string;
+}
+
+/** Одна квартира в сравнении (GET /api/listings/compare): суммы в лари */
+export interface ComparedListing {
+  listing: Listing;
+  price: number;
+  price_per_m2?: number | null;
+  area: number;
+  rooms: number;
+  floor?: number | null;
+  total_floors?: number | null;
+  /** Название района на языке профиля */
+  district?: string | null;
+  minutes_to_center?: number | null;
+  metro?: boolean | null;
+  /** Отдать при въезде: аренда + залог за месяц + коммунальные */
+  move_in: number;
+  /** В среднем в месяц с коммунальными (2 человека) */
+  average_month: number;
+  /** below / fair / above / unknown */
+  price_level: string;
+  /** none / warning / high */
+  risk_level: string;
+  features: string[];
+}
+
+/** Сравнение 2-3 квартир (TASK-105) */
+export interface ListingComparison {
+  currency: string;
+  /** Строки в порядке показа */
+  rows: CompareRow[];
+  items: ComparedListing[];
+  /** Код строки → ID квартир с лучшим значением; строки без отметки нет */
+  best: Record<string, ListingId[]>;
+  note: string;
+}
+
 /** «Поделиться» (GET /api/listings/{id}/share): ссылка на карточку квартиры в боте */
 export interface ListingShare {
   url: string;

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import CompareBar from '../components/CompareBar';
 import EmptyState from '../components/EmptyState';
 import ErrorState from '../components/ErrorState';
 import FavoriteNote from '../components/FavoriteNote';
@@ -69,7 +70,7 @@ export default function FavoritesPage() {
         <ul className={`favorites__list ${GRID_CLASS}`}>
           {listings.map((listing) => (
             <li key={listing.id} className="favorites__item flex min-w-0 flex-col gap-2">
-              <ListingCard listing={listing} districtNames={names} />
+              <ListingCard listing={listing} districtNames={names} comparable />
               <FavoriteNote listingId={listing.id} />
               <button
                 type="button"
@@ -86,6 +87,7 @@ export default function FavoritesPage() {
 
       {/* Похожие на избранное; пустое избранное и так объясняет, что делать */}
       {!isEmpty && <Recommendations districtNames={names} />}
+      <CompareBar />
     </section>
   );
 }

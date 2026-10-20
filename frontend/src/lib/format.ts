@@ -31,6 +31,15 @@ export function formatMoney(value: unknown, currency: string = 'GEL'): string {
   return withSymbol(`${sign}${groupDigits(whole)}${cents === '00' ? '' : `.${cents}`}`, currency);
 }
 
+/** Сумма с одним знаком после точки, если он есть: '21.1 ₾', '25 ₾' (цена за м²) */
+export function formatDecimal(value: unknown, currency: string = 'GEL'): string {
+  const amount = Number(value);
+  const safe = Number.isFinite(amount) ? Math.round(amount * 10) / 10 : 0;
+  const [whole = '0', tenth = '0'] = Math.abs(safe).toFixed(1).split('.');
+  const sign = safe < 0 ? '-' : '';
+  return withSymbol(`${sign}${groupDigits(whole)}${tenth === '0' ? '' : `.${tenth}`}`, currency);
+}
+
 // Chromium (Chrome, Edge, WebView Telegram на Android) не знает грузинского в Intl-датах
 // и молча подставляет английский («August 28», «yesterday») — для ka форматируем сами
 const KA_MONTHS = [

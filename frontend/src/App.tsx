@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import Layout from './components/Layout';
 import { ACCEPTANCE_PATH } from './lib/acceptance';
+import { COMPARE_PATH } from './lib/compare';
 import { HISTORY_PATH } from './lib/history';
 import { HOTELS_PATH, MY_HOTELS_PATH, NEW_HOTEL_PATH } from './lib/hotels';
 import { MORE_PATH, RENT_PATH } from './lib/paths';
@@ -8,6 +9,7 @@ import { DAILY_SEARCH_PATH } from './lib/searchFilters';
 import { DOCUMENTS_PATH } from './lib/signing';
 import AcceptancePage from './pages/AcceptancePage';
 import AuthPage from './pages/AuthPage';
+import ComparePage from './pages/ComparePage';
 import FavoritesPage from './pages/FavoritesPage';
 import FeatureLabPage from './pages/FeatureLabPage';
 import HelpPage from './pages/HelpPage';
@@ -46,6 +48,8 @@ const router = createBrowserRouter(
         { path: MORE_PATH, element: <MorePage /> },
         { path: '/search', element: <SearchPage /> },
         { path: '/listing/:id', element: <ListingPage /> },
+        // Сравнение 2-3 квартир (FRONTEND-027): «⚖ Сравнить» в поиске и избранном
+        { path: COMPARE_PATH, element: <ComparePage /> },
         // Гостиницы (FRONTEND-045): отдельный раздел, с квартирами не смешивается
         { path: HOTELS_PATH, element: <HotelsPage /> },
         { path: `${HOTELS_PATH}/:id`, element: <HotelPage /> },

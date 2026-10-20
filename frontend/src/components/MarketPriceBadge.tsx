@@ -4,23 +4,10 @@ import { useApi } from '../hooks/useApi';
 import { fill, formatPrice, plural } from '../lib/format';
 import { isInTelegram } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
+import PriceLevelBadge, { isPriceLevel } from './PriceLevelBadge';
 
 interface MarketPriceBadgeProps {
   listingId: ListingId;
-}
-
-type ShownLevel = 'below' | 'fair' | 'above';
-
-const LEVEL_CLASS: Record<ShownLevel, string> = {
-  below: 'bg-[var(--success-bg)] text-[var(--success-text)]',
-  fair: 'bg-[var(--surface-hover)] text-[var(--text-secondary)]',
-  above: 'bg-[var(--warning-bg)] text-[var(--warning-text)]',
-};
-
-const LEVEL_MARK: Record<ShownLevel, string> = { below: '↓', fair: '', above: '↑' };
-
-function isShownLevel(level: string): level is ShownLevel {
-  return level === 'below' || level === 'fair' || level === 'above';
 }
 
 /**
@@ -36,7 +23,7 @@ export default function MarketPriceBadge({ listingId }: MarketPriceBadgeProps) {
     isInTelegram() ? `/api/listings/${encodeURIComponent(listingId)}/price` : null,
   );
 
-  if (!data || !isShownLevel(data.level)) return null;
+  if (!data || !isPriceLevel(data.level)) return null;
 
   const level = data.level;
   const byM2 = data.basis === 'district_m2';
@@ -68,12 +55,7 @@ export default function MarketPriceBadge({ listingId }: MarketPriceBadgeProps) {
       className={`market-price market-price--${level} flex flex-wrap items-center gap-x-3 gap-y-1.5`}
       aria-label={pt.label}
     >
-      <p
-        className={`market-price__badge m-0 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-sm font-semibold leading-5 ${LEVEL_CLASS[level]}`}
-      >
-        {LEVEL_MARK[level] && <span aria-hidden="true">{LEVEL_MARK[level]}</span>}
-        {pt.levels[level]}
-      </p>
+      <PriceLevelBadge level={level} />
       {data.premium_required && level !== 'fair' && (
         <Link
           to="/premium"

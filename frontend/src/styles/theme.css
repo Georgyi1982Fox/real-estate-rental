@@ -74,6 +74,8 @@
 
   /* Высота нижней панели вкладок без safe-area */
   --bottom-nav-height: 3.5rem;
+  /* Плашка «Сравнить (N)» над ней: кнопка 3rem + рамка + отступы */
+  --compare-bar-height: 4.75rem;
 }
 
 :root {
