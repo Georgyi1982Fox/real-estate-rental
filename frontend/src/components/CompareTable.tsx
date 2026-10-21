@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { ComparedListing, ListingComparison, ListingId } from '../api/types';
+import { useDistricts } from '../hooks/useDistricts';
 import { FEATURE_CODES, featureName } from '../i18n/features';
 import type { Strings } from '../i18n/strings';
 import { isBest } from '../lib/compare';
@@ -65,6 +66,8 @@ export default function CompareTable({ data, onRemove }: CompareTableProps) {
   const { lang, t } = useI18n();
   const ct = t.compare;
   const { items, best, currency } = data;
+  // Район — на языке интерфейса, как в карточках; сервер присылает его на языке профиля
+  const { names: districtNames } = useDistricts();
 
   const value = (code: string, item: ComparedListing): ReactNode => {
     switch (code) {
@@ -83,8 +86,10 @@ export default function CompareTable({ data, onRemove }: CompareTableProps) {
         return typeof item.total_floors === 'number'
           ? `${item.floor}/${item.total_floors}`
           : String(item.floor);
-      case 'district':
-        return item.district || MUTED;
+      case 'district': {
+        const names = districtNames[item.listing.district];
+        return (names ? tr(names, lang) : item.district) || MUTED;
+      }
       case 'minutes_to_center':
         return typeof item.minutes_to_center === 'number'
           ? fill(ct.minutes, item.minutes_to_center)
@@ -184,7 +189,7 @@ export default function CompareTable({ data, onRemove }: CompareTableProps) {
                     </Link>
                     <button
                       type="button"
-                      className="compare-table__remove absolute right-1.5 top-1.5 inline-flex size-9 items-center justify-center rounded-full border border-white/60 bg-white/90 text-[var(--text-primary)] shadow-sm backdrop-blur-sm transition-colors hover:bg-white active:scale-[.95]"
+                      className="compare-table__remove absolute right-1.5 top-1.5 inline-flex size-9 items-center justify-center rounded-full border border-white/60 bg-white/90 text-[#0f172a] shadow-sm backdrop-blur-sm transition-colors hover:bg-white active:scale-[.95]"
                       aria-label={fill(ct.remove, title)}
                       title={fill(ct.remove, title)}
                       onClick={() => onRemove(listing.id)}
