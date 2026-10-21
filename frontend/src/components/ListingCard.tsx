@@ -2,12 +2,14 @@ import { Link } from 'react-router-dom';
 import type { Listing } from '../api/types';
 import type { DistrictNames } from '../hooks/useDistricts';
 import { useFavorites } from '../hooks/useFavorites';
+import { canCompare } from '../lib/compare';
 import { tr } from '../lib/format';
 import { fraudLevel } from '../lib/fraud';
 import { sourceName } from '../lib/sources';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 import CardGallery from './CardGallery';
+import CompareButton from './CompareButton';
 import FraudBadge from './FraudBadge';
 import ListingPrice from './ListingPrice';
 import OwnerBadge from './OwnerBadge';
@@ -19,6 +21,8 @@ interface ListingCardProps {
   districtNames?: DistrictNames;
   /** Уровень заголовка карточки в структуре страницы */
   headingLevel?: 'h2' | 'h3';
+  /** Кнопка «⚖ Сравнить» (поиск и избранное); у посуточной аренды её нет */
+  comparable?: boolean;
 }
 
 /**
@@ -29,6 +33,7 @@ export default function ListingCard({
   listing,
   districtNames,
   headingLevel = 'h2',
+  comparable = false,
 }: ListingCardProps) {
   const { lang, t } = useI18n();
   const favorites = useFavorites();
@@ -45,6 +50,7 @@ export default function ListingCard({
   const verified = listing.is_verified === true;
   // Незнакомый код источника — подписи нет
   const source = sourceName(listing.source);
+  const compare = comparable && canCompare(listing);
 
   return (
     <article
@@ -153,11 +159,25 @@ export default function ListingCard({
             )}
           </dl>
 
-          {source && (
-            <p className="listing-card__source m-0 truncate text-xs text-[var(--text-secondary)]">
-              <span className="sr-only">{t.filters.source}: </span>
-              {source}
-            </p>
+          {compare ? (
+            <div className="listing-card__footer flex min-h-9 items-center justify-between gap-3">
+              <p className="listing-card__source m-0 min-w-0 truncate text-xs text-[var(--text-secondary)]">
+                {source && (
+                  <>
+                    <span className="sr-only">{t.filters.source}: </span>
+                    {source}
+                  </>
+                )}
+              </p>
+              <CompareButton listingId={listing.id} />
+            </div>
+          ) : (
+            source && (
+              <p className="listing-card__source m-0 truncate text-xs text-[var(--text-secondary)]">
+                <span className="sr-only">{t.filters.source}: </span>
+                {source}
+              </p>
+            )
           )}
         </figcaption>
       </figure>

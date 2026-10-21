@@ -5,6 +5,7 @@ import EmptyState from '../components/EmptyState';
 import ErrorState from '../components/ErrorState';
 import FilterButton from '../components/FilterButton';
 import FilterChips from '../components/FilterChips';
+import CompareBar from '../components/CompareBar';
 import FilterModal from '../components/FilterModal';
 import Icon from '../components/Icon';
 import ListingCard from '../components/ListingCard';
@@ -280,6 +281,7 @@ export default function SearchPage() {
                   listing={listing}
                   districtNames={names}
                   headingLevel="h3"
+                  comparable
                 />
               ))}
             </div>
@@ -287,6 +289,7 @@ export default function SearchPage() {
           </>
         )}
       </section>
+      <CompareBar />
     </section>
   );
 }
