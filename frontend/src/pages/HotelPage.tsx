@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import type { Hotel, ListingLocation as LocationData } from '../api/types';
-import ComplaintModal from '../components/ComplaintModal';
+import ComplaintButton from '../components/ComplaintButton';
 import ErrorState from '../components/ErrorState';
 import Gallery from '../components/Gallery';
 import HotelContacts from '../components/HotelContacts';
@@ -41,12 +41,9 @@ export default function HotelPage() {
     reload,
   } = useApi<Hotel>(hotelId !== null ? `/api/hotels/${hotelId}` : null);
   const locationRef = useRef<HTMLElement>(null);
-  const [complaintOpen, setComplaintOpen] = useState(false);
   // Окно «Открыть в картах» по нажатию на адрес под названием
   const [mapsOpen, setMapsOpen] = useState(false);
   const closeMaps = useCallback(() => setMapsOpen(false), []);
-  // Стабильная ссылка: Modal перезапускает эффект (фокус) при смене onClose
-  const closeComplaint = useCallback(() => setComplaintOpen(false), []);
 
   useTelegramBackButton(HOTELS_PATH);
   // Ссылка «← Назад» ведёт туда же, куда нативная кнопка Telegram: в тот же список
@@ -165,18 +162,10 @@ export default function HotelPage() {
                 <HotelContacts hotel={hotel} />
 
                 <footer className="hotel-summary__footer">
-                  <button
-                    type="button"
-                    className="hotel-summary__complain inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-md)] px-2 text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] active:scale-[.98]"
-                    aria-haspopup="dialog"
-                    onClick={() => {
-                      haptic('light');
-                      setComplaintOpen(true);
-                    }}
-                  >
-                    <Icon name="flag" className="size-4" />
-                    {t.complaint.button}
-                  </button>
+                  <ComplaintButton
+                    className="hotel-summary__complain"
+                    path={`/api/hotels/${hotelId}/complaints`}
+                  />
                 </footer>
               </div>
             </section>
@@ -198,11 +187,6 @@ export default function HotelPage() {
             </div>
           </div>
 
-          <ComplaintModal
-            open={complaintOpen}
-            onClose={closeComplaint}
-            path={`/api/hotels/${hotelId}/complaints`}
-          />
           <MapChooser
             open={mapsOpen}
             onClose={closeMaps}
