@@ -883,6 +883,7 @@ const ka = {
     send: 'გაგზავნა',
     sent: 'საჩივარი გაგზავნილია. გმადლობთ!',
     error: 'საჩივრის გაგზავნა ვერ მოხერხდა. სცადეთ თავიდან.',
+    limit: 'დღეს მეტი საჩივრის გაგზავნა აღარ შეიძლება. სცადეთ ხვალ.',
     login: 'შედით, რომ საჩივარი გაგზავნოთ',
   },
   my_hotels: {
@@ -1852,6 +1853,7 @@ const ru: Strings = {
     send: 'Отправить',
     sent: 'Жалоба отправлена. Спасибо!',
     error: 'Не удалось отправить жалобу. Попробуйте ещё раз.',
+    limit: 'Сегодня больше нельзя отправлять жалобы. Попробуйте завтра.',
     login: 'Войдите, чтобы отправить жалобу',
   },
   my_hotels: {
@@ -2810,12 +2812,13 @@ const en: Strings = {
   },
   complaint: {
     button: 'Report',
-    title: 'Report this listing',
+    title: 'Send a report',
     reason: 'Reason',
     comment: 'Comment (optional)',
     send: 'Send',
     sent: 'Report sent. Thank you!',
     error: 'Could not send the report. Please try again.',
+    limit: 'You cannot send more reports today. Please try again tomorrow.',
     login: 'Sign in to send a report',
   },
   my_hotels: {

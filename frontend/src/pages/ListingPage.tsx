@@ -8,6 +8,7 @@ import type {
 } from '../api/types';
 import AlsoOn from '../components/AlsoOn';
 import BookViewingButton from '../components/BookViewingButton';
+import ComplaintButton from '../components/ComplaintButton';
 import ContactButton from '../components/ContactButton';
 import DistrictAbout from '../components/DistrictAbout';
 import ErrorState from '../components/ErrorState';
@@ -341,6 +342,11 @@ export default function ListingPage() {
                 updatedAt={listing.updated_at}
                 views={listing.views}
               />
+
+              {/* Повторная жалоба разрешена: сервер обновит причину */}
+              <footer className="listing-page__complain">
+                <ComplaintButton path={`/api/listings/${listing.id}/complaints`} />
+              </footer>
             </div>
           </div>
         </article>

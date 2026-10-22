@@ -67,7 +67,8 @@ export default function ComplaintModal({ open, onClose, path }: ComplaintModalPr
         return;
       }
       haptic('error');
-      showToast(ct.error, 'error');
+      // 429 — больше 20 жалоб за сутки
+      showToast(error instanceof ApiError && error.status === 429 ? ct.limit : ct.error, 'error');
     } finally {
       setBusy(false);
     }
