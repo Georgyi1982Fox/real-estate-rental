@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import type { Plan } from '../api/types';
 import { plural } from '../lib/format';
-import { bestValuePlan } from '../lib/premium';
+import { bestValuePlan, planDiscount, planPrice } from '../lib/premium';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 
@@ -11,6 +11,8 @@ interface PlanPickerProps {
   selectedId: string;
   onSelect: (id: string) => void;
   disabled?: boolean;
+  /** Скидка по приглашению друга из /api/subscription, % */
+  discountPercent?: number;
 }
 
 const CARD_CLASS =
@@ -20,27 +22,48 @@ const CARD_CLASS =
  * Выбор срока Premium: карточки «7 дней — 100 ⭐» / «30 дней — 250 ⭐» из plans.
  * Один тариф — одна карточка без переключателя.
  */
-export default function PlanPicker({ plans, selectedId, onSelect, disabled }: PlanPickerProps) {
+export default function PlanPicker({
+  plans,
+  selectedId,
+  onSelect,
+  disabled,
+  discountPercent,
+}: PlanPickerProps) {
   const { t, lang } = useI18n();
   const pt = t.premium;
   const name = useId();
   const best = bestValuePlan(plans);
 
-  const body = (plan: Plan) => (
-    <>
-      <span className="plan-picker__days text-sm font-medium text-[var(--text-secondary)]">
-        {plural(pt.days, plan.days, lang)}
-      </span>
-      <span className="plan-picker__price text-xl font-bold text-[var(--text-primary)]">
-        {plan.price_stars} ⭐
-      </span>
-      {plan.id === best?.id && (
-        <span className="plan-picker__best rounded-full bg-[var(--accent)]/15 px-2 py-0.5 text-xs font-semibold text-[var(--text-primary)]">
-          {pt.best_value}
+  const body = (plan: Plan) => {
+    const discount = planDiscount(plan, discountPercent);
+    return (
+      <>
+        <span className="plan-picker__days text-sm font-medium text-[var(--text-secondary)]">
+          {plural(pt.days, plan.days, lang)}
         </span>
-      )}
-    </>
-  );
+        <span className="plan-picker__price text-xl font-bold text-[var(--text-primary)]">
+          {planPrice(plan)} ⭐
+        </span>
+        {/* Скидка по приглашению друга: старая цена зачёркнута, рядом «−20%» */}
+        {discount > 0 && (
+          <span className="plan-picker__discount flex flex-wrap items-center justify-center gap-1.5 text-sm">
+            <s className="text-[var(--text-secondary)]">
+              <span className="sr-only">{pt.old_price} </span>
+              {plan.price_stars} ⭐
+            </s>
+            <span className="rounded-full bg-[var(--success-bg)] px-2 py-0.5 text-xs font-semibold text-[var(--success-text)]">
+              −{discount}%
+            </span>
+          </span>
+        )}
+        {plan.id === best?.id && (
+          <span className="plan-picker__best rounded-full bg-[var(--accent)]/15 px-2 py-0.5 text-xs font-semibold text-[var(--text-primary)]">
+            {pt.best_value}
+          </span>
+        )}
+      </>
+    );
+  };
 
   const [single] = plans;
   if (plans.length === 1 && single) {

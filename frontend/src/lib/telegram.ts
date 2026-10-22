@@ -37,7 +37,8 @@ interface TelegramMainButton {
 
 interface TelegramWebApp {
   initData: string;
-  initDataUnsafe: { user?: TelegramUser };
+  /** start_param — из ссылки t.me/<бот>/<app>?startapp=… */
+  initDataUnsafe: { user?: TelegramUser; start_param?: string };
   version: string;
   colorScheme: ColorScheme;
   isVersionAtLeast(version: string): boolean;
@@ -91,6 +92,11 @@ export function getInitData(): string {
 
 export function getTelegramUser(): TelegramUser | null {
   return getWebApp()?.initDataUnsafe.user ?? null;
+}
+
+/** Параметр запуска мини-аппа (startapp=…); вне Telegram — пустая строка */
+export function getStartParam(): string {
+  return getWebApp()?.initDataUnsafe.start_param ?? '';
 }
 
 /** Методы SDK, появившиеся в новых версиях Bot API, вызываем только если клиент их поддерживает */

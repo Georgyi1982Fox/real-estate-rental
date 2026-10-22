@@ -13,7 +13,8 @@ export function useShareInvite() {
   const showToast = useToast();
 
   return useCallback(
-    async (inviteUrl: string) => {
+    /** copiedText — тост после копирования в браузере; по умолчанию — про подпись */
+    async (inviteUrl: string, copiedText?: string) => {
       haptic('light');
       const webApp = getWebApp();
       if (webApp) {
@@ -27,7 +28,7 @@ export function useShareInvite() {
       try {
         await navigator.clipboard.writeText(inviteUrl);
         haptic('success');
-        showToast(t.signing.copied, 'success');
+        showToast(copiedText ?? t.signing.copied, 'success');
       } catch {
         window.open(shareInviteUrl(inviteUrl), '_blank', 'noopener,noreferrer');
       }

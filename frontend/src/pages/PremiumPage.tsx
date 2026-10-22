@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import ErrorState from '../components/ErrorState';
 import Icon from '../components/Icon';
 import OpenInTelegram from '../components/OpenInTelegram';
@@ -6,11 +6,12 @@ import PlanComparison from '../components/PlanComparison';
 import PlanPicker from '../components/PlanPicker';
 import UsageMeter from '../components/UsageMeter';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { hideReferralBanner } from '../hooks/useReferral';
 import { useSubscription } from '../hooks/useSubscription';
 import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
 import { useTelegramMainButton } from '../hooks/useTelegramMainButton';
 import { fill, formatDate } from '../lib/format';
-import { FREE_LIMITS, PREMIUM_LIMITS, premiumPlans } from '../lib/premium';
+import { FREE_LIMITS, PREMIUM_LIMITS, planPrice, premiumPlans } from '../lib/premium';
 import { canPay, isInTelegram } from '../lib/telegram';
 import { MORE_PATH } from '../lib/paths';
 import { useI18n } from '../providers/I18nProvider';
@@ -38,7 +39,14 @@ export default function PremiumPage() {
   const payable = !unauthorized && canPay();
   const buyText = buying
     ? pt.paying
-    : fill(isPremium ? pt.renew : pt.buy, plan?.price_stars ?? '');
+    : fill(isPremium ? pt.renew : pt.buy, plan ? planPrice(plan) : '');
+  const discount = subscription?.discount_percent ?? 0;
+
+  // Скидки по приглашению больше нет (уже платил) — плашка «Вам скидка» не нужна
+  useEffect(() => {
+    if (subscription && discount <= 0) hideReferralBanner();
+  }, [subscription, discount]);
+
   const startPurchase = () => {
     if (plan) void buy(plan.id);
   };
@@ -97,6 +105,12 @@ export default function PremiumPage() {
             {fill(pt.active_until, expires)}
           </p>
         )}
+        {discount > 0 && (
+          <p className="premium__discount inline-flex items-center gap-2 rounded-full bg-[var(--success-bg)] px-3 py-1 text-sm font-semibold text-[var(--success-text)]">
+            <Icon name="gift" className="size-4" />
+            {fill(t.referral.banner, discount)}
+          </p>
+        )}
       </header>
 
       {error && <ErrorState compact onRetry={reload} />}
@@ -145,6 +159,7 @@ export default function PremiumPage() {
           selectedId={plan.id}
           onSelect={setSelectedId}
           disabled={buying}
+          discountPercent={discount}
         />
       )}
 

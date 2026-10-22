@@ -3,6 +3,7 @@ import Layout from './components/Layout';
 import { ACCEPTANCE_PATH } from './lib/acceptance';
 import { COMPARE_PATH } from './lib/compare';
 import { HISTORY_PATH } from './lib/history';
+import { INVITE_PATH } from './lib/referral';
 import { HOTELS_PATH, MY_HOTELS_PATH, NEW_HOTEL_PATH } from './lib/hotels';
 import { MORE_PATH, RENT_PATH } from './lib/paths';
 import { DAILY_SEARCH_PATH } from './lib/searchFilters';
@@ -29,6 +30,7 @@ import PremiumPage from './pages/PremiumPage';
 import ProfilePage from './pages/ProfilePage';
 import SavedSearchesPage from './pages/SavedSearchesPage';
 import SearchPage from './pages/SearchPage';
+import InvitePage from './pages/InvitePage';
 import SoonPage from './pages/SoonPage';
 import StartPage from './pages/StartPage';
 import TestCardPage from './pages/TestCardPage';
@@ -65,12 +67,13 @@ const router = createBrowserRouter(
         { path: '/legal/:doc', element: <LegalPage /> },
         // Посуточная аренда — та же лента в режиме «Посуточно»
         { path: '/daily', element: <Navigate to={DAILY_SEARCH_PATH} replace /> },
-        // Разделы главного меню без своей страницы — заглушка «Скоро» (FRONTEND-029, 031, 033)
+        // Разделы главного меню без своей страницы — заглушка «Скоро» (FRONTEND-031, 033)
         { path: '/smart', element: <SoonPage feature="smart" /> },
         { path: '/my-listings', element: <SoonPage feature="owner" /> },
-        { path: '/invite', element: <SoonPage feature="invite" /> },
         { path: '/favorites', element: <FavoritesPage /> },
         { path: HISTORY_PATH, element: <HistoryPage /> },
+        // «Пригласить друга» (FRONTEND-029): из профиля и «Ещё»
+        { path: INVITE_PATH, element: <InvitePage /> },
         { path: '/profile', element: <ProfilePage /> },
         { path: '/premium', element: <PremiumPage /> },
         { path: '/searches', element: <SavedSearchesPage /> },
