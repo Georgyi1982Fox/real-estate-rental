@@ -6,7 +6,7 @@ import { HISTORY_PATH } from './lib/history';
 import { INVITE_PATH } from './lib/referral';
 import { HOTELS_PATH, MY_HOTELS_PATH, NEW_HOTEL_PATH } from './lib/hotels';
 import { MORE_PATH, RENT_PATH } from './lib/paths';
-import { DAILY_SEARCH_PATH } from './lib/searchFilters';
+import { DAILY_SEARCH_PATH, SMART_SORT, SORT_KEY } from './lib/searchFilters';
 import { DOCUMENTS_PATH } from './lib/signing';
 import AcceptancePage from './pages/AcceptancePage';
 import AuthPage from './pages/AuthPage';
@@ -67,8 +67,9 @@ const router = createBrowserRouter(
         { path: '/legal/:doc', element: <LegalPage /> },
         // Посуточная аренда — та же лента в режиме «Посуточно»
         { path: '/daily', element: <Navigate to={DAILY_SEARCH_PATH} replace /> },
-        // Разделы главного меню без своей страницы — заглушка «Скоро» (FRONTEND-031, 033)
-        { path: '/smart', element: <SoonPage feature="smart" /> },
+        // Разделы главного меню без своей страницы — заглушка «Скоро» (FRONTEND-033)
+        // Умный поиск — режим «По смыслу» в общей ленте (FRONTEND-031)
+        { path: '/smart', element: <Navigate to={`/search?${SORT_KEY}=${SMART_SORT}`} replace /> },
         { path: '/my-listings', element: <SoonPage feature="owner" /> },
         { path: '/favorites', element: <FavoritesPage /> },
         { path: HISTORY_PATH, element: <HistoryPage /> },

@@ -511,7 +511,7 @@ const ka = {
     delete: 'ანგარიშის წაშლა',
     delete_title: 'წავშალოთ ანგარიში და ყველა მონაცემი?',
     delete_text:
-      'წაიშლება ფავორიტები, ძიებები, შეტყობინებები, მიმოწერა, თქვენი განცხადებები ფოტოებით და სააგენტოს კაბინეტი. გადახდილი Premium გაქრება. აღდგენა შეუძლებელია.',
+      'წაიშლება ფავორიტები, ძიებები, შეტყობინებები, მიმოწერა, თქვენი განცხადებები და სასტუმროები ფოტოებით, სააგენტოს კაბინეტი. გადახდილი Premium გაქრება. აღდგენა შეუძლებელია.',
     delete_confirm: 'დიახ, ყველაფრის წაშლა',
     delete_error: 'ანგარიშის წაშლა ვერ მოხერხდა. სცადეთ თავიდან.',
     deleted_title: 'ანგარიში წაშლილია',
@@ -1516,7 +1516,7 @@ const ru: Strings = {
     delete: 'Удалить аккаунт',
     delete_title: 'Удалить аккаунт и все данные?',
     delete_text:
-      'Удалятся избранное, поиски, уведомления, переписка, ваши объявления с фото и кабинет агентства. Оплаченный Premium пропадёт. Вернуть нельзя.',
+      'Удалятся избранное, поиски, уведомления, переписка, ваши объявления и гостиницы с фото, кабинет агентства. Оплаченный Premium пропадёт. Вернуть нельзя.',
     delete_confirm: 'Да, удалить всё',
     delete_error: 'Не удалось удалить аккаунт. Попробуйте ещё раз.',
     deleted_title: 'Аккаунт удалён',
@@ -2518,7 +2518,7 @@ const en: Strings = {
     delete: 'Delete account',
     delete_title: 'Delete your account and all data?',
     delete_text:
-      'This deletes favorites, searches, notifications, chats, your listings with photos and the agency cabinet. Paid Premium will be lost. This cannot be undone.',
+      'This deletes favorites, searches, notifications, chats, your listings and hotels with photos, the agency cabinet. Paid Premium will be lost. This cannot be undone.',
     delete_confirm: 'Yes, delete everything',
     delete_error: 'Could not delete the account. Please try again.',
     deleted_title: 'Account deleted',
