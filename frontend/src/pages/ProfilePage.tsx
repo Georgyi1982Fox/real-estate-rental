@@ -1,6 +1,9 @@
+import { useState } from 'react';
+import AccountDeleted from '../components/AccountDeleted';
 import ErrorState from '../components/ErrorState';
 import Icon from '../components/Icon';
 import OpenInTelegram from '../components/OpenInTelegram';
+import ProfileData from '../components/ProfileData';
 import ProfileHeader from '../components/ProfileHeader';
 import ProfileMenu from '../components/ProfileMenu';
 import ProfileSettings from '../components/ProfileSettings';
@@ -25,6 +28,7 @@ export default function ProfilePage() {
   const { user, loading: authLoading, logout } = useAuth();
   const { me, error, loading, reload, setLanguage } = useMe();
   const showToast = useToast();
+  const [deleted, setDeleted] = useState(false);
 
   useDocumentTitle(`${pt.page_title} — bina.ai`);
   useTelegramBackButton('/');
@@ -42,6 +46,15 @@ export default function ProfilePage() {
       {pt.logout}
     </button>
   );
+
+  // Аккаунт удалён: данных больше нет, только экран «Аккаунт удалён» с кнопкой «Закрыть»
+  if (deleted) {
+    return (
+      <section className="profile profile--deleted mx-auto flex w-full max-w-sm flex-col py-6">
+        <AccountDeleted />
+      </section>
+    );
+  }
 
   if (authLoading) {
     return (
@@ -108,6 +121,7 @@ export default function ProfilePage() {
       <ProfileSettings onLanguageChange={changeLanguage} />
       <ProfileMenu />
       {logoutButton}
+      <ProfileData onDeleted={() => setDeleted(true)} />
     </section>
   );
 }
