@@ -499,6 +499,25 @@ const ka = {
     logout: 'გასვლა',
     fallback: 'პროფილის ჩატვირთვა ვერ მოხერხდა — ნაჩვენებია ნაგულისხმევი მონაცემები.',
   },
+  account: {
+    title: 'ჩემი მონაცემები',
+    export: 'ჩემი მონაცემების ჩამოტვირთვა',
+    exporting: 'ფაილს ვამზადებთ…',
+    export_done: 'ფაილი bina-my-data.json შენახულია',
+    export_error: 'მონაცემების ჩამოტვირთვა ვერ მოხერხდა. სცადეთ თავიდან.',
+    export_hint:
+      'თუ ფაილი არ შეინახა, ჩამოტვირთეთ ის ბოტში: პროფილი → ჩემი მონაცემების ჩამოტვირთვა.',
+    open_bot: 'ბოტის გახსნა',
+    delete: 'ანგარიშის წაშლა',
+    delete_title: 'წავშალოთ ანგარიში და ყველა მონაცემი?',
+    delete_text:
+      'წაიშლება ფავორიტები, ძიებები, შეტყობინებები, მიმოწერა, თქვენი განცხადებები ფოტოებით და სააგენტოს კაბინეტი. გადახდილი Premium გაქრება. აღდგენა შეუძლებელია.',
+    delete_confirm: 'დიახ, ყველაფრის წაშლა',
+    delete_error: 'ანგარიშის წაშლა ვერ მოხერხდა. სცადეთ თავიდან.',
+    deleted_title: 'ანგარიში წაშლილია',
+    deleted_text:
+      'ანგარიში და ყველა მონაცემი წაიშალა. თუ Bina.ai-ს ისევ გახსნით, ყველაფერს თავიდან დაიწყებთ.',
+  },
   premium: {
     page_title: 'Premium',
     title: 'Bina Premium',
@@ -1486,6 +1505,24 @@ const ru: Strings = {
     logout: 'Выйти',
     fallback: 'Не удалось загрузить профиль — показаны данные по умолчанию.',
   },
+  account: {
+    title: 'Мои данные',
+    export: 'Скачать мои данные',
+    exporting: 'Готовим файл…',
+    export_done: 'Файл bina-my-data.json сохранён',
+    export_error: 'Не удалось скачать данные. Попробуйте ещё раз.',
+    export_hint: 'Если файл не сохранился, скачайте его в боте: Профиль → Скачать мои данные.',
+    open_bot: 'Открыть бота',
+    delete: 'Удалить аккаунт',
+    delete_title: 'Удалить аккаунт и все данные?',
+    delete_text:
+      'Удалятся избранное, поиски, уведомления, переписка, ваши объявления с фото и кабинет агентства. Оплаченный Premium пропадёт. Вернуть нельзя.',
+    delete_confirm: 'Да, удалить всё',
+    delete_error: 'Не удалось удалить аккаунт. Попробуйте ещё раз.',
+    deleted_title: 'Аккаунт удалён',
+    deleted_text:
+      'Аккаунт и все данные удалены. Если снова откроете Bina.ai, начнёте с чистого листа.',
+  },
   premium: {
     page_title: 'Premium',
     title: 'Bina Premium',
@@ -2469,6 +2506,24 @@ const en: Strings = {
       'bina.ai helps you find an apartment to rent in Georgia: listings from many sources in one place.',
     logout: 'Sign out',
     fallback: 'Could not load the profile — showing default data.',
+  },
+  account: {
+    title: 'My data',
+    export: 'Download my data',
+    exporting: 'Preparing the file…',
+    export_done: 'bina-my-data.json saved',
+    export_error: 'Could not download your data. Please try again.',
+    export_hint: 'If the file was not saved, get it in the bot: Profile → Download my data.',
+    open_bot: 'Open the bot',
+    delete: 'Delete account',
+    delete_title: 'Delete your account and all data?',
+    delete_text:
+      'This deletes favorites, searches, notifications, chats, your listings with photos and the agency cabinet. Paid Premium will be lost. This cannot be undone.',
+    delete_confirm: 'Yes, delete everything',
+    delete_error: 'Could not delete the account. Please try again.',
+    deleted_title: 'Account deleted',
+    deleted_text:
+      'Your account and all data are deleted. If you open Bina.ai again, you will start from scratch.',
   },
   premium: {
     page_title: 'Premium',
