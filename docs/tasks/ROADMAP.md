@@ -74,7 +74,7 @@
 | 39 | Новый дизайн Mini App: стартовый экран «Аренда / Продажа (скоро) / Гостиницы», «Ещё» в нижней панели, страницы 1 2 3 на главной аренды, акт приёмки по комнатам, выбор Google / Яндекс карт, фото на весь экран (`FRONTEND-048-REDESIGN.md`) | бэкенд + фронт | ✅ |
 | 40 | Раздел «Продажа» (сейчас на стартовом экране «🔒 Скоро») | бэкенд + фронт | 📋 |
 
-Фронтенд у друга: очередь и статус — `FRONTEND-QUEUE.md`. Сейчас в работе: 040, 046, 047 (043, 041, 027, 028, 029 — готовы).
+Фронтенд у друга: очередь и статус — `FRONTEND-QUEUE.md`. Сейчас выданы (23.10): 046, 047, 033, 038, 025 (043, 041, 027, 028, 029, 040 — готовы).
 
 ---
 
@@ -155,8 +155,8 @@
 | 056 | CSRF защита | ✅ | не нужна: вход по подписи Telegram в заголовке, без cookie |
 | 057 | 2FA | ⏸ | вход через Telegram |
 | 058 | GDPR compliance | 📋 | вместе с TASK-089 |
-| 059 | Data export | ✅ бэкенд | `TASK-060-ACCOUNT-DATA.md`; фронт — FRONTEND-040 |
-| 060 | Account deletion | ✅ бэкенд | `TASK-060-ACCOUNT-DATA.md`; фронт — FRONTEND-040 |
+| 059 | Data export | ✅ | `TASK-060-ACCOUNT-DATA.md`; фронт — FRONTEND-040 |
+| 060 | Account deletion | ✅ | `TASK-060-ACCOUNT-DATA.md`; фронт — FRONTEND-040 |
 | 061 | Audit log | 📋 | |
 | 062 | Penetration testing | 📋 | перед публичным запуском |
 | 063 | Security headers | 📋 | с TASK-047 (Nginx) |
@@ -360,30 +360,30 @@ PDF «Акт приёмки» на двух языках для защиты з�
 | FRONTEND-022 AI-помощник в объявлении | ✅ | `FRONTEND-022-AI-ASSISTANT.md` |
 | FRONTEND-023 «Договор аренды» | ✅ | `FRONTEND-023-CONTRACT.md` |
 | FRONTEND-024 «Акт приёмки» | ✅ | `FRONTEND-024-ACCEPTANCE.md` |
-| FRONTEND-025 «Полная стоимость» | 📋 следующая после пакета | `FRONTEND-025-COSTS.md` |
+| FRONTEND-025 «Полная стоимость» | 👤 выдана 23.10 | `FRONTEND-025-COSTS.md` |
 | FRONTEND-026 Карта и «О районе» | ✅ | `FRONTEND-026-DISTRICT-MAP.md` |
 | FRONTEND-027 Сравнение квартир | ✅ PR #169 | `FRONTEND-027-COMPARE.md` |
 | FRONTEND-028 «Пожаловаться» | ✅ PR #171 | `FRONTEND-028-COMPLAINTS.md` |
 | FRONTEND-029 «Пригласи друга» | ✅ PR #173 | `FRONTEND-029-REFERRALS.md` |
 | FRONTEND-032 Посуточная аренда, Livo.ge и Korter.ge | ✅ | `FRONTEND-032-DAILY-RENT.md` |
-| FRONTEND-033 «Сдать квартиру» (собственники) | 📋 | `FRONTEND-033-OWNER-LISTINGS.md` |
+| FRONTEND-033 «Сдать квартиру» (собственники) | 👤 выдана 23.10 | `FRONTEND-033-OWNER-LISTINGS.md` |
 | FRONTEND-034 Красивое главное меню Mini App (все функции бота) + кнопки чата с хозяином | ✅ | `FRONTEND-034-HOME-HUB.md` (PR #109) |
 | FRONTEND-035 «Написать хозяину» и «Просмотр» (ведут в бота) | ✅ в FRONTEND-034 | `FRONTEND-035-CHAT-BUTTONS.md` |
 | FRONTEND-036 Значки «🔥 Топ» и «✅ Проверенный собственник», кнопки в «Моих объявлениях» | ✅ | `FRONTEND-036-PROMOTION-BADGES.md` |
 | FRONTEND-037 «Ремонт по фото» (AI) и разбор для Premium | 📋 | `FRONTEND-037-PHOTO-REPORT.md` |
-| FRONTEND-038 Кабинет риелтора / агентства и страница агентства | 📋 | `FRONTEND-038-AGENCY-CABINET.md` |
+| FRONTEND-038 Кабинет риелтора / агентства и страница агентства | 👤 выдана 23.10 | `FRONTEND-038-AGENCY-CABINET.md` |
 | FRONTEND-030 Выбор города | ✅ | `FRONTEND-030-CITIES.md` |
 | FRONTEND-031 Умный поиск | ✅ | `FRONTEND-031-SMART-SEARCH.md` |
 | FRONTEND-039 Вход по телефону для хозяина | ✅ | `FRONTEND-039-OWNER-PHONE-LOGIN.md` |
-| FRONTEND-040 «Мои данные»: скачать / удалить аккаунт | 👤 выдана 16.10 | `FRONTEND-040-MY-DATA.md` |
+| FRONTEND-040 «Мои данные»: скачать / удалить аккаунт | ✅ PR #175 | `FRONTEND-040-MY-DATA.md` |
 | FRONTEND-041 «Поделиться» и «Вам может понравиться» | ✅ | `FRONTEND-041-SHARE-RECOMMEND.md` (PR #163) |
 | FRONTEND-042 «Отправить на подпись» и «Мои документы» | ✅ | `FRONTEND-042-SIGNING.md` (PR #158) |
 | FRONTEND-043 «Недавно смотрели», заметки, просмотры | ✅ | `FRONTEND-043-HISTORY-NOTES.md` (PR #160) |
 | FRONTEND-044 Поиск без «сбросов» | ✅ | `FRONTEND-044-SEARCH-UX.md` |
 | FRONTEND-045 Раздел «🏨 Гостиницы» | ✅ этап 1 | `FRONTEND-045-HOTELS.md` |
-| FRONTEND-047 Гостиницы: «🔥 Топ» за звёзды, «Поделиться», «Написать хозяину в боте» | 📋 | `FRONTEND-047-HOTEL-TOP.md` |
+| FRONTEND-047 Гостиницы: «🔥 Топ» за звёзды, «Поделиться», «Написать хозяину в боте» | 👤 выдана 23.10 | `FRONTEND-047-HOTEL-TOP.md` |
 | FRONTEND-048 Новый дизайн: старт, «Ещё», страницы на главной, акт по комнатам, карты, фото, несколько городов | ✅ (сделал Claude) | `FRONTEND-048-REDESIGN.md` |
-| FRONTEND-046 «👁 Просмотры» на карточках и подсказка «кто смотрел» | 📋 после пакета 16.10 | `FRONTEND-046-VIEWS-ON-CARDS.md` |
+| FRONTEND-046 «👁 Просмотры» на карточках и подсказка «кто смотрел» | 👤 выдана 23.10 | `FRONTEND-046-VIEWS-ON-CARDS.md` |
 
 Для задач из «Очереди» с пометкой «бэкенд + фронт» бэкенд пишет отдельный
 `FRONTEND-0xx-….md` для друга.
