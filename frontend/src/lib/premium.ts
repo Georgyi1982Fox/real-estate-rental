@@ -28,8 +28,25 @@ export function premiumPlans(plans: Plan[] | undefined): Plan[] {
  * undefined — тариф один или цена за день у всех одинаковая.
  */
 export function bestValuePlan(plans: Plan[]): Plan | undefined {
-  const perDay = (plan: Plan) => plan.price_stars / plan.days;
+  const perDay = (plan: Plan) => planPrice(plan) / plan.days;
   const sorted = [...plans].sort((a, b) => perDay(a) - perDay(b));
   const [best, next] = sorted;
   return best && next && perDay(best) < perDay(next) ? best : undefined;
+}
+
+/** Цена для этого человека: со скидкой по приглашению друга, если она положена */
+export function planPrice(plan: Plan): number {
+  const own = plan.price_stars_for_you;
+  return typeof own === 'number' && own > 0 && own < plan.price_stars ? own : plan.price_stars;
+}
+
+/**
+ * Скидка на тариф в процентах; 0 — цена обычная. Процент от бэкенда (discount_percent),
+ * без него — из самих цен
+ */
+export function planDiscount(plan: Plan, discountPercent?: number): number {
+  const price = planPrice(plan);
+  if (price >= plan.price_stars) return 0;
+  if (discountPercent && discountPercent > 0) return discountPercent;
+  return Math.round((1 - price / plan.price_stars) * 100);
 }

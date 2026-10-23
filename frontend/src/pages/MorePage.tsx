@@ -13,6 +13,7 @@ import { ACCEPTANCE_PATH } from '../lib/acceptance';
 import { botSectionUrl } from '../lib/config';
 import { fill, formatDate } from '../lib/format';
 import { MY_HOTELS_PATH } from '../lib/hotels';
+import { INVITE_PATH } from '../lib/referral';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 
@@ -234,7 +235,7 @@ export default function MorePage() {
 
         {/* Пригласить друга — второй баннер, компактный */}
         <Link
-          to="/invite"
+          to={INVITE_PATH}
           className="more-invite group relative flex items-center gap-3 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[var(--shadow-sm)] hover:bg-[var(--surface-hover)] active:scale-[.98] sm:flex-col sm:items-start sm:justify-between sm:p-5"
           onClick={() => haptic('light')}
         >

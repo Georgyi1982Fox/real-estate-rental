@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { HISTORY_PATH } from '../lib/history';
+import { INVITE_PATH } from '../lib/referral';
 import { DOCUMENTS_PATH } from '../lib/signing';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
@@ -22,7 +23,8 @@ function RowContent({ icon, label }: { icon: IconName; label: string }) {
 }
 
 /**
- * Меню профиля — только своё: избранное, недавно смотрели, сохранённые поиски, мои документы.
+ * Меню профиля — только своё: избранное, недавно смотрели, сохранённые поиски, мои документы,
+ * пригласить друга.
  * Помощь, поддержка, «О приложении», акт приёмки, Premium и документы сервиса — в «Ещё»
  */
 export default function ProfileMenu() {
@@ -33,6 +35,7 @@ export default function ProfileMenu() {
     { to: HISTORY_PATH, icon: 'clock', label: t.history.title },
     { to: '/searches', icon: 'bell', label: t.header.searches },
     { to: DOCUMENTS_PATH, icon: 'file', label: t.signing.title },
+    { to: INVITE_PATH, icon: 'gift', label: t.hub.tiles.invite.title },
   ];
 
   return (

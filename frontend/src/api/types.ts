@@ -293,6 +293,8 @@ export interface Plan {
   tier: SubscriptionTier;
   days: number;
   price_stars: number;
+  /** Цена для этого человека: со скидкой приглашённого другом (TASK-108); нет — как price_stars */
+  price_stars_for_you?: number;
 }
 
 /** Лимиты тарифа; null — без ограничения */
@@ -310,6 +312,31 @@ export interface Subscription {
   limits: SubscriptionLimits;
   usage: { favorites: number; searches: number };
   plans: Plan[];
+  /** Скидка на первый Premium по приглашению друга, %; 0 — скидки нет */
+  discount_percent?: number;
+}
+
+/** GET /api/referral — своя ссылка-приглашение и награды (503 — бот не настроен) */
+export interface Referral {
+  code: string;
+  /** https://t.me/<бот>?start=ref_<код> */
+  link: string;
+  invited: number;
+  rewarded: number;
+  rewarded_this_month: number;
+  monthly_limit: number;
+  reward_days: number;
+  friend_discount_percent: number;
+}
+
+/** POST /api/referral/apply (неверный код — 422) */
+export interface ReferralApplyRequest {
+  code: string;
+}
+
+export interface ReferralApplyResponse {
+  applied: boolean;
+  discount_percent: number;
 }
 
 export interface InvoiceRequest {

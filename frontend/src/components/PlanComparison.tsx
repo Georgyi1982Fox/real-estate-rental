@@ -1,7 +1,7 @@
 import { useId, type ReactNode } from 'react';
 import type { Plan, SubscriptionLimits } from '../api/types';
 import { fill, fillVars, plural } from '../lib/format';
-import { FREE_NOTIFY_DELAY_HOURS } from '../lib/premium';
+import { FREE_NOTIFY_DELAY_HOURS, planPrice } from '../lib/premium';
 import { useI18n } from '../providers/I18nProvider';
 
 interface PlanComparisonProps {
@@ -46,14 +46,23 @@ export default function PlanComparison({ free, premium, plans, isPremium }: Plan
       label: pt.price,
       free: '—',
       // Каждый тариф с новой строки: колонка узкая, «100 ⭐ / 7 дней · 250 ⭐ / 30 дней» не влезет
-      premium: plans.map((plan) => (
-        <span key={plan.id} className="plan-comparison__price block [&+&]:mt-1.5">
-          {fillVars(pt.price_value, {
-            price: plan.price_stars,
-            days: plural(pt.days, plan.days, lang),
-          })}
-        </span>
-      )),
+      premium: plans.map((plan) => {
+        const price = planPrice(plan);
+        return (
+          <span key={plan.id} className="plan-comparison__price block [&+&]:mt-1.5">
+            {/* Скидка по приглашению друга: обычная цена зачёркнута */}
+            {price < plan.price_stars && (
+              <>
+                <s className="text-[var(--text-secondary)]">
+                  <span className="sr-only">{pt.old_price} </span>
+                  {plan.price_stars}
+                </s>{' '}
+              </>
+            )}
+            {fillVars(pt.price_value, { price, days: plural(pt.days, plan.days, lang) })}
+          </span>
+        );
+      }),
     },
   ];
 
