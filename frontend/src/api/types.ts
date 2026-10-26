@@ -50,6 +50,17 @@ export type OwnerType = 'owner' | 'agent';
 
 // Подробности объявления: null — сайт не указал, поля может не быть вовсе
 // (объявление ещё не дозагружено) — в обоих случаях строку не показываем
+/** GET /api/listings/{id}/views — подсказка к «👁 N»: только числа, без имён смотревших */
+export interface ListingViews {
+  total: number;
+  today: number;
+  /** За последние 7 дней, вместе с сегодня */
+  week: number;
+  /** Разных вошедших в аккаунт людей (гости не считаются) */
+  people: number;
+  in_favorites: number;
+}
+
 export interface Listing {
   id: ListingId;
   title: Localized;
@@ -85,7 +96,7 @@ export interface Listing {
   updated_at?: string | null;
   /**
    * Сколько раз квартиру открывали на Bina.ai (сайт, приложение, бот) — вместе с текущим
-   * просмотром. Только в GET /api/listings/{id}; в списках — null
+   * просмотром. Есть и в списках (поиск, избранное, история, подборки); null — счётчика нет
    */
   views?: number | null;
   owner?: Owner;
