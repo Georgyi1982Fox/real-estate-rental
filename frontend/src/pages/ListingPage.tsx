@@ -338,6 +338,7 @@ export default function ListingPage() {
               <DistrictAbout districtId={listing.district} />
 
               <ListingDates
+                listingId={listing.id}
                 publishedAt={listing.published_at}
                 updatedAt={listing.updated_at}
                 views={listing.views}

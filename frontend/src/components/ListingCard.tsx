@@ -14,6 +14,7 @@ import FraudBadge from './FraudBadge';
 import ListingPrice from './ListingPrice';
 import OwnerBadge from './OwnerBadge';
 import PromotionBadges from './PromotionBadges';
+import ViewsBadge from './ViewsBadge';
 
 interface ListingCardProps {
   listing: Listing;
@@ -51,6 +52,7 @@ export default function ListingCard({
   // Незнакомый код источника — подписи нет
   const source = sourceName(listing.source);
   const compare = comparable && canCompare(listing);
+  const views = typeof listing.views === 'number' ? listing.views : 0;
 
   return (
     <article
@@ -109,7 +111,8 @@ export default function ListingCard({
                 {title}
               </Link>
             </Heading>
-            <div className="listing-card__price-row mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+            {/* relative: подсказка «👁» тянется на ширину строки и ложится на фото над ней */}
+            <div className="listing-card__price-row relative mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
               <ListingPrice
                 listing={listing}
                 className="listing-card__price text-lg font-bold leading-6 text-[var(--text-primary)]"
@@ -118,6 +121,9 @@ export default function ListingCard({
               {/* «Проверено» бывает и у агентства, поэтому «Собственник» — отдельный значок */}
               <PromotionBadges promoted={promoted} verified={verified} />
               {listing.owner_type === 'owner' && <OwnerBadge />}
+              {views > 0 && (
+                <ViewsBadge listingId={listing.id} views={views} className="ml-auto min-h-7" />
+              )}
             </div>
           </div>
 
