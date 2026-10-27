@@ -10,8 +10,9 @@ if errorlevel 1 goto failed
 git pull origin develop
 if errorlevel 1 goto failed
 
-rem Сайт Mini App теперь в Docker (TASK-123): старое окно «Bina - site» (npm run dev) занимает
-rem порт 5173 — закрываем его, если открыто
+rem Сайт Mini App теперь в Docker (TASK-123): старый сайт npm run dev занимает порт 5173 —
+rem останавливаем node на этом порту (окно в Windows Terminal по названию не найти) и окно
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-NetTCPConnection -LocalPort 5173 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue } | Where-Object { $_.ProcessName -eq 'node' } | Stop-Process -Force"
 taskkill /FI "WINDOWTITLE eq Bina - site*" /T /F >nul 2>&1
 
 echo.

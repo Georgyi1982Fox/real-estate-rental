@@ -35,7 +35,9 @@ goto wait_docker
 
 :docker_ready
 echo.
-rem Старое окно сайта (npm run dev) занимает порт 5173 — сайт теперь в Docker (TASK-123)
+rem Старый сайт npm run dev занимает порт 5173 — сайт теперь в Docker (TASK-123):
+rem останавливаем node на этом порту (окно в Windows Terminal по названию не найти) и окно
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-NetTCPConnection -LocalPort 5173 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue } | Where-Object { $_.ProcessName -eq 'node' } | Stop-Process -Force"
 taskkill /FI "WINDOWTITLE eq Bina - site*" /T /F >nul 2>&1
 echo 1/2 База, API, сайт Mini App, бот и парсер...
 docker compose up -d
