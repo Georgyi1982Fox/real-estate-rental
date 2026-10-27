@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import type {
   ListResponse,
   Listing,
   ListingId,
   ListingLocation as LocationData,
+  ListingText,
 } from '../api/types';
 import AlsoOn from '../components/AlsoOn';
 import BookViewingButton from '../components/BookViewingButton';
@@ -41,6 +42,7 @@ import { useGoBack, useTelegramBackButton } from '../hooks/useTelegramBackButton
 import { useTelegramMainButton } from '../hooks/useTelegramMainButton';
 import { fill, tr } from '../lib/format';
 import { fraudLevel } from '../lib/fraud';
+import { listingPreview } from '../lib/listingPreview';
 import { haptic } from '../lib/telegram';
 import { alsoOnLinks, siteName } from '../lib/sources';
 import { useI18n } from '../providers/I18nProvider';
@@ -55,11 +57,32 @@ export default function ListingPage() {
   const { names } = useDistricts();
   const { isFavorite } = useFavorites();
   const {
-    data: listing,
+    data: loaded,
     error,
     loading,
     reload,
   } = useApi<Listing>(listingId !== null ? `/api/listings/${listingId}` : null);
+  // Пока полный ответ в пути — данные с карточки списка: страница открывается без ожидания
+  const preview = loading && id ? listingPreview(id) : undefined;
+  // Описания на языке зрителя ещё нет: AI переводит отдельным запросом, страница его не ждёт
+  const text = useApi<ListingText>(
+    listingId !== null && loaded?.translating
+      ? `/api/listings/${listingId}/text?lang=${lang}`
+      : null,
+  );
+  const base = loaded ?? preview;
+  const listing = useMemo(
+    () =>
+      base && text.data
+        ? { ...base, title: text.data.title, description: text.data.description }
+        : base,
+    [base, text.data],
+  );
+  const description = listing?.description;
+  const ownDescription =
+    typeof description === 'string' ? description : (description?.[lang] ?? '');
+  // Текст на другом языке не показываем, пока перевод может прийти: вместо него — заглушка
+  const descriptionPending = Boolean(listing) && !ownDescription && (loading || text.loading);
   const similar = useApi<ListResponse<Listing>>(
     listingId !== null ? `/api/listings/${listingId}/similar` : null,
   );
@@ -81,11 +104,13 @@ export default function ListingPage() {
   // Пришли по «Подробнее» из подсказки ⚠️ на карточке — показываем блок предупреждения
   const { hash } = useLocation();
   const fraudRef = useRef<HTMLElement>(null);
+  // По id, а не по объекту: данные с карточки сменяются полным ответом — второй раз не крутим
+  const shownId = listing?.id;
   useEffect(() => {
-    if (hash === FRAUD_WARNING_HASH && listing) {
+    if (hash === FRAUD_WARNING_HASH && shownId !== undefined) {
       fraudRef.current?.scrollIntoView({ block: 'center' });
     }
-  }, [hash, listing]);
+  }, [hash, shownId]);
 
   // Хозяин разместил объявление сам: source_url — переписка с ним в боте (с AI-переводом),
   // а не сайт-источник
@@ -152,7 +177,7 @@ export default function ListingPage() {
         {listing && <ShareButton key={listing.id} listingId={listing.id} />}
       </div>
 
-      {loading && <ListingSkeleton />}
+      {loading && !listing && <ListingSkeleton />}
       {error && <ErrorState onRetry={reload} />}
 
       {listing && (
@@ -318,7 +343,10 @@ export default function ListingPage() {
 
             <div className="listing-page__details min-w-0 space-y-6 lg:col-start-1 lg:row-start-2">
               <ListingSpecs listing={listing} />
-              <ListingDescription text={tr(listing.description, lang).trim()} />
+              <ListingDescription
+                text={tr(listing.description, lang).trim()}
+                pending={descriptionPending}
+              />
               {/* Готовое сообщение человек отправляет сам: хозяину — в бота, иначе — на сайте */}
               <ListingAssistant
                 listingId={listing.id}

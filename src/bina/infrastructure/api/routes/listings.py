@@ -41,13 +41,19 @@ from bina.infrastructure.api.schemas import (
     ListingOut,
     ListingsOut,
     ListingsPageOut,
+    Localized,
     PhoneOut,
     PriceAnalysisOut,
     RentPeriod,
     RiskOut,
     SourceLinkOut,
+    localized,
 )
-from bina.infrastructure.api.translation import request_language, translate_if_missing
+from bina.infrastructure.api.translation import (
+    request_language,
+    translate_if_missing,
+    translation_pending,
+)
 from bina.infrastructure.api.validation import clean_text
 from bina.infrastructure.db.models import Listing
 from bina.infrastructure.db.repositories.agencies import ListingStatsRepository
@@ -210,11 +216,12 @@ async def get_listing(
 ) -> ListingOut:
     """Одно объявление; 404, если его нет или оно удалено.
 
-    Описания на языке зрителя ещё нет — переводим сразу (``api/translation.py``).
+    Перевода на язык зрителя не ждём: страница открывается сразу, а при ``translating``
+    фронтенд берёт текст из ``GET /api/listings/{id}/text`` (``api/translation.py``).
     """
     listing = await get_listing_or_404(session, listing_id)
-    await translate_if_missing(
-        request, session, listing, request_language(request, user.language if user else lang)
+    translating = translation_pending(
+        request, listing, request_language(request, user.language if user else lang)
     )
     now = datetime.now(UTC)
     # TASK-100: просмотр — в статистику хозяина / агентства
@@ -224,6 +231,7 @@ async def get_listing(
         await ViewHistoryRepository(session).record(user.id, listing.id, now)
     await session.commit()
     out = ListingOut.from_model(listing)
+    out.translating = translating
     # Счётчик просмотров («👁 123») — вместе с этим просмотром
     out.views = await ListingStatsRepository(session).total_views(listing.id)
     # TASK-090: ссылки на ту же квартиру на других сайтах
@@ -233,6 +241,40 @@ async def get_listing(
         for source, url in other_sites(links, listing.source_name)
     ]
     return out
+
+
+class ListingTextOut(BaseModel):
+    """Заголовок и описание на всех языках — после перевода на язык зрителя."""
+
+    title: Localized
+    description: Localized
+
+
+@router.get("/{listing_id}/text", response_model=ListingTextOut)
+async def listing_text(
+    listing_id: str,
+    request: Request,
+    user: OptionalUserDep,
+    session: SessionDep,
+    lang: Annotated[
+        str | None, Query(pattern="^(ka|ru|en)$", description="Язык гостя (без входа)")
+    ] = None,
+) -> ListingTextOut:
+    """Текст объявления на языке зрителя: нет перевода — переводим сейчас (до ``TIMEOUT``).
+
+    Не вышло (AI недоступен, не успел) — текст как есть, переведёт фоновый шаг.
+    Просмотром не считается.
+    """
+    listing = await get_listing_or_404(session, listing_id)
+    await translate_if_missing(
+        request, session, listing, request_language(request, user.language if user else lang)
+    )
+    return ListingTextOut(
+        title=localized(ka=listing.title_ka, ru=listing.title_ru, en=listing.title_en),
+        description=localized(
+            ka=listing.description_ka, ru=listing.description_ru, en=listing.description_en
+        ),
+    )
 
 
 class ListingViewsOut(BaseModel):

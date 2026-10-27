@@ -101,6 +101,11 @@ class ListingOut(BaseModel):
         default_factory=list,
         description="TASK-090: та же квартира на других сайтах (только в GET /api/listings/{id})",
     )
+    translating: bool = Field(
+        default=False,
+        description="Текста на языке зрителя ещё нет, AI переведёт: GET /api/listings/{id}/text "
+        "(только в GET /api/listings/{id})",
+    )
     owner_name: str | None = None
     # TASK-011: проверка на мошенничество
     fraud_level: Literal["none", "warning", "high"] = Field(

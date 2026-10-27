@@ -618,6 +618,7 @@ const ka = {
     read_more: 'მეტის ნახვა',
     read_less: 'ნაკლების ნახვა',
     no_description: 'აღწერა არ არის დამატებული.',
+    translating: 'აღწერას ვთარგმნით…',
     location: 'მდებარეობა',
     map: {
       label: 'ბინა რუკაზე',
@@ -1640,6 +1641,7 @@ const ru: Strings = {
     read_more: 'Читать далее',
     read_less: 'Свернуть',
     no_description: 'Описание не добавлено.',
+    translating: 'Переводим описание…',
     location: 'Расположение',
     map: {
       label: 'Квартира на карте',
@@ -2651,6 +2653,7 @@ const en: Strings = {
     read_more: 'Read more',
     read_less: 'Show less',
     no_description: 'No description provided.',
+    translating: 'Translating the description…',
     location: 'Location',
     map: {
       label: 'Apartment on the map',
