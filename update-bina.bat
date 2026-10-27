@@ -10,21 +10,19 @@ if errorlevel 1 goto failed
 git pull origin develop
 if errorlevel 1 goto failed
 
+rem Сайт Mini App теперь в Docker (TASK-123): старое окно «Bina - site» (npm run dev) занимает
+rem порт 5173 — закрываем его, если открыто
+taskkill /FI "WINDOWTITLE eq Bina - site*" /T /F >nul 2>&1
+
 echo.
-echo Пересобираю и перезапускаю сервисы (1-3 минуты)...
+echo Пересобираю и перезапускаю сервисы и сайт (1-3 минуты)...
 docker compose up -d --build
 if errorlevel 1 goto failed
 
 echo.
-echo Обновляю пакеты сайта...
-cd frontend
-call npm install --no-audit --no-fund
-cd ..
-
-echo.
 docker compose ps
 echo.
-echo Готово. Если окно сайта было открыто — закройте его и запустите start-bina.bat.
+echo Готово. Сайт Mini App работает внутри Docker — отдельное окно сайта больше не нужно.
 pause
 exit /b 0
 

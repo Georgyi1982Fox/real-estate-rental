@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import type { Listing } from '../api/types';
 import type { DistrictNames } from '../hooks/useDistricts';
@@ -5,6 +6,7 @@ import { useFavorites } from '../hooks/useFavorites';
 import { canCompare } from '../lib/compare';
 import { tr } from '../lib/format';
 import { fraudLevel } from '../lib/fraud';
+import { rememberListingPreview } from '../lib/listingPreview';
 import { sourceName } from '../lib/sources';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
@@ -53,6 +55,9 @@ export default function ListingCard({
   const source = sourceName(listing.source);
   const compare = comparable && canCompare(listing);
   const views = typeof listing.views === 'number' ? listing.views : 0;
+
+  // Нажали на карточку — страница объявления открывается сразу с этими данными
+  useEffect(() => rememberListingPreview(listing), [listing]);
 
   return (
     <article

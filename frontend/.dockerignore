@@ -1,0 +1,3 @@
+# В образ сайта: исходники и package*.json; зависимости ставит npm ci внутри
+node_modules
+dist

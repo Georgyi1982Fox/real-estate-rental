@@ -3,10 +3,12 @@ import { useI18n } from '../providers/I18nProvider';
 
 interface ListingDescriptionProps {
   text: string;
+  /** Текста на языке зрителя ещё нет — AI переводит: вместо чужого языка — заглушка */
+  pending?: boolean;
 }
 
 /** Длинный текст сворачиваем до 5 строк; кнопка появляется только если текст реально обрезан */
-export default function ListingDescription({ text }: ListingDescriptionProps) {
+export default function ListingDescription({ text, pending = false }: ListingDescriptionProps) {
   const { t } = useI18n();
   const lt = t.listing;
   const textRef = useRef<HTMLParagraphElement>(null);
@@ -31,7 +33,16 @@ export default function ListingDescription({ text }: ListingDescriptionProps) {
       <h2 id="listing-description-title" className="text-lg font-semibold">
         {lt.description}
       </h2>
-      {text ? (
+      {pending ? (
+        <div className="listing-description__pending space-y-2" role="status">
+          <p className="m-0 text-sm text-[var(--text-secondary)]">{lt.translating}</p>
+          <div className="space-y-2" aria-hidden="true">
+            <div className="h-3.5 w-full animate-pulse rounded bg-[var(--surface-hover)]" />
+            <div className="h-3.5 w-11/12 animate-pulse rounded bg-[var(--surface-hover)]" />
+            <div className="h-3.5 w-3/5 animate-pulse rounded bg-[var(--surface-hover)]" />
+          </div>
+        </div>
+      ) : text ? (
         <>
           {/* pre-line сохраняет переносы строк автора; больше одной пустой строки подряд не оставляем */}
           <p

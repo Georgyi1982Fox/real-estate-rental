@@ -9,7 +9,8 @@ Bina.ai — Telegram-бот и Telegram Mini App для аренды жилья 
   SQLAlchemy async + Alembic, PostgreSQL + pgvector, парсеры сайтов (`infrastructure/scrapers/`).
 - Фронтенд (Mini App): `frontend/` — React + Vite + TypeScript; публикуется на GitHub Pages
   автоматически после мержа в `develop` (`.github/workflows/deploy.yml`).
-- Docker Compose у владельца: db, migrate, api, bot, scraper (расписание раз в час), backup.
+- Docker Compose у владельца: db, migrate, api, web (собранный сайт Mini App + nginx на 5173,
+  туда смотрит туннель; TASK-123), bot, scraper (расписание раз в час), backup.
 - План и статус всех задач: `docs/tasks/ROADMAP.md`; задания: `docs/tasks/TASK-*.md`,
   `docs/tasks/FRONTEND-*.md`. Следующая задача — первая невыполненная в «Очереди» ROADMAP.
   После каждой задачи обновляй ROADMAP.

@@ -1,6 +1,6 @@
 @echo off
 rem Bina.ai: запуск всего одним двойным кликом (TASK-087).
-rem Docker (база, API, бот, парсер) + туннель Cloudflare + сайт Mini App.
+rem Docker (база, API, сайт Mini App, бот, парсер) + туннель Cloudflare.
 chcp 65001 >nul
 cd /d "%~dp0"
 
@@ -35,7 +35,9 @@ goto wait_docker
 
 :docker_ready
 echo.
-echo 1/3 База, API, бот и парсер...
+rem Старое окно сайта (npm run dev) занимает порт 5173 — сайт теперь в Docker (TASK-123)
+taskkill /FI "WINDOWTITLE eq Bina - site*" /T /F >nul 2>&1
+echo 1/2 База, API, сайт Mini App, бот и парсер...
 docker compose up -d
 if errorlevel 1 (
     echo Ошибка docker compose. Пришлите текст выше.
@@ -44,11 +46,8 @@ if errorlevel 1 (
 )
 
 echo.
-echo 2/3 Туннель https://bina.test-realtybot.ru (отдельное окно, не закрывайте)
+echo 2/2 Туннель https://bina.test-realtybot.ru (отдельное окно, не закрывайте)
 start "Bina - tunnel" /d "%~dp0" cmd /k cloudflared tunnel run realtybot-dev
-
-echo 3/3 Сайт Mini App (отдельное окно, не закрывайте)
-start "Bina - site" /d "%~dp0frontend" cmd /k npm run dev -- --host 127.0.0.1
 
 echo.
 docker compose ps

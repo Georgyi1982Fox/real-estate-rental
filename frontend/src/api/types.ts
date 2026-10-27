@@ -124,6 +124,17 @@ export interface Listing {
    * в списке объявлений — всегда []
    */
   also_on?: ListingSourceLink[];
+  /**
+   * Описания на языке зрителя ещё нет, AI его переведёт: текст — в GET /api/listings/{id}/text.
+   * Только в GET /api/listings/{id}
+   */
+  translating?: boolean;
+}
+
+/** Заголовок и описание после перевода (GET /api/listings/{id}/text) */
+export interface ListingText {
+  title: Localized;
+  description: Localized;
 }
 
 /** Квартира из «Недавно смотрели» (GET /api/history) */

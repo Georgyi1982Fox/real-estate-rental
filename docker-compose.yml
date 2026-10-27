@@ -1,7 +1,7 @@
 # Весь бэкенд Bina.ai одной командой (TASK-039):
 #   docker compose up -d --build     — собрать и запустить в фоне
 #   docker compose ps                — что запущено
-#   docker compose logs -f api       — логи сервиса (api, bot, scraper, db, backup)
+#   docker compose logs -f api       — логи сервиса (api, web, bot, scraper, db, backup)
 #   docker compose down              — остановить (данные базы сохраняются)
 # Настройки — в .env (пример: .env.example). Подробно: docs/tasks/TASK-015-DOCKER.md
 name: bina
@@ -64,6 +64,22 @@ services:
         - python
         - -c
         - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Сайт Mini App (TASK-123): собранный, nginx на порту 5173 — туда смотрит туннель Cloudflare.
+  # Пересобирается вместе со всем при `docker compose up -d --build` (update-bina.bat)
+  web:
+    build: ./frontend
+    image: bina-web:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${WEB_PORT:-5173}:80"
+    depends_on:
+      - api
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
       interval: 30s
       timeout: 5s
       retries: 3

@@ -3,7 +3,7 @@ name: CI
 # Проверки на каждый PR и на каждый пуш в develop (TASK-040).
 # Бэкенд: ruff (линтер и форматирование), mypy, pytest (unit + интеграционные на PostgreSQL + pgvector).
 # Фронтенд: проверка типов TypeScript и сборка.
-# Docker: docker-compose.yml валиден, образ бэкенда собирается (TASK-039).
+# Docker: docker-compose.yml валиден, образы бэкенда и сайта собираются (TASK-039, TASK-123).
 on:
   pull_request:
     branches: ["develop", "main"]
@@ -121,3 +121,22 @@ jobs:
           docker run --rm bina-backend:ci bina-bot --help
           docker run --rm bina-backend:ci bina-scrape --help
           docker run --rm bina-backend:ci alembic --help
+
+      - name: Build site image
+        run: docker build -t bina-web:ci frontend
+
+      # Сайт отдаётся, адреса страниц открываются, файлы с хешем кэшируются надолго
+      - name: Site smoke test
+        run: |
+          docker run -d --name web -p 8080:80 bina-web:ci
+          sleep 2
+          page=$(curl -sf http://127.0.0.1:8080/)
+          grep -q '<div id="root">' <<< "$page"
+          deep=$(curl -sf http://127.0.0.1:8080/listing/123)
+          grep -q '<div id="root">' <<< "$deep"
+          asset=$(grep -o '/assets/index-[^"]*\.js' <<< "$page" | head -1)
+          asset_headers=$(curl -sfI "http://127.0.0.1:8080$asset")
+          grep -qi 'cache-control: public, max-age=31536000, immutable' <<< "$asset_headers"
+          page_headers=$(curl -sfI http://127.0.0.1:8080/)
+          grep -qi 'cache-control: no-cache' <<< "$page_headers"
+          docker rm -f web

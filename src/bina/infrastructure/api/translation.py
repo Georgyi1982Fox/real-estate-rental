@@ -1,8 +1,9 @@
 """Перевод на лету (TASK-010): описание всегда на языке того, кто открыл объявление.
 
 Фоновый шаг переводит новые объявления раз в час, но может отставать (много объявлений,
-сбой AI). Когда человек открывает квартиру, а описания на его языке ещё нет, переводим её
-прямо сейчас (все недостающие языки одним запросом), сохраняем и отдаём уже с переводом.
+сбой AI). Когда человек открывает квартиру, а описания на его языке ещё нет, страница
+открывается сразу (``translating`` в ответе), а текст переводится отдельным запросом
+``GET /api/listings/{id}/text``: все недостающие языки одним запросом к AI, с сохранением.
 Не успели за ``TIMEOUT`` или AI не ответил — отдаём как есть, переведёт фоновый шаг.
 """
 
@@ -67,6 +68,15 @@ def needs_translation(listing: Listing, language: str) -> bool:
         return False
     failed = listing.translation_failed_at
     return failed is None or failed < datetime.now(UTC) - RETRY_AFTER
+
+
+def translation_pending(request: Request, listing: Listing, language: str | None) -> bool:
+    """Текст на языке зрителя появится после ``translate_if_missing``: его нет и AI доступен."""
+    return (
+        language is not None
+        and needs_translation(listing, language)
+        and translator(request) is not None
+    )
 
 
 async def translate_if_missing(
