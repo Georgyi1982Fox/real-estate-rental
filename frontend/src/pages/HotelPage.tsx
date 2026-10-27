@@ -1,9 +1,10 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import type { Hotel, ListingLocation as LocationData } from '../api/types';
+import type { Hotel, ListingLocation as LocationData, ListingShare, MyHotels } from '../api/types';
 import ComplaintButton from '../components/ComplaintButton';
 import ErrorState from '../components/ErrorState';
 import Gallery from '../components/Gallery';
+import HotelBotChat from '../components/HotelBotChat';
 import HotelContacts from '../components/HotelContacts';
 import HotelInfo from '../components/HotelInfo';
 import HotelPrice from '../components/HotelPrice';
@@ -15,6 +16,7 @@ import ListingSkeleton from '../components/ListingSkeleton';
 import MapChooser from '../components/MapChooser';
 import PromotionBadges from '../components/PromotionBadges';
 import RatingStars from '../components/RatingStars';
+import ShareButton from '../components/ShareButton';
 import { useApi } from '../hooks/useApi';
 import { useCity } from '../hooks/useCity';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
@@ -23,6 +25,7 @@ import { hotelKindName } from '../i18n/hotels';
 import { tr } from '../lib/format';
 import { HOTELS_PATH } from '../lib/hotels';
 import { haptic } from '../lib/telegram';
+import { useAuth } from '../providers/AuthProvider';
 import { useI18n } from '../providers/I18nProvider';
 import NotFoundPage from './NotFoundPage';
 
@@ -40,6 +43,15 @@ export default function HotelPage() {
     loading,
     reload,
   } = useApi<Hotel>(hotelId !== null ? `/api/hotels/${hotelId}` : null);
+  // Ссылка на карточку в боте: «📤 Поделиться» и «💬 Написать хозяину»; 503 — кнопок нет
+  const { data: share } = useApi<ListingShare>(
+    hotelId !== null ? `/api/hotels/${hotelId}/share?lang=${lang}` : null,
+  );
+  // Свой объект: писать самому себе незачем. Пока список не пришёл — кнопку не показываем
+  const { user, loading: authLoading } = useAuth();
+  const mine = useApi<MyHotels>(user ? '/api/my/hotels' : null, { remember: true });
+  const ownKnown = !authLoading && (!user || mine.data !== undefined || mine.error !== undefined);
+  const own = (mine.data?.items ?? []).some((item) => String(item.id) === id);
   const locationRef = useRef<HTMLElement>(null);
   // Окно «Открыть в картах» по нажатию на адрес под названием
   const [mapsOpen, setMapsOpen] = useState(false);
@@ -70,21 +82,24 @@ export default function HotelPage() {
 
   return (
     <>
-      <nav className="hotel-page__breadcrumb mb-4" aria-label={ht.back}>
-        <Link
-          to={HOTELS_PATH}
-          className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
-          onClick={(event) => {
-            // Новая вкладка (Ctrl/⌘ + щелчок) — обычная ссылка на список
-            if (event.metaKey || event.ctrlKey || event.shiftKey) return;
-            event.preventDefault();
-            haptic('light');
-            goBack();
-          }}
-        >
-          <span aria-hidden="true">←</span> {ht.back}
-        </Link>
-      </nav>
+      <div className="hotel-page__toolbar mb-4 flex min-h-9 items-center justify-between gap-3">
+        <nav className="hotel-page__breadcrumb" aria-label={ht.back}>
+          <Link
+            to={HOTELS_PATH}
+            className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
+            onClick={(event) => {
+              // Новая вкладка (Ctrl/⌘ + щелчок) — обычная ссылка на список
+              if (event.metaKey || event.ctrlKey || event.shiftKey) return;
+              event.preventDefault();
+              haptic('light');
+              goBack();
+            }}
+          >
+            <span aria-hidden="true">←</span> {ht.back}
+          </Link>
+        </nav>
+        {hotel && share && <ShareButton share={share} label={t.share.hotel_label} />}
+      </div>
 
       {loading && <ListingSkeleton />}
       {error && <ErrorState onRetry={reload} />}
@@ -160,6 +175,7 @@ export default function HotelPage() {
                 />
 
                 <HotelContacts hotel={hotel} />
+                {share && ownKnown && !own && <HotelBotChat url={share.url} />}
 
                 <footer className="hotel-summary__footer">
                   <ComplaintButton

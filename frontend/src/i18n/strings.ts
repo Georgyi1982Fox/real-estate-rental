@@ -269,6 +269,7 @@ const ka = {
   share: {
     button: 'გაზიარება',
     label: 'ბინის გაზიარება',
+    hotel_label: 'სასტუმროს გაზიარება',
     copied: 'ბმული დაკოპირდა',
   },
   recommend: {
@@ -924,6 +925,8 @@ const ka = {
     contact_error: 'კონტაქტების ჩატვირთვა ვერ მოხერხდა.',
     map_label: 'ობიექტი რუკაზე',
     gallery: 'ობიექტის ფოტოები',
+    write_bot: 'მისწერეთ მასპინძელს ბოტში',
+    write_bot_hint: 'ბოტი შეტყობინებას მასპინძლის ენაზე თარგმნის',
   },
   complaint: {
     button: 'საჩივარი',
@@ -958,6 +961,17 @@ const ka = {
     deleted: 'ობიექტი წაიშალა',
     taken_down: 'ობიექტი მოხსნილია ძებნიდან',
     put_back_done: 'ობიექტი ისევ ძებნაშია',
+    top_buy: '🔥 ტოპი · {days} · {price} ⭐',
+    top_renew: '🔥 ტოპის გაგრძელება · {price} ⭐',
+    top_until: '🔥 ტოპშია {date}-მდე',
+    top_paying: 'გადახდა…',
+    top_done: '🔥 მზადაა! ობიექტი ტოპშია {date}-მდე',
+    top_activating: 'გადახდა მიღებულია — ობიექტი ტოპში რამდენიმე წამში აღმოჩნდება.',
+    top_pending: 'გადახდა მუშავდება — ობიექტი ტოპში დადასტურების შემდეგ აღმოჩნდება.',
+    top_failed: 'გადახდა ვერ შესრულდა. სცადეთ თავიდან.',
+    top_error: 'გადახდის გახსნა ვერ მოხერხდა. სცადეთ თავიდან.',
+    top_unlisted: 'ჩართეთ ობიექტი და დაამატეთ ნომერი ფასით',
+    top_telegram_only: 'ვარსკვლავებით გადახდა მხოლოდ Telegram-შია — გახსენით Bina ბოტში.',
   },
   hotel_form: {
     title_new: 'ობიექტის განთავსება',
@@ -1292,6 +1306,7 @@ const ru: Strings = {
   share: {
     button: 'Поделиться',
     label: 'Поделиться квартирой',
+    hotel_label: 'Поделиться объектом',
     copied: 'Ссылка скопирована',
   },
   recommend: {
@@ -1943,6 +1958,8 @@ const ru: Strings = {
     contact_error: 'Не удалось загрузить контакты.',
     map_label: 'Объект на карте',
     gallery: 'Фото объекта',
+    write_bot: 'Написать хозяину в боте',
+    write_bot_hint: 'Бот переведёт сообщение на язык хозяина',
   },
   complaint: {
     button: 'Пожаловаться',
@@ -1977,6 +1994,17 @@ const ru: Strings = {
     deleted: 'Объект удалён',
     taken_down: 'Объект снят с поиска',
     put_back_done: 'Объект снова в поиске',
+    top_buy: '🔥 Топ на {days} · {price} ⭐',
+    top_renew: '🔥 Продлить топ · {price} ⭐',
+    top_until: '🔥 В топе до {date}',
+    top_paying: 'Оплата…',
+    top_done: '🔥 Готово! Объект в топе до {date}',
+    top_activating: 'Оплата получена — объект поднимется в топ через несколько секунд.',
+    top_pending: 'Платёж обрабатывается — объект поднимется в топ после подтверждения.',
+    top_failed: 'Оплата не прошла. Попробуйте ещё раз.',
+    top_error: 'Не удалось открыть оплату. Попробуйте ещё раз.',
+    top_unlisted: 'Включите объект и добавьте номер с ценой',
+    top_telegram_only: 'Оплата звёздами — только в Telegram: откройте Bina в боте.',
   },
   hotel_form: {
     title_new: 'Разместить объект',
@@ -2309,6 +2337,7 @@ const en: Strings = {
   share: {
     button: 'Share',
     label: 'Share this apartment',
+    hotel_label: 'Share this place',
     copied: 'Link copied',
   },
   recommend: {
@@ -2957,6 +2986,8 @@ const en: Strings = {
     contact_error: 'Could not load the contacts.',
     map_label: 'Place on the map',
     gallery: 'Photos of the place',
+    write_bot: 'Message the host in the bot',
+    write_bot_hint: 'The bot translates your message into the host’s language',
   },
   complaint: {
     button: 'Report',
@@ -2991,6 +3022,17 @@ const en: Strings = {
     deleted: 'The place was deleted',
     taken_down: 'The place was taken down from search',
     put_back_done: 'The place is back in search',
+    top_buy: '🔥 Top for {days} · {price} ⭐',
+    top_renew: '🔥 Extend Top · {price} ⭐',
+    top_until: '🔥 In Top until {date}',
+    top_paying: 'Paying…',
+    top_done: '🔥 Done! The place is in Top until {date}',
+    top_activating: 'Payment received — the place will move to Top in a few seconds.',
+    top_pending: 'The payment is being processed — the place will move to Top once it is confirmed.',
+    top_failed: 'The payment did not go through. Please try again.',
+    top_error: 'Could not open the payment. Please try again.',
+    top_unlisted: 'Turn the place on and add a room with a price',
+    top_telegram_only: 'Paying with Stars works only in Telegram: open Bina in the bot.',
   },
   hotel_form: {
     title_new: 'List a place',

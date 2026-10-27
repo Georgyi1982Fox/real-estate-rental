@@ -12,6 +12,8 @@ import SavedSearchSkeleton from '../components/SavedSearchSkeleton';
 import { useApi } from '../hooks/useApi';
 import { useCity } from '../hooks/useCity';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { useHotelOptions } from '../hooks/useHotelOptions';
+import { useHotelPromotion } from '../hooks/useHotelPromotion';
 import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
 import { fill, fillVars, tr } from '../lib/format';
 import { hotelErrorTexts } from '../lib/hotelForm';
@@ -41,6 +43,17 @@ export default function MyHotelsPage() {
   const [deleting, setDeleting] = useState<MyHotel | null>(null);
   // Стабильная ссылка: Modal перезапускает эффект (фокус) при смене onClose
   const closeDelete = useCallback(() => setDeleting(null), []);
+  const { options } = useHotelOptions();
+  const promotion =
+    options?.promotion_price_stars && options.promotion_days
+      ? { price: options.promotion_price_stars, days: options.promotion_days }
+      : undefined;
+  // Бот поднял объект в «Топ» — показываем новый срок
+  const updateHotel = useCallback(
+    (saved: MyHotel) => setChanged((current) => ({ ...current, [String(saved.id)]: saved })),
+    [],
+  );
+  const { promote, payingId } = useHotelPromotion(updateHotel);
 
   useDocumentTitle(`${mt.page_title} — bina.ai`);
   useTelegramBackButton(MORE_PATH);
@@ -60,7 +73,7 @@ export default function MyHotelsPage() {
     setBusyId(hotel.id);
     try {
       const saved = await apiPatch<MyHotel>(`/api/my/hotels/${hotel.id}`, { active: next });
-      setChanged((current) => ({ ...current, [String(saved.id)]: saved }));
+      updateHotel(saved);
       haptic('success');
       showToast(next ? mt.put_back_done : mt.taken_down, 'success');
     } catch (failure) {
@@ -102,7 +115,10 @@ export default function MyHotelsPage() {
   );
 
   return (
-    <section className="my-hotels mx-auto flex w-full max-w-2xl flex-col gap-6" aria-labelledby="my-hotels-title">
+    <section
+      className="my-hotels mx-auto flex w-full max-w-2xl flex-col gap-6"
+      aria-labelledby="my-hotels-title"
+    >
       <header className="flex flex-wrap items-center justify-between gap-3 py-2 sm:py-4">
         <div className="min-w-0 space-y-1">
           <h1 id="my-hotels-title" className="text-2xl font-bold tracking-tight sm:text-3xl">
@@ -146,6 +162,9 @@ export default function MyHotelsPage() {
                 busy={busyId === hotel.id}
                 onToggle={(next) => void toggle(hotel, next)}
                 onDelete={() => setDeleting(hotel)}
+                promotion={promotion}
+                paying={payingId === hotel.id}
+                onPromote={() => void promote(hotel)}
               />
             </li>
           ))}

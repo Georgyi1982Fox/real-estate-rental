@@ -1,22 +1,24 @@
-import type { ListingId, ListingShare } from '../api/types';
-import { useApi } from '../hooks/useApi';
+import type { ListingShare } from '../api/types';
 import { getWebApp, haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 import { useToast } from '../providers/ToastProvider';
 
-/**
- * «📤 Поделиться» на странице квартиры (FRONTEND-041). Ссылку берём заранее: так кнопка
- * появляется, только когда делиться есть чем (503 — бот не настроен, 404 — квартира снята),
- * а окно «Поделиться» в браузере открывается прямо по нажатию, без ожидания сети
- */
-export default function ShareButton({ listingId }: { listingId: ListingId }) {
-  const { lang, t } = useI18n();
-  const showToast = useToast();
-  const { data: share } = useApi<ListingShare>(
-    `/api/listings/${encodeURIComponent(String(listingId))}/share?lang=${lang}`,
-  );
+interface ShareButtonProps {
+  /** Ответ GET …/share */
+  share: ListingShare;
+  /** Подпись для экранного диктора: что именно отправляем */
+  label: string;
+}
 
-  if (!share) return null;
+/**
+ * «📤 Поделиться» на странице квартиры (FRONTEND-041) и гостиницы (FRONTEND-047). Ссылку
+ * страница берёт заранее: так кнопка появляется, только когда делиться есть чем (503 — бот
+ * не настроен, 404 — объект снят), а окно «Поделиться» в браузере открывается прямо по
+ * нажатию, без ожидания сети
+ */
+export default function ShareButton({ share, label }: ShareButtonProps) {
+  const { t } = useI18n();
+  const showToast = useToast();
 
   const copyLink = async () => {
     try {
@@ -57,7 +59,7 @@ export default function ShareButton({ listingId }: { listingId: ListingId }) {
     <button
       type="button"
       className="listing-share inline-flex min-h-9 items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-hover)] active:scale-[.98]"
-      aria-label={t.share.label}
+      aria-label={label}
       onClick={() => void onShare()}
     >
       <span aria-hidden="true">📤</span>
