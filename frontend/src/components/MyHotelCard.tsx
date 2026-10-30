@@ -10,13 +10,13 @@ import { useI18n } from '../providers/I18nProvider';
 import HotelPrice from './HotelPrice';
 import Icon from './Icon';
 
-const ACTION_CLASS =
+export const MY_CARD_ACTION_CLASS =
   'inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-hover)] active:scale-[.98] disabled:opacity-60';
 
 const TOP_CLASS =
   'my-hotel-card__top inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--primary-hover)] active:scale-[.98] disabled:opacity-70';
 
-const STATUS_CLASS: Record<MyHotelStatus, string> = {
+export const MY_CARD_STATUS_CLASS: Record<MyHotelStatus, string> = {
   active: 'bg-[var(--success-bg)] text-[var(--success-text)]',
   off: 'bg-[var(--surface-hover)] text-[var(--text-secondary)]',
   hidden: 'bg-[var(--danger-bg)] text-[var(--danger-text)]',
@@ -54,7 +54,7 @@ export default function MyHotelCard({
   const kind = hotelKindName(hotel.kind, lang);
   const cityEntry = cityNames[hotel.city];
   const city = cityEntry ? tr(cityEntry, lang) : hotel.city;
-  const status: MyHotelStatus = hotel.status in STATUS_CLASS ? hotel.status : 'off';
+  const status: MyHotelStatus = hotel.status in MY_CARD_STATUS_CLASS ? hotel.status : 'off';
   const noRooms = (hotel.rooms ?? []).length === 0;
   const promoted = isPromotedNow(hotel);
   // «Топ» — только у объекта в разделе: включён и есть номер с ценой
@@ -92,7 +92,7 @@ export default function MyHotelCard({
         </div>
         <div className="min-w-0 flex-1 space-y-1">
           <p
-            className={`my-hotel-card__status m-0 inline-flex rounded-full px-2 py-0.5 text-xs font-semibold leading-5 ${STATUS_CLASS[status]}`}
+            className={`my-hotel-card__status m-0 inline-flex rounded-full px-2 py-0.5 text-xs font-semibold leading-5 ${MY_CARD_STATUS_CLASS[status]}`}
           >
             {mt.status[status]}
           </p>
@@ -139,7 +139,7 @@ export default function MyHotelCard({
       <footer className="my-hotel-card__actions flex flex-wrap gap-2">
         <Link
           to={`${MY_HOTELS_PATH}/${hotel.id}/edit`}
-          className={ACTION_CLASS}
+          className={MY_CARD_ACTION_CLASS}
           onClick={() => haptic('light')}
         >
           <Icon name="pencil" className="size-4" />
@@ -149,7 +149,7 @@ export default function MyHotelCard({
         {status !== 'hidden' && (
           <button
             type="button"
-            className={ACTION_CLASS}
+            className={MY_CARD_ACTION_CLASS}
             disabled={busy}
             onClick={() => {
               haptic('light');
@@ -162,7 +162,7 @@ export default function MyHotelCard({
         {status === 'active' && (
           <Link
             to={`${HOTELS_PATH}/${hotel.id}`}
-            className={ACTION_CLASS}
+            className={MY_CARD_ACTION_CLASS}
             onClick={() => haptic('light')}
           >
             <Icon name="eye" className="size-4" />
@@ -171,7 +171,7 @@ export default function MyHotelCard({
         )}
         <button
           type="button"
-          className={`${ACTION_CLASS} text-[var(--danger)]`}
+          className={`${MY_CARD_ACTION_CLASS} text-[var(--danger)]`}
           disabled={busy}
           aria-haspopup="dialog"
           onClick={() => {

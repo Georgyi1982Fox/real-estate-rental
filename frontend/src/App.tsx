@@ -5,6 +5,7 @@ import { COMPARE_PATH } from './lib/compare';
 import { HISTORY_PATH } from './lib/history';
 import { INVITE_PATH } from './lib/referral';
 import { HOTELS_PATH, MY_HOTELS_PATH, NEW_HOTEL_PATH } from './lib/hotels';
+import { MY_LISTINGS_PATH, NEW_LISTING_PATH } from './lib/ownerListings';
 import { MORE_PATH, RENT_PATH } from './lib/paths';
 import { DAILY_SEARCH_PATH, SMART_SORT, SORT_KEY } from './lib/searchFilters';
 import { DOCUMENTS_PATH } from './lib/signing';
@@ -22,6 +23,8 @@ import HotelsPage from './pages/HotelsPage';
 import LegalPage from './pages/LegalPage';
 import MyDocumentsPage from './pages/MyDocumentsPage';
 import MyHotelsPage from './pages/MyHotelsPage';
+import MyListingsPage from './pages/MyListingsPage';
+import ListingFormPage from './pages/ListingFormPage';
 import ListingPage from './pages/ListingPage';
 import MorePage from './pages/MorePage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -31,7 +34,6 @@ import ProfilePage from './pages/ProfilePage';
 import SavedSearchesPage from './pages/SavedSearchesPage';
 import SearchPage from './pages/SearchPage';
 import InvitePage from './pages/InvitePage';
-import SoonPage from './pages/SoonPage';
 import StartPage from './pages/StartPage';
 import TestCardPage from './pages/TestCardPage';
 import { AuthProvider } from './providers/AuthProvider';
@@ -67,10 +69,11 @@ const router = createBrowserRouter(
         { path: '/legal/:doc', element: <LegalPage /> },
         // Посуточная аренда — та же лента в режиме «Посуточно»
         { path: '/daily', element: <Navigate to={DAILY_SEARCH_PATH} replace /> },
-        // Разделы главного меню без своей страницы — заглушка «Скоро» (FRONTEND-033)
         // Умный поиск — режим «По смыслу» в общей ленте (FRONTEND-031)
         { path: '/smart', element: <Navigate to={`/search?${SORT_KEY}=${SMART_SORT}`} replace /> },
-        { path: '/my-listings', element: <SoonPage feature="owner" /> },
+        // «Сдать квартиру» (FRONTEND-033): вкладка «Сдать» и «Ещё» → «Разместить объект»
+        { path: MY_LISTINGS_PATH, element: <MyListingsPage /> },
+        { path: NEW_LISTING_PATH, element: <ListingFormPage /> },
         { path: '/favorites', element: <FavoritesPage /> },
         { path: HISTORY_PATH, element: <HistoryPage /> },
         // «Пригласить друга» (FRONTEND-029): из профиля и «Ещё»

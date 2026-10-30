@@ -834,6 +834,40 @@ export interface MyHotels extends ListResponse<MyHotel> {
   limit: number;
 }
 
+/** Своё объявление (/api/my/listings, нужен вход): как в поиске, плюс состояние */
+export interface MyListing extends Listing {
+  status: MyHotelStatus;
+}
+
+/** GET /api/my/listings */
+export interface MyListings extends ListResponse<MyListing> {
+  /** Сколько объявлений можно держать в поиске (у агентства — по пакету) */
+  limit: number;
+}
+
+/** Тело POST /api/my/listings */
+export interface OwnerListingInput {
+  city: string;
+  /** Район текстом */
+  district: string;
+  rent_period: RentPeriod;
+  price: number;
+  currency: Currency;
+  rooms: number;
+  area: number;
+  floor: number | null;
+  total_floors: number | null;
+  /** На любом языке, переводит AI */
+  description: string;
+  /** Обязателен, если у хозяина нет имени в Telegram */
+  phone: string | null;
+  features: string[];
+  address: string | null;
+  /** Точка на карте: обе координаты или ни одной, только в Грузии */
+  latitude: number | null;
+  longitude: number | null;
+}
+
 /** Номер в POST/PUT …/rooms и в rooms при размещении */
 export interface HotelRoomInput {
   kind: string;

@@ -11,6 +11,7 @@ import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
 import type { Strings } from '../i18n/strings';
 import { ACCEPTANCE_PATH } from '../lib/acceptance';
 import { botSectionUrl } from '../lib/config';
+import { MY_LISTINGS_PATH } from '../lib/ownerListings';
 import { fill, formatDate } from '../lib/format';
 import { MY_HOTELS_PATH } from '../lib/hotels';
 import { INVITE_PATH } from '../lib/referral';
@@ -117,7 +118,7 @@ export default function MorePage() {
     {
       key: 'owners',
       rows: [
-        { key: 'owner', icon: 'home_plus', tone: 'owner', ...tiles.owner, to: '/my-listings' },
+        { key: 'owner', icon: 'home_plus', tone: 'owner', ...tiles.owner, to: MY_LISTINGS_PATH },
         { key: 'my_hotels', icon: 'hotel', tone: 'owner', ...tiles.my_hotels, to: MY_HOTELS_PATH },
       ],
     },
