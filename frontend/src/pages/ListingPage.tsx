@@ -5,6 +5,7 @@ import type {
   Listing,
   ListingId,
   ListingLocation as LocationData,
+  ListingShare,
   ListingText,
 } from '../api/types';
 import AlsoOn from '../components/AlsoOn';
@@ -83,6 +84,10 @@ export default function ListingPage() {
     typeof description === 'string' ? description : (description?.[lang] ?? '');
   // Текст на другом языке не показываем, пока перевод может прийти: вместо него — заглушка
   const descriptionPending = Boolean(listing) && !ownDescription && (loading || text.loading);
+  // «📤 Поделиться»: нет ответа (503 — бот не настроен) — нет кнопки
+  const { data: share } = useApi<ListingShare>(
+    listingId !== null ? `/api/listings/${listingId}/share?lang=${lang}` : null,
+  );
   const similar = useApi<ListResponse<Listing>>(
     listingId !== null ? `/api/listings/${listingId}/similar` : null,
   );
@@ -173,8 +178,7 @@ export default function ListingPage() {
             <span aria-hidden="true">←</span> {lt.back}
           </Link>
         </nav>
-        {/* key: при переходе на похожую квартиру — ссылка уже на неё */}
-        {listing && <ShareButton key={listing.id} listingId={listing.id} />}
+        {listing && share && <ShareButton share={share} label={t.share.label} />}
       </div>
 
       {loading && !listing && <ListingSkeleton />}

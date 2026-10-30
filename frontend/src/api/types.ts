@@ -188,7 +188,10 @@ export interface ListingComparison {
   note: string;
 }
 
-/** «Поделиться» (GET /api/listings/{id}/share): ссылка на карточку квартиры в боте */
+/**
+ * «Поделиться» (GET /api/listings/{id}/share и /api/hotels/{id}/share): ссылка на карточку
+ * квартиры или гостиницы в боте
+ */
 export interface ListingShare {
   url: string;
   /** Подпись: заголовок и цена на языке запроса */
@@ -814,6 +817,15 @@ export interface MyHotel extends Hotel {
   status: MyHotelStatus;
   phone?: string | null;
   whatsapp?: string | null;
+  /** «🔥 Топ» до этого момента; в прошлом — уже закончился */
+  promoted_until?: string | null;
+}
+
+/** POST /api/my/hotels/{id}/promotion: счёт в звёздах для openInvoice */
+export interface HotelPromotionInvoice {
+  url: string;
+  price_stars: number;
+  days: number;
 }
 
 /** GET /api/my/hotels */
@@ -866,6 +878,9 @@ export interface HotelOptions {
   sorts: string[];
   /** active_hotels, rooms, photos, description */
   limits: Record<string, number>;
+  /** «🔥 Топ»: цена в звёздах и на сколько дней */
+  promotion_price_stars?: number;
+  promotion_days?: number;
 }
 
 /** Фильтры поиска гостиниц: в адресе страницы и в GET /api/hotels */

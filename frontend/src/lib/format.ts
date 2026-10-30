@@ -91,6 +91,13 @@ export function formatDate(iso: string, lang: Lang): string {
   return dateText(date, lang, true);
 }
 
+/** Дата без года: '26 октября'; невалидная строка — '' */
+export function formatDayMonth(iso: string, lang: Lang): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  return dateText(date, lang, false);
+}
+
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
