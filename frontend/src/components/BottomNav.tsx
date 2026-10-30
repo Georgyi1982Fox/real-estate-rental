@@ -1,6 +1,7 @@
 import { NavLink, useMatch } from 'react-router-dom';
 import { useFavorites } from '../hooks/useFavorites';
 import type { Strings } from '../i18n/strings';
+import { MY_LISTINGS_PATH, NEW_LISTING_PATH } from '../lib/ownerListings';
 import { MORE_PATH, RENT_PATH } from '../lib/paths';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
@@ -24,7 +25,7 @@ const TABS: Tab[] = [
   { key: 'home', to: '/', icon: 'home' },
   { key: 'search', to: '/search', icon: 'search' },
   { key: 'favorites', to: '/favorites', icon: 'heart' },
-  { key: 'rent_out', to: '/my-listings', icon: 'home_plus' },
+  { key: 'rent_out', to: MY_LISTINGS_PATH, icon: 'home_plus' },
   // Профиль — в шапке (аватар справа), здесь — «Ещё»: Premium, помощь, документы
   { key: 'more', to: MORE_PATH, icon: 'grid' },
 ];
@@ -41,6 +42,10 @@ export default function BottomNav({ mode }: BottomNavProps) {
   const { count } = useFavorites();
   // «Главная» — стартовый экран и главная аренды за ним
   const onRent = useMatch(RENT_PATH) !== null;
+  // «Сдать» — список объявлений и форма размещения
+  const onNewListing = useMatch(NEW_LISTING_PATH) !== null;
+  const isCurrent = (tab: Tab, exact: boolean) =>
+    exact || (tab.key === 'home' && onRent) || (tab.key === 'rent_out' && onNewListing);
 
   return (
     <nav
@@ -54,7 +59,7 @@ export default function BottomNav({ mode }: BottomNavProps) {
               to={tab.to}
               end
               className={({ isActive: exact }) => {
-                const isActive = exact || (tab.key === 'home' && onRent);
+                const isActive = isCurrent(tab, exact);
                 return `bottom-nav__tab flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-[var(--radius-md)] px-0.5 text-[11px] leading-tight active:scale-[.97] ${
                   isActive
                     ? 'bottom-nav__tab--active font-semibold text-[var(--text-primary)]'
@@ -64,7 +69,7 @@ export default function BottomNav({ mode }: BottomNavProps) {
               onClick={() => haptic('selection')}
             >
               {({ isActive: exact }) => {
-                const isActive = exact || (tab.key === 'home' && onRent);
+                const isActive = isCurrent(tab, exact);
                 return (
                 <>
                   {/* Активная вкладка — иконка на подложке цвета бренда */}
