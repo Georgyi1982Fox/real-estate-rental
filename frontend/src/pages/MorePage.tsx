@@ -10,6 +10,7 @@ import { useSubscription } from '../hooks/useSubscription';
 import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
 import type { Strings } from '../i18n/strings';
 import { ACCEPTANCE_PATH } from '../lib/acceptance';
+import { AGENCY_FREE_LISTINGS, AGENCY_PATH } from '../lib/agency';
 import { botSectionUrl } from '../lib/config';
 import { MY_LISTINGS_PATH } from '../lib/ownerListings';
 import { fill, formatDate } from '../lib/format';
@@ -120,6 +121,14 @@ export default function MorePage() {
       rows: [
         { key: 'owner', icon: 'home_plus', tone: 'owner', ...tiles.owner, to: MY_LISTINGS_PATH },
         { key: 'my_hotels', icon: 'hotel', tone: 'owner', ...tiles.my_hotels, to: MY_HOTELS_PATH },
+        {
+          key: 'agency',
+          icon: 'briefcase',
+          tone: 'owner',
+          title: t.agency.page_title,
+          text: fill(t.agency.invite_text, AGENCY_FREE_LISTINGS),
+          to: AGENCY_PATH,
+        },
       ],
     },
     {
