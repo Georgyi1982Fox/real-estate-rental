@@ -1,7 +1,8 @@
 import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiPatch } from '../api/client';
-import type { ListingId, MyListing, MyListings } from '../api/types';
+import type { AgencyCabinet, ListingId, MyListing, MyListings } from '../api/types';
+import AgencyInvite from '../components/AgencyInvite';
 import EmptyState from '../components/EmptyState';
 import ErrorState from '../components/ErrorState';
 import Icon from '../components/Icon';
@@ -14,6 +15,7 @@ import SavedSearchSkeleton from '../components/SavedSearchSkeleton';
 import { useApi } from '../hooks/useApi';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
+import { AGENCY_API } from '../lib/agency';
 import { fill, fillVars } from '../lib/format';
 import { DEFAULT_LISTINGS_LIMIT, NEW_LISTING_PATH, listingErrorText } from '../lib/ownerListings';
 import { haptic } from '../lib/telegram';
@@ -32,6 +34,8 @@ export default function MyListingsPage() {
   const showToast = useToast();
   const { user, loading: authLoading } = useAuth();
   const { data, error, loading, reload } = useApi<MyListings>(user ? '/api/my/listings' : null);
+  // 404 — ещё не риелтор: приглашаем в кабинет агентства
+  const { error: agencyError } = useApi<AgencyCabinet>(user ? AGENCY_API : null);
   // Правки поверх ответа сервера
   const [changed, setChanged] = useState<Record<string, MyListing>>({});
   const [busyId, setBusyId] = useState<ListingId | null>(null);
@@ -160,6 +164,8 @@ export default function MyListingsPage() {
           ))}
         </ul>
       )}
+
+      {agencyError?.isNotFound && <AgencyInvite />}
 
       <ListingPriceModal
         listing={pricing}

@@ -71,6 +71,7 @@ export default function MyListingCard({
           <PromotionBadges
             promoted={listing.is_promoted === true}
             verified={listing.is_verified === true}
+            premium={listing.is_premium_listing === true}
           />
         </div>
       </header>

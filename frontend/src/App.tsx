@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import Layout from './components/Layout';
 import { ACCEPTANCE_PATH } from './lib/acceptance';
+import { AGENCY_PATH } from './lib/agency';
 import { COMPARE_PATH } from './lib/compare';
 import { HISTORY_PATH } from './lib/history';
 import { INVITE_PATH } from './lib/referral';
@@ -10,6 +11,8 @@ import { MORE_PATH, RENT_PATH } from './lib/paths';
 import { DAILY_SEARCH_PATH, SMART_SORT, SORT_KEY } from './lib/searchFilters';
 import { DOCUMENTS_PATH } from './lib/signing';
 import AcceptancePage from './pages/AcceptancePage';
+import AgencyCabinetPage from './pages/AgencyCabinetPage';
+import AgencyPage from './pages/AgencyPage';
 import AuthPage from './pages/AuthPage';
 import ComparePage from './pages/ComparePage';
 import FavoritesPage from './pages/FavoritesPage';
@@ -74,6 +77,9 @@ const router = createBrowserRouter(
         // «Сдать квартиру» (FRONTEND-033): вкладка «Сдать» и «Ещё» → «Разместить объект»
         { path: MY_LISTINGS_PATH, element: <MyListingsPage /> },
         { path: NEW_LISTING_PATH, element: <ListingFormPage /> },
+        // Кабинет риелтора (FRONTEND-038) и страница агентства — она открывается и без входа
+        { path: AGENCY_PATH, element: <AgencyCabinetPage /> },
+        { path: `${AGENCY_PATH}/:id`, element: <AgencyPage /> },
         { path: '/favorites', element: <FavoritesPage /> },
         { path: HISTORY_PATH, element: <HistoryPage /> },
         // «Пригласить друга» (FRONTEND-029): из профиля и «Ещё»
