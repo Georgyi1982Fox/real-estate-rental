@@ -61,6 +61,13 @@ export interface ListingViews {
   in_favorites: number;
 }
 
+/** Агентство в объявлении: ссылка на его страницу */
+export interface AgencyBrief {
+  id: string;
+  name: string;
+  logo_url: string | null;
+}
+
 export interface Listing {
   id: ListingId;
   title: Localized;
@@ -88,6 +95,10 @@ export interface Listing {
   is_promoted?: boolean;
   /** Bina.ai проверил документ о собственности (TASK-098) */
   is_verified?: boolean;
+  /** «⭐ Premium-объявление» агентства: раз в сутки поднимается наверх (TASK-100) */
+  is_premium_listing?: boolean;
+  /** Агентство, разместившее объявление */
+  agency?: AgencyBrief | null;
   latitude?: number | null;
   longitude?: number | null;
   /** Опубликовано на сайте-источнике */
@@ -837,6 +848,54 @@ export interface MyHotels extends ListResponse<MyHotel> {
 /** Своё объявление (/api/my/listings, нужен вход): как в поиске, плюс состояние */
 export interface MyListing extends Listing {
   status: MyHotelStatus;
+}
+
+/** Пакет объявлений агентства: оплата звёздами в боте */
+export interface AgencyPlan {
+  id: string;
+  listings: number;
+  price_stars: number;
+  days: number;
+}
+
+/** Объявление в кабинете и его цифры за 30 дней */
+export interface AgencyListingStats {
+  listing: Listing;
+  active: boolean;
+  views: number;
+  contacts: number;
+  chats: number;
+  viewings: number;
+  favorites: number;
+  premium_until: string | null;
+}
+
+/** GET /api/agency: свой кабинет; 404 — ещё не риелтор */
+export interface AgencyCabinet extends AgencyBrief {
+  description: string;
+  phone: string | null;
+  /** Оплаченный пакет; null — бесплатный */
+  plan: string | null;
+  plan_expires_at: string | null;
+  /** Всё бесплатно, пока владелец тестирует */
+  testing_mode: boolean;
+  /** Сколько объявлений может быть в поиске */
+  limit: number;
+  /** Сколько сейчас в поиске */
+  active: number;
+  free_listings: number;
+  plans: AgencyPlan[];
+  plan_days: number;
+  bump_price_stars: number;
+  bump_days: number;
+  blocked: boolean;
+  listings: AgencyListingStats[];
+}
+
+/** GET /api/agencies/{id}: страница агентства для всех */
+export interface AgencyPublic extends AgencyBrief {
+  description: string;
+  listings: Listing[];
 }
 
 /** GET /api/my/listings */

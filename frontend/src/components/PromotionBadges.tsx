@@ -9,18 +9,21 @@ interface PromotionBadgesProps {
   promoted: boolean;
   /** Bina.ai проверил хозяина */
   verified: boolean;
+  /** «⭐ Premium-объявление» агентства */
+  premium?: boolean;
   className?: string;
 }
 
-/** Значки «Топ» (оранжевый) и «Проверено» (зелёный); ни одного — ничего не рисуем */
+/** Значки «Топ», «⭐ Premium» (оранжевые) и «Проверено» (зелёный); ни одного — ничего не рисуем */
 export default function PromotionBadges({
   promoted,
   verified,
+  premium = false,
   className = '',
 }: PromotionBadgesProps) {
   const { t } = useI18n();
 
-  if (!promoted && !verified) return null;
+  if (!promoted && !verified && !premium) return null;
 
   return (
     <span className={`promotion-badges inline-flex flex-wrap items-center gap-1.5 ${className}`}>
@@ -30,6 +33,14 @@ export default function PromotionBadges({
         >
           <Icon name="flame" className="size-3.5" />
           {t.hotels.top}
+        </span>
+      )}
+      {premium && (
+        <span
+          className={`promotion-badges__premium ${BADGE_CLASS} bg-[var(--promo-bg)] text-[var(--promo-text)]`}
+        >
+          <Icon name="star" className="size-3.5" />
+          {t.agency.premium_badge}
         </span>
       )}
       {verified && (

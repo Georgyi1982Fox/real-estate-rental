@@ -8,6 +8,7 @@ import type {
   ListingShare,
   ListingText,
 } from '../api/types';
+import AgencyLink from '../components/AgencyLink';
 import AlsoOn from '../components/AlsoOn';
 import BookViewingButton from '../components/BookViewingButton';
 import ComplaintButton from '../components/ComplaintButton';
@@ -159,6 +160,7 @@ export default function ListingPage() {
   const place = address ? `${address}, ${district}` : district;
   const promoted = listing?.is_promoted === true;
   const verified = listing?.is_verified === true;
+  const premium = listing?.is_premium_listing === true;
 
   return (
     <>
@@ -257,9 +259,9 @@ export default function ListingPage() {
                   monthly
                 />
 
-                {(promoted || verified) && (
+                {(promoted || verified || premium) && (
                   <div className="listing-summary__badges space-y-1.5">
-                    <PromotionBadges promoted={promoted} verified={verified} />
+                    <PromotionBadges promoted={promoted} verified={verified} premium={premium} />
                     {verified && (
                       <p className="listing-summary__verified-hint m-0 text-xs text-[var(--text-secondary)]">
                         {t.card.verified_hint}
@@ -269,6 +271,8 @@ export default function ListingPage() {
                 )}
 
                 <MarketPriceBadge listingId={listing.id} />
+
+                {listing.agency && <AgencyLink agency={listing.agency} />}
 
                 {ownerName && (
                   <p className="listing-summary__owner text-sm text-[var(--text-secondary)]">

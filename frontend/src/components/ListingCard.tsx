@@ -10,6 +10,7 @@ import { rememberListingPreview } from '../lib/listingPreview';
 import { sourceName } from '../lib/sources';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
+import AgencyLink from './AgencyLink';
 import CardGallery from './CardGallery';
 import CompareButton from './CompareButton';
 import FraudBadge from './FraudBadge';
@@ -26,6 +27,8 @@ interface ListingCardProps {
   headingLevel?: 'h2' | 'h3';
   /** Кнопка «⚖ Сравнить» (поиск и избранное); у посуточной аренды её нет */
   comparable?: boolean;
+  /** Строка агентства; на странице самого агентства она не нужна */
+  showAgency?: boolean;
 }
 
 /**
@@ -37,6 +40,7 @@ export default function ListingCard({
   districtNames,
   headingLevel = 'h2',
   comparable = false,
+  showAgency = true,
 }: ListingCardProps) {
   const { lang, t } = useI18n();
   const favorites = useFavorites();
@@ -51,6 +55,7 @@ export default function ListingCard({
   const fraud = fraudLevel(listing);
   const promoted = listing.is_promoted === true;
   const verified = listing.is_verified === true;
+  const premium = listing.is_premium_listing === true;
   // Незнакомый код источника — подписи нет
   const source = sourceName(listing.source);
   const compare = comparable && canCompare(listing);
@@ -124,7 +129,7 @@ export default function ListingCard({
                 periodClassName="text-sm font-medium text-[var(--text-secondary)]"
               />
               {/* «Проверено» бывает и у агентства, поэтому «Собственник» — отдельный значок */}
-              <PromotionBadges promoted={promoted} verified={verified} />
+              <PromotionBadges promoted={promoted} verified={verified} premium={premium} />
               {listing.owner_type === 'owner' && <OwnerBadge />}
               {views > 0 && (
                 <ViewsBadge listingId={listing.id} views={views} className="ml-auto min-h-7" />
@@ -136,6 +141,11 @@ export default function ListingCard({
             <span aria-hidden="true">📍</span>
             <span>{district}</span>
           </p>
+
+          {/* z-10: над «растянутой» ссылкой карточки */}
+          {showAgency && listing.agency && (
+            <AgencyLink agency={listing.agency} className="relative z-10" />
+          )}
 
           <dl
             className={`listing-card__meta grid gap-3 border-t border-[var(--border)] pt-3 text-sm text-[var(--text-secondary)] ${hasFloor ? 'grid-cols-3' : 'grid-cols-2'}`}
