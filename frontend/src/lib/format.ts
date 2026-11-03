@@ -98,6 +98,59 @@ export function formatDayMonth(iso: string, lang: Lang): string {
   return dateText(date, lang, false);
 }
 
+const KA_MONTHS_SHORT = [
+  'იან',
+  'თებ',
+  'მარ',
+  'აპრ',
+  'მაი',
+  'ივნ',
+  'ივლ',
+  'აგვ',
+  'სექ',
+  'ოქტ',
+  'ნოე',
+  'დეკ',
+];
+
+/**
+ * Месяц из строки «2026-11»: 'ноябрь 2026 г.' или коротко 'нояб. 2026' (short; год — withYear).
+ * Невалидная строка — как есть
+ */
+export function formatMonth(
+  month: string,
+  lang: Lang,
+  { short = false, withYear = true }: { short?: boolean; withYear?: boolean } = {},
+): string {
+  const [year = NaN, index = NaN] = month.split('-').map(Number);
+  if (!Number.isInteger(year) || !Number.isInteger(index) || index < 1 || index > 12) {
+    return month;
+  }
+  if (lang === 'ka') {
+    const name = (short ? KA_MONTHS_SHORT : KA_MONTHS)[index - 1] ?? '';
+    return withYear ? `${name} ${year}` : name;
+  }
+  const date = new Date(year, index - 1, 1);
+  if (short) {
+    // Коротко — без «г.»: 'янв. 2027' помещается в узкую колонку
+    const name = new Intl.DateTimeFormat(DATE_LOCALES[lang], { month: 'short' }).format(date);
+    return withYear ? `${name} ${year}` : name;
+  }
+  return new Intl.DateTimeFormat(DATE_LOCALES[lang], {
+    month: 'long',
+    year: withYear ? 'numeric' : undefined,
+  }).format(date);
+}
+
+/**
+ * Дробное число с разделителем языка: 2,7 (ka, ru) или 2.7 (en). Грузинского Chromium
+ * в Intl не знает, поэтому запятую ставим сами
+ */
+export function formatNumber(value: number, lang: Lang): string {
+  const text = String(Math.round(value * 100) / 100);
+  return lang === 'en' ? text : text.replace('.', ',');
+}
+
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
