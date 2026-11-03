@@ -22,6 +22,7 @@ import { FRAUD_WARNING_HASH } from '../components/FraudBadge';
 import FraudWarning from '../components/FraudWarning';
 import Gallery from '../components/Gallery';
 import ListingAssistant from '../components/ListingAssistant';
+import ListingCosts from '../components/ListingCosts';
 import ListingDates from '../components/ListingDates';
 import ListingDescription from '../components/ListingDescription';
 import ListingDocuments from '../components/ListingDocuments';
@@ -42,6 +43,7 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useFavorites } from '../hooks/useFavorites';
 import { useGoBack, useTelegramBackButton } from '../hooks/useTelegramBackButton';
 import { useTelegramMainButton } from '../hooks/useTelegramMainButton';
+import { canCompare } from '../lib/compare';
 import { fill, tr } from '../lib/format';
 import { fraudLevel } from '../lib/fraud';
 import { listingPreview } from '../lib/listingPreview';
@@ -372,6 +374,8 @@ export default function ListingPage() {
                 district={district}
               />
               <DistrictAbout districtId={listing.district} />
+              {/* Залог, комиссия и коммунальные считаются только для помесячной аренды */}
+              {canCompare(listing) && <ListingCosts listingId={listing.id} />}
 
               <ListingDates
                 listingId={listing.id}

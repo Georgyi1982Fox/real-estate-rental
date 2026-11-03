@@ -247,6 +247,58 @@ export interface PriceEstimate {
   premium_required: boolean;
 }
 
+/** Статья коммунальных в расчёте полной стоимости */
+export type CostItemCode = 'electricity' | 'gas' | 'water' | 'cleaning' | 'internet' | 'building';
+
+/** Один месяц расчёта: коммунальные по статьям (пусто, если включены в аренду) */
+export interface CostMonth {
+  /** «2026-11» */
+  month: string;
+  items: Partial<Record<CostItemCode | string, number>>;
+  utilities: number;
+  /** Аренда + коммунальные */
+  total: number;
+}
+
+/**
+ * GET /api/listings/{id}/costs (TASK-103, нужен X-Telegram-Init-Data, иначе 401).
+ * Все суммы — в лари, округлены
+ */
+export interface ListingCosts {
+  currency: string;
+  rent: number;
+  /** Валюта объявления: USD и EUR пересчитаны в лари по exchange_rate */
+  rent_currency: string;
+  exchange_rate: number;
+  deposit: number;
+  agency_fee: number;
+  /** Объявление от агента: возможна комиссия */
+  agent_listing: boolean;
+  heating: string;
+  air_conditioning: boolean;
+  people: number;
+  utilities_included: boolean;
+  /** Сколько отдать при въезде */
+  first_month: {
+    rent: number;
+    deposit: number;
+    agency_fee: number;
+    utilities: number;
+    total: number;
+  };
+  average_utilities: number;
+  /** Аренда + средние коммунальные */
+  average_month: number;
+  period_months: number;
+  /** Аренда и коммунальные за срок + комиссия (залог вернётся, в сумму не входит) */
+  period_total: number;
+  items: { code: string; title: string }[];
+  monthly: CostMonth[];
+  /** Насколько реальные счета могут отличаться, ± % */
+  range_percent: number;
+  note: string;
+}
+
 export interface District {
   id: string;
   name: Localized;
