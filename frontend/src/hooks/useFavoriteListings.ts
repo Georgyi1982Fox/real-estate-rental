@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, apiGet } from '../api/client';
 import type { Listing, ListingsPage } from '../api/types';
-import { listingPreview } from '../lib/listingPreview';
+import { listingPreview, rememberListingPreview } from '../lib/listingPreview';
 import { usesServerFavorites } from '../lib/session';
 import { useFavoritesServerVersion } from './useFavorites';
 
@@ -39,6 +39,8 @@ function loadGuestCards(): Record<string, Listing> {
 }
 
 let guestCards = loadGuestCards();
+// Гость: квартиры, которых больше нет (404), — не запрашивать снова в этой сессии
+const guestGone = new Set<string>();
 
 /** Запомнить карточки избранного гостя; убранные из избранного — забыть */
 function storeGuestCards(ids: string[]): void {
@@ -73,6 +75,7 @@ export function useFavoriteListings(ids: string[]): FavoriteListings {
   const [, setVersion] = useState(0);
   const [error, setError] = useState<ApiError>();
   const [loading, setLoading] = useState(server && !serverLoaded);
+  const [guestLoading, setGuestLoading] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
   // Заново — после каждого подтверждённого сервером изменения ♥ (один запрос, без «👁»)
@@ -99,8 +102,37 @@ export function useFavoriteListings(ids: string[]): FavoriteListings {
   }, [server, serverVersion, attempt]);
 
   const idsKey = ids.join(',');
+  // Гость: карточки хранятся на устройстве. У избранного, сохранённого раньше (только id),
+  // карточек нет — такие загружаем по одному разу (это один просмотр), дальше — с устройства
   useEffect(() => {
-    if (!server) storeGuestCards(idsKey ? idsKey.split(',') : []);
+    if (server) return;
+    const wanted = idsKey ? idsKey.split(',') : [];
+    const missing = wanted.filter(
+      (id) => !guestCards[id] && !listingPreview(id) && !guestGone.has(id),
+    );
+    if (missing.length === 0) {
+      storeGuestCards(wanted);
+      setGuestLoading(false);
+      return;
+    }
+    const controller = new AbortController();
+    setGuestLoading(true);
+    void Promise.all(
+      missing.map((id) =>
+        apiGet<Listing>(`/api/listings/${encodeURIComponent(id)}`, controller.signal).then(
+          (listing) => rememberListingPreview(listing),
+          (err: unknown) => {
+            if (err instanceof ApiError && err.isNotFound) guestGone.add(id);
+          },
+        ),
+      ),
+    ).then(() => {
+      if (controller.signal.aborted) return;
+      storeGuestCards(wanted);
+      setGuestLoading(false);
+      setVersion((version) => version + 1);
+    });
+    return () => controller.abort();
   }, [server, idsKey]);
 
   const reload = useCallback(() => setAttempt((value) => value + 1), []);
@@ -108,5 +140,5 @@ export function useFavoriteListings(ids: string[]): FavoriteListings {
   const listings = ids
     .map((id) => (server ? serverCards.get(id) : guestCards[id]) ?? listingPreview(id))
     .filter((listing): listing is Listing => listing !== undefined);
-  return { listings, loading, error, reload };
+  return { listings, loading: loading || guestLoading, error, reload };
 }
