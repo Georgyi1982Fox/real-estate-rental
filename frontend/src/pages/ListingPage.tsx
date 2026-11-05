@@ -46,7 +46,7 @@ import { useTelegramMainButton } from '../hooks/useTelegramMainButton';
 import { canCompare } from '../lib/compare';
 import { fill, tr } from '../lib/format';
 import { fraudLevel } from '../lib/fraud';
-import { listingPreview } from '../lib/listingPreview';
+import { listingPreview, rememberListingPreview } from '../lib/listingPreview';
 import { haptic } from '../lib/telegram';
 import { alsoOnLinks, siteName } from '../lib/sources';
 import { useI18n } from '../providers/I18nProvider';
@@ -75,6 +75,10 @@ export default function ListingPage() {
       : null,
   );
   const base = loaded ?? preview;
+  // Открыли по ссылке и нажали ♥ — у «Избранного» уже есть данные карточки
+  useEffect(() => {
+    if (loaded) rememberListingPreview(loaded);
+  }, [loaded]);
   const listing = useMemo(
     () =>
       base && text.data
