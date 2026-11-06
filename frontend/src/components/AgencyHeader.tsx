@@ -10,6 +10,7 @@ import {
   agencyPagePath,
   agencyShare,
 } from '../lib/agency';
+import { LOGO_SHRINK, shrinkImage } from '../lib/image';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 import { useToast } from '../providers/ToastProvider';
@@ -48,13 +49,15 @@ export default function AgencyHeader({ agency, onChange }: AgencyHeaderProps) {
     // Тот же файл можно выбрать снова
     event.target.value = '';
     if (!file) return;
-    if (file.size > AGENCY_LOGO_MAX_BYTES) {
-      fail(at.errors.photo_size);
-      return;
-    }
     setUploading(true);
     try {
-      onChange(await apiUpload<AgencyCabinet>(`${AGENCY_API}/logo`, file));
+      // Логотип — до 512 px; PNG с прозрачностью остаётся PNG
+      const logo = await shrinkImage(file, LOGO_SHRINK);
+      if (logo.size > AGENCY_LOGO_MAX_BYTES) {
+        fail(at.errors.photo_size);
+        return;
+      }
+      onChange(await apiUpload<AgencyCabinet>(`${AGENCY_API}/logo`, logo));
       haptic('success');
     } catch (error) {
       fail(agencyErrorText(error, at));

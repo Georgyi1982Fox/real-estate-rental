@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { ApiError, apiDelete, apiUpload } from '../api/client';
 import { fill, fillVars } from '../lib/format';
+import { PHOTO_SHRINK, shrinkImage } from '../lib/image';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 import { useToast } from '../providers/ToastProvider';
@@ -70,12 +71,14 @@ export default function PhotoUploader<Saved>({
       // По одному: сервер принимает одно фото за запрос
       for (const [index, file] of queue.entries()) {
         setProgress({ n: index + 1, total: queue.length });
-        if (file.size > maxBytes) {
+        // Фото с телефона (4–15 МБ) уменьшаем до 1600 px — загрузка в разы быстрее
+        const photo = await shrinkImage(file, PHOTO_SHRINK);
+        if (photo.size > maxBytes) {
           fail(tooBigText);
           continue;
         }
         try {
-          onChange(await apiUpload<Saved>(path, file));
+          onChange(await apiUpload<Saved>(path, photo));
           uploaded = true;
         } catch (error) {
           fail(errorText(error));
