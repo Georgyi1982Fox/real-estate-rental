@@ -42,8 +42,7 @@ def optimize(data: bytes) -> bytes:
     try:
         with Image.open(io.BytesIO(data), formats=FORMATS) as image:
             image.load()
-            fixed = ImageOps.exif_transpose(image)
-            fixed = fixed.convert("RGB")
+            fixed = _flatten(ImageOps.exif_transpose(image))
             fixed.thumbnail((MAX_SIDE, MAX_SIDE))
             out = io.BytesIO()
             # EXIF (в том числе координаты съёмки) не сохраняем
@@ -51,6 +50,16 @@ def optimize(data: bytes) -> bytes:
     except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError) as exc:
         raise PhotoError(str(exc)) from exc
     return out.getvalue()
+
+
+def _flatten(image: Image.Image) -> Image.Image:
+    """RGB для JPEG: прозрачные места (логотип PNG) — белые, иначе JPEG делает их чёрными."""
+    if not image.has_transparency_data:
+        return image.convert("RGB")
+    rgba = image.convert("RGBA")
+    background = Image.new("RGB", rgba.size, (255, 255, 255))
+    background.paste(rgba, mask=rgba.getchannel("A"))
+    return background
 
 
 class LocalPhotoStorage:

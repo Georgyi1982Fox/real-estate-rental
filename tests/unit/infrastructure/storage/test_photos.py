@@ -24,6 +24,22 @@ def test_optimize_resizes_to_jpeg() -> None:
         assert small.size == (800, 600), "маленькое фото не увеличивается"
 
 
+def test_optimize_makes_transparency_white() -> None:
+    """Логотип с прозрачным фоном: в JPEG фон белый, а не чёрный."""
+    logo = Image.new("RGBA", (200, 200), (0, 0, 0, 0))
+    logo.paste((30, 120, 220, 255), (50, 50, 150, 150))
+    out = io.BytesIO()
+    logo.save(out, "PNG")
+
+    with Image.open(io.BytesIO(optimize(out.getvalue()))) as result:
+        assert result.mode == "RGB"
+        corner, center = result.getpixel((5, 5)), result.getpixel((100, 100))
+    assert isinstance(corner, tuple) and isinstance(center, tuple)
+    assert all(channel > 245 for channel in corner)
+    red, _green, blue = center
+    assert blue > 200 and red < 60
+
+
 @pytest.mark.parametrize("data", [b"", b"not an image", b"\x89PNG broken"])
 def test_optimize_rejects_junk(data: bytes) -> None:
     with pytest.raises(PhotoError):
