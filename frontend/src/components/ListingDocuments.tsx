@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { Suspense, lazy, useCallback, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ApiError, apiGet } from '../api/client';
 import type { Listing, Subscription } from '../api/types';
@@ -7,7 +7,6 @@ import { acceptancePath } from '../lib/acceptance';
 import { haptic } from '../lib/telegram';
 import { useAuth } from '../providers/AuthProvider';
 import { useI18n } from '../providers/I18nProvider';
-import ContractModal from './ContractModal';
 import Icon from './Icon';
 import Modal from './Modal';
 import OpenInTelegram from './OpenInTelegram';
@@ -20,6 +19,9 @@ interface ListingDocumentsProps {
   listing: Listing;
 }
 
+// Анкета договора нужна редко — её часть скачивается при первом нажатии (FRONTEND-050)
+const ContractModal = lazy(() => import('./ContractModal'));
+
 /**
  * «Документы» на странице объявления (только Premium): договор аренды и акт приёмки в PDF.
  * Блок видят все. Анкета договора длинная, поэтому тариф проверяем до неё: без входа — окно
@@ -31,6 +33,8 @@ export default function ListingDocuments({ listing }: ListingDocumentsProps) {
   const ct = t.contract;
   const { isAuthenticated, loading: authLoading } = useAuth();
   const [contractOpen, setContractOpen] = useState(false);
+  // Анкета однажды открыта — дальше остаётся на месте и хранит введённое
+  const [contractMounted, setContractMounted] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [checking, setChecking] = useState(false);
   // Premium уже подтверждён: второй раз подписку не спрашиваем
@@ -65,6 +69,7 @@ export default function ListingDocuments({ listing }: ListingDocumentsProps) {
         setChecking(false);
       }
     }
+    setContractMounted(true);
     setContractOpen(true);
   };
 
@@ -118,12 +123,16 @@ export default function ListingDocuments({ listing }: ListingDocumentsProps) {
         </Link>
       </nav>
 
-      <ContractModal
-        open={contractOpen}
-        listing={listing}
-        onClose={closeContract}
-        onLogin={askLogin}
-      />
+      {contractMounted && (
+        <Suspense fallback={null}>
+          <ContractModal
+            open={contractOpen}
+            listing={listing}
+            onClose={closeContract}
+            onLogin={askLogin}
+          />
+        </Suspense>
+      )}
       <Modal open={loginOpen} title={ct.title} onClose={closeLogin}>
         <OpenInTelegram plain />
       </Modal>
