@@ -10,38 +10,42 @@ import { MY_LISTINGS_PATH, NEW_LISTING_PATH } from './lib/ownerListings';
 import { MORE_PATH, RENT_PATH } from './lib/paths';
 import { DAILY_SEARCH_PATH, SMART_SORT, SORT_KEY } from './lib/searchFilters';
 import { DOCUMENTS_PATH } from './lib/signing';
-import AcceptancePage from './pages/AcceptancePage';
-import AgencyCabinetPage from './pages/AgencyCabinetPage';
-import AgencyPage from './pages/AgencyPage';
+import { lazyPage } from './lib/lazyPage';
 import AuthPage from './pages/AuthPage';
-import ComparePage from './pages/ComparePage';
 import FavoritesPage from './pages/FavoritesPage';
-import FeatureLabPage from './pages/FeatureLabPage';
-import HelpPage from './pages/HelpPage';
-import HistoryPage from './pages/HistoryPage';
 import HomePage from './pages/HomePage';
-import HotelFormPage from './pages/HotelFormPage';
 import HotelPage from './pages/HotelPage';
 import HotelsPage from './pages/HotelsPage';
-import LegalPage from './pages/LegalPage';
-import MyDocumentsPage from './pages/MyDocumentsPage';
-import MyHotelsPage from './pages/MyHotelsPage';
-import MyListingsPage from './pages/MyListingsPage';
-import ListingFormPage from './pages/ListingFormPage';
 import ListingPage from './pages/ListingPage';
 import MorePage from './pages/MorePage';
 import NotFoundPage from './pages/NotFoundPage';
-import NotificationsPage from './pages/NotificationsPage';
-import PremiumPage from './pages/PremiumPage';
-import ProfilePage from './pages/ProfilePage';
-import SavedSearchesPage from './pages/SavedSearchesPage';
 import SearchPage from './pages/SearchPage';
-import InvitePage from './pages/InvitePage';
 import StartPage from './pages/StartPage';
-import TestCardPage from './pages/TestCardPage';
 import { AuthProvider } from './providers/AuthProvider';
 import { I18nProvider } from './providers/I18nProvider';
 import { ToastProvider } from './providers/ToastProvider';
+
+// Редкие страницы — отдельными частями, скачиваются при первом заходе (FRONTEND-050).
+// Поиск, объявление, избранное, гостиницы и «Ещё» — в основной части
+const AcceptancePage = lazyPage(() => import('./pages/AcceptancePage'));
+const AgencyCabinetPage = lazyPage(() => import('./pages/AgencyCabinetPage'));
+const AgencyPage = lazyPage(() => import('./pages/AgencyPage'));
+const ComparePage = lazyPage(() => import('./pages/ComparePage'));
+const FeatureLabPage = lazyPage(() => import('./pages/FeatureLabPage'));
+const HelpPage = lazyPage(() => import('./pages/HelpPage'));
+const HistoryPage = lazyPage(() => import('./pages/HistoryPage'));
+const HotelFormPage = lazyPage(() => import('./pages/HotelFormPage'));
+const InvitePage = lazyPage(() => import('./pages/InvitePage'));
+const LegalPage = lazyPage(() => import('./pages/LegalPage'));
+const ListingFormPage = lazyPage(() => import('./pages/ListingFormPage'));
+const MyDocumentsPage = lazyPage(() => import('./pages/MyDocumentsPage'));
+const MyHotelsPage = lazyPage(() => import('./pages/MyHotelsPage'));
+const MyListingsPage = lazyPage(() => import('./pages/MyListingsPage'));
+const NotificationsPage = lazyPage(() => import('./pages/NotificationsPage'));
+const PremiumPage = lazyPage(() => import('./pages/PremiumPage'));
+const ProfilePage = lazyPage(() => import('./pages/ProfilePage'));
+const SavedSearchesPage = lazyPage(() => import('./pages/SavedSearchesPage'));
+const TestCardPage = lazyPage(() => import('./pages/TestCardPage'));
 
 const router = createBrowserRouter(
   [
