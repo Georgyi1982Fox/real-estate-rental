@@ -168,6 +168,25 @@ async def test_premium_gets_details_and_on_demand_analysis(
     assert len(analyzer.calls) == 2
 
 
+async def test_texts_in_interface_language(
+    client: AsyncClient, session: AsyncSession, analyzer: FakeAnalyzer
+) -> None:
+    """Язык Mini App (?lang=) важнее языка профиля: тексты не смешиваются."""
+    listing = await add(session, "a")
+    await make_premium(client, session)
+
+    path = f"/api/listings/{listing.id}/photo-report"
+    body = (await client.get(f"{path}?lang=en", headers=HEADERS)).json()
+    assert body["summary"] == "Old."
+    assert body["level_label"] == "needs repair"
+    assert [issue["label"] for issue in body["issues"]] == ["Mold", "Old plumbing"]
+    assert len(analyzer.calls) == 1
+    ka = (await client.get(f"{path}?lang=ka", headers=HEADERS)).json()
+    assert ka["summary"] == "ძველი."
+    assert len(analyzer.calls) == 1, "другой язык — тот же разбор, без нового запроса к AI"
+    assert (await client.get(f"{path}?lang=de", headers=HEADERS)).status_code == 422
+
+
 async def test_listing_without_photos(client: AsyncClient, session: AsyncSession) -> None:
     listing = await add(session, "a", photos=0)
     await make_premium(client, session)

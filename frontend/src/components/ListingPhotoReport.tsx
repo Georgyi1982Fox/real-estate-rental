@@ -21,10 +21,13 @@ const SKELETON_DELAY_MS = 500;
  * нет; 404 (фото нет или разбора ещё нет), 503, 429 и прочие ошибки — блок тихо скрыт
  */
 export default function ListingPhotoReport({ listingId }: ListingPhotoReportProps) {
-  const { t } = useI18n();
+  const { lang, t } = useI18n();
   const rt = t.listing.repair;
+  // ?lang= — вывод AI на языке интерфейса, даже если в профиле сохранён другой
   const { data, error, loading } = useApi<PhotoReport>(
-    isInTelegram() ? `/api/listings/${encodeURIComponent(listingId)}/photo-report` : null,
+    isInTelegram()
+      ? `/api/listings/${encodeURIComponent(listingId)}/photo-report?lang=${lang}`
+      : null,
   );
   const [slow, setSlow] = useState(false);
   useEffect(() => {
