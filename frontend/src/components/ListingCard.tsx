@@ -17,6 +17,7 @@ import FraudBadge from './FraudBadge';
 import ListingPrice from './ListingPrice';
 import OwnerBadge from './OwnerBadge';
 import PromotionBadges from './PromotionBadges';
+import RepairBadge, { isRepairLevel } from './RepairBadge';
 import ViewsBadge from './ViewsBadge';
 
 interface ListingCardProps {
@@ -60,6 +61,7 @@ export default function ListingCard({
   const source = sourceName(listing.source);
   const compare = comparable && canCompare(listing);
   const views = typeof listing.views === 'number' ? listing.views : 0;
+  const repair = isRepairLevel(listing.repair_level) ? listing.repair_level : null;
 
   // Нажали на карточку — страница объявления открывается сразу с этими данными
   useEffect(() => rememberListingPreview(listing), [listing]);
@@ -141,6 +143,8 @@ export default function ListingCard({
             <span aria-hidden="true">📍</span>
             <span>{district}</span>
           </p>
+
+          {repair && <RepairBadge level={repair} className="listing-card__repair" />}
 
           {/* z-10: над «растянутой» ссылкой карточки */}
           {showAgency && listing.agency && (
