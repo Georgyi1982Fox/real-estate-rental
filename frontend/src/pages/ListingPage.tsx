@@ -164,9 +164,19 @@ export default function ListingPage() {
   const districtEntry = listing ? names[listing.district] : undefined;
   const district = listing ? (districtEntry ? tr(districtEntry, lang) : listing.district) : '';
   const ownerName = tr(listing?.owner?.name, lang) || listing?.owner_name || '';
-  // Объявление агентства: имя уже видно на значке агентства — второй раз не показываем
-  const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
-  const showOwner = ownerName !== '' && !(listing?.agency && sameName(ownerName, listing.agency.name));
+  // Объявление агентства: имя уже видно на значке агентства — второй раз не показываем.
+  // Имя владельца переводится (ka/en — транслитерация), поэтому сравниваем и исходное имя,
+  // и все его переводы с названием агентства
+  const agencyName = listing?.agency?.name.trim().toLowerCase();
+  const localizedOwner = listing?.owner?.name;
+  const ownerNames = [
+    listing?.owner_name,
+    ...(typeof localizedOwner === 'string' ? [localizedOwner] : Object.values(localizedOwner ?? {})),
+  ];
+  const sameAsAgency =
+    agencyName !== undefined &&
+    ownerNames.some((name) => typeof name === 'string' && name.trim().toLowerCase() === agencyName);
+  const showOwner = ownerName !== '' && !sameAsAgency;
   const address = tr(listing?.address, lang);
   const place = address ? `${address}, ${district}` : district;
   const promoted = listing?.is_promoted === true;

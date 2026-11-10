@@ -1,4 +1,4 @@
-"""``/api/me``: владелец видит «Проверку функций» (is_admin)."""
+"""``/api/me``: владелец отмечен ``is_admin``."""
 
 import pytest
 from httpx import AsyncClient

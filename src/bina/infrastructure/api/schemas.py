@@ -388,7 +388,7 @@ class MeOut(BaseModel):
     balance: float
     favorites_count: int
     created_at: datetime
-    # Владелец (ADMIN_TELEGRAM_IDS или роль admin): видит «Проверку функций»
+    # Владелец (ADMIN_TELEGRAM_IDS или роль admin)
     is_admin: bool = False
 
     @classmethod
