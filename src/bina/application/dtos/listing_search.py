@@ -1,7 +1,7 @@
 """DTO фильтров поиска объявлений."""
 
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from enum import StrEnum
 from typing import Any
@@ -10,6 +10,9 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, model_validator
 
 from bina.application.rent_period import MONTHLY
+
+# «📉 Цена снижена» (FRONTEND-055): снижение цены показываем и ищем 30 дней
+PRICE_DROP_WINDOW = timedelta(days=30)
 
 
 class ListingSort(StrEnum):
@@ -72,6 +75,8 @@ class ListingSearchFilters(BaseModel):
     owner_only: bool = False
     # Опубликовано на сайте не раньше
     published_since: datetime | None = None
+    # Подешевели не раньше (цена ниже прежней, FRONTEND-055)
+    price_dropped_since: datetime | None = None
     # Источники (любой из): ss, myhome, livo, korter, telegram, owner (SOURCES)
     sources: tuple[str, ...] = ()
 

@@ -309,8 +309,9 @@ class ListingsRepository(IListingsRepository):
             new_price = values["price"]
             price_changed = listing.price is not None and Decimal(listing.price) != new_price
             if price_changed:
-                # Для уведомления «цена снижена» (TASK-028)
-                values["previous_price"] = listing.price
+                # Для уведомления «цена снижена» (TASK-028); в другой валюте не сравнить
+                same_currency = values["currency"] == listing.currency
+                values["previous_price"] = listing.price if same_currency else None
                 values["price_changed_at"] = datetime.now(UTC)
                 # С новой ценой дубликаты могут быть другими (TASK-090)
                 values["duplicates_checked_at"] = None
@@ -1066,6 +1067,9 @@ def _detail_conditions(filters: ListingSearchFilters) -> list[ColumnElement[bool
         conditions.append(published >= filters.published_since)
     if filters.sources:
         conditions.append(Listing.source_name.in_(filters.sources))
+    if filters.price_dropped_since is not None:
+        conditions.append(Listing.previous_price > Listing.price)
+        conditions.append(Listing.price_changed_at >= filters.price_dropped_since)
     return conditions
 
 

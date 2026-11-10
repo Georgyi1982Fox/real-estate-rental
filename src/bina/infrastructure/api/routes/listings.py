@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field, ValidationError
 
 from bina.application.dtos.listing_search import (
+    PRICE_DROP_WINDOW,
     SOURCES,
     ListingSearchFilters,
     ListingSort,
@@ -118,6 +119,9 @@ async def list_listings(
     published_days: Annotated[
         int | None, Query(ge=1, le=365, description="Опубликовано за последние N дней")
     ] = None,
+    price_dropped: Annotated[
+        bool, Query(description="Только подешевевшие за 30 дней (FRONTEND-055)")
+    ] = False,
     source: Annotated[
         str | None,
         Query(
@@ -160,6 +164,7 @@ async def list_listings(
                 datetime.now(UTC) - timedelta(days=published_days) if published_days else None
             ),
             sources=parse_codes(source, SOURCES, "source"),
+            price_dropped_since=(datetime.now(UTC) - PRICE_DROP_WINDOW if price_dropped else None),
         )
     except ValidationError as exc:
         raise bad_request(
