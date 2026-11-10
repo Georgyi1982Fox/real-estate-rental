@@ -27,6 +27,7 @@ import ListingDates from '../components/ListingDates';
 import ListingDescription from '../components/ListingDescription';
 import ListingDocuments from '../components/ListingDocuments';
 import ListingLocation, { hasMapPoint, mapTarget } from '../components/ListingLocation';
+import ListingPhotoReport from '../components/ListingPhotoReport';
 import ListingPrice from '../components/ListingPrice';
 import ListingSkeleton from '../components/ListingSkeleton';
 import ListingSpecs from '../components/ListingSpecs';
@@ -34,6 +35,7 @@ import MapChooser from '../components/MapChooser';
 import MarketPriceBadge from '../components/MarketPriceBadge';
 import PhoneReveal from '../components/PhoneReveal';
 import PromotionBadges from '../components/PromotionBadges';
+import RepairBadge, { isRepairLevel } from '../components/RepairBadge';
 import ShareButton from '../components/ShareButton';
 import SimilarListings from '../components/SimilarListings';
 import { useApi } from '../hooks/useApi';
@@ -167,6 +169,7 @@ export default function ListingPage() {
   const promoted = listing?.is_promoted === true;
   const verified = listing?.is_verified === true;
   const premium = listing?.is_premium_listing === true;
+  const repair = isRepairLevel(listing?.repair_level) ? listing.repair_level : null;
 
   return (
     <>
@@ -278,6 +281,8 @@ export default function ListingPage() {
 
                 <MarketPriceBadge listingId={listing.id} />
 
+                {repair && <RepairBadge level={repair} className="listing-summary__repair" />}
+
                 {listing.agency && <AgencyLink agency={listing.agency} />}
 
                 {ownerName && (
@@ -361,6 +366,8 @@ export default function ListingPage() {
                 text={tr(listing.description, lang).trim()}
                 pending={descriptionPending}
               />
+              {/* Разбор фото: Premium — проблемы и вывод AI, без Premium — приглашение */}
+              <ListingPhotoReport listingId={listing.id} />
               {/* Готовое сообщение человек отправляет сам: хозяину — в бота, иначе — на сайте */}
               <ListingAssistant
                 listingId={listing.id}

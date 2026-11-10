@@ -97,6 +97,8 @@ export interface Listing {
   is_verified?: boolean;
   /** «⭐ Premium-объявление» агентства: раз в сутки поднимается наверх (TASK-100) */
   is_premium_listing?: boolean;
+  /** Ремонт по фото (AI, TASK-114); null — фото ещё не разобраны */
+  repair_level?: RepairLevel | null;
   /** Агентство, разместившее объявление */
   agency?: AgencyBrief | null;
   latitude?: number | null;
@@ -222,6 +224,28 @@ export interface Recommendations {
 export interface ListingSourceLink {
   source: string;
   url: string;
+}
+
+/** Ремонт по фото, оценка AI (TASK-114) */
+export type RepairLevel = 'excellent' | 'good' | 'needs_repair';
+
+/** Проблема, видная на фото: code — mold, cracks…; label — на языке пользователя */
+export interface PhotoIssue {
+  code: string;
+  label: string;
+}
+
+/**
+ * GET /api/listings/{id}/photo-report (нужен X-Telegram-Init-Data, иначе 401).
+ * Без Premium issues пустой, summary пустой, premium_required: true
+ */
+export interface PhotoReport {
+  level: RepairLevel;
+  level_label: string;
+  issues: PhotoIssue[];
+  summary: string;
+  analyzed_at: string;
+  premium_required: boolean;
 }
 
 /** Цена относительно рынка; unknown — данных мало, плашку не показываем */
