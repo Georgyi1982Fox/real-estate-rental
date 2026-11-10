@@ -6,9 +6,9 @@
 """
 
 from datetime import UTC, datetime
-from typing import Literal
+from typing import Annotated, Literal
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 
 from bina.application.photo_analysis import (
@@ -81,9 +81,21 @@ def _analyzer(request: Request) -> IPhotoAnalyzer | None:
 
 @router.get("/{listing_id}/photo-report", response_model=PhotoReportOut)
 async def photo_report(
-    listing_id: str, request: Request, user: CurrentUserDep, session: SessionDep
+    listing_id: str,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+    lang: Annotated[
+        str | None,
+        Query(pattern="^(ka|ru|en)$", description="Язык интерфейса; по умолчанию — профиля"),
+    ] = None,
 ) -> PhotoReportOut:
-    """Разбор фото; 404 — фото нет (или разбора ещё нет, а пользователь без Premium)."""
+    """Разбор фото; 404 — фото нет (или разбора ещё нет, а пользователь без Premium).
+
+    Тексты (уровень, проблемы, вывод AI) — на ``lang``: в Mini App язык может отличаться
+    от сохранённого в профиле, а смешивать языки на экране нельзя.
+    """
+    language = lang or user.language
     listing = await get_listing_or_404(session, listing_id)
     if not photos_for_analysis(listing.images):
         raise not_found("No photos")
@@ -94,13 +106,13 @@ async def photo_report(
     if not premium:
         if record is None:
             raise not_found("Photos not analyzed yet")
-        return _out(record, user.language, premium=False)
+        return _out(record, language, premium=False)
 
     analyzer = _analyzer(request)
     if analyzer is None:
         if record is None:
             raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "AI is not configured")
-        return _out(record, user.language, premium=True)
+        return _out(record, language, premium=True)
     use_case = AnalyzePhotosUseCase(repository, analyzer, model=getattr(analyzer, "model", ""))
     try:
         if record is None or record.photos_hash != photos_fingerprint(listing.images):
@@ -121,4 +133,4 @@ async def photo_report(
             close = getattr(analyzer, "close", None)
             if close is not None:
                 await close()
-    return _out(record, user.language, premium=True)
+    return _out(record, language, premium=True)
