@@ -24,7 +24,6 @@ npm run dev
 | Главная | `/` (пагинация `?page=2`) |
 | Квартира (#1 — полная, 4 фото) | `/listing/1` |
 | 404 | `/listing/999` |
-| Тест карточки | `/test_card` |
 | Вход | `/auth` (ошибка Google: `/auth?error=google`) |
 
 Язык: `?lang=ka|ru|en` или переключатель в шапке, выбор сохраняется в `localStorage` (`bina_lang`).
