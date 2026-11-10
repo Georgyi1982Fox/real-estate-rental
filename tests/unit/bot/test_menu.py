@@ -128,5 +128,5 @@ def test_home_menu_layout() -> None:
     assert rows[2] == ["🧠 Умный поиск", "❤️ Избранное"]
     assert rows[3] == ["🏠 Сдать квартиру"]
     assert rows[-2] == ["📄 Соглашение", "🔒 Конфиденциальность"]
-    assert rows[-1] == ["📊 Админка", "🧪 Проверка функций"]
+    assert rows[-1] == ["📊 Админка"]
     assert all(len(row) <= 2 for row in rows)

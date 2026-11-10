@@ -34,7 +34,7 @@ class ApiSettings:
     bot_token: str | None = None
     init_data_max_age: int = DEFAULT_INIT_DATA_MAX_AGE
     allow_insecure_user_id: bool = False
-    # Telegram ID владельца (ADMIN_TELEGRAM_IDS): страница «Проверка функций» в Mini App
+    # Telegram ID владельца (ADMIN_TELEGRAM_IDS): ``is_admin`` в /api/me
     admin_ids: tuple[int, ...] = ()
     # TASK-019: запросов в минуту с одного IP (0 — без ограничения)
     rate_limit: int = DEFAULT_RATE_LIMIT
