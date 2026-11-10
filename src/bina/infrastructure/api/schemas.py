@@ -8,6 +8,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from bina.application.cities import CITIES
+from bina.application.dtos.listing_search import PRICE_DROP_WINDOW
 from bina.application.dtos.pagination import Page
 from bina.application.fraud import fraud_level
 from bina.application.listing_details import CONDITIONS, FEATURES, clean_features
@@ -52,6 +53,16 @@ def _repair_level(value: str | None) -> Any:
 
 def _rent_period(value: str | None) -> RentPeriod:
     return "daily" if value == "daily" else "monthly"
+
+
+def _price_drop(listing: Listing) -> dict[str, Any]:
+    """``old_price`` и ``price_dropped_at``, если цена снизилась за ``PRICE_DROP_WINDOW``."""
+    old, changed = listing.previous_price, listing.price_changed_at
+    if old is None or changed is None or old <= listing.price:
+        return {}
+    if changed < datetime.now(UTC) - PRICE_DROP_WINDOW:
+        return {}
+    return {"old_price": float(old), "price_dropped_at": changed}
 
 
 def localized(**texts: str | None) -> Localized:
@@ -132,6 +143,13 @@ class ListingOut(BaseModel):
     longitude: float | None = None
     published_at: datetime | None = Field(default=None, description="Опубликовано на сайте")
     updated_at: datetime | None = Field(default=None, description="Обновлено на сайте")
+    old_price: float | None = Field(
+        default=None,
+        description="«📉 Цена снижена»: прежняя цена, если подешевело за последние 30 дней",
+    )
+    price_dropped_at: datetime | None = Field(
+        default=None, description="Когда снизилась цена (вместе с old_price)"
+    )
 
     @classmethod
     def from_model(cls, listing: Listing) -> "ListingOut":
@@ -174,6 +192,7 @@ class ListingOut(BaseModel):
             longitude=listing.longitude,
             published_at=listing.source_published_at or listing.created_at,
             updated_at=listing.source_updated_at,
+            **_price_drop(listing),
         )
 
 

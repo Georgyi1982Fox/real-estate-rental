@@ -63,6 +63,8 @@ async def test_listing_shape(client: AsyncClient, seeded: Store) -> None:
         "views": 1,
         "also_on": [],
         "translating": False,
+        "old_price": None,
+        "price_dropped_at": None,
         "owner_name": None,
         "fraud_level": "none",
         "fraud_reasons": [],
