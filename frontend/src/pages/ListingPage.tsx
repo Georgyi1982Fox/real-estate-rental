@@ -164,6 +164,9 @@ export default function ListingPage() {
   const districtEntry = listing ? names[listing.district] : undefined;
   const district = listing ? (districtEntry ? tr(districtEntry, lang) : listing.district) : '';
   const ownerName = tr(listing?.owner?.name, lang) || listing?.owner_name || '';
+  // Объявление агентства: имя уже видно на значке агентства — второй раз не показываем
+  const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+  const showOwner = ownerName !== '' && !(listing?.agency && sameName(ownerName, listing.agency.name));
   const address = tr(listing?.address, lang);
   const place = address ? `${address}, ${district}` : district;
   const promoted = listing?.is_promoted === true;
@@ -285,7 +288,7 @@ export default function ListingPage() {
 
                 {listing.agency && <AgencyLink agency={listing.agency} />}
 
-                {ownerName && (
+                {showOwner && (
                   <p className="listing-summary__owner text-sm text-[var(--text-secondary)]">
                     {lt.owner}:{' '}
                     <span className="font-medium text-[var(--text-primary)]">{ownerName}</span>

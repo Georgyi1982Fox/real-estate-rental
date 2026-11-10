@@ -31,7 +31,6 @@ const AcceptancePage = lazyPage(() => import('./pages/AcceptancePage'));
 const AgencyCabinetPage = lazyPage(() => import('./pages/AgencyCabinetPage'));
 const AgencyPage = lazyPage(() => import('./pages/AgencyPage'));
 const ComparePage = lazyPage(() => import('./pages/ComparePage'));
-const FeatureLabPage = lazyPage(() => import('./pages/FeatureLabPage'));
 const HelpPage = lazyPage(() => import('./pages/HelpPage'));
 const HistoryPage = lazyPage(() => import('./pages/HistoryPage'));
 const HotelFormPage = lazyPage(() => import('./pages/HotelFormPage'));
@@ -45,7 +44,6 @@ const NotificationsPage = lazyPage(() => import('./pages/NotificationsPage'));
 const PremiumPage = lazyPage(() => import('./pages/PremiumPage'));
 const ProfilePage = lazyPage(() => import('./pages/ProfilePage'));
 const SavedSearchesPage = lazyPage(() => import('./pages/SavedSearchesPage'));
-const TestCardPage = lazyPage(() => import('./pages/TestCardPage'));
 
 const router = createBrowserRouter(
   [
@@ -92,9 +90,6 @@ const router = createBrowserRouter(
         { path: '/premium', element: <PremiumPage /> },
         { path: '/searches', element: <SavedSearchesPage /> },
         { path: '/notifications', element: <NotificationsPage /> },
-        { path: '/test_card', element: <TestCardPage /> },
-        // Временная «Проверка функций» для владельца (удалить после FRONTEND-023…029)
-        { path: '/lab', element: <FeatureLabPage /> },
         { path: '*', element: <NotFoundPage /> },
       ],
     },
