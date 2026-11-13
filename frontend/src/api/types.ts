@@ -9,8 +9,8 @@ export interface Owner {
   name?: Localized;
 }
 
-/** ID квартиры: UUID-строка с бэкенда, число — только в mock_data.json */
-export type ListingId = string | number;
+/** ID квартиры: UUID-строка с бэкенда */
+export type ListingId = string;
 
 /** Проверка на мошенничество: warning — предупредить; high — скрыто из поиска, открывается по ссылке */
 export type FraudLevel = 'none' | 'warning' | 'high';
