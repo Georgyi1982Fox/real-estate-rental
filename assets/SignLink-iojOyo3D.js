@@ -1,0 +1,1 @@
+import{t as e}from"./vendor-CsEdMS6D.js";import{Dr as t,Er as n,Or as r}from"./index-C5vxdYz9.js";var i=e();function a({url:e,className:a,children:o}){return t()?(0,i.jsx)(`button`,{type:`button`,className:a,onClick:()=>{n(`light`),r(e)},children:o}):(0,i.jsx)(`a`,{className:a,href:e,target:`_blank`,rel:`noopener noreferrer`,children:o})}export{a as t};
