@@ -682,9 +682,23 @@ async def notify() -> tuple[CreatedNotifications, DeliveryStats | None]:
         from aiogram import Bot
 
         from bina.infrastructure.bot.notifications import TelegramNotificationSender
+        from bina.infrastructure.bot.settings import BotConfigError, BotMode, BotSettings
 
         bot = Bot(token=token, default=_bot_defaults())
-        sender = TelegramNotificationSender(bot, os.getenv("BOT_MINI_APP_URL", "").strip() or None)
+        mini_app_url = os.getenv("BOT_MINI_APP_URL", "").strip() or None
+        try:
+            # Режим бота парсеру не важен — только адреса Mini App и владелец (TASK-124)
+            bot_settings = BotSettings.from_env(mode=BotMode.POLLING)
+        except BotConfigError as exc:
+            logger.warning("Bot settings for owner links are invalid", error=str(exc))
+            sender = TelegramNotificationSender(bot, mini_app_url)
+        else:
+            sender = TelegramNotificationSender(
+                bot,
+                mini_app_url,
+                owner_mini_app_url=bot_settings.owner_mini_app_url,
+                owner_ids=bot_settings.admin_ids,
+            )
         sent = skipped = failed = 0
         try:
             while True:

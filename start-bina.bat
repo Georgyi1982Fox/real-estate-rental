@@ -51,6 +51,15 @@ echo.
 echo 2/2 Туннель https://bina.test-realtybot.ru (отдельное окно, не закрывайте)
 start "Bina - tunnel" /d "%~dp0" cmd /k cloudflared tunnel run realtybot-dev
 
+rem TASK-124: российский туннель Tuna для владельца, если в .env задан TUNA_SUBDOMAIN
+rem (провайдер владельца не пускает к Cloudflare; адрес — BOT_OWNER_MINI_APP_URL)
+set "TUNA_SUBDOMAIN="
+for /f "tokens=1,* delims==" %%a in ('findstr /b /c:"TUNA_SUBDOMAIN=" .env 2^>nul') do set "TUNA_SUBDOMAIN=%%b"
+if defined TUNA_SUBDOMAIN (
+    echo    + туннель Tuna для владельца ^(отдельное окно, не закрывайте^)
+    start "Bina - tunnel RU" /d "%~dp0" cmd /k tuna http 5173 --subdomain=%TUNA_SUBDOMAIN%
+)
+
 echo.
 docker compose ps
 echo.

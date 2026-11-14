@@ -11,6 +11,8 @@ Bina.ai — Telegram-бот и Telegram Mini App для аренды жилья 
   автоматически после мержа в `develop` (`.github/workflows/deploy.yml`).
 - Docker Compose у владельца: db, migrate, api, web (собранный сайт Mini App + nginx на 5173,
   туда смотрит туннель; TASK-123), bot, scraper (расписание раз в час), backup.
+- У владельца провайдер не пускает к Cloudflare (сайт бесконечно грузится, у других открывается):
+  ему — свой адрес через российский туннель Tuna (`BOT_OWNER_MINI_APP_URL`, `TUNA_SUBDOMAIN`; TASK-124).
 - План и статус всех задач: `docs/tasks/ROADMAP.md`; задания: `docs/tasks/TASK-*.md`,
   `docs/tasks/FRONTEND-*.md`. Следующая задача — первая невыполненная в «Очереди» ROADMAP.
   После каждой задачи обновляй ROADMAP.

@@ -1,6 +1,6 @@
 import os
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import StrEnum
 
 
@@ -28,6 +28,8 @@ class BotSettings:
     - ``BOT_WEBHOOK_SECRET``: секрет для заголовка ``X-Telegram-Bot-Api-Secret-Token``
     - ``BOT_WEBAPP_HOST`` / ``BOT_WEBAPP_PORT``: адрес aiohttp-сервера (``0.0.0.0:8080``)
     - ``BOT_MINI_APP_URL``: URL Telegram Mini App (кнопка меню)
+    - ``BOT_OWNER_MINI_APP_URL``: свой адрес Mini App для владельца (``ADMIN_TELEGRAM_IDS``),
+      например российский туннель, если провайдер владельца не пускает к основному (TASK-124)
     - ``BOT_PAGE_SIZE``: объявлений на страницу (1-10, по умолчанию 5)
     - ``BOT_DROP_PENDING_UPDATES``: ``1``/``true``, пропустить накопившиеся апдейты
     - ``BOT_RATE_LIMIT``: сообщений и нажатий за 10 секунд от одного человека (20)
@@ -42,6 +44,8 @@ class BotSettings:
     webapp_host: str = "0.0.0.0"
     webapp_port: int = 8080
     mini_app_url: str | None = None
+    # TASK-124: адрес Mini App во всех кнопках для владельца (иначе — mini_app_url)
+    owner_mini_app_url: str | None = None
     page_size: int = 5
     drop_pending_updates: bool = False
     # TASK-110: кому доступна команда /admin
@@ -59,6 +63,12 @@ class BotSettings:
             raise BotConfigError("BOT_WEBHOOK_PATH must start with '/'")
         if self.mode is BotMode.WEBHOOK and not self.webhook_base_url:
             raise BotConfigError("BOT_WEBHOOK_BASE_URL is required in webhook mode")
+
+    def for_user(self, telegram_id: int | None) -> "BotSettings":
+        """Настройки для этого человека: владельцу — его адрес Mini App (TASK-124)."""
+        if self.owner_mini_app_url and telegram_id in self.admin_ids:
+            return replace(self, mini_app_url=self.owner_mini_app_url)
+        return self
 
     @property
     def webhook_url(self) -> str:
@@ -117,6 +127,7 @@ class BotSettings:
             webapp_host=get("BOT_WEBAPP_HOST") or "0.0.0.0",
             webapp_port=port,
             mini_app_url=get("BOT_MINI_APP_URL"),
+            owner_mini_app_url=get("BOT_OWNER_MINI_APP_URL"),
             page_size=page_size,
             drop_pending_updates=(get("BOT_DROP_PENDING_UPDATES") or "").lower()
             in {"1", "true", "yes"},

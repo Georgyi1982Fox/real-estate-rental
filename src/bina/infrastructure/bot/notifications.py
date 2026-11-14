@@ -105,14 +105,23 @@ class TelegramNotificationSender(INotificationSender):
         bot: Bot,
         mini_app_url: str | None = None,
         send_interval: float = SEND_INTERVAL_SECONDS,
+        *,
+        owner_mini_app_url: str | None = None,
+        owner_ids: tuple[int, ...] = (),
     ) -> None:
         self._bot = bot
         self._mini_app_url = mini_app_url
         self._send_interval = send_interval
+        # TASK-124: владельцу — ссылки на его адрес Mini App
+        self._owner_mini_app_url = owner_mini_app_url
+        self._owner_ids = owner_ids
 
     async def send(self, pending: PendingNotification) -> DeliveryResult:
         """Отправить одно уведомление."""
-        rendered = render_notification(pending, self._mini_app_url)
+        url = self._mini_app_url
+        if self._owner_mini_app_url and pending.telegram_id in self._owner_ids:
+            url = self._owner_mini_app_url
+        rendered = render_notification(pending, url)
         if rendered is None:
             return DeliveryResult.UNDELIVERABLE
         text, keyboard = rendered

@@ -13,6 +13,7 @@ from bina.application.ports.speech import ISpeechToText
 from bina.application.ports.translator import IMessageTranslator
 from bina.infrastructure.bot.handlers import build_router
 from bina.infrastructure.bot.middlewares import DbSessionMiddleware, RegistrationMiddleware
+from bina.infrastructure.bot.middlewares.owner_app_url import OwnerAppUrlMiddleware
 from bina.infrastructure.bot.middlewares.throttling import ThrottlingMiddleware
 from bina.infrastructure.bot.settings import BotSettings
 from bina.infrastructure.bot.texts import t
@@ -108,6 +109,8 @@ def create_dispatcher(
     dispatcher.update.outer_middleware(ThrottlingMiddleware(settings.rate_limit))
     dispatcher.update.outer_middleware(DbSessionMiddleware(session_factory))
     dispatcher.update.outer_middleware(RegistrationMiddleware())
+    # TASK-124: владельцу — свой адрес Mini App во всех кнопках
+    dispatcher.update.outer_middleware(OwnerAppUrlMiddleware())
     dispatcher.include_router(build_router())
     return dispatcher
 
@@ -139,3 +142,18 @@ async def setup_bot_ui(bot: Bot, settings: BotSettings) -> None:
                 web_app=WebAppInfo(url=settings.mini_app_url),
             )
         )
+    # TASK-124: кнопка «Открыть» в чате владельца ведёт на его адрес; адрес убрали из .env —
+    # в его чате снова общая кнопка
+    owner_button = (
+        MenuButtonWebApp(
+            text=t(DEFAULT_COMMANDS_LANGUAGE, "open_app"),
+            web_app=WebAppInfo(url=settings.owner_mini_app_url),
+        )
+        if settings.owner_mini_app_url
+        else None
+    )
+    for admin_id in settings.admin_ids:
+        try:
+            await bot.set_chat_menu_button(chat_id=admin_id, menu_button=owner_button)
+        except TelegramBadRequest as exc:
+            logger.warning("Owner menu button not set", admin_id=admin_id, error=str(exc))
