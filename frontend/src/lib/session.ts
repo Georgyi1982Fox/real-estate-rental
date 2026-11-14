@@ -1,12 +1,12 @@
 // Локальное состояние сессии в localStorage.
 // Настоящая авторизация — на бэкенде (initData в Telegram, cookie-сессия в браузере);
-// здесь только mock-токен и флаг «вышел из аккаунта».
+// здесь только отметка «вошёл» и флаг «вышел из аккаунта».
 
 import { getInitData } from './telegram';
 
 export type AuthMethod = 'telegram' | 'google' | 'email';
 
-const TOKEN_KEY = 'bina:token';
+const SIGNED_IN_KEY = 'bina:token';
 const SIGNED_OUT_KEY = 'bina:signed_out';
 
 function read(key: string): string | null {
@@ -27,13 +27,13 @@ function write(key: string, value: string | null): void {
   }
 }
 
-/** Mock-токен: только маркер для UI, никуда не отправляется */
-export function saveMockToken(method: AuthMethod): void {
-  write(TOKEN_KEY, `mock.${method}.${Date.now()}`);
+/** Отметка «вошёл» (как и когда): только для интерфейса, никуда не отправляется */
+export function markSignedIn(method: AuthMethod): void {
+  write(SIGNED_IN_KEY, `${method}.${Date.now()}`);
 }
 
-export function clearMockToken(): void {
-  write(TOKEN_KEY, null);
+export function clearSignedIn(): void {
+  write(SIGNED_IN_KEY, null);
 }
 
 /**

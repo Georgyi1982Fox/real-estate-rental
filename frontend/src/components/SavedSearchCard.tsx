@@ -50,7 +50,7 @@ export default function SavedSearchCard({
   const titleId = useId();
   const chips = extraFilterChips(search.filters, t, lang, cityNames);
   const description = describeFilters(search.filters, districtName, st);
-  // Без своего названия (mock) заголовком служат сами фильтры
+  // Без своего названия заголовком служат сами фильтры
   const title = search.name.trim() || description;
   // Название, которое сервер собрал из фильтров, повторно строкой фильтров не дублируем
   const showDescription = normalize(title) !== normalize(description);

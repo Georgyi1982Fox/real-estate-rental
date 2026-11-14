@@ -5,9 +5,9 @@ import type { AuthResponse, AuthUser, LoginRequest, RegisterRequest } from '../a
 import { clearFavorites, refreshFavorites } from '../hooks/useFavorites';
 import { WEB_AUTH_ENABLED } from '../lib/config';
 import {
-  clearMockToken,
+  clearSignedIn,
   isSignedOut as readSignedOut,
-  saveMockToken,
+  markSignedIn,
   setSignedOut as writeSignedOut,
 } from '../lib/session';
 import { getTelegramUser, isInTelegram as detectTelegram } from '../lib/telegram';
@@ -64,27 +64,27 @@ export function AuthProvider({ children, onLogout }: AuthProviderProps) {
     if (!IN_TELEGRAM) return;
     writeSignedOut(false);
     setSignedOut(false);
-    saveMockToken('telegram');
+    markSignedIn('telegram');
     // Избранное хранится на сервере — после входа подтягиваем его
     void refreshFavorites();
   }, []);
 
   const signIn = useCallback(async (data: LoginRequest) => {
     const { user } = await apiPost<AuthResponse>('/api/auth/login', data);
-    saveMockToken('email');
+    markSignedIn('email');
     setBrowserUser(user);
   }, []);
 
   const signUp = useCallback(async (data: RegisterRequest) => {
     const { user } = await apiPost<AuthResponse>('/api/auth/register', data);
-    saveMockToken('email');
+    markSignedIn('email');
     setBrowserUser(user);
   }, []);
 
   const logout = useCallback(() => {
     // Сессию на бэкенде закрываем «в фоне»: локальный выход не должен зависеть от сети
     if (!IN_TELEGRAM && WEB_AUTH_ENABLED) void apiPost('/api/auth/logout').catch(() => undefined);
-    clearMockToken();
+    clearSignedIn();
     clearFavorites();
     resetLang();
     if (IN_TELEGRAM) {

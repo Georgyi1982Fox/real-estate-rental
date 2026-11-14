@@ -19,83 +19,21 @@ import { useI18n } from '../providers/I18nProvider';
 import { useToast } from '../providers/ToastProvider';
 import { showPremiumPrompt } from './usePremiumPrompt';
 
-// Сохранённые поиски. Сначала — бэкенд /api/searches. Пока его нет (404) или нет сети,
-// работаем с mock-данными в localStorage: интерфейс полностью рабочий, а когда
-// бэкенд появится, хук перейдёт на него без переделок.
+// Сохранённые поиски — только на сервере (/api/searches): по ним бот присылает новые
+// квартиры. Нет сети — обычная ошибка с «Повторить», а не поиск, сохранённый только
+// на этом устройстве.
 const API_PATH = '/api/searches';
-const STORAGE_KEY = 'bina:saved_searches';
 
-/** Mock для первого запуска. name пустой — страница покажет фильтры словами на языке интерфейса */
-const SEED: SavedSearch[] = [
-  {
-    id: 'mock-1',
-    name: '',
-    filters: { district: 'vake', rooms: 2, max_price: 2000 },
-    notify: true,
-    new_count: 5,
-    created_at: '2026-09-20T10:00:00Z',
-  },
-  {
-    id: 'mock-2',
-    name: '',
-    filters: { district: 'saburtalo', min_price: 800, max_price: 1500 },
-    notify: true,
-    new_count: 0,
-    created_at: '2026-09-18T10:00:00Z',
-  },
-  {
-    id: 'mock-3',
-    name: '',
-    filters: { rooms: 3, min_price: 1500 },
-    notify: false,
-    new_count: 2,
-    created_at: '2026-09-15T10:00:00Z',
-  },
-];
-
-// Режим выбирается один раз за сессию по первому ответу GET /api/searches
-let localMode = false;
-
-/** 404 — эндпоинта ещё нет, 0 — нет сети: переходим на mock */
-function shouldFallback(error: unknown): boolean {
-  return error instanceof ApiError && (error.isNotFound || error.status === 0);
-}
-
-function isSavedSearch(value: unknown): value is SavedSearch {
-  if (typeof value !== 'object' || value === null) return false;
-  const item = value as Partial<SavedSearch>;
-  return typeof item.id === 'string' && typeof item.filters === 'object' && item.filters !== null;
+// Здесь раньше жил демо-режим (поиски только в браузере) — стираем, что от него осталось
+try {
+  window.localStorage.removeItem('bina:saved_searches');
+} catch {
+  // localStorage недоступен (приватный режим) — стирать нечего
 }
 
 /** Сервер отдаёт незаданные фильтры как null — в приложении таких полей просто нет */
 function normalize(search: SavedSearch): SavedSearch {
   return { ...search, filters: fromSavedFilters(cleanFilters(search.filters)) };
-}
-
-function loadLocal(): SavedSearch[] {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (raw === null) return SEED;
-    const value: unknown = JSON.parse(raw);
-    return Array.isArray(value) ? value.filter(isSavedSearch) : SEED;
-  } catch {
-    // localStorage недоступен (приватный режим) или повреждён
-    return SEED;
-  }
-}
-
-function saveLocal(searches: SavedSearch[]): void {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(searches));
-  } catch {
-    // Не удалось сохранить — останется до перезагрузки страницы
-  }
-}
-
-function localId(): string {
-  return typeof crypto.randomUUID === 'function'
-    ? crypto.randomUUID()
-    : `local-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 interface State {
@@ -118,21 +56,12 @@ export function useSavedSearches() {
   useEffect(() => {
     // Гостю запрос не нужен — бэкенд всё равно ответит 401
     if (!isAuthenticated) return;
-    if (localMode) {
-      setState({ searches: loadLocal(), loading: false });
-      return;
-    }
     const controller = new AbortController();
     setState((current) => ({ ...current, loading: true, error: undefined }));
     apiGet<ListResponse<SavedSearch>>(API_PATH, controller.signal).then(
       ({ items }) => setState({ searches: items.map(normalize), loading: false }),
       (error: unknown) => {
         if (controller.signal.aborted) return;
-        if (shouldFallback(error)) {
-          localMode = true;
-          setState({ searches: loadLocal(), loading: false });
-          return;
-        }
         setState({
           searches: [],
           loading: false,
@@ -145,13 +74,8 @@ export function useSavedSearches() {
 
   const reload = useCallback(() => setAttempt((value) => value + 1), []);
 
-  /** Изменить список; в mock-режиме сразу сохраняем в localStorage */
   const update = useCallback((change: (searches: SavedSearch[]) => SavedSearch[]) => {
-    setState((current) => {
-      const searches = change(current.searches);
-      if (localMode) saveLocal(searches);
-      return { ...current, searches };
-    });
+    setState((current) => ({ ...current, searches: change(current.searches) }));
   }, []);
 
   const fail = useCallback(() => {
@@ -172,16 +96,7 @@ export function useSavedSearches() {
       const body: CreateSavedSearchRequest = { filters, notify: true };
       if (name) body.name = name;
       try {
-        const created: SavedSearch = localMode
-          ? {
-              id: localId(),
-              name: name ?? '',
-              filters,
-              notify: true,
-              new_count: 0,
-              created_at: new Date().toISOString(),
-            }
-          : normalize(await apiPost<SavedSearch>(API_PATH, body));
+        const created = normalize(await apiPost<SavedSearch>(API_PATH, body));
         update((list) => [created, ...list]);
         return created;
       } catch (error) {
@@ -198,14 +113,10 @@ export function useSavedSearches() {
     [update, fail],
   );
 
-  /** PATCH /api/searches/{id}; в mock — просто изменить запись */
+  /** PATCH /api/searches/{id} */
   const patch = useCallback(
     async (search: SavedSearch, body: UpdateSavedSearchRequest): Promise<SavedSearch> =>
-      localMode
-        ? { ...search, ...body }
-        : normalize(
-            await apiPatch<SavedSearch>(`${API_PATH}/${encodeURIComponent(search.id)}`, body),
-          ),
+      normalize(await apiPatch<SavedSearch>(`${API_PATH}/${encodeURIComponent(search.id)}`, body)),
     [],
   );
 
@@ -246,7 +157,7 @@ export function useSavedSearches() {
   const remove = useCallback(
     async (id: string): Promise<boolean> => {
       try {
-        if (!localMode) await apiDelete(`${API_PATH}/${encodeURIComponent(id)}`);
+        await apiDelete(`${API_PATH}/${encodeURIComponent(id)}`);
         update((list) => list.filter((item) => item.id !== id));
         return true;
       } catch {
@@ -258,8 +169,8 @@ export function useSavedSearches() {
   );
 
   /**
-   * Пользователь открыл поиск — новые квартиры просмотрены. На бэкенде счётчик
-   * сбрасывает сервер, здесь — только в интерфейсе (в mock — и в localStorage).
+   * Пользователь открыл поиск — новые квартиры просмотрены. Счётчик на сервере
+   * сбрасывает сам сервер, здесь — только в интерфейсе.
    */
   const markSeen = useCallback(
     (id: string) =>
