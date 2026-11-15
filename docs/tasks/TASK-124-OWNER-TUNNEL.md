@@ -19,17 +19,20 @@
 
 ## Tuna (tuna.am)
 Российский сервис туннелей: точки входа в России и Европе, провайдеры РФ его не режут.
-Бесплатно: постоянный поддомен `<имя>.ru.tuna.am` (раздел «Домены» в https://my.tuna.am).
+Бесплатно: постоянный поддомен `<имя>.a.tuna.free` (раздел «Домены» в https://my.tuna.am,
+пометка «Бесплатный»). Старая зона `ru.tuna.am` для бесплатных адресов больше не выдаётся.
 На бесплатном тарифе при первом заходе из браузера Tuna показывает страницу-предупреждение
 (один раз) — для владельца это нормально; для всех пользователей этот путь не годится.
 
 ## Настройка у владельца (Windows, один раз)
 1. `winget install --id yuccastream.tuna` — затем закрыть и заново открыть PowerShell.
 2. `tuna login` — вход через браузер (регистрация на tuna.am).
-3. `tuna http 5173` — в выводе строка `Your permanent free domain: <имя>.ru.tuna.am`;
-   остановить `Ctrl+C`.
+3. Имя — в https://my.tuna.am/domains (пометка «Бесплатный»). Проверка:
+   `tuna http 5173 --subdomain=<имя>` → `Forwarding https://<имя>.a.tuna.free`; остановить `Ctrl+C`.
+   Нужна версия tuna 0.40+ (`tuna version`); winget из окна администратора не обновляет —
+   ставить MSI: https://releases.tuna.am/tuna/latest/tuna_x64.msi
 4. `notepad .env` — добавить две строки и сохранить:
-   `BOT_OWNER_MINI_APP_URL=https://<имя>.ru.tuna.am` и `TUNA_SUBDOMAIN=<имя>`.
+   `BOT_OWNER_MINI_APP_URL=https://<имя>.a.tuna.free` и `TUNA_SUBDOMAIN=<имя>`.
 5. `.\update-bina.bat`, затем `.\start-bina.bat` (откроется окно «Bina - tunnel RU»).
 6. В Telegram: закрыть приложение, в чате бота нажать «Открыть» у поля ввода. Первый раз —
    страница Tuna, нажать «Продолжить». Если приложение открылось «без входа» — закрыть и

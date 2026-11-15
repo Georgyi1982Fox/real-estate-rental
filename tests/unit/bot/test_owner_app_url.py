@@ -15,7 +15,7 @@ from .conftest import BotHarness
 from .test_notifications_sender import pending
 
 PUBLIC = "https://bina.example/"
-OWNER = "https://owner.ru.tuna.am"
+OWNER = "https://owner-1234.a.tuna.free"
 
 
 def test_settings_for_user() -> None:
