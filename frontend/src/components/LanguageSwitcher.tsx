@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMe } from '../hooks/useMe';
-import { LANGUAGES, STRINGS } from '../i18n/strings';
+import { LANGUAGES } from '../i18n/strings';
 import type { Lang } from '../i18n/strings';
 import { haptic } from '../lib/telegram';
 import { useAuth } from '../providers/AuthProvider';
@@ -15,16 +15,18 @@ export default function LanguageSwitcher() {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  // Интерфейс меняется сразу, выбор уходит на бэкенд (им пользуются бот и документы)
+  // Интерфейс меняется, как только скачан словарь (ru / en — отдельные части), выбор
+  // уходит на бэкенд (им пользуются бот и документы). Словарь не скачался — язык прежний
   const changeLanguage = (code: Lang) => {
     if (code === lang) return;
     haptic('selection');
-    setLang(code);
-    if (isAuthenticated) {
-      setLanguage(code).catch(() =>
-        showToast(STRINGS[code].profile.language_error, 'error'),
-      );
-    }
+    setLang(code).then(
+      (next) => {
+        if (!isAuthenticated) return;
+        setLanguage(code).catch(() => showToast(next.profile.language_error, 'error'));
+      },
+      () => showToast(t.profile.language_error, 'error'),
+    );
   };
 
   // Закрытие по клику вне меню и по Escape

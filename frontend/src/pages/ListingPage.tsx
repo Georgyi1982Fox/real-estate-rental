@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import type {
   ListResponse,
@@ -21,8 +21,7 @@ import FavoriteNote from '../components/FavoriteNote';
 import { FRAUD_WARNING_HASH } from '../components/FraudBadge';
 import FraudWarning from '../components/FraudWarning';
 import Gallery from '../components/Gallery';
-import ListingAssistant from '../components/ListingAssistant';
-import ListingCosts from '../components/ListingCosts';
+import ListingBlockSkeleton from '../components/ListingBlockSkeleton';
 import ListingDates from '../components/ListingDates';
 import ListingDescription from '../components/ListingDescription';
 import ListingDocuments from '../components/ListingDocuments';
@@ -48,11 +47,20 @@ import { useTelegramMainButton } from '../hooks/useTelegramMainButton';
 import { canCompare } from '../lib/compare';
 import { fill, tr } from '../lib/format';
 import { fraudLevel } from '../lib/fraud';
+import { lazyPage } from '../lib/lazyPage';
 import { listingPreview, rememberListingPreview } from '../lib/listingPreview';
-import { haptic } from '../lib/telegram';
+import { haptic, isInTelegram } from '../lib/telegram';
 import { alsoOnLinks, siteName } from '../lib/sources';
 import { useI18n } from '../providers/I18nProvider';
 import NotFoundPage from './NotFoundPage';
+
+// Блоки ниже первого экрана — отдельными частями (FRONTEND-054): первый экран квартиры
+// открывается быстрее, а пока человек долистает до них, они уже скачаны
+const ListingAssistant = lazyPage(() => import('../components/ListingAssistant'));
+const ListingCosts = lazyPage(() => import('../components/ListingCosts'));
+
+// Высота заглушек — как у самих блоков в первый момент (их заголовок, кнопки, скелетон
+// суммы), чтобы страница не прыгала, когда блок появится
 
 export default function ListingPage() {
   const { id = '' } = useParams();
@@ -382,12 +390,14 @@ export default function ListingPage() {
               {/* Разбор фото: Premium — проблемы и вывод AI, без Premium — приглашение */}
               <ListingPhotoReport listingId={listing.id} />
               {/* Готовое сообщение человек отправляет сам: хозяину — в бота, иначе — на сайте */}
-              <ListingAssistant
-                listingId={listing.id}
-                openUrl={gone ? '' : (listing.source_url ?? '')}
-                openLabel={byOwner ? lt.write_owner : lt.assistant.open_listing}
-                districtNames={names}
-              />
+              <Suspense fallback={<ListingBlockSkeleton height="min-h-[300px] sm:min-h-[172px]" />}>
+                <ListingAssistant
+                  listingId={listing.id}
+                  openUrl={gone ? '' : (listing.source_url ?? '')}
+                  openLabel={byOwner ? lt.write_owner : lt.assistant.open_listing}
+                  districtNames={names}
+                />
+              </Suspense>
               <ListingDocuments listing={listing} />
 
               <ListingLocation
@@ -399,7 +409,22 @@ export default function ListingPage() {
               />
               <DistrictAbout districtId={listing.district} />
               {/* Залог, комиссия и коммунальные считаются только для помесячной аренды */}
-              {canCompare(listing) && <ListingCosts listingId={listing.id} />}
+              {canCompare(listing) && (
+                <Suspense
+                  fallback={
+                    <ListingBlockSkeleton
+                      height={
+                        // Без Telegram вместо расчёта — приглашение войти, блок ниже
+                        isInTelegram()
+                          ? 'min-h-[820px] sm:min-h-[710px]'
+                          : 'min-h-[390px] sm:min-h-[318px]'
+                      }
+                    />
+                  }
+                >
+                  <ListingCosts listingId={listing.id} />
+                </Suspense>
+              )}
 
               <ListingDates
                 listingId={listing.id}

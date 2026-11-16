@@ -12,10 +12,6 @@ import type {
 import type { Lang } from '../i18n/strings';
 import { today } from './contract';
 
-export const ACCEPTANCE_PATH = '/acceptance';
-/** Параметр адреса: акт для объявления (`/acceptance?listing=12`) */
-export const ACCEPTANCE_LISTING_PARAM = 'listing';
-
 /** Ограничения бэкенда (routes/acceptance.py) */
 export const ACCEPTANCE_NAME_MIN = 2;
 export const ACCEPTANCE_NAME_MAX = 120;
@@ -99,12 +95,6 @@ export const ACCEPTANCE_FIELDS: AcceptanceField[] = [
   'water',
   'notes',
 ];
-
-/** Адрес страницы акта: для объявления или без него (из профиля) */
-export function acceptancePath(listingId?: string | number): string {
-  if (listingId === undefined) return ACCEPTANCE_PATH;
-  return `${ACCEPTANCE_PATH}?${ACCEPTANCE_LISTING_PARAM}=${encodeURIComponent(String(listingId))}`;
-}
 
 /** Под каким ключом хранится черновик */
 export function acceptanceDraftKey(listingId: string | null): string {

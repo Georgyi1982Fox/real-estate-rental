@@ -13,7 +13,6 @@ import SubscriptionCard from '../components/SubscriptionCard';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { FALLBACK_ME, useMe } from '../hooks/useMe';
 import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
-import { STRINGS } from '../i18n/strings';
 import type { Lang } from '../i18n/strings';
 import { haptic } from '../lib/telegram';
 import { useAuth } from '../providers/AuthProvider';
@@ -80,9 +79,11 @@ export default function ProfilePage() {
   const changeLanguage = (code: Lang) => {
     if (code === lang) return;
     haptic('selection');
-    // Интерфейс меняется сразу, на бэкенд (для бота) язык уходит в фоне
-    setLang(code);
-    setLanguage(code).catch(() => showToast(STRINGS[code].profile.language_error, 'error'));
+    // Интерфейс меняется, как только скачан словарь; на бэкенд (для бота) язык уходит в фоне
+    setLang(code).then(
+      (next) => setLanguage(code).catch(() => showToast(next.profile.language_error, 'error')),
+      () => showToast(t.profile.language_error, 'error'),
+    );
   };
 
   return (

@@ -23,24 +23,36 @@ function writeFlag(on: boolean): boolean {
 }
 
 /**
+ * Части сайта не загрузились (например, после выкладки новой версии старые удалены):
+ * один раз перезагружаем страницу. Возвращает false, если уже перезагружали (или без
+ * sessionStorage) — тогда перезагрузки не будет, чтобы не зациклиться.
+ */
+export function reloadOnce(): boolean {
+  if (readFlag() || !writeFlag(true)) return false;
+  window.location.reload();
+  return true;
+}
+
+/** Часть загрузилась — отметку о перезагрузке можно снять */
+export function chunkLoaded(): void {
+  writeFlag(false);
+}
+
+/**
  * Страница, которая скачивается только при первом заходе на неё (FRONTEND-050).
- * После выкладки новой версии старые части удаляются: если у человека открыта старая
- * версия и часть не загрузилась, страница один раз перезагружается и получает новую.
+ * Если у человека открыта старая версия и часть не загрузилась, страница один раз
+ * перезагружается и получает новую.
  */
 export function lazyPage<P extends object>(load: () => Promise<{ default: ComponentType<P> }>) {
   return lazy(() =>
     load().then(
       (module) => {
-        writeFlag(false);
+        chunkLoaded();
         return module;
       },
       (error: unknown) => {
-        // Без sessionStorage перезагрузка могла бы повторяться — тогда просто показываем ошибку
-        if (!readFlag() && writeFlag(true)) {
-          window.location.reload();
-          // Ждём перезагрузки, ошибку не показываем
-          return new Promise<never>(() => {});
-        }
+        // Ждём перезагрузки, ошибку не показываем
+        if (reloadOnce()) return new Promise<never>(() => {});
         throw error;
       },
     ),

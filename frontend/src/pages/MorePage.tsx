@@ -9,7 +9,7 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useSubscription } from '../hooks/useSubscription';
 import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
 import type { Strings } from '../i18n/strings';
-import { ACCEPTANCE_PATH } from '../lib/acceptance';
+import { ACCEPTANCE_PATH } from '../lib/paths';
 import { AGENCY_FREE_LISTINGS, AGENCY_PATH } from '../lib/agency';
 import { botSectionUrl } from '../lib/config';
 import { MY_LISTINGS_PATH } from '../lib/ownerListings';

@@ -11,7 +11,7 @@ import SavedSearchSkeleton from '../components/SavedSearchSkeleton';
 import { useApi } from '../hooks/useApi';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
-import { ACCEPTANCE_PATH } from '../lib/acceptance';
+import { ACCEPTANCE_PATH } from '../lib/paths';
 import { documentFilePath } from '../lib/signing';
 import type { DocumentPart } from '../lib/signing';
 import { haptic } from '../lib/telegram';

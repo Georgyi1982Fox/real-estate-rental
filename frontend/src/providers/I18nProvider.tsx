@@ -1,10 +1,25 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { ReactNode } from 'react';
-import { LANGUAGES, STRINGS } from '../i18n/strings';
+import PageSkeleton from '../components/PageSkeleton';
+import {
+  DEFAULT_LANG,
+  DEFAULT_STRINGS,
+  LANGUAGES,
+  loadedStrings,
+  loadStrings,
+} from '../i18n/strings';
 import type { Lang, Strings } from '../i18n/strings';
+import { reloadOnce } from '../lib/lazyPage';
 
 const STORAGE_KEY = 'bina_lang';
-const DEFAULT_LANG: Lang = 'ka';
 
 function isLang(value: unknown): value is Lang {
   return LANGUAGES.some((item) => item.code === value);
@@ -26,42 +41,95 @@ function resolveInitialLang(): Lang {
 interface I18nContextValue {
   lang: Lang;
   t: Strings;
-  setLang: (lang: Lang) => void;
+  /**
+   * Сменить язык без перезагрузки. Пока словарь скачивается, остаётся прежний язык
+   * целиком; промис — со словарём нового языка или ошибкой (тогда язык не меняется)
+   */
+  setLang: (lang: Lang) => Promise<Strings>;
   /** Сбросить выбор языка (выход из аккаунта): удаляет bina_lang, язык — по умолчанию */
   resetLang: () => void;
 }
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
+function saveLang(lang: Lang | null) {
+  try {
+    if (lang) window.localStorage.setItem(STORAGE_KEY, lang);
+    else window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // localStorage может быть недоступен (приватный режим) — не критично
+  }
+}
+
+interface Shown {
+  lang: Lang;
+  t: Strings;
+}
+
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>(resolveInitialLang);
+  // Показываем язык только со скачанным словарём — смеси языков не бывает (FRONTEND-054).
+  // null: словарь первого языка (ru / en) ещё грузится — вместо текстов заглушка
+  const [shown, setShown] = useState<Shown | null>(() => {
+    const initial = resolveInitialLang();
+    const t = loadedStrings(initial);
+    return t ? { lang: initial, t } : null;
+  });
+  // Последний выбранный язык: если переключили дважды подряд, побеждает последний
+  const wanted = useRef<Lang>(shown?.lang ?? resolveInitialLang());
+
+  useEffect(() => {
+    if (shown) return;
+    const initial = wanted.current;
+    let active = true;
+    loadStrings(initial).then(
+      (t) => {
+        if (active && wanted.current === initial) setShown({ lang: initial, t });
+      },
+      () => {
+        // Не пришёл и после повтора: одна перезагрузка (как у страниц), потом — ქართული
+        if (reloadOnce() || !active) return;
+        wanted.current = DEFAULT_LANG;
+        setShown({ lang: DEFAULT_LANG, t: DEFAULT_STRINGS });
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, [shown]);
 
   const setLang = useCallback((next: Lang) => {
-    setLangState(next);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, next);
-    } catch {
-      // см. выше
-    }
+    wanted.current = next;
+    return loadStrings(next).then((t) => {
+      if (wanted.current === next) {
+        setShown({ lang: next, t });
+        saveLang(next);
+      }
+      return t;
+    });
   }, []);
 
   const resetLang = useCallback(() => {
-    setLangState(DEFAULT_LANG);
-    try {
-      window.localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      // см. выше
-    }
+    wanted.current = DEFAULT_LANG;
+    setShown({ lang: DEFAULT_LANG, t: DEFAULT_STRINGS });
+    saveLang(null);
   }, []);
 
+  const lang = shown?.lang;
   useEffect(() => {
-    document.documentElement.lang = lang;
+    if (lang) document.documentElement.lang = lang;
   }, [lang]);
 
   const value = useMemo(
-    () => ({ lang, t: STRINGS[lang], setLang, resetLang }),
-    [lang, setLang, resetLang],
+    () => (shown ? { lang: shown.lang, t: shown.t, setLang, resetLang } : null),
+    [shown, setLang, resetLang],
   );
+  if (!value) {
+    return (
+      <div className="mx-auto w-full max-w-screen-xl px-4 pt-4 sm:px-6 lg:px-8">
+        <PageSkeleton />
+      </div>
+    );
+  }
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 
