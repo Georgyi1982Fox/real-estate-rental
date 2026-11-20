@@ -1,0 +1,1 @@
+import{t as e}from"./vendor-CsEdMS6D.js";import{Gn as t,Kn as n,qn as r}from"./index-T-GtQc_3.js";var i=e();function a({url:e,className:a,children:o}){return n()?(0,i.jsx)(`button`,{type:`button`,className:a,onClick:()=>{t(`light`),r(e)},children:o}):(0,i.jsx)(`a`,{className:a,href:e,target:`_blank`,rel:`noopener noreferrer`,children:o})}export{a as t};
