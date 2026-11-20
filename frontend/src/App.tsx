@@ -1,13 +1,12 @@
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import Layout from './components/Layout';
-import { ACCEPTANCE_PATH } from './lib/acceptance';
 import { AGENCY_PATH } from './lib/agency';
 import { COMPARE_PATH } from './lib/compare';
 import { HISTORY_PATH } from './lib/history';
 import { INVITE_PATH } from './lib/referral';
 import { HOTELS_PATH, MY_HOTELS_PATH, NEW_HOTEL_PATH } from './lib/hotels';
 import { MY_LISTINGS_PATH, NEW_LISTING_PATH } from './lib/ownerListings';
-import { MORE_PATH, RENT_PATH } from './lib/paths';
+import { ACCEPTANCE_PATH, MORE_PATH, RENT_PATH } from './lib/paths';
 import { DAILY_SEARCH_PATH, SMART_SORT, SORT_KEY } from './lib/searchFilters';
 import { DOCUMENTS_PATH } from './lib/signing';
 import { lazyPage } from './lib/lazyPage';

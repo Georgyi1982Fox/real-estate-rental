@@ -20,7 +20,6 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
 import {
   ACCEPTANCE_FIELDS,
-  ACCEPTANCE_LISTING_PARAM,
   acceptanceAddress,
   acceptanceDraftKey,
   acceptanceProblems,
@@ -39,7 +38,7 @@ import { BOT_URL } from '../lib/config';
 import { fill, fillVars, tr } from '../lib/format';
 import { submitDelivery } from '../lib/signing';
 import { haptic } from '../lib/telegram';
-import { MORE_PATH } from '../lib/paths';
+import { ACCEPTANCE_LISTING_PARAM, MORE_PATH } from '../lib/paths';
 import { useAuth } from '../providers/AuthProvider';
 import { useI18n } from '../providers/I18nProvider';
 

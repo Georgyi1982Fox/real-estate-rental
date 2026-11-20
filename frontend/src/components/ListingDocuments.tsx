@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ApiError, apiGet } from '../api/client';
 import type { Listing, Subscription } from '../api/types';
 import { showPremiumPrompt } from '../hooks/usePremiumPrompt';
-import { acceptancePath } from '../lib/acceptance';
+import { acceptancePath } from '../lib/paths';
 import { haptic } from '../lib/telegram';
 import { useAuth } from '../providers/AuthProvider';
 import { useI18n } from '../providers/I18nProvider';
