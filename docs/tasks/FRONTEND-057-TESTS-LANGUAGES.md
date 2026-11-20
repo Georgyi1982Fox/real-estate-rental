@@ -9,7 +9,8 @@
 ## Что сделать
 1. Подключить **Vitest** (`npm test`, без браузера — `environment: 'node'` или `jsdom`
    только если нужно).
-2. Тест словарей (`i18n/strings.ts`, `features.ts`, `conditions.ts`, `hotels.ts`):
+2. Тест словарей (`i18n/ka.ts`, `ru.ts`, `en.ts` — после FRONTEND-054 по файлу на язык;
+   `features.ts`, `conditions.ts`, `hotels.ts`):
    - в ka — грузинские буквы, **нет кириллицы**;
    - в ru — **нет грузинских букв**;
    - в en — нет ни кириллицы, ни грузинских букв;
