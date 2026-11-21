@@ -223,6 +223,13 @@ const en: Strings = {
       price_per_m2_asc: 'Cheapest per m²',
     },
   },
+  price_drop: {
+    badge: 'Price down {n}%',
+    was: 'Was:',
+    page: 'Price dropped {when}: was {old}',
+    filter: 'Price drops only',
+    home_title: 'Price drops',
+  },
   card: {
     no_photo: 'No photo',
     favorite: 'Add apartment to favorites',
