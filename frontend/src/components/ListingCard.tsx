@@ -16,6 +16,7 @@ import CompareButton from './CompareButton';
 import FraudBadge from './FraudBadge';
 import ListingPrice from './ListingPrice';
 import OwnerBadge from './OwnerBadge';
+import PriceDropBadge from './PriceDropBadge';
 import PromotionBadges from './PromotionBadges';
 import RepairBadge, { isRepairLevel } from './RepairBadge';
 import ViewsBadge from './ViewsBadge';
@@ -130,6 +131,7 @@ export default function ListingCard({
                 className="listing-card__price text-lg font-bold leading-6 text-[var(--text-primary)]"
                 periodClassName="text-sm font-medium text-[var(--text-secondary)]"
               />
+              <PriceDropBadge listing={listing} />
               {/* «Проверено» бывает и у агентства, поэтому «Собственник» — отдельный значок */}
               <PromotionBadges promoted={promoted} verified={verified} premium={premium} />
               {listing.owner_type === 'owner' && <OwnerBadge />}

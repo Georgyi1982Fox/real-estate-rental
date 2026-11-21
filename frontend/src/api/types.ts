@@ -74,6 +74,13 @@ export interface Listing {
   description?: Localized;
   price: number;
   currency: Currency | string;
+  /**
+   * Прежняя цена (FRONTEND-055), если квартира подешевела за последние 30 дней; в той же
+   * валюте, что price. Подорожала или снижение давнее — null
+   */
+  old_price?: number | null;
+  /** Когда снизилась цена (ISO), вместе с old_price */
+  price_dropped_at?: string | null;
   /** За что цена (TASK-092): 'daily' — за сутки; нет поля или 'monthly' — за месяц */
   rent_period?: RentPeriod | null;
   rooms: number;
@@ -489,6 +496,11 @@ export interface SearchFilters {
   /** Коды состояния (ConditionCode): подходит любое из выбранных */
   condition?: string[];
   owner_only?: boolean;
+  /**
+   * Только подешевевшие за 30 дней (FRONTEND-055): в адресе страницы и в /api/listings.
+   * В сохранённые поиски не передаётся (см. toSavedFilters)
+   */
+  price_dropped?: boolean;
   /**
    * Сайты-источники (SOURCE_CODES): объявления с любого из выбранных.
    * В сохранённые поиски пока не передаётся — бэкенд его там ещё не хранит

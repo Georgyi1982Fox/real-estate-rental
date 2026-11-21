@@ -33,6 +33,7 @@ import ListingSpecs from '../components/ListingSpecs';
 import MapChooser from '../components/MapChooser';
 import MarketPriceBadge from '../components/MarketPriceBadge';
 import PhoneReveal from '../components/PhoneReveal';
+import PriceDropNote from '../components/PriceDropNote';
 import PromotionBadges from '../components/PromotionBadges';
 import RepairBadge, { isRepairLevel } from '../components/RepairBadge';
 import ShareButton from '../components/ShareButton';
@@ -288,6 +289,8 @@ export default function ListingPage() {
                   periodClassName="text-base font-medium text-[var(--text-secondary)]"
                   monthly
                 />
+
+                <PriceDropNote listing={listing} />
 
                 {(promoted || verified || premium) && (
                   <div className="listing-summary__badges space-y-1.5">

@@ -72,7 +72,8 @@ const NUMBER_KEYS = [
   'bedrooms',
   'bathrooms',
 ] as const;
-const FLAG_KEYS = ['not_first_floor', 'not_last_floor', 'owner_only'] as const;
+/** price_dropped — «📉 Только подешевевшие» (FRONTEND-055); в сохранённый поиск не входит */
+const FLAG_KEYS = ['not_first_floor', 'not_last_floor', 'owner_only', 'price_dropped'] as const;
 /** Списки кодов: в адресе через запятую, как районы */
 const LIST_KEYS = ['features', 'condition'] as const;
 
@@ -325,11 +326,26 @@ export function countFilters(filters: SearchFilters): number {
 }
 
 /**
+ * Что из выбранного можно сохранить: «📉 Только подешевевшие» (FRONTEND-055) бэкенд
+ * в сохранённых поисках не хранит — его не передаём и при сравнении с сохранёнными не учитываем
+ */
+export function savableFilters(filters: SearchFilters): SearchFilters {
+  const { price_dropped: _priceDropped, ...rest } = filters;
+  return rest;
+}
+
+/**
  * Фильтры для POST /api/searches: один район — старое поле district (как раньше),
- * несколько — массив districts.
+ * несколько — массив districts. Несохраняемые (savableFilters) отбрасываются
  */
 export function toSavedFilters(filters: SearchFilters): SearchFilters {
-  const { district: _district, districts: _districts, city, cities: _cities, ...rest } = filters;
+  const {
+    district: _district,
+    districts: _districts,
+    city,
+    cities: _cities,
+    ...rest
+  } = savableFilters(filters);
   // Один город — старое поле city, несколько — массив cities (TASK-122)
   const codes = cityCodes(city);
   const place: SearchFilters =
@@ -540,6 +556,13 @@ export function extraFilterChips(
   });
   if (filters.owner_only) {
     chips.push({ key: 'owner_only', label: ft.owner_only, patch: { owner_only: undefined } });
+  }
+  if (filters.price_dropped) {
+    chips.push({
+      key: 'price_dropped',
+      label: `📉 ${t.price_drop.filter}`,
+      patch: { price_dropped: undefined },
+    });
   }
   const sources = filterSources(filters);
   sources.forEach((code) => {

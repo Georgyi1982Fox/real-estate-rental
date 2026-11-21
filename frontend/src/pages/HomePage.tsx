@@ -7,6 +7,7 @@ import ErrorState from '../components/ErrorState';
 import HubMenu from '../components/HubMenu';
 import ListingCard from '../components/ListingCard';
 import Pagination from '../components/Pagination';
+import PriceDrops from '../components/PriceDrops';
 import Recommendations from '../components/Recommendations';
 import RecentlyViewed from '../components/RecentlyViewed';
 import SearchBar from '../components/SearchBar';
@@ -36,7 +37,7 @@ function pageFrom(search: string): number {
 
 /**
  * Главная аренды (второй экран после выбора «Аренда»): поиск, меню поиска, «Вы смотрели»,
- * «Вам может понравиться» и новые объявления по страницам 1 2 3 4 5
+ * «Вам может понравиться», «📉 Подешевели» и новые объявления по страницам 1 2 3 4 5
  */
 export default function HomePage() {
   const { t } = useI18n();
@@ -106,6 +107,8 @@ export default function HomePage() {
       <RecentlyViewed districtNames={names} />
 
       <Recommendations districtNames={names} quiet />
+
+      <PriceDrops districtNames={names} city={city} />
 
       <section
         ref={listingsRef}

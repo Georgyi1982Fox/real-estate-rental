@@ -223,6 +223,13 @@ const ru: Strings = {
       price_per_m2_asc: 'Дешевле за м²',
     },
   },
+  price_drop: {
+    badge: 'Цена снижена на {n}%',
+    was: 'Было:',
+    page: 'Цена снижена {when}: было {old}',
+    filter: 'Только подешевевшие',
+    home_title: 'Подешевели',
+  },
   card: {
     no_photo: 'Фото отсутствует',
     favorite: 'Добавить квартиру в избранное',

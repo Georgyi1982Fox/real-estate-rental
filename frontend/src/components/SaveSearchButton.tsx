@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import type { SearchFilters } from '../api/types';
 import { useSavedSearches } from '../hooks/useSavedSearches';
-import { hasFilters } from '../lib/searchFilters';
+import { hasFilters, savableFilters } from '../lib/searchFilters';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 import { useToast } from '../providers/ToastProvider';
@@ -19,7 +19,7 @@ interface SaveSearchButtonProps {
  * и такого поиска ещё нет.
  * Без Telegram (гость, 401) открывает модалку «Откройте в Telegram».
  */
-export default function SaveSearchButton({ filters }: SaveSearchButtonProps) {
+export default function SaveSearchButton({ filters: chosen }: SaveSearchButtonProps) {
   const { t } = useI18n();
   const st = t.searches;
   const showToast = useToast();
@@ -28,6 +28,8 @@ export default function SaveSearchButton({ filters }: SaveSearchButtonProps) {
   const [loginOpen, setLoginOpen] = useState(false);
   // Стабильная ссылка: Modal перезапускает эффект (фокус) при смене onClose
   const closeLogin = useCallback(() => setLoginOpen(false), []);
+  // «📉 Только подешевевшие» не сохраняется: выбран только он — сохранять нечего
+  const filters = savableFilters(chosen);
 
   const saved = !unauthorized && findByFilters(filters) !== undefined;
   const disabled = !hasFilters(filters) || saved || saving || (loading && !unauthorized);
