@@ -10,6 +10,7 @@ import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 import Icon from './Icon';
 import ListingPrice from './ListingPrice';
+import PriceDropBadge from './PriceDropBadge';
 import PriceLevelBadge, { isPriceLevel } from './PriceLevelBadge';
 
 type RowCode = keyof Strings['compare']['rows'];
@@ -209,6 +210,7 @@ export default function CompareTable({ data, onRemove }: CompareTableProps) {
                     className="m-0 mt-1 text-sm text-[var(--text-secondary)]"
                     periodClassName="text-xs"
                   />
+                  <PriceDropBadge listing={listing} className="mt-1" oldClassName="text-xs" />
                 </th>
               );
             })}

@@ -365,6 +365,15 @@ export default function FilterPanel({ districts, filters, onChange }: FilterPane
           onChange={(checked) => onChange({ owner_only: checked ? true : undefined })}
         />
       </div>
+
+      {/* FRONTEND-055: подешевевшие за 30 дней; в сохранённый поиск не входит */}
+      <div className={`filter-panel__price-dropped overflow-hidden ${CONTROL_CLASS}`}>
+        <Switch
+          label={`📉 ${t.price_drop.filter}`}
+          checked={filters.price_dropped === true}
+          onChange={(checked) => onChange({ price_dropped: checked ? true : undefined })}
+        />
+      </div>
     </section>
   );
 }
