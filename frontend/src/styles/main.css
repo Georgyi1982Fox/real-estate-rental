@@ -567,3 +567,40 @@
     fill-opacity: 0.18;
   }
 }
+
+/*
+ * Квартиры на карте поиска (FRONTEND-056): точка — квартира, кружок с числом — дом.
+ * Вне @layer: стили leaflet.css тоже без слоя и иначе перебили бы display и цвета точки
+ */
+.search-page__map {
+  /* Карта целиком на экране над нижним меню: вверху — небольшой отступ */
+  height: calc(100dvh - var(--bottom-nav-height) - var(--safe-bottom) - var(--safe-top) - 2rem);
+  min-height: 20rem;
+  max-height: 45rem;
+  scroll-margin-top: calc(var(--safe-top) + 1rem);
+  scroll-margin-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + 0.5rem);
+}
+.leaflet-marker-icon.search-map__dot {
+  border: 3px solid var(--surface);
+  border-radius: 9999px;
+  background: var(--primary);
+  box-shadow: var(--shadow-md);
+  /* Без transition на transform: им Leaflet двигает точку при прокрутке и увеличении */
+  cursor: pointer;
+}
+.leaflet-marker-icon.search-map__dot--building {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+.leaflet-marker-icon.search-map__dot--active {
+  background: var(--accent);
+}
+.leaflet-marker-icon.search-map__dot:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}

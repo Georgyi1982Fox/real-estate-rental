@@ -222,6 +222,30 @@ const en: Strings = {
       area_desc: 'Largest first',
       price_per_m2_asc: 'Cheapest per m²',
     },
+    /** Квартиры на карте (FRONTEND-056) */
+    map: {
+      view_label: 'Show as',
+      view_list: 'List',
+      view_map: 'Map',
+      label: 'Apartments on the map',
+      no_points: 'None of the apartments on this page have a map point',
+      missing: {
+        one: '{n} more apartment without a map point',
+        few: '{n} more apartments without a map point',
+        many: '{n} more apartments without a map point',
+        other: '{n} more apartments without a map point',
+      },
+      show_list: 'View in list',
+      building: {
+        one: '{n} apartment in this building',
+        few: '{n} apartments in this building',
+        many: '{n} apartments in this building',
+        other: '{n} apartments in this building',
+      },
+      prev: 'Previous apartment',
+      next: 'Next apartment',
+      updating: 'Updating…',
+    },
   },
   price_drop: {
     badge: 'Price down {n}%',
