@@ -23,6 +23,8 @@ Bina.ai — Telegram-бот и Telegram Mini App для аренды жилья 
 - Команды для его компьютера (Windows, PowerShell) — по одной, каждая отдельным блоком;
   первая всегда `cd C:\Users\Gtorg\Desktop\Claude\real-estate-rental`.
   Обновить всё после мержа: `.\update-bina.bat` (или `git pull` + `docker compose up -d --build`).
+  Если включено автообновление (`auto-update-on.bat`, TASK-125) — компьютер обновляется сам
+  в течение 10 минут после мержа; журнал — `auto-update.log`.
 - Никогда не проси и не повторяй секреты: BOT_TOKEN, LLM_API_KEY, POSTGRES_PASSWORD и т. п.
   («сюда его не присылайте»). Telegram ID — не секрет.
 - Сначала делай, потом кратко отчитывайся: что сделано, как проверить, что дальше.

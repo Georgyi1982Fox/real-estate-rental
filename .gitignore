@@ -14,3 +14,6 @@ backups/
 
 # Фото собственников при запуске без Docker (TASK-096)
 media/
+# Журнал автообновления (TASK-125)
+auto-update.log
+auto-update.log.old
