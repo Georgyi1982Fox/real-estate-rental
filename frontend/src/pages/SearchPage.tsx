@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ListingsPage } from '../api/types';
 import CityPicker from '../components/CityPicker';
 import EmptyState from '../components/EmptyState';
@@ -13,6 +13,8 @@ import Pagination from '../components/Pagination';
 import RentPeriodToggle from '../components/RentPeriodToggle';
 import SaveSearchButton from '../components/SaveSearchButton';
 import SearchBar from '../components/SearchBar';
+import type { MapFallback } from '../components/SearchMap';
+import SearchViewToggle from '../components/SearchViewToggle';
 import Skeleton from '../components/Skeleton';
 import SmartSearchToggle from '../components/SmartSearchToggle';
 import SortSelect from '../components/SortSelect';
@@ -24,8 +26,11 @@ import { useSearchFilters } from '../hooks/useSearchFilters';
 import { saveSmartSearch, useSmartSearch } from '../hooks/useSmartSearch';
 import { useTelegramBackButton } from '../hooks/useTelegramBackButton';
 import { fill, fillVars, plural, tr } from '../lib/format';
+import { lazyPage } from '../lib/lazyPage';
+import { groupByBuilding } from '../lib/mapGroups';
 import {
   canSmartSearch,
+  cityCodes,
   countFilters,
   filterDistricts,
   hasFilters,
@@ -39,6 +44,17 @@ import { RENT_PATH } from '../lib/paths';
 import { useI18n } from '../providers/I18nProvider';
 
 const LISTINGS_PER_PAGE = 6;
+/** На карте — больше квартир на странице (FRONTEND-056) */
+const MAP_PER_PAGE = 50;
+/** Нет ни одной точки: центр выбранного города, а если город не один — вся Грузия */
+const CITY_ZOOM = 12;
+const GEORGIA: MapFallback = { latitude: 42.2, longitude: 43.5, zoom: 7 };
+// Высота и отступы прокрутки — в main.css (.search-page__map): от высоты экрана и нижнего меню
+const MAP_BOX_CLASS = 'search-page__map relative w-full';
+const MAP_SKELETON_CLASS =
+  'h-full w-full animate-pulse rounded-[var(--radius-lg)] bg-[var(--surface-hover)]';
+// Leaflet (~150 КБ) — только когда открыли карту; в основной index-*.js не попадает
+const SearchMap = lazyPage(() => import('../components/SearchMap'));
 const SKELETON_COUNT = 4;
 const GRID_CLASS = 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
 const PRIMARY_BUTTON_CLASS =
@@ -55,6 +71,7 @@ export default function SearchPage() {
     sort,
     smartLink,
     page,
+    view,
     setFilters,
     replaceFilters,
     resetFilters,
@@ -64,12 +81,18 @@ export default function SearchPage() {
     addDistrict,
     setSort,
     setPage,
+    setView,
   } = useSearchFilters();
+  const isMap = view === 'map';
+  const mt = ht.map;
   const [filtersOpen, setFiltersOpen] = useState(false);
   const openFilters = useCallback(() => setFiltersOpen(true), []);
   // Стабильная ссылка: Modal перезапускает эффект (фокус) при смене onClose
   const closeFilters = useCallback(() => setFiltersOpen(false), []);
   const resultsRef = useRef<HTMLElement>(null);
+  // Включили карту или другую её страницу — карта встаёт на экран целиком
+  const mapRef = useRef<HTMLDivElement>(null);
+  const scrollToMap = useRef(false);
   const cities = useCity();
   // Город из ссылки (?city=…) важнее запомненного; undefined — «Вся Грузия»
   const city = urlCity === undefined ? cities.city : cityParam(urlCity);
@@ -87,15 +110,30 @@ export default function SearchPage() {
   );
   // remember: «Назад» из объявления сразу показывает тот же список на той же прокрутке
   const { data, error, loading, reload } = useApi<ListingsPage>(
-    `/api/listings?page=${page}&per_page=${LISTINGS_PER_PAGE}${searchQuery ? `&${searchQuery}` : ''}`,
+    `/api/listings?page=${page}&per_page=${isMap ? MAP_PER_PAGE : LISTINGS_PER_PAGE}${searchQuery ? `&${searchQuery}` : ''}`,
     { remember: true },
   );
+  // Карта не пропадает, пока грузятся точки другой страницы или фильтра: старые точки
+  // остаются, сверху «Обновляем…»
+  const [shown, setShown] = useState(data);
+  if (data && data !== shown) setShown(data);
+  const mapData = data ?? (loading ? shown : undefined);
+  const { groups, missing } = useMemo(() => groupByBuilding(mapData?.items ?? []), [mapData]);
   // Названия — всех районов (чипы, карточки); в фильтре и подсказках — только районы города
   const { names } = useDistricts();
   const districts = useCityDistricts(city);
   const filtered = hasFilters(filters);
   // Есть что сбрасывать: фильтры или текст поиска
   const narrowed = filtered || query !== '';
+
+  const fallback = useMemo<MapFallback>(() => {
+    const codes = cityCodes(city);
+    const only = codes.length === 1 ? cities.cities.find((item) => item.code === codes[0]) : undefined;
+    if (typeof only?.latitude === 'number' && typeof only.longitude === 'number') {
+      return { latitude: only.latitude, longitude: only.longitude, zoom: CITY_ZOOM };
+    }
+    return GEORGIA;
+  }, [city, cities.cities]);
 
   useDocumentTitle(`${ht.page_title} — bina.ai`);
   useTelegramBackButton(RENT_PATH);
@@ -127,7 +165,24 @@ export default function SearchPage() {
     setSort(undefined);
   };
 
+  useEffect(() => {
+    if (!scrollToMap.current || !mapRef.current) return;
+    scrollToMap.current = false;
+    mapRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  const changeView = (next: typeof view) => {
+    scrollToMap.current = next === 'map';
+    setView(next);
+  };
+
   const changePage = (next: number) => {
+    if (isMap) {
+      // Новые точки — на той же карте: прокручиваем к ней, а не наверх страницы
+      scrollToMap.current = true;
+      setPage(next, true);
+      return;
+    }
     setPage(next);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -221,11 +276,20 @@ export default function SearchPage() {
               </p>
             )}
           </div>
-          {/* По смыслу порядок задаёт сервер — выбирать сортировку нечем */}
-          {!smart && <SortSelect value={sort} byRelevance={query !== ''} onChange={setSort} />}
+          <div className="search-page__view flex flex-wrap items-center gap-2">
+            <SearchViewToggle value={view} onChange={changeView} />
+            {/* По смыслу порядок задаёт сервер — выбирать сортировку нечем */}
+            {!smart && <SortSelect value={sort} byRelevance={query !== ''} onChange={setSort} />}
+          </div>
         </header>
 
-        {loading && (
+        {isMap && loading && !mapData && (
+          <div ref={mapRef} className={MAP_BOX_CLASS}>
+            <div className={MAP_SKELETON_CLASS} aria-hidden="true" />
+          </div>
+        )}
+
+        {loading && !isMap && (
           <div className={GRID_CLASS}>
             {Array.from({ length: SKELETON_COUNT }, (_, index) => (
               <Skeleton key={index} />
@@ -272,7 +336,38 @@ export default function SearchPage() {
           </EmptyState>
         )}
 
-        {data && data.items.length > 0 && (
+        {isMap && mapData && mapData.items.length > 0 && (
+          <>
+            <div ref={mapRef} className={MAP_BOX_CLASS}>
+              <Suspense fallback={<div className={MAP_SKELETON_CLASS} aria-hidden="true" />}>
+                <SearchMap groups={groups} fallback={fallback} districtNames={names} />
+              </Suspense>
+              {loading && (
+                <p className="search-page__map-updating pointer-events-none absolute left-1/2 top-3 z-10 m-0 -translate-x-1/2 rounded-full bg-[var(--surface)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] shadow-[var(--shadow-md)]">
+                  {mt.updating}
+                </p>
+              )}
+            </div>
+            {missing > 0 && (
+              <p className="search-page__map-missing m-0 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[var(--text-secondary)]">
+                <span>{plural(mt.missing, missing, lang)}</span>
+                <button
+                  type="button"
+                  className="inline-flex min-h-11 items-center font-semibold text-[var(--primary)] underline-offset-4 hover:underline"
+                  onClick={() => {
+                    haptic('light');
+                    setView('list');
+                  }}
+                >
+                  {mt.show_list}
+                </button>
+              </p>
+            )}
+            <Pagination current={mapData.page} total={mapData.pages} onChange={changePage} />
+          </>
+        )}
+
+        {!isMap && data && data.items.length > 0 && (
           <>
             <div className={GRID_CLASS}>
               {data.items.map((listing) => (

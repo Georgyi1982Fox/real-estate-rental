@@ -15,6 +15,10 @@ import {
 import { cityParam, saveCity } from './useCity';
 import { useUrlParams } from './useUrlParams';
 
+/** Результаты списком или на карте (FRONTEND-056): ?view=map, без параметра — список */
+export type SearchView = 'list' | 'map';
+const VIEW_KEY = 'view';
+
 /** Записать фильтры в параметры адреса вместо прежних; страница сбрасывается на первую */
 function writeFilters(params: URLSearchParams, filters: SearchFilters): void {
   FILTER_KEYS.forEach((key) => params.delete(key));
@@ -25,7 +29,7 @@ function writeFilters(params: URLSearchParams, filters: SearchFilters): void {
 
 /**
  * Поиск, фильтры, сортировка и страница ленты живут в адресе:
- * ?q=<текст>&district=<id>,<id>&min_price=..&rooms=..&features=<код>,<код>&owner_only=true&rent_period=daily&sort=..&page=..
+ * ?q=<текст>&district=<id>,<id>&min_price=..&rooms=..&features=<код>,<код>&owner_only=true&rent_period=daily&sort=..&page=..&view=map
  * Такую ссылку можно открыть заново или сохранить как поиск.
  *
  * Город в фильтры страницы не входит: он общий для приложения (useCity). Ссылка с
@@ -47,6 +51,7 @@ export function useSearchFilters() {
     1,
     Number.parseInt(new URLSearchParams(search).get('page') ?? '1', 10) || 1,
   );
+  const view: SearchView = new URLSearchParams(search).get(VIEW_KEY) === 'map' ? 'map' : 'list';
 
   // Город из ссылки становится выбранным; в адресе он больше не нужен
   useEffect(() => {
@@ -168,12 +173,36 @@ export function useSearchFilters() {
     [update],
   );
 
+  /** keepScroll — куда прокрутить, решает страница (карта: к началу карты, а не наверх) */
   const setPage = useCallback(
-    (next: number) => {
-      update((params) => {
-        if (next > 1) params.set('page', String(next));
-        else params.delete('page');
-      }, false);
+    (next: number, keepScroll = false) => {
+      update(
+        (params) => {
+          if (next > 1) params.set('page', String(next));
+          else params.delete('page');
+        },
+        false,
+        keepScroll,
+      );
+    },
+    [update],
+  );
+
+  /**
+   * Список или карта. На карте на странице больше квартир, номера страниц не совпадают —
+   * поэтому страница первая. «Назад» уводит со страницы, а не переключает вид
+   */
+  const setView = useCallback(
+    (next: SearchView) => {
+      update(
+        (params) => {
+          if (next === 'map') params.set(VIEW_KEY, 'map');
+          else params.delete(VIEW_KEY);
+          params.delete('page');
+        },
+        true,
+        true,
+      );
     },
     [update],
   );
@@ -186,6 +215,7 @@ export function useSearchFilters() {
     sort,
     smartLink,
     page,
+    view,
     setFilters,
     replaceFilters,
     resetFilters,
@@ -195,5 +225,6 @@ export function useSearchFilters() {
     addDistrict,
     setSort,
     setPage,
+    setView,
   };
 }
