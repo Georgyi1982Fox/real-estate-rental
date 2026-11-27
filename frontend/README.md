@@ -34,6 +34,7 @@ npm run dev
 ## Сборка
 
 ```powershell
+npm test           # автотесты (Vitest): словари ka / ru / en и логика без интерфейса
 npm run build      # tsc + vite build → dist/
 ```
 

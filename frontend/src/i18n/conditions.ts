@@ -4,7 +4,7 @@
 import type { ConditionCode } from '../api/types';
 import type { Lang } from './strings';
 
-const CONDITIONS: Record<Lang, Record<string, string>> = {
+export const CONDITIONS: Record<Lang, Record<string, string>> = {
   ka: {
     newly_renovated: 'ახალი გარემონტებული',
     renovated: 'გარემონტებული',

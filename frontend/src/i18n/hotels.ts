@@ -6,7 +6,7 @@ import type { Lang } from './strings';
 
 type Names = Record<Lang, Record<string, string>>;
 
-const KINDS: Names = {
+export const KINDS: Names = {
   ka: {
     hotel: 'სასტუმრო',
     guesthouse: 'საოჯახო სასტუმრო',
@@ -27,7 +27,7 @@ const KINDS: Names = {
   },
 };
 
-const ROOM_KINDS: Names = {
+export const ROOM_KINDS: Names = {
   ka: {
     single: 'ერთადგილიანი',
     double: 'ორადგილიანი',
@@ -57,7 +57,7 @@ const ROOM_KINDS: Names = {
   },
 };
 
-const AMENITIES: Names = {
+export const AMENITIES: Names = {
   ka: {
     wifi: 'Wi-Fi',
     parking: 'პარკინგი',
