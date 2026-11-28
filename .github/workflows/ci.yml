@@ -70,7 +70,7 @@ jobs:
         run: pytest -q
 
   frontend:
-    name: Frontend (tsc, build)
+    name: Frontend (tsc, test, build)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -93,6 +93,9 @@ jobs:
 
       - name: Type check
         run: npx tsc --noEmit
+
+      - name: Tests
+        run: npm test
 
       - name: Build
         run: npm run build
