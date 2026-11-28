@@ -5,7 +5,7 @@
 import type { FeatureCode } from '../api/types';
 import type { Lang } from './strings';
 
-const FEATURES: Record<Lang, Record<string, string>> = {
+export const FEATURES: Record<Lang, Record<string, string>> = {
   ka: {
     furniture: 'ავეჯი',
     furnished: 'ავეჯით',

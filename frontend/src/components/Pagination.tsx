@@ -1,4 +1,4 @@
-import { fill } from '../lib/format';
+import { fill, fillVars } from '../lib/format';
 import { haptic } from '../lib/telegram';
 import { useI18n } from '../providers/I18nProvider';
 
@@ -10,14 +10,6 @@ interface PaginationProps {
 
 /** Сколько номеров страниц видно одновременно (окно сдвигается вместе с текущей) */
 const WINDOW = 5;
-
-// Подписи только этого компонента (здесь, а не в strings.ts — чтобы не пересекаться
-// с параллельными правками словаря)
-const LABELS = {
-  ka: { prev: 'წინა გვერდი', next: 'შემდეგი გვერდი', of: 'გვერდი {n} / {total}' },
-  ru: { prev: 'Предыдущая страница', next: 'Следующая страница', of: 'Страница {n} из {total}' },
-  en: { prev: 'Previous page', next: 'Next page', of: 'Page {n} of {total}' },
-} as const;
 
 const BUTTON_CLASS =
   'inline-flex min-h-10 min-w-10 items-center justify-center rounded-[var(--radius-md)] border text-sm font-medium transition-colors';
@@ -35,9 +27,8 @@ export function pageWindow(current: number, total: number, size = WINDOW): numbe
 }
 
 export default function Pagination({ current, total, onChange }: PaginationProps) {
-  const { lang, t } = useI18n();
+  const { t } = useI18n();
   if (total <= 1) return null;
-  const labels = LABELS[lang] ?? LABELS.ru;
 
   const go = (page: number) => {
     if (page < 1 || page > total || page === current) return;
@@ -66,7 +57,7 @@ export default function Pagination({ current, total, onChange }: PaginationProps
       className="pagination flex flex-col items-center gap-2 pt-2"
     >
       <div className="flex items-center justify-center gap-2">
-        {arrow(current - 1, labels.prev, '‹')}
+        {arrow(current - 1, t.home.page_prev, '‹')}
         {pageWindow(current, total).map((page) => {
           const active = page === current;
           return (
@@ -82,10 +73,10 @@ export default function Pagination({ current, total, onChange }: PaginationProps
             </button>
           );
         })}
-        {arrow(current + 1, labels.next, '›')}
+        {arrow(current + 1, t.home.page_next, '›')}
       </div>
       <p className="pagination__status m-0 text-xs text-[var(--text-secondary)]">
-        {labels.of.replace('{n}', String(current)).replace('{total}', String(total))}
+        {fillVars(t.home.page_of, { n: current, total })}
       </p>
     </nav>
   );
