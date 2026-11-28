@@ -396,7 +396,7 @@ PDF «Акт приёмки» на двух языках для защиты з�
 | FRONTEND-054 Скорость, часть 2: словарь только на выбранном языке | ✅ (PR #205) | `FRONTEND-054-SPEED-2.md` |
 | FRONTEND-055 «📉 Цена снижена» (бэкенд: `old_price`, `price_dropped_at`, фильтр `price_dropped`) | ✅ (PR #208) | `FRONTEND-055-PRICE-DROP.md` |
 | FRONTEND-056 Квартиры на карте в поиске | ✅ (PR #210) | `FRONTEND-056-SEARCH-MAP.md` |
-| FRONTEND-057 Автотесты фронтенда и проверка языков | 👤 выдана 10.11 | `FRONTEND-057-TESTS-LANGUAGES.md` |
+| FRONTEND-057 Автотесты фронтенда и проверка языков | ✅ (PR #212; CI-шаг `npm test` — PR #213) | `FRONTEND-057-TESTS-LANGUAGES.md` |
 
 Для задач из «Очереди» с пометкой «бэкенд + фронт» бэкенд пишет отдельный
 `FRONTEND-0xx-….md` для друга.
