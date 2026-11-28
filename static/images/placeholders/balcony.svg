@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600" role="img" aria-label="Balcony view">
+  <rect width="800" height="600" fill="#CFE2EE"/>
+  <circle cx="620" cy="130" r="50" fill="#F6D58E"/>
+  <path d="M0 360 L120 250 L230 320 L360 210 L500 300 L640 230 L800 320 L800 420 L0 420 Z" fill="#A9BFA2"/>
+  <rect x="60" y="330" width="60" height="110" fill="#E7E2D6"/>
+  <rect x="140" y="300" width="80" height="140" fill="#F3EFE6"/>
+  <rect x="240" y="340" width="50" height="100" fill="#E0D8C8"/>
+  <rect x="470" y="310" width="70" height="130" fill="#F3EFE6"/>
+  <rect x="560" y="345" width="90" height="95" fill="#E7E2D6"/>
+  <path d="M320 440 L320 300 L360 270 L400 300 L400 440 Z" fill="#D9CDB6"/>
+  <rect y="430" width="800" height="170" fill="#B8A88E"/>
+  <rect y="420" width="800" height="14" fill="#5F7358"/>
+  <g fill="#5F7358">
+    <rect x="30" y="434" width="10" height="120"/><rect x="110" y="434" width="10" height="120"/>
+    <rect x="190" y="434" width="10" height="120"/><rect x="270" y="434" width="10" height="120"/>
+    <rect x="350" y="434" width="10" height="120"/><rect x="430" y="434" width="10" height="120"/>
+    <rect x="510" y="434" width="10" height="120"/><rect x="590" y="434" width="10" height="120"/>
+    <rect x="670" y="434" width="10" height="120"/><rect x="750" y="434" width="10" height="120"/>
+  </g>
+  <rect y="550" width="800" height="50" fill="#9E8E74"/>
+</svg>
